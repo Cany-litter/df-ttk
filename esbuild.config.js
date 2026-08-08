@@ -21,9 +21,18 @@ async function build() {
       }
     });
 
-    // 拷贝 public 根文件
-    fs.copyFileSync('public/index.html', 'dist/index.html');
-    fs.copyFileSync('public/styles.css', 'dist/styles.css');
+    // 拷贝 public 根文件（包含 index.html, styles.css, weapons.json）
+    const publicFiles = ['index.html', 'styles.css', 'weapons.json'];
+    publicFiles.forEach(file => {
+      const srcPath = path.join('public', file);
+      const dstPath = path.join('dist', file);
+      if (fs.existsSync(srcPath)) {
+        fs.copyFileSync(srcPath, dstPath);
+        console.log(`✅ 已复制 ${file}`);
+      } else {
+        console.warn(`⚠️ ${srcPath} 不存在，跳过复制`);
+      }
+    });
 
     // 递归拷贝 assets 到 dist/assets（包含 libs、图片、Version.txt 等）
     const srcAssets = path.resolve('assets');
@@ -42,4 +51,4 @@ async function build() {
   }
 }
 
-build(); 
+build();

@@ -61,7 +61,10 @@ export class ViewRenderer {
       // 计算部位伤害
       const partDamageDisplay = this.formatPartDamage(current.flesh, current.mult);
       
-      // 构建双列显示的行 - 所有输入框添加 data-property 和 data-weapon 属性
+      // 获取命中率值（从原始数据中读取）
+      const hitRateValue = original.hitRate !== undefined && original.hitRate !== null ? original.hitRate : '';
+      
+      // 构建双列显示的行
       tr.innerHTML = `
         <td><input type="text" class="weapon-name-input editable-input" data-weapon="${idx}" data-property="name" value="${this.escapeHtml(w.name)}" style="width:100%;border:1px solid #ddd;border-radius:3px;padding:2px 4px;background:#fafafa;font-size:inherit;box-sizing:border-box;"/></td>
         <td><input type="text" class="weapon-type-input editable-input" data-weapon="${idx}" data-property="type" value="${this.escapeHtml(w.type)}" style="width:100%;border:1px solid #ddd;border-radius:3px;padding:2px 4px;background:#fafafa;font-size:inherit;box-sizing:border-box;"/></td>
@@ -91,8 +94,8 @@ export class ViewRenderer {
         <td>${this.createSelectHTML('muzzleSel', idx, muzzleItems, 0)}</td>
         <!-- 子弹类型 -->
         <td>${this.createSelectHTML('bulletSel', idx, bulletItems, 0)}</td>
-        <!-- 命中率 -->
-        <td><input type="number" data-weapon="${idx}" class="hitRateInput editable-input" min="0" max="1" step="0.01" style="width:50px;border:1px solid #ddd;border-radius:3px;padding:2px 4px;background:#fafafa;font-size:inherit;" /></td>
+        <!-- 命中率（从武器数据中读取） -->
+        <td><input type="number" data-weapon="${idx}" class="hitRateInput editable-input" min="0" max="1" step="0.01" value="${hitRateValue}" style="width:50px;border:1px solid #ddd;border-radius:3px;padding:2px 4px;background:#fafafa;font-size:inherit;" /></td>
         <!-- 枪口初速精校 -->
         <td>${this.createVelocityPrecisionSlider(idx, false, 0.09)}</td>
         <!-- 操作按钮 -->
@@ -144,7 +147,6 @@ export class ViewRenderer {
     this.renderAddWeaponRow(tbody);
     
     // 绑定事件监听器
-    // 传入 onEditChange 回调，用于处理编辑事件
     this.bindAttachmentChangeListeners(onEditChange);
     this.bindEditChangeListeners(onEditChange);
     
@@ -266,7 +268,8 @@ export class ViewRenderer {
       triggerDelay: 0,
       barrels: [],
       mult,
-      allowedBullets: [1, 2, 3, 4, 5]
+      allowedBullets: [1, 2, 3, 4, 5],
+      hitRate: null
     };
   }
 
@@ -601,6 +604,13 @@ export class ViewRenderer {
 
         const multInput = row.querySelector('.weapon-mult-input');
         if (multInput) multInput.value = this.formatMultipliersForInput(original.mult);
+        
+        // ✅ 更新命中率输入框
+        const hitRateInput = row.querySelector('.hitRateInput');
+        if (hitRateInput) {
+          const hitRate = original.hitRate !== undefined && original.hitRate !== null ? original.hitRate : '';
+          hitRateInput.value = hitRate;
+        }
         
         // 更新当前值显示（只读列）
         const rofCurrent = row.querySelector('.rof-current');

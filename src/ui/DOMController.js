@@ -2,8 +2,6 @@ import { WeaponManager } from '../core/WeaponManager.js';
 import { ViewRenderer } from './ViewRenderer.js';
 import { formatMultipliers } from '../utils/formatters.js';
 import { CacheManager } from '../utils/cacheManager.js';
-import { WeaponStorage } from '../utils/weaponStorage.js';
-import { defaultWeapons } from '../data/weapons.js';
 
 /**
  * DOM控制器
@@ -14,47 +12,35 @@ export class DOMController {
     this.weaponManager = weaponManager;
     this.viewRenderer = new ViewRenderer();
     this.cacheManager = new CacheManager();
-    this.weaponStorage = new WeaponStorage();
-    this.saveTimeout = null;
     this.isUpdating = false;
     
-    // 加载武器数据（优先从 localStorage 加载，否则使用 WeaponManager 中的数据）
+    // 加载武器数据（直接从 WeaponManager 获取）
+    // 此时数据应该已经由 main.js 加载完成
     this.loadWeaponData();
     
-    // 延迟加载保存的配置
+    // 延迟加载保存的配置（页面参数配置）
     setTimeout(() => {
       this.loadSavedConfig();
     }, 0);
     
-    // 监听参数变化，自动保存配置
+    // 设置参数自动保存（只保存页面参数，不保存武器数据）
     this.setupAutoSave();
   }
 
   /**
-   * 加载武器数据
-   * 优先从 localStorage 加载，如果没有则使用 WeaponManager 中的数据
+   * 加载武器数据（直接从 WeaponManager 获取）
+   * 此时数据应该已经由 main.js 加载完成
    */
   loadWeaponData() {
     const weapons = this.weaponManager.getWeapons();
     if (weapons && weapons.length > 0) {
-      // 已有数据，不需要加载
+      console.log(`📂 从 WeaponManager 加载了 ${weapons.length} 把武器`);
       return;
     }
     
-    // 尝试从 localStorage 加载
-    const savedWeapons = this.weaponStorage.loadWeapons(defaultWeapons);
-    if (savedWeapons && savedWeapons.length > 0) {
-      // 使用 WeaponManager 的 loadWeapons 方法加载数据
-      this.weaponManager.loadWeapons(savedWeapons);
-      console.log('📂 从 localStorage 加载了武器数据');
-      return;
-    }
-    
-    // 如果 localStorage 也没有数据，使用默认数据
-    if (defaultWeapons && defaultWeapons.length > 0) {
-      this.weaponManager.loadWeapons(defaultWeapons);
-      console.log('📂 使用默认武器数据');
-    }
+    // 如果 WeaponManager 没有数据，说明加载顺序有问题
+    console.error('❌ WeaponManager 中没有武器数据，请确保 main.js 先加载 weapons.json');
+    this.showError('武器数据加载失败，请刷新页面重试');
   }
 
   /**
@@ -63,8 +49,8 @@ export class DOMController {
    */
   loadWeaponsFromJSON(data) {
     if (!data || data.length === 0) {
-      console.warn('JSON 数据为空，使用默认数据');
-      this.weaponManager.loadWeapons(defaultWeapons);
+      console.error('❌ JSON 数据为空');
+      this.showError('武器数据为空，请检查 weapons.json 文件');
       return;
     }
     
@@ -81,7 +67,7 @@ export class DOMController {
   }
 
   /**
-   * 加载保存的配置
+   * 加载保存的配置（只加载页面参数配置）
    */
   loadSavedConfig() {
     try {
@@ -118,7 +104,7 @@ export class DOMController {
   }
 
   /**
-   * 设置自动保存功能
+   * 设置自动保存功能（只保存页面参数）
    */
   setupAutoSave() {
     const paramElements = [
@@ -157,7 +143,7 @@ export class DOMController {
   }
 
   /**
-   * 保存当前配置
+   * 保存当前配置（只保存页面参数）
    */
   saveCurrentConfig() {
     const currentConfig = this.readPageParams();
@@ -324,13 +310,29 @@ export class DOMController {
    * @param {*} value - 新值
    */
   handleWeaponEdit(index, property, value) {
-    // 如果是附件变化（_attachment, _bullet, _hitRate, _precision），不需要更新武器数据，只需要刷新显示
-    if (property === '_attachment' || property === '_bullet' || property === '_hitRate' || 
-        property === '_precision' || property === '_clonePrecision') {
+    // 如果是附件变化（_attachment, _bullet, _precision, _clonePrecision），不需要更新武器数据，只需要刷新显示
+    // ⚠️ _hitRate 不再在这里处理，单独处理
+    if (property === '_attachment' || property === '_bullet' || property === '_precision' || 
+        property === '_clonePrecision') {
       // 附件变化时，直接刷新统计显示
       setTimeout(() => {
         this.updateWeaponStats();
       }, 10);
+      return;
+    }
+    
+    // ✅ 单独处理 _hitRate，保存到 WeaponManager
+    if (property === '_hitRate') {
+      // 将值保存到 WeaponManager
+      const success = this.weaponManager.updateWeaponProperty(index, 'hitRate', value);
+      if (success) {
+        setTimeout(() => {
+          this.updateWeaponStats();
+        }, 10);
+        console.log(`✅ 保存命中率成功: [${index}] ${value}`);
+      } else {
+        console.warn(`⚠️ 保存命中率失败: [${index}] ${value}`);
+      }
       return;
     }
     
@@ -342,9 +344,6 @@ export class DOMController {
       setTimeout(() => {
         // 刷新表格显示
         this.updateWeaponStats();
-        
-        // 保存到 localStorage
-        this.saveWeaponData();
       }, 10);
       
       console.log(`✏️ 更新武器 [${index}] ${property} = ${value}`);
@@ -389,9 +388,6 @@ export class DOMController {
       // 添加到武器管理器
       const weapons = this.weaponManager.getWeapons();
       weapons.push(weaponData);
-      
-      // 保存数据
-      this.saveWeaponData();
       
       // 重新渲染表格
       this.renderAttachmentTable();
@@ -595,61 +591,7 @@ export class DOMController {
   }
 
   /**
-   * 保存当前武器数据（带防抖）
-   */
-  saveWeaponData() {
-    if (this.saveTimeout) {
-      clearTimeout(this.saveTimeout);
-    }
-    
-    this.saveTimeout = setTimeout(() => {
-      try {
-        if (this.isUpdating) {
-          console.log('⏳ 正在更新中，跳过保存');
-          return;
-        }
-        
-        const weapons = this.weaponManager.getWeapons();
-        // 保存前进行数据验证
-        const validatedWeapons = this.validateWeaponData(weapons);
-        this.weaponStorage.saveWeapons(validatedWeapons);
-        console.log('💾 武器数据已保存');
-      } catch (error) {
-        console.error('保存武器数据失败:', error);
-      }
-    }, 500);
-  }
-
-  /**
-   * 验证武器数据，防止保存异常值
-   * @param {Array} weapons - 武器数据数组
-   * @returns {Array} 验证后的武器数据
-   */
-  validateWeaponData(weapons) {
-    const originalWeapons = this.weaponManager.getOriginalWeapons();
-    
-    return weapons.map((w, idx) => {
-      const original = originalWeapons[idx];
-      if (!original) return w;
-      
-      const validated = { ...w };
-      
-      if (validated.velocity < 0) validated.velocity = original.velocity;
-      if (validated.velocity > 2000) validated.velocity = original.velocity;
-      
-      if (validated.rof < 0) validated.rof = original.rof;
-      if (validated.rof > 3000) validated.rof = original.rof;
-      
-      if (validated.flesh < 0) validated.flesh = original.flesh;
-      if (validated.armor < 0) validated.armor = original.armor;
-      
-      return validated;
-    });
-  }
-
-  /**
    * 更新武器统计数据（当附件选择变化时调用）
-   * 【修复】确保使用最新的武器数据
    */
   updateWeaponStats() {
     if (this.isUpdating) {
@@ -673,11 +615,10 @@ export class DOMController {
         bulletTypes
       );
       
-      // 【关键】从 WeaponManager 获取最新数据（已包含用户编辑的值）
-      // applyAttachments 现在使用 this.weapons 而不是 this.originalWeapons
+      // 从 WeaponManager 获取最新数据（已包含用户编辑的值）
       const updatedWeapons = this.weaponManager.applyAttachments(attachmentConfigs, params);
       
-      // 更新UI（ViewRenderer 会从 _current 中读取 flesh 和 mult 计算部位伤害）
+      // 更新UI
       this.viewRenderer.updateWeaponStats(updatedWeapons);
       
     } catch (error) {
@@ -753,14 +694,18 @@ export class DOMController {
 
   /**
    * 重置武器数据为默认值
+   * 这个方法现在由 main.js 的 resetToDefault 调用
+   * @param {Array} defaultData - 默认武器数据
    */
-  resetWeaponsToDefault() {
-    if (confirm('⚠️ 确定要重置所有武器数据为默认值吗？\n（此操作不可撤销！）')) {
-      this.weaponManager.resetToDefaults(defaultWeapons);
-      this.weaponStorage.clearSavedData();
-      this.renderAttachmentTable();
-      this.updateGlobalBarrelSelections();
-      console.log('✅ 已重置为默认武器数据');
+  resetWeaponsToDefault(defaultData) {
+    if (!defaultData || defaultData.length === 0) {
+      console.warn('默认武器数据为空，无法重置');
+      return;
     }
+    
+    this.weaponManager.loadWeapons(defaultData);
+    this.renderAttachmentTable();
+    this.updateGlobalBarrelSelections();
+    console.log('✅ 已重置为默认武器数据');
   }
 }

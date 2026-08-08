@@ -6,8 +6,6 @@ import { DOMController } from './ui/DOMController.js';
 import { EventHandler } from './ui/EventHandler.js';
 import { validateHitProb, validateWeaponHitRates, validatePageParams } from './utils/validators.js';
 import { resetSeed } from './utils/rng.js';
-import { defaultWeapons } from './data/weapons.js';
-import { WeaponStorage } from './utils/weaponStorage.js';
 
 /**
  * 应用主控制器
@@ -44,71 +42,59 @@ class AppController {
   /**
    * 初始化应用
    */
-  initialize() {
+  async initialize() {
     try {
       console.log('开始初始化应用...');
       
       // 1. 创建 WeaponManager
       this.weaponManager = new WeaponManager();
       
-      // 2. 创建 WeaponStorage（用于 localStorage 操作）
-      this.weaponStorage = new WeaponStorage();
+      // 2. 先加载武器数据（await 确保数据加载完成）
+      await this.loadWeaponsFromJSON();
       
-      // 3. 加载武器数据（优先使用 localStorage）
-      this.loadWeaponsData();
-      
-      // 4. 创建 DOMController（传入 WeaponManager）
+      // 3. 再创建 DOMController（此时 WeaponManager 中已有数据）
       this.domController = new DOMController(this.weaponManager);
       
-      // 5. 创建 ChartManager 和 EventHandler
+      // 4. 创建 ChartManager 和 EventHandler
       this.chartManager = new ChartManager();
       this.eventHandler = new EventHandler();
 
-      // 6. 初始化 UI（使用保存的数据）
+      // 5. 初始化 UI（使用已加载的数据）
       this.domController.renderAttachmentTable();
       
-      // 7. 应用全局枪管类型设置
+      // 6. 应用全局枪管类型设置
       this.domController.updateGlobalBarrelSelections();
       
-      // 8. 绑定事件处理器
+      // 7. 绑定事件处理器
       this.eventHandler.bindEventHandlers(
         () => this.handleCalculate(),
         () => this.handleDistanceChart(),
         () => this.domController.updateGlobalBarrelSelections()
       );
 
-      // 9. 添加保存和导出按钮
+      // 8. 添加控制按钮（重置、导出、导入）
       this.addControlButtons();
 
       console.log('应用初始化完成');
     } catch (error) {
       console.error('应用初始化失败:', error);
-      this.domController?.showError('应用初始化失败: ' + error.message);
+      // 注意：此时 domController 可能还未创建，需要单独处理错误
+      if (this.domController) {
+        this.domController.showError('应用初始化失败: ' + error.message);
+      } else {
+        alert('应用初始化失败: ' + error.message);
+      }
     }
   }
 
   /**
-   * 加载武器数据
-   * 优先级：localStorage > weapons.json > weapons.js (默认)
+   * 直接从 weapons.json 加载数据
+   * 如果加载失败，页面显示错误，不再使用备用数据
    */
-  async loadWeaponsData() {
+  async loadWeaponsFromJSON() {
     try {
-      console.log('正在加载武器数据...');
+      console.log('正在从 weapons.json 加载武器数据...');
       
-      // 【核心修复】先检查 localStorage 是否有数据
-      const savedWeapons = this.weaponStorage.loadWeapons(defaultWeapons);
-      if (savedWeapons && savedWeapons.length > 0) {
-        console.log('✅ 从 localStorage 加载了武器数据，跳过 weapons.json 加载');
-        // 直接使用 localStorage 的数据
-        this.weaponManager.loadWeapons(savedWeapons);
-        if (this.domController) {
-          this.domController.loadWeaponsFromJSON(savedWeapons);
-        }
-        return;
-      }
-      
-      // 如果 localStorage 没有数据，尝试从 weapons.json 加载
-      console.log('localStorage 中无武器数据，尝试从 weapons.json 加载...');
       const response = await fetch('./weapons.json');
       
       if (!response.ok) {
@@ -124,30 +110,19 @@ class AppController {
       // 加载数据到 WeaponManager
       this.weaponManager.loadWeapons(data);
       
-      // 通知 DOMController 数据已加载
-      if (this.domController) {
-        this.domController.loadWeaponsFromJSON(data);
-      }
-      
       console.log(`✅ 从 weapons.json 加载了 ${data.length} 把武器数据`);
       
     } catch (error) {
-      console.warn(`⚠️ 加载 weapons.json 失败: ${error.message}`);
-      console.log('使用默认武器数据 (weapons.js)');
-      
-      // 使用默认数据
-      this.weaponManager.loadWeapons(defaultWeapons);
-      
-      if (this.domController) {
-        this.domController.loadWeaponsFromJSON(defaultWeapons);
-      }
-      
-      console.log(`✅ 使用默认武器数据 (${defaultWeapons.length} 把武器)`);
+      console.error(`❌ 加载 weapons.json 失败: ${error.message}`);
+      // 显示错误信息给用户
+      const errorMsg = `无法加载武器数据: ${error.message}\n请确保 weapons.json 文件存在且格式正确。`;
+      alert(errorMsg);
+      throw new Error(errorMsg);
     }
   }
 
   /**
-   * 添加控制按钮（保存、重置、导出、导入）
+   * 添加控制按钮（重置、导出、导入）
    */
   addControlButtons() {
     const buttonsContainer = document.querySelector('.buttons-container');
@@ -159,26 +134,14 @@ class AppController {
     separator.textContent = '|';
     buttonsContainer.appendChild(separator);
     
-    // 添加保存按钮
-    const saveBtn = document.createElement('button');
-    saveBtn.id = 'saveDataBtn';
-    saveBtn.textContent = '💾 保存武器数据';
-    saveBtn.style.backgroundColor = '#2196F3';
-    saveBtn.style.color = '#fff';
-    saveBtn.addEventListener('click', () => {
-      this.domController.saveWeaponData();
-      alert('✅ 武器数据已保存到本地！');
-    });
-    buttonsContainer.appendChild(saveBtn);
-    
-    // 添加重置按钮
+    // 添加重置按钮（重置为 weapons.json 的默认数据）
     const resetBtn = document.createElement('button');
     resetBtn.id = 'resetDataBtn';
     resetBtn.textContent = '🔄 重置为默认';
     resetBtn.style.backgroundColor = '#ff9800';
     resetBtn.style.color = '#fff';
     resetBtn.addEventListener('click', () => {
-      this.domController.resetWeaponsToDefault();
+      this.resetToDefault();
     });
     buttonsContainer.appendChild(resetBtn);
     
@@ -203,6 +166,45 @@ class AppController {
       this.importWeaponData();
     });
     buttonsContainer.appendChild(importBtn);
+  }
+
+  /**
+   * 重置为 weapons.json 的默认数据
+   */
+  async resetToDefault() {
+    if (!confirm('⚠️ 确定要重置所有武器数据为默认值吗？\n（当前修改将丢失！）')) {
+      return;
+    }
+    
+    try {
+      // 重新从 weapons.json 加载
+      const response = await fetch('./weapons.json');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error('数据格式无效或为空');
+      }
+      
+      // 加载数据到 WeaponManager
+      this.weaponManager.loadWeapons(data);
+      
+      // 重新渲染表格
+      this.domController.renderAttachmentTable();
+      
+      // 重新应用全局枪管设置
+      this.domController.updateGlobalBarrelSelections();
+      
+      console.log('✅ 已重置为 weapons.json 的默认数据');
+      alert('✅ 已重置为默认数据！');
+      
+    } catch (error) {
+      console.error('重置失败:', error);
+      alert(`❌ 重置失败: ${error.message}\n请检查 weapons.json 文件是否存在且格式正确。`);
+    }
   }
 
   /**
@@ -263,14 +265,6 @@ class AppController {
           if (confirm(`⚠️ 确定要导入 ${processedData.length} 把武器的数据吗？\n这将覆盖当前所有武器数据！`)) {
             // 加载数据到 WeaponManager
             this.weaponManager.loadWeapons(processedData);
-            
-            // 通知 DOMController
-            if (this.domController) {
-              this.domController.loadWeaponsFromJSON(processedData);
-            }
-            
-            // 保存到本地存储
-            this.domController.saveWeaponData();
             
             // 重新渲染表格
             this.domController.renderAttachmentTable();

@@ -1,4 +1,10 @@
-import { muzzles as defaultMuzzles } from '../data/weapons.js';
+// 枪口数据 - 直接定义在文件中，不再依赖 weapons.js
+const defaultMuzzles = [
+  { name: '无', mult: 0 },
+  { name: '死寂', mult: 0.24 },
+  { name: '先进/轻语/勇火', mult: 0.18 },
+  { name: '冲锋枪回声消音器', mult: 0.30 }
+];
 
 /**
  * 武器管理器
@@ -23,7 +29,7 @@ export class WeaponManager {
       return;
     }
     
-    // 处理数据中的 Infinity（JSON 中使用 null 表示 Infinity）
+    // 处理数据中的 Infinity（JSON 中使用 null 或字符串 "Infinity" 表示）
     const processedData = data.map(w => this.processWeaponData(w));
     
     this.weapons = processedData;
@@ -34,18 +40,27 @@ export class WeaponManager {
   }
 
   /**
-   * 处理单个武器数据，将 null 转换为 Infinity
+   * 处理单个武器数据，将 null/undefined/'Infinity' 字符串转换为 Infinity
    * @param {Object} weapon - 武器数据
    * @returns {Object} 处理后的武器数据
    */
   processWeaponData(weapon) {
     const processed = { ...weapon };
     
-    // 处理 ranges 中的 null -> Infinity
+    // 处理 ranges 中的 null/undefined/'Infinity' 字符串 -> Infinity
     if (Array.isArray(processed.ranges)) {
-      processed.ranges = processed.ranges.map(r => 
-        r === null || r === undefined ? Infinity : r
-      );
+      processed.ranges = processed.ranges.map(r => {
+        if (r === null || r === undefined) return Infinity;
+        if (typeof r === 'string') {
+          const trimmed = r.trim();
+          if (trimmed === 'Infinity' || trimmed === '∞' || trimmed === '') {
+            return Infinity;
+          }
+          const num = parseFloat(trimmed);
+          return isNaN(num) ? Infinity : num;
+        }
+        return r;
+      });
     }
     
     // 处理 barrels 中的 ranges（如果有）
@@ -53,9 +68,18 @@ export class WeaponManager {
       processed.barrels = processed.barrels.map(barrel => {
         const b = { ...barrel };
         if (Array.isArray(b.ranges)) {
-          b.ranges = b.ranges.map(r => 
-            r === null || r === undefined ? Infinity : r
-          );
+          b.ranges = b.ranges.map(r => {
+            if (r === null || r === undefined) return Infinity;
+            if (typeof r === 'string') {
+              const trimmed = r.trim();
+              if (trimmed === 'Infinity' || trimmed === '∞' || trimmed === '') {
+                return Infinity;
+              }
+              const num = parseFloat(trimmed);
+              return isNaN(num) ? Infinity : num;
+            }
+            return r;
+          });
         }
         return b;
       });
@@ -117,7 +141,6 @@ export class WeaponManager {
     
     const weapon = this.weapons[index];
     
-    // 根据属性类型处理值
     switch (property) {
       case 'name':
       case 'type':
@@ -140,9 +163,12 @@ export class WeaponManager {
         if (typeof value === 'string') {
           weapon.ranges = this.parseRangesString(value);
         } else if (Array.isArray(value)) {
-          weapon.ranges = value.map(r => 
-            r === null || r === undefined || r === 'Infinity' || r === '∞' ? Infinity : Number(r)
-          );
+          weapon.ranges = value.map(r => {
+            if (r === null || r === undefined || r === 'Infinity' || r === '∞') {
+              return Infinity;
+            }
+            return Number(r);
+          });
         } else {
           console.warn(`无效的 ranges 值: ${value}`);
           return false;
@@ -158,8 +184,20 @@ export class WeaponManager {
           return false;
         }
         break;
+      case '_hitRate':
+        if (value === '' || value === null || value === undefined) {
+          delete weapon.hitRate;
+        } else {
+          const hitRateNum = parseFloat(value);
+          if (!isNaN(hitRateNum) && hitRateNum >= 0 && hitRateNum <= 1) {
+            weapon.hitRate = hitRateNum;
+          } else {
+            console.warn(`无效的命中率值: ${value}，必须在 0-1 之间`);
+            return false;
+          }
+        }
+        break;
       default:
-        // 其他属性直接赋值
         weapon[property] = value;
     }
     
@@ -220,6 +258,7 @@ export class WeaponManager {
       barrels: [],
       mult: { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 },
       allowedBullets: [1, 2, 3, 4, 5],
+      hitRate: null,
       ...weaponData
     };
     
@@ -495,8 +534,6 @@ export class WeaponManager {
         burstInterval = undefined;
       }
 
-      // 【核心修复】_original 直接使用 w（this.weapons 中的值，即用户编辑后的值）
-      // 这样"原始"列显示的是用户当前编辑的值，而不是永远不变的初始值
       return {
         _original: {
           name: w.name,
@@ -514,7 +551,8 @@ export class WeaponManager {
           fireMode: w.fireMode,
           burstCount: w.burstCount,
           burstInternalROF: w.burstInternalROF,
-          burstInterval: w.burstInterval
+          burstInterval: w.burstInterval,
+          hitRate: w.hitRate
         },
         _current: {
           rof: Math.round(w.rof * rofMult * 100) / 100,
@@ -648,7 +686,8 @@ export class WeaponManager {
           fireMode: clone.fireMode,
           burstCount: clone.burstCount,
           burstInternalROF: clone.burstInternalROF,
-          burstInterval: clone.burstInterval
+          burstInterval: clone.burstInterval,
+          hitRate: clone.hitRate
         },
         _current: {
           rof: Math.round(clone.rof * rofMult * 100) / 100,
