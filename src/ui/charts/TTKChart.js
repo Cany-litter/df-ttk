@@ -107,13 +107,19 @@ export class TTKChart {
   calculateDelays(stats, params) {
     const { weapon, avgTime, avgShots, avgMisses, avgBurstInterval } = stats;
     
+    // 🔥 修复：优先从 _current 读取 triggerDelay，兼容旧数据
+    const velocity = weapon.velocity || weapon._current?.velocity || 1;
+    const triggerDelayValue = weapon._current?.triggerDelay ?? weapon.triggerDelay ?? 0;
+    
     // 基础延迟计算
-    const flight = params.distance / weapon.velocity;
-    const triggerDelay = params.triggerDelayEnable ? weapon.triggerDelay / 1000 : 0;
+    const flight = params.distance / velocity;
+    const triggerDelay = params.triggerDelayEnable ? triggerDelayValue / 1000 : 0;
     const burstInterval = avgBurstInterval || 0;
     
-    // 判断是否为连发模式
-    const isBurstMode = weapon.fireMode === 'burst' && weapon.burstCount && weapon.burstInternalROF;
+    // 判断是否为连发模式（添加空值保护）
+    const isBurstMode = weapon.fireMode === 'burst' && 
+                        weapon.burstCount && 
+                        weapon.burstInternalROF;
     
     // 计算射击延迟（命中延迟 + 空枪延迟）
     const { noMissFireDelay, emptyDelay } = this._calculateShootingDelays(
@@ -148,16 +154,19 @@ export class TTKChart {
       ? avgTime - flight - burstInterval
       : avgTime - flight;
     
+    // 如果 avgMisses 为 undefined 或 null，设为 0
+    const safeAvgMisses = avgMisses || 0;
+    
     // 无空枪时，所有间隔时间都是命中间隔
-    if (avgMisses === 0) {
+    if (safeAvgMisses === 0) {
       return { noMissFireDelay: allIntervalTime, emptyDelay: 0 };
     }
     
     // 有空枪时，按比例分配
     if (isBurstMode) {
-      return this._calculateBurstModeDelays(weapon, avgShots, avgMisses, allIntervalTime);
+      return this._calculateBurstModeDelays(weapon, avgShots, safeAvgMisses, allIntervalTime);
     } else {
-      return this._calculateAutoModeDelays(avgShots, avgMisses, allIntervalTime);
+      return this._calculateAutoModeDelays(avgShots, safeAvgMisses, allIntervalTime);
     }
   }
 
@@ -166,8 +175,11 @@ export class TTKChart {
    * @private
    */
   _calculateBurstModeDelays(weapon, avgShots, avgMisses, allIntervalTime) {
+    // 🔥 修复：添加空值保护
+    const burstCount = weapon.burstCount || 1;
+    
     // 计算连发间隔数量
-    const burstIntervalCount = Math.floor((avgShots - 1) / weapon.burstCount);
+    const burstIntervalCount = Math.floor((avgShots - 1) / burstCount);
     // 计算总间隔数（不包括连发间隔，因为已经单独计算了）
     const totalIntervalCount = (avgShots - 1) - burstIntervalCount;
     
@@ -286,19 +298,24 @@ export class TTKChart {
       afterBody: items => {
         const idx = items[0].dataIndex;
         const r = this.lastResults[idx];
+        if (!r) return [];
+        
         const currentRank = idx + 1;
         const totalWeapons = this.lastResults.length;
         
-        // 判断是否为半自动武器（连发模式）
-        const isSemiAuto = r.weapon.fireMode === 'burst' && r.weapon.burstCount && r.weapon.burstInternalROF;
+        // 判断是否为半自动武器（连发模式）- 添加空值保护
+        const isSemiAuto = r.weapon && 
+                           r.weapon.fireMode === 'burst' && 
+                           r.weapon.burstCount && 
+                           r.weapon.burstInternalROF;
         
         const tooltipLines = [
           `当前排名: ${currentRank}/${totalWeapons}`,
-          `子弹初速: ${Math.round(r.weapon.velocity)} m/s`,
-          `肉伤: ${r.weapon.flesh}`,
-          `甲伤: ${r.weapon.armor}`,
-          `射速: ${r.weapon.rof}`,
-          `平均致死枪数: ${r.avgShots.toFixed(2)}`
+          `子弹初速: ${Math.round(r.weapon?.velocity || r.weapon?._current?.velocity || 0)} m/s`,
+          `肉伤: ${r.weapon?.flesh || r.weapon?._current?.flesh || 0}`,
+          `甲伤: ${r.weapon?.armor || r.weapon?._current?.armor || 0}`,
+          `射速: ${r.weapon?.rof || r.weapon?._current?.rof || 0}`,
+          `平均致死枪数: ${(r.avgShots || 0).toFixed(2)}`
         ];
         
         // 半自动武器时显示连发间隔和内部射速

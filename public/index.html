@@ -115,28 +115,108 @@
     <canvas id="distanceChart" width="800" height="400"></canvas>
   </div>
 
-  <table id="attachmentTable">
-    <thead>
-      <tr>
-        <th>武器</th>
-        <th>类型</th>
-        <th>射速</th>
-        <th>初速</th>
-        <th>射程</th>
-        <th>基础伤害</th>
-        <th>护甲伤害</th>
-        <th>部位倍率</th>
-        <th>枪管</th>
-        <th>枪口</th>
-        <th>子弹类型</th>
-        <th>命中率</th>
-        <th>枪口初速精校</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <!-- 武器数据编辑提示 -->
+  <div class="data-edit-tip">
+    <strong>💡 提示：</strong>
+    <span style="color: #1565c0;">左侧"原始"列可编辑，右侧"当前"列为计算值（只读）</span>
+    <span class="tip-sub">
+      📌 修改原始数据后，当前列会根据枪管/枪口/精校自动重新计算
+    </span>
+  </div>
 
-  <!-- <script type="module" src="./bundle.js"></script> -->
+  <!-- 表格容器 - 添加 overflow-x: auto 以支持水平滚动 -->
+  <div style="overflow-x: auto; width: 100%;">
+    <table id="attachmentTable">
+      <thead>
+        <tr>
+          <th rowspan="2">武器</th>
+          <th rowspan="2">类型</th>
+          <th colspan="2">射速</th>
+          <th colspan="2">初速</th>
+          <th colspan="2">射程</th>
+          <th colspan="2">基础伤害</th>
+          <th colspan="2">护甲伤害</th>
+          <th colspan="2">部位倍率</th>
+          <th rowspan="2">部位伤害</th>
+          <th rowspan="2">枪管</th>
+          <th rowspan="2">枪口</th>
+          <th rowspan="2">子弹类型</th>
+          <th rowspan="2">命中率</th>
+          <th rowspan="2">枪口初速精校</th>
+          <th rowspan="2">操作</th>
+        </tr>
+        <tr>
+          <th class="sub-header">原始</th>
+          <th class="sub-header">当前</th>
+          <th class="sub-header">原始</th>
+          <th class="sub-header">当前</th>
+          <th class="sub-header">原始</th>
+          <th class="sub-header">当前</th>
+          <th class="sub-header">原始</th>
+          <th class="sub-header">当前</th>
+          <th class="sub-header">原始</th>
+          <th class="sub-header">当前</th>
+          <th class="sub-header">原始</th>
+          <th class="sub-header">当前</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- 新增枪械按钮区域 -->
+  <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+    <button id="addWeaponBtn" style="background-color: #4caf50; color: #fff; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; transition: background-color 0.2s;">
+      ➕ 新增枪械
+    </button>
+    <span style="font-size: 0.85rem; color: #666;">点击后在表格底部添加新行，填写数据后点击"确认添加"保存</span>
+  </div>
+
+  <!-- 数据管理提示 -->
+  <div class="data-management-tip">
+    <span>💾 数据自动保存在浏览器本地</span>
+    <span>📤 点击"导出数据"可备份为JSON文件</span>
+    <span>📥 点击"导入数据"可恢复备份</span>
+    <span>🔄 点击"重置为默认"恢复原始数据</span>
+  </div>
+
+  <!-- 新增枪械按钮的JavaScript事件绑定 -->
+  <script>
+    // 等待DOM加载完成后绑定新增枪械按钮事件
+    document.addEventListener('DOMContentLoaded', function() {
+      const addWeaponBtn = document.getElementById('addWeaponBtn');
+      if (addWeaponBtn) {
+        addWeaponBtn.addEventListener('click', function() {
+          // 找到新增行
+          const addRow = document.getElementById('addWeaponRow');
+          if (addRow) {
+            // 如果已经存在，滚动到该行并聚焦第一个输入框
+            addRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const firstInput = addRow.querySelector('input');
+            if (firstInput) {
+              firstInput.focus();
+            }
+          } else {
+            // 如果不存在，重新渲染表格以显示新增行
+            if (window.app && window.app.domController) {
+              window.app.domController.renderAttachmentTable();
+              setTimeout(function() {
+                const newAddRow = document.getElementById('addWeaponRow');
+                if (newAddRow) {
+                  newAddRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  const firstInput = newAddRow.querySelector('input');
+                  if (firstInput) {
+                    firstInput.focus();
+                  }
+                }
+              }, 100);
+            }
+          }
+        });
+      }
+    });
+  </script>
+
   <script src="./bundle.js"></script>
 </body>
 

@@ -6,8 +6,12 @@ export const muzzles = [
   { name: '冲锋枪回声消音器', mult: 0.30 }
 ];
 
-// 武器数据
-export const weapons = [
+/**
+ * 默认武器数据（备用数据）
+ * 当 public/weapons.json 加载失败时使用此数据作为 fallback
+ * 注意：Infinity 在 JSON 中不支持，所以此处保留 Infinity 用于 JS 环境
+ */
+export const defaultWeapons = [
     {
       name: 'SR-3M',
       type: '冲锋枪',
