@@ -41,29 +41,53 @@ export class WeaponStorage {
   }
 
   /**
-   * 序列化武器对象（处理 Infinity）
+   * 序列化武器对象（处理 Infinity 和特殊值）
    * @param {Object} weapon - 武器对象
    * @returns {Object} 序列化后的武器对象
    */
   serializeWeapon(weapon) {
     const serialized = { ...weapon };
+    
+    // 处理主 ranges
     if (serialized.ranges) {
       serialized.ranges = serialized.ranges.map(r => 
         r === Infinity ? 'Infinity' : r
       );
     }
-    // 处理 barrels 中的 ranges（如果有）
+    
+    // 处理 barrels 中的嵌套数据
     if (Array.isArray(serialized.barrels)) {
       serialized.barrels = serialized.barrels.map(barrel => {
         const b = { ...barrel };
+        
+        // 处理 barrel 中的 ranges
         if (Array.isArray(b.ranges)) {
           b.ranges = b.ranges.map(r => 
             r === Infinity ? 'Infinity' : r
           );
         }
+        
+        // 处理 barrel 中的 decays
+        if (Array.isArray(b.decays)) {
+          b.decays = b.decays.map(d => 
+            d === Infinity ? 'Infinity' : d
+          );
+        }
+        
+        // 处理 barrel 中的 partMultAdd（保持原样，因为是 JSON 对象）
+        // 不需要特殊处理
+        
         return b;
       });
     }
+    
+    // 处理 decays
+    if (Array.isArray(serialized.decays)) {
+      serialized.decays = serialized.decays.map(d => 
+        d === Infinity ? 'Infinity' : d
+      );
+    }
+    
     return serialized;
   }
 
@@ -74,23 +98,102 @@ export class WeaponStorage {
    */
   deserializeWeapon(weapon) {
     const deserialized = { ...weapon };
+    
+    // 恢复主 ranges
     if (deserialized.ranges) {
       deserialized.ranges = deserialized.ranges.map(r => 
         r === 'Infinity' ? Infinity : r
       );
     }
-    // 处理 barrels 中的 ranges（如果有）
+    
+    // 恢复 barrels 中的嵌套数据
     if (Array.isArray(deserialized.barrels)) {
       deserialized.barrels = deserialized.barrels.map(barrel => {
         const b = { ...barrel };
+        
+        // 恢复 barrel 中的 ranges
         if (Array.isArray(b.ranges)) {
           b.ranges = b.ranges.map(r => 
             r === 'Infinity' ? Infinity : r
           );
         }
+        
+        // 恢复 barrel 中的 decays
+        if (Array.isArray(b.decays)) {
+          b.decays = b.decays.map(d => 
+            d === 'Infinity' ? Infinity : d
+          );
+        }
+        
+        // 恢复 barrel 中的 rangeMult（确保是数字）
+        if (b.rangeMult !== undefined && typeof b.rangeMult === 'string') {
+          b.rangeMult = parseFloat(b.rangeMult) || 1.0;
+        }
+        
+        // 恢复 barrel 中的 rangeAdd
+        if (b.rangeAdd !== undefined && typeof b.rangeAdd === 'string') {
+          b.rangeAdd = parseFloat(b.rangeAdd) || 0;
+        }
+        
+        // 恢复 barrel 中的 velocityMult
+        if (b.velocityMult !== undefined && typeof b.velocityMult === 'string') {
+          b.velocityMult = parseFloat(b.velocityMult) || 1.0;
+        }
+        
+        // 恢复 barrel 中的 velocityAdd
+        if (b.velocityAdd !== undefined && typeof b.velocityAdd === 'string') {
+          b.velocityAdd = parseFloat(b.velocityAdd) || 0;
+        }
+        
+        // 恢复 barrel 中的 rofMult
+        if (b.rofMult !== undefined && typeof b.rofMult === 'string') {
+          b.rofMult = parseFloat(b.rofMult) || 1.0;
+        }
+        
+        // 恢复 barrel 中的 damageBonus
+        if (b.damageBonus !== undefined && typeof b.damageBonus === 'string') {
+          b.damageBonus = parseFloat(b.damageBonus) || 0;
+        }
+        
+        // 恢复 barrel 中的 armorDamageBonus
+        if (b.armorDamageBonus !== undefined && typeof b.armorDamageBonus === 'string') {
+          b.armorDamageBonus = parseFloat(b.armorDamageBonus) || 0;
+        }
+        
+        // 恢复 barrel 中的 triggerDelayDelta
+        if (b.triggerDelayDelta !== undefined && typeof b.triggerDelayDelta === 'string') {
+          b.triggerDelayDelta = parseFloat(b.triggerDelayDelta) || 0;
+        }
+        
+        // 恢复 barrel 中的 burstCount
+        if (b.burstCount !== undefined && typeof b.burstCount === 'string') {
+          b.burstCount = parseInt(b.burstCount) || 3;
+        }
+        
+        // 恢复 barrel 中的 burstInternalROF
+        if (b.burstInternalROF !== undefined && typeof b.burstInternalROF === 'string') {
+          b.burstInternalROF = parseInt(b.burstInternalROF) || 800;
+        }
+        
+        // 恢复 barrel 中的 burstInterval
+        if (b.burstInterval !== undefined && typeof b.burstInterval === 'string') {
+          b.burstInterval = parseFloat(b.burstInterval) || 0.1;
+        }
+        
+        // 恢复 barrel 中的 partMultAdd（JSON 对象，直接保留）
+        // 不需要额外处理
+        
         return b;
       });
     }
+    
+    // 恢复 decays
+    if (Array.isArray(deserialized.decays)) {
+      deserialized.decays = deserialized.decays.map(d => 
+        d === 'Infinity' ? Infinity : d
+      );
+    }
+    
     return deserialized;
   }
 

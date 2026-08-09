@@ -98,8 +98,11 @@ export class ViewRenderer {
         <td><input type="number" data-weapon="${idx}" class="hitRateInput editable-input" min="0" max="1" step="0.01" value="${hitRateValue}" style="width:50px;border:1px solid #ddd;border-radius:3px;padding:2px 4px;background:#fafafa;font-size:inherit;" /></td>
         <!-- 枪口初速精校 -->
         <td>${this.createVelocityPrecisionSlider(idx, false, 0.09)}</td>
-        <!-- 操作按钮 -->
-        <td>${this.createActionButton(idx, 'add', onAddClone)}</td>
+        <!-- 操作按钮：添加副本 + 编辑枪管 -->
+        <td>
+          ${this.createActionButton(idx, 'add', onAddClone)}
+          <button class="edit-barrel-btn" data-weapon="${idx}" title="编辑枪管">🔧</button>
+        </td>
       `;
       tbody.appendChild(tr);
     });
@@ -534,6 +537,26 @@ export class ViewRenderer {
         });
       });
     }
+  }
+
+  /**
+   * 绑定编辑枪管按钮事件
+   * @param {Function} onEditBarrel - 编辑枪管回调，传递 weaponIndex
+   */
+  bindBarrelEditListeners(onEditBarrel) {
+    const editButtons = document.querySelectorAll('.edit-barrel-btn');
+    editButtons.forEach(button => {
+      // 移除旧监听器，避免重复绑定
+      button.removeEventListener('click', this._barrelEditHandler);
+      // 保存新监听器引用
+      this._barrelEditHandler = (e) => {
+        const weaponIndex = parseInt(e.target.dataset.weapon);
+        if (onEditBarrel && !isNaN(weaponIndex)) {
+          onEditBarrel(weaponIndex);
+        }
+      };
+      button.addEventListener('click', this._barrelEditHandler);
+    });
   }
 
   /**

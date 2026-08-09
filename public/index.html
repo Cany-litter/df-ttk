@@ -12,7 +12,6 @@
 
 <body>
   <div class="title-container">
-    <!-- <img src="./assets/title.png" alt="TTK计算器标题" class="title-image"> -->
     <h2>TTK计算器</h2>
   </div>
   
@@ -178,6 +177,134 @@
     <span>📤 点击"导出数据"可备份为JSON文件</span>
     <span>📥 点击"导入数据"可恢复备份</span>
     <span>🔄 点击"重置为默认"恢复原始数据</span>
+  </div>
+
+  <!-- ==================== 枪管编辑弹窗 ==================== -->
+  <div id="barrelEditorModal" class="modal" style="display:none;">
+    <div class="modal-content modal-large">
+      <div class="modal-header">
+        <h3>编辑枪管 - <span id="barrelEditorWeaponName"></span></h3>
+        <span class="modal-close" id="barrelEditorClose">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div id="barrelEditorContainer">
+          <!-- 枪管列表将动态渲染到这里 -->
+          <div class="empty-barrel-msg">加载中...</div>
+        </div>
+        <div class="barrel-editor-actions">
+          <button id="addBarrelBtn" class="btn-primary">+ 新增枪管</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="saveBarrelBtn" class="btn-success">💾 保存</button>
+        <button id="cancelBarrelBtn" class="btn-secondary">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 新增枪管弹窗 ==================== -->
+  <div id="addBarrelModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:560px;">
+      <div class="modal-header">
+        <h3>新增枪管</h3>
+        <span class="modal-close" id="addBarrelModalClose">&times;</span>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>枪管名称 <span class="required">*</span></label>
+          <input type="text" id="newBarrelName" placeholder="如: 长枪管" />
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label>射程倍率 (rangeMult)</label>
+            <input type="number" id="newBarrelRangeMult" step="0.01" value="1.0" />
+            <span class="hint">基础射程倍率</span>
+          </div>
+          <div class="form-group half">
+            <label>射程增量 (rangeAdd)</label>
+            <input type="number" id="newBarrelRangeAdd" step="0.01" value="0" />
+            <span class="hint">额外增加射程</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label>初速倍率 (velocityMult)</label>
+            <input type="number" id="newBarrelVelocityMult" step="0.01" value="1.0" />
+            <span class="hint">初速 × (rangeMult + muzzleMult) × velocityMult</span>
+          </div>
+          <div class="form-group half">
+            <label>初速增量 (velocityAdd)</label>
+            <input type="number" id="newBarrelVelocityAdd" step="1" value="0" />
+            <span class="hint">初速直接增加量</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label>射速倍率 (rofMult)</label>
+            <input type="number" id="newBarrelRofMult" step="0.01" value="1.0" />
+          </div>
+          <div class="form-group half">
+            <label>扳机延迟增量 (triggerDelayDelta)</label>
+            <input type="number" id="newBarrelTriggerDelayDelta" step="1" value="0" />
+            <span class="hint">单位: 毫秒</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group half">
+            <label>肉伤加成 (damageBonus)</label>
+            <input type="number" id="newBarrelDamageBonus" step="0.1" value="0" />
+          </div>
+          <div class="form-group half">
+            <label>甲伤加成 (armorDamageBonus)</label>
+            <input type="number" id="newBarrelArmorDamageBonus" step="0.1" value="0" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>自定义射程 (ranges)</label>
+          <input type="text" id="newBarrelRanges" placeholder="40,70,∞,∞" value="" />
+          <span class="hint">留空则使用武器默认射程 × 倍率</span>
+        </div>
+        <div class="form-group">
+          <label>自定义衰减 (decays)</label>
+          <input type="text" id="newBarrelDecays" placeholder="1.0,0.85,0.7,0.7,0.7" value="" />
+          <span class="hint">留空则使用武器默认衰减</span>
+        </div>
+        <div class="form-group">
+          <label>部位倍率加成 (partMultAdd)</label>
+          <input type="text" id="newBarrelPartMultAdd" placeholder='{"head":0.1,"chest":0.05}' value="" />
+          <span class="hint">JSON格式，如 {"head":0.1,"chest":0.05}</span>
+        </div>
+        <div class="form-group">
+          <label>开火模式 (fireMode)</label>
+          <select id="newBarrelFireMode">
+            <option value="">继承武器</option>
+            <option value="auto">全自动</option>
+            <option value="burst">连发</option>
+          </select>
+        </div>
+        <div id="newBarrelBurstFields" style="display:none;">
+          <div class="form-row">
+            <div class="form-group half">
+              <label>连发数量 (burstCount)</label>
+              <input type="number" id="newBarrelBurstCount" step="1" value="3" />
+            </div>
+            <div class="form-group half">
+              <label>连发内部射速 (burstInternalROF)</label>
+              <input type="number" id="newBarrelBurstInternalROF" step="1" value="800" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>连发间隔 (burstInterval)</label>
+            <input type="number" id="newBarrelBurstInterval" step="0.001" value="0.1" />
+            <span class="hint">单位: 秒</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="confirmAddBarrelBtn" class="btn-success">确认添加</button>
+        <button id="cancelAddBarrelBtn" class="btn-secondary">取消</button>
+      </div>
+    </div>
   </div>
 
   <!-- 新增枪械按钮的JavaScript事件绑定 -->

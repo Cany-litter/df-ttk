@@ -2,6 +2,7 @@ import { WeaponManager } from '../core/WeaponManager.js';
 import { ViewRenderer } from './ViewRenderer.js';
 import { formatMultipliers } from '../utils/formatters.js';
 import { CacheManager } from '../utils/cacheManager.js';
+import { BarrelEditor } from './BarrelEditor.js';
 
 /**
  * DOM控制器
@@ -14,6 +15,9 @@ export class DOMController {
     this.cacheManager = new CacheManager();
     this.isUpdating = false;
     
+    // 初始化枪管编辑器
+    this.barrelEditor = null;
+    
     // 加载武器数据（直接从 WeaponManager 获取）
     // 此时数据应该已经由 main.js 加载完成
     this.loadWeaponData();
@@ -25,6 +29,11 @@ export class DOMController {
     
     // 设置参数自动保存（只保存页面参数，不保存武器数据）
     this.setupAutoSave();
+    
+    // 延迟初始化枪管编辑器（等待DOM完全渲染）
+    setTimeout(() => {
+      this.setupBarrelEditor();
+    }, 100);
   }
 
   /**
@@ -298,9 +307,32 @@ export class DOMController {
     // 绑定新增枪械的确认和取消事件
     this.setupAddWeaponListeners();
     
+    // 绑定枪管编辑按钮事件
+    this.viewRenderer.bindBarrelEditListeners((weaponIndex) => {
+      if (this.barrelEditor) {
+        this.barrelEditor.openEditor(weaponIndex);
+      }
+    });
+    
     setTimeout(() => {
       this.updateWeaponStats();
     }, 0);
+  }
+
+  /**
+   * 初始化枪管编辑器
+   */
+  setupBarrelEditor() {
+    this.barrelEditor = new BarrelEditor(
+      this.weaponManager,
+      this.viewRenderer,
+      () => {
+        // 数据变化回调 - 刷新表格和枪管选择下拉框
+        this.renderAttachmentTable();
+        this.updateGlobalBarrelSelections();
+      }
+    );
+    console.log('🔧 枪管编辑器已初始化');
   }
 
   /**
