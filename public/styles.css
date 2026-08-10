@@ -1129,6 +1129,77 @@ button:hover {
   background: #a8a8a8;
 }
 
+/* ==================== 距离图表控制区样式 ==================== */
+
+.distance-chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 8px 0;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.distance-chart-controls label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  user-select: none;
+  width: auto;
+}
+
+.distance-chart-controls label input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+.distance-chart-controls .divider {
+  color: #ddd;
+}
+
+.distance-chart-controls .label-text {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.distance-chart-controls .btn-export {
+  padding: 4px 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.2s, transform 0.15s;
+}
+
+.distance-chart-controls .btn-export:hover {
+  transform: scale(1.02);
+}
+
+.distance-chart-controls .btn-export:active {
+  transform: scale(0.97);
+}
+
+.distance-chart-controls .btn-json {
+  background: #4caf50;
+  color: #fff;
+}
+
+.distance-chart-controls .btn-json:hover {
+  background: #388e3c;
+}
+
+.distance-chart-controls .hint-text {
+  font-size: 0.8rem;
+  color: #999;
+  margin-left: auto;
+}
+
 /* ==================== 响应式调整 ==================== */
 
 @media (max-width: 1400px) {
@@ -1176,5 +1247,16 @@ button:hover {
     font-size: 11px;
     min-width: 30px;
     padding: 2px 3px;
+  }
+
+  .distance-chart-controls {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  .distance-chart-controls .hint-text {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
   }
 }

@@ -53,6 +53,34 @@ export class EventHandler {
         }
       });
     }
+
+    // 绑定距离图表JSON导出按钮事件
+    this.bindDistanceExportHandlers();
+  }
+
+  /**
+   * 绑定距离图表JSON导出按钮事件
+   */
+  bindDistanceExportHandlers() {
+    // JSON 导出
+    const jsonBtn = document.getElementById('exportJSONBtn');
+    if (jsonBtn) {
+      // 移除旧监听器，避免重复绑定
+      jsonBtn.removeEventListener('click', this._jsonExportHandler);
+      this._jsonExportHandler = () => {
+        try {
+          if (window.app?.chartManager?.distanceChart) {
+            window.app.chartManager.distanceChart.exportAsJSON();
+          } else {
+            alert('⚠️ 请先生成折线图！');
+          }
+        } catch (error) {
+          console.error('JSON导出失败:', error);
+          alert('❌ JSON导出失败: ' + error.message);
+        }
+      };
+      jsonBtn.addEventListener('click', this._jsonExportHandler);
+    }
   }
 
   /**
@@ -61,6 +89,7 @@ export class EventHandler {
   unbindEventHandlers() {
     const calcBtn = document.getElementById('calcBtn');
     const distChartBtn = document.getElementById('distChartBtn');
+    const globalBarrelTypeSelect = document.getElementById('globalBarrelType');
 
     if (calcBtn) {
       calcBtn.removeEventListener('click', this.handlers.get('calc'));
@@ -68,6 +97,16 @@ export class EventHandler {
 
     if (distChartBtn) {
       distChartBtn.removeEventListener('click', this.handlers.get('distChart'));
+    }
+
+    if (globalBarrelTypeSelect) {
+      globalBarrelTypeSelect.removeEventListener('change', this.handlers.get('globalBarrelChange'));
+    }
+
+    // 解绑JSON导出按钮
+    const jsonBtn = document.getElementById('exportJSONBtn');
+    if (jsonBtn && this._jsonExportHandler) {
+      jsonBtn.removeEventListener('click', this._jsonExportHandler);
     }
 
     this.handlers.clear();

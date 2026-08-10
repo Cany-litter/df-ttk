@@ -109,6 +109,17 @@
   <div class="canvas-container">
     <canvas id="ttkChart" width="800" height="400"></canvas>
   </div>
+
+  <!-- 距离图表控制区 -->
+  <div class="distance-chart-controls">
+    <label for="showAllWeapons">
+      <input type="checkbox" id="showAllWeapons"> 显示全部枪械
+    </label>
+    <span class="divider">|</span>
+    <span class="label-text">导出数据:</span>
+    <button id="exportJSONBtn" class="btn-export btn-json">📄 JSON</button>
+    <span class="hint-text">💡 勾选"显示全部"后重新生成折线图生效</span>
+  </div>
   
   <div class="canvas-container">
     <canvas id="distanceChart" width="800" height="400"></canvas>
