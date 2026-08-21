@@ -21,8 +21,10 @@ async function build() {
       }
     });
 
-    // 拷贝 public 根文件（包含 index.html, styles.css, weapons.json）
-    const publicFiles = ['index.html', 'styles.css', 'weapons.json'];
+    console.log('✅ 已打包 bundle.js');
+
+    // ==================== 复制 public 根文件 ====================
+    const publicFiles = ['index.html', 'weapons.json', 'prices.json'];
     publicFiles.forEach(file => {
       const srcPath = path.join('public', file);
       const dstPath = path.join('dist', file);
@@ -34,7 +36,21 @@ async function build() {
       }
     });
 
-    // 递归拷贝 assets 到 dist/assets（包含 libs、图片、Version.txt 等）
+    // ==================== 复制 public/css 目录 ====================
+    const srcCss = path.resolve('public/css');
+    const dstCss = path.resolve('dist/css');
+    if (fs.existsSync(srcCss)) {
+      // 清空已有 dist/css
+      if (fs.existsSync(dstCss)) {
+        fs.rmSync(dstCss, { recursive: true, force: true });
+      }
+      fs.cpSync(srcCss, dstCss, { recursive: true });
+      console.log('✅ 已复制 css/ 目录');
+    } else {
+      console.warn('⚠️ public/css 目录不存在，跳过复制');
+    }
+
+    // ==================== 复制 assets 目录 ====================
     const srcAssets = path.resolve('assets');
     const dstAssets = path.resolve('dist/assets');
 
@@ -42,11 +58,16 @@ async function build() {
       // 清空已有 dist/assets
       fs.rmSync(dstAssets, { recursive: true, force: true });
     }
-    fs.cpSync(srcAssets, dstAssets, { recursive: true });
+    if (fs.existsSync(srcAssets)) {
+      fs.cpSync(srcAssets, dstAssets, { recursive: true });
+      console.log('✅ 已复制 assets/ 目录');
+    } else {
+      console.warn('⚠️ assets 目录不存在，跳过复制');
+    }
 
-    console.log('Build completed! Files generated in dist/ directory.');
+    console.log('🎉 Build completed! Files generated in dist/ directory.');
   } catch (error) {
-    console.error('Build failed:', error);
+    console.error('❌ Build failed:', error);
     process.exit(1);
   }
 }

@@ -2,11 +2,11 @@ import {
   TIME_UNITS, 
   CHART_CONFIG, 
   SIMULATION_CONFIG 
-} from '../../constants/config.js';
-import { SimulationEngine } from '../../core/SimulationEngine.js';
-import { BulletStrategyFactory } from '../../core/BulletStrategy.js';
-import { formatTime } from '../../utils/formatters.js';
-import { resetSeed } from '../../utils/rng.js';
+} from '../core/config.js';
+import { SimulationEngine } from '../core/SimulationEngine.js';
+import { BulletStrategyFactory } from '../core/BulletStrategy.js';
+import { formatTime } from '../utils/formatters.js';
+import { resetSeed } from '../utils/rng.js';
 
 /**
  * 垂直线插件
@@ -36,6 +36,10 @@ const verticalLinePlugin = {
 
 /**
  * 距离折线图专用类
+ * 
+ * 适配新的 configs 结构：
+ * - 从 configs 读取命中率曲线、子弹类型
+ * - 使用 configs 进行距离模拟
  */
 export class DistanceChart {
   constructor() {
@@ -46,10 +50,14 @@ export class DistanceChart {
     this.lastParams = null;
     this.lastArmed = null;
     this.lastAttachments = null;
+    this.lastConfigs = null;
   }
 
   /**
    * 更新距离图表
+   * @param {Array} armed - 应用附件后的武器数据
+   * @param {Array} attachments - 附件配置数组
+   * @param {Object} params - 页面参数
    */
   update(armed, attachments, params) {
     resetSeed();
@@ -57,8 +65,21 @@ export class DistanceChart {
     const showAllCheckbox = document.getElementById('showAllWeapons');
     this.showAllWeapons = showAllCheckbox ? showAllCheckbox.checked : false;
     
+    // 获取 configs（从 armed 中的武器对象提取）
+    const configs = armed.map((w, idx) => {
+      // 从原始武器中获取 configs
+      const weapons = window.app?.weaponManager?.getWeapons() || [];
+      const weapon = weapons[idx];
+      if (weapon && weapon.configs && weapon.configs.length > 0) {
+        return weapon.configs[0];
+      }
+      return null;
+    });
+    
+    this.lastConfigs = configs;
+    
     const distances = Array.from({ length: 101 }, (_, i) => i);
-    const stats = this.calculateDistanceStats(armed, attachments, params, distances);
+    const stats = this.calculateDistanceStats(armed, attachments, params, distances, configs);
     stats.sort((a, b) => a.avg35 - b.avg35);
 
     // 保存数据供导出使用
@@ -73,15 +94,60 @@ export class DistanceChart {
 
   /**
    * 计算距离统计数据
+   * @param {Array} armed - 应用附件后的武器数据
+   * @param {Array} attachments - 附件配置数组
+   * @param {Object} params - 页面参数
+   * @param {Array} distances - 距离数组
+   * @param {Array} configs - 改枪配置数组
+   * @returns {Array} 距离统计数据
    */
-  calculateDistanceStats(armed, attachments, params, distances) {
+  calculateDistanceStats(armed, attachments, params, distances, configs = null) {
     return armed.map((w, idx) => {
-      const selectedBulletType = attachments[idx].bulletType;
-      let realBulletKey = SimulationEngine.getRealBulletKey(selectedBulletType, w, params);
+      const selectedBulletType = attachments[idx]?.bulletType || null;
+      const config = (configs && configs[idx]) ? configs[idx] : null;
       
+      // 获取真实子弹类型
+      let realBulletKey = selectedBulletType;
+      if (!realBulletKey && config && config.bulletType !== undefined) {
+        realBulletKey = config.bulletType;
+      }
+      // 如果还没有，使用 params.bulletLevel
+      if (!realBulletKey) {
+        realBulletKey = params.bulletLevel;
+      }
+      
+      // 检查子弹是否被武器允许
+      const allowed = w.allowedBullets || [];
+      if (!allowed.includes(realBulletKey) && realBulletKey !== params.bulletLevel) {
+        // 尝试使用 params.bulletLevel
+        if (allowed.includes(params.bulletLevel)) {
+          realBulletKey = params.bulletLevel;
+        } else {
+          // 使用第一个允许的子弹
+          realBulletKey = allowed.length > 0 ? allowed[0] : params.bulletLevel;
+        }
+      }
+      
+      // 验证真实子弹类型
       if (!realBulletKey) return null;
       
-      const hitRate = attachments[idx].hitRate != null ? attachments[idx].hitRate : params.hitRate;
+      // 尝试从 bulletData 验证
+      try {
+        const { bulletData } = require('../core/bullets.js');
+        if (!bulletData[realBulletKey]) {
+          // 如果子弹数据不存在，尝试使用 params.bulletLevel
+          const { bulletData: bd } = require('../core/bullets.js');
+          if (bd[params.bulletLevel]) {
+            realBulletKey = params.bulletLevel;
+          } else {
+            return null;
+          }
+        }
+      } catch (e) {
+        // 如果验证失败，继续尝试
+      }
+      
+      const hitRate = attachments[idx]?.hitRate != null ? attachments[idx].hitRate : params.hitRate;
       const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
       
       const validRanges = w.ranges.filter(r => r !== Infinity && r <= CHART_CONFIG.MAX_DISTANCE);
@@ -91,7 +157,7 @@ export class DistanceChart {
       
       keyDistances.forEach(distance => {
         const simParams = { ...params, distance, hitRate, bulletLevel: realBulletKey };
-        const { avgTime } = SimulationEngine.calculateAvgStats(w, simParams, SIMULATION_CONFIG.DISTANCE_SIM_COUNT, strategy);
+        const { avgTime } = SimulationEngine.calculateAvgStats(w, simParams, SIMULATION_CONFIG.DISTANCE_SIM_COUNT, strategy, config);
         const trigger = params.triggerDelayEnable ? w.triggerDelay / TIME_UNITS.SECONDS_TO_MS : 0;
         simulationCache.set(distance, avgTime + trigger);
       });
@@ -114,6 +180,8 @@ export class DistanceChart {
 
   /**
    * 渲染距离图表
+   * @param {Array} distances - 距离数组
+   * @param {Array} stats - 统计数据
    */
   renderChart(distances, stats) {
     const maxDisplay = this.showAllWeapons ? stats.length : CHART_CONFIG.TOP_WEAPONS_COUNT;
@@ -136,6 +204,11 @@ export class DistanceChart {
     if (this.chart) this.chart.destroy();
     
     const distCtx = this.getChartContext('distanceChart');
+    if (!distCtx) {
+      console.warn('距离图表 Canvas 未找到');
+      return;
+    }
+    
     this.chart = new Chart(distCtx, {
       type: 'line',
       data: { labels: distances, datasets },
@@ -182,7 +255,13 @@ export class DistanceChart {
   }
 
   /**
-   * 使用公式计算TTK
+   * 使用公式计算TTK（用于距离图表外推）
+   * @param {Object} weapon - 武器对象
+   * @param {number} distance - 距离
+   * @param {Object} params - 页面参数
+   * @param {Object} strategy - 子弹策略
+   * @param {Map} simulationCache - 模拟缓存
+   * @returns {number} TTK值
    */
   calculateTTKByFormula(weapon, distance, params, strategy, simulationCache) {
     const keys = Array.from(simulationCache.keys()).filter(k => k <= distance);
@@ -203,9 +282,16 @@ export class DistanceChart {
 
   /**
    * 获取图表上下文
+   * @param {string} chartId - 图表元素ID
+   * @returns {CanvasRenderingContext2D|null} Canvas上下文
    */
   getChartContext(chartId) {
-    return document.getElementById(chartId).getContext('2d');
+    const canvas = document.getElementById(chartId);
+    if (!canvas) {
+      console.warn(`图表元素 #${chartId} 未找到`);
+      return null;
+    }
+    return canvas.getContext('2d');
   }
 
   /**
@@ -220,9 +306,27 @@ export class DistanceChart {
 
   /**
    * 切换显示模式
+   * @param {boolean} showAll - 是否显示全部武器
    */
   setShowAllWeapons(showAll) {
     this.showAllWeapons = showAll;
+  }
+
+  /**
+   * 获取当前图表数据
+   * @returns {Object} 图表数据
+   */
+  getData() {
+    if (!this.chart) return null;
+    return this.chart.data;
+  }
+
+  /**
+   * 获取当前统计数据
+   * @returns {Array} 统计数据
+   */
+  getStats() {
+    return this.lastStats;
   }
 
   // ==================== 导出功能 ====================
@@ -232,11 +336,13 @@ export class DistanceChart {
    * @param {Array} armed - 应用附件后的武器数据
    * @param {Array} attachments - 附件配置数组
    * @param {Array} muzzles - 枪口数据
+   * @param {Array} configs - 改枪配置数组
    * @returns {Array} 表格数据数组
    */
-  getWeaponsTableData(armed, attachments, muzzles) {
+  getWeaponsTableData(armed, attachments, muzzles, configs = null) {
     return armed.map((w, idx) => {
       const attach = attachments[idx] || {};
+      const config = (configs && configs[idx]) ? configs[idx] : null;
       
       // 获取武器当前数据（应用附件后的计算值）
       const current = w._current || w;
@@ -270,17 +376,26 @@ export class DistanceChart {
         muzzleName = muzzles[muzzleIndex].name || '无';
       }
       
-      // 获取命中率
-      const hitRate = attach.hitRate !== undefined && attach.hitRate !== null 
-        ? attach.hitRate 
-        : (original.hitRate !== undefined && original.hitRate !== null ? original.hitRate : '');
+      // 获取命中率 - 从 config 读取
+      let hitRate = '';
+      if (config && config.hitRate !== undefined && config.hitRate !== null) {
+        hitRate = config.hitRate;
+      } else if (attach.hitRate !== undefined && attach.hitRate !== null) {
+        hitRate = attach.hitRate;
+      }
       
-      // 获取枪口初速精校
+      // 获取子弹类型 - 从 config 读取
+      let bulletType = '全局';
+      if (config && config.bulletType !== undefined) {
+        bulletType = config.bulletType;
+      } else if (attach.bulletType) {
+        bulletType = attach.bulletType;
+      }
+      
+      // 获取枪口初速精校 - 从 config 读取
       let velocityPrecision = '0%';
-      const precisionSlider = document.querySelector(`.velocity-precision-slider[data-weapon="${idx}"]`);
-      if (precisionSlider) {
-        const val = parseFloat(precisionSlider.value) || 0;
-        velocityPrecision = `${Math.round(val * 100)}%`;
+      if (config && config.precision !== undefined) {
+        velocityPrecision = `${Math.round(config.precision * 100)}%`;
       }
       
       return {
@@ -293,7 +408,7 @@ export class DistanceChart {
         partDamage: partDamage,
         barrel: barrelName,
         muzzle: muzzleName,
-        bulletType: attach.bulletType || '全局',
+        bulletType: bulletType,
         hitRate: hitRate,
         velocityPrecision: velocityPrecision
       };
@@ -325,22 +440,20 @@ export class DistanceChart {
         const currentTtk = ttkValues[distIdx];
         if (currentTtk === null || currentTtk === undefined) return null;
         
-        // 收集所有武器在当前距离点的TTK值（同样四舍五入到小数点后2位）
+        // 收集所有武器在当前距离点的TTK值
         const allTtks = stats.map((other) => {
           const idx = distances.indexOf(d);
           const val = other.times[idx];
           return val !== undefined ? parseFloat((val * 1000).toFixed(2)) : Infinity;
         });
         
-        // 排序并计算排名（TTK越小排名越靠前，允许并列）
+        // 排序并计算排名
         const sorted = [...allTtks].sort((a, b) => a - b);
         // 使用 findIndex 查找第一个匹配的值（处理并列排名）
         let rankIndex = sorted.findIndex(v => v === currentTtk);
-        // 如果 findIndex 找不到（浮点数精度问题），使用容差比较
         if (rankIndex === -1) {
           rankIndex = sorted.findIndex(v => Math.abs(v - currentTtk) < 0.01);
         }
-        // 如果仍然找不到，使用 indexOf 作为最后的尝试
         if (rankIndex === -1) {
           rankIndex = sorted.indexOf(currentTtk);
         }
@@ -381,6 +494,7 @@ export class DistanceChart {
     const params = this.lastParams || {};
     const armed = this.lastArmed || [];
     const attachments = this.lastAttachments || [];
+    const configs = this.lastConfigs || [];
 
     // 获取枪口数据（从 WeaponManager 获取）
     let muzzles = [];
@@ -389,7 +503,7 @@ export class DistanceChart {
     }
 
     // 1. 获取底部枪械表格数据
-    const weaponsTableData = this.getWeaponsTableData(armed, attachments, muzzles);
+    const weaponsTableData = this.getWeaponsTableData(armed, attachments, muzzles, configs);
 
     // 2. 获取每5m的TTK数据和排名
     const distanceData = this.getDistanceDataWithRanks(stats, distances, 5);
@@ -426,6 +540,8 @@ export class DistanceChart {
 
   /**
    * 通用下载方法
+   * @param {Blob} blob - 数据Blob
+   * @param {string} filename - 文件名
    */
   downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);

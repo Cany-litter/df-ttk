@@ -5,7 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>三角洲 TTK计算器</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./css/base.css">
+  <link rel="stylesheet" href="./css/tabs.css">
+  <link rel="stylesheet" href="./css/components.css">
   <script src="./assets/libs/chart.umd.min.js"></script>
   <script src="./assets/libs/chartjs-plugin-datalabels.min.js"></script>
 </head>
@@ -97,7 +99,7 @@
       <option value="none">无</option>
       <option value="longest" selected>射程最长枪管</option>
     </select>
-    <label for="hitRate">命中率:</label>
+    <label for="hitRate">统一命中率:</label>
     <input type="number" id="hitRate" value="0.85" min="0" max="1" step="0.01">
   </div>
 
@@ -125,49 +127,59 @@
     <canvas id="distanceChart" width="800" height="400"></canvas>
   </div>
 
+  <!-- ==================== Tab 导航区域 ==================== -->
+  <div class="tab-navigation">
+    <div class="tab-header">
+      <button class="tab-btn active" data-tab="basic">📋 基础属性</button>
+      <button class="tab-btn" data-tab="attachment">🔧 配件数据</button>
+      <button class="tab-btn" data-tab="price">💰 价格数据</button>
+    </div>
+    <div class="tab-content" id="tabContentContainer">
+      <!-- Tab 内容将由 JavaScript 动态渲染 -->
+      <p style="color:#999;text-align:center;padding:20px 0;">加载中...</p>
+    </div>
+  </div>
+
   <!-- 武器数据编辑提示 -->
   <div class="data-edit-tip">
     <strong>💡 提示：</strong>
-    <span style="color: #1565c0;">左侧"原始"列可编辑，右侧"当前"列为计算值（只读）</span>
+    <span style="color: #1565c0;">双击武器属性可编辑，修改后自动保存</span>
     <span class="tip-sub">
-      📌 修改原始数据后，当前列会根据枪管/枪口/精校自动重新计算
+      📌 每个武器可包含多个改枪配置（价格数据Tab中管理），基础属性在所有配置间共享
     </span>
   </div>
 
-  <!-- 表格容器 - 添加 overflow-x: auto 以支持水平滚动 -->
-  <div style="overflow-x: auto; width: 100%;">
+  <!-- ==================== 子弹管理模块 ==================== -->
+  <div class="bullet-management-wrapper">
+    <div class="bullet-management-toggle" id="bulletToggle">
+      <span class="toggle-icon">▶</span>
+      <span class="toggle-label">📦 子弹型号管理</span>
+      <span class="bullet-summary" id="bulletSummary">共 0 种子弹</span>
+    </div>
+    <div class="bullet-management-body" id="bulletManagementBody" style="display:none;">
+      <div id="bulletManagementContainer">
+        <!-- 由 JavaScript 动态渲染 -->
+        <p style="color:#999;text-align:center;padding:20px 0;">加载中...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 新增枪械表格（阶段一遗留） ==================== -->
+  <div style="margin-top: 12px; overflow-x: auto; width: 100%; display: none;" id="attachmentTableWrapper">
     <table id="attachmentTable">
       <thead>
         <tr>
-          <th rowspan="2">武器</th>
-          <th rowspan="2">类型</th>
-          <th colspan="2">射速</th>
-          <th colspan="2">初速</th>
-          <th colspan="2">射程</th>
-          <th colspan="2">基础伤害</th>
-          <th colspan="2">护甲伤害</th>
-          <th colspan="2">部位倍率</th>
-          <th rowspan="2">部位伤害</th>
-          <th rowspan="2">枪管</th>
-          <th rowspan="2">枪口</th>
-          <th rowspan="2">子弹类型</th>
-          <th rowspan="2">命中率</th>
-          <th rowspan="2">枪口初速精校</th>
-          <th rowspan="2">操作</th>
-        </tr>
-        <tr>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
+          <th>武器</th>
+          <th>类型</th>
+          <th>射速</th>
+          <th>初速</th>
+          <th>射程</th>
+          <th>基础伤害</th>
+          <th>护甲伤害</th>
+          <th>伤害衰减</th>
+          <th>部位倍率</th>
+          <th>部位伤害</th>
+          <th>操作</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -190,6 +202,15 @@
     <span>🔄 点击"重置为默认"恢复原始数据</span>
   </div>
 
+  <!-- ==================== 命中率配置弹窗 ==================== -->
+  <div id="hitRateModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:520px;">
+      <div id="hitRateModalContainer">
+        <!-- 由 JavaScript 动态渲染 -->
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== 枪管编辑弹窗 ==================== -->
   <div id="barrelEditorModal" class="modal" style="display:none;">
     <div class="modal-content modal-large">
@@ -199,7 +220,6 @@
       </div>
       <div class="modal-body">
         <div id="barrelEditorContainer">
-          <!-- 枪管列表将动态渲染到这里 -->
           <div class="empty-barrel-msg">加载中...</div>
         </div>
         <div class="barrel-editor-actions">
@@ -325,17 +345,19 @@
       const addWeaponBtn = document.getElementById('addWeaponBtn');
       if (addWeaponBtn) {
         addWeaponBtn.addEventListener('click', function() {
-          // 找到新增行
+          const wrapper = document.getElementById('attachmentTableWrapper');
+          if (wrapper) {
+            wrapper.style.display = 'block';
+          }
+          
           const addRow = document.getElementById('addWeaponRow');
           if (addRow) {
-            // 如果已经存在，滚动到该行并聚焦第一个输入框
             addRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
             const firstInput = addRow.querySelector('input');
             if (firstInput) {
               firstInput.focus();
             }
           } else {
-            // 如果不存在，重新渲染表格以显示新增行
             if (window.app && window.app.domController) {
               window.app.domController.renderAttachmentTable();
               setTimeout(function() {
@@ -349,6 +371,20 @@
                 }
               }, 100);
             }
+          }
+        });
+      }
+
+      // 子弹管理折叠切换
+      const toggle = document.getElementById('bulletToggle');
+      const body = document.getElementById('bulletManagementBody');
+      if (toggle && body) {
+        toggle.addEventListener('click', function() {
+          const isOpen = body.style.display !== 'none';
+          body.style.display = isOpen ? 'none' : 'block';
+          const icon = toggle.querySelector('.toggle-icon');
+          if (icon) {
+            icon.textContent = isOpen ? '▶' : '▼';
           }
         });
       }

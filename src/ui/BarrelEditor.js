@@ -1,6 +1,10 @@
 /**
  * 枪管编辑器
  * 负责枪管的增删改查，以及弹窗管理
+ * 
+ * 适配新的 configs 结构：
+ * - 枪管本身是武器级别的数据（所有 configs 共享）
+ * - 修改枪管后，所有 configs 自动使用新的枪管列表
  */
 export class BarrelEditor {
   constructor(weaponManager, viewRenderer, onDataChange) {
@@ -21,8 +25,7 @@ export class BarrelEditor {
   openEditor(weaponIndex) {
     this.currentWeaponIndex = weaponIndex;
 
-    const weapons = this.weaponManager.getWeapons();
-    const weapon = weapons[weaponIndex];
+    const weapon = this.weaponManager.getWeapon(weaponIndex);
     if (!weapon) {
       alert('未找到该武器');
       return;
@@ -137,8 +140,7 @@ export class BarrelEditor {
    * @param {number} index - 枪管索引
    */
   deleteBarrel(index) {
-    const weapons = this.weaponManager.getWeapons();
-    const weapon = weapons[this.currentWeaponIndex];
+    const weapon = this.getCurrentWeapon();
     if (!weapon || !weapon.barrels) return;
 
     const barrelName = weapon.barrels[index]?.name || `枪管 #${index + 1}`;
@@ -147,15 +149,33 @@ export class BarrelEditor {
     }
 
     weapon.barrels.splice(index, 1);
+    
+    // 如果删除的枪管被某个 config 选中，重置该 config 的 selectedBarrel 为 0
+    this.resetSelectedBarrels(weapon);
+    
     this.renderBarrelList(weapon);
+  }
+
+  /**
+   * 重置所有 configs 中被删除枪管的选中状态
+   * @param {Object} weapon - 武器对象
+   */
+  resetSelectedBarrels(weapon) {
+    if (!weapon.configs || weapon.configs.length === 0) return;
+    
+    const maxBarrelIndex = weapon.barrels ? weapon.barrels.length : 0;
+    weapon.configs.forEach((config, cIdx) => {
+      if (config.selectedBarrel > maxBarrelIndex) {
+        config.selectedBarrel = 0;
+      }
+    });
   }
 
   /**
    * 保存所有枪管编辑
    */
   saveBarrels() {
-    const weapons = this.weaponManager.getWeapons();
-    const weapon = weapons[this.currentWeaponIndex];
+    const weapon = this.getCurrentWeapon();
     if (!weapon) {
       alert('未找到该武器');
       return;
@@ -207,6 +227,9 @@ export class BarrelEditor {
 
     // 更新武器数据
     weapon.barrels = newBarrels;
+    
+    // 重置可能超出范围的 selectedBarrel
+    this.resetSelectedBarrels(weapon);
 
     // 关闭弹窗
     this.closeEditor();
@@ -214,11 +237,6 @@ export class BarrelEditor {
     // 触发数据变化回调
     if (this.onDataChange) {
       this.onDataChange();
-    }
-
-    // 更新武器统计显示
-    if (this.viewRenderer && typeof this.viewRenderer.updateWeaponStats === 'function') {
-      this.viewRenderer.updateWeaponStats();
     }
 
     console.log(`✅ 已保存 ${newBarrels.length} 个枪管数据`);
@@ -267,8 +285,7 @@ export class BarrelEditor {
       return;
     }
 
-    const weapons = this.weaponManager.getWeapons();
-    const weapon = weapons[this.currentWeaponIndex];
+    const weapon = this.getCurrentWeapon();
     if (!weapon) {
       alert('未找到该武器');
       return;

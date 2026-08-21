@@ -1,0 +1,574 @@
+/* ============================================================
+   base.css - 基础样式 + 布局
+   包含: body, 标题, 版本信息, 控制组, 按钮, 图表容器,
+         距离图表控制区, 响应式适配
+   ============================================================ */
+
+/* ==================== 全局基础样式 ==================== */
+body {
+  font-family: sans-serif;
+  margin: 20px;
+  position: relative;
+}
+
+/* ==================== 标题容器样式 ==================== */
+.title-container {
+  text-align: left;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.title-container h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.8rem;
+}
+
+/* ==================== 版本信息样式 ==================== */
+.version-info {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  text-align: right;
+  font-size: 0.75rem;
+  color: #666;
+  line-height: 1.2;
+}
+
+.version-info .update-date {
+  display: block;
+  color: #666;
+}
+
+.version-info .date-label {
+  color: #666;
+}
+
+.version-info .date-value {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.version-info .author {
+  display: block;
+  margin-top: 4px;
+}
+
+.version-info .author a {
+  color: #666;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.version-info .author a:hover {
+  color: #4caf50;
+  text-decoration: underline;
+}
+
+.version-info .author-icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  object-fit: contain;
+  border-radius: 2px;
+  transition: transform 0.2s ease;
+}
+
+.version-info .author a:hover .author-icon {
+  transform: scale(1.1);
+}
+
+.version-info .author-name {
+  color: #ff69b4;
+  font-weight: bold;
+}
+
+/* ==================== 控制组样式 ==================== */
+.control-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+}
+
+.control-group#distance-group {
+  white-space: nowrap;
+}
+
+fieldset.control-group {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 12px;
+  row-gap: 4px;
+  padding: 8px;
+  max-width: 340px;
+}
+
+.control-group label {
+  width: auto;
+  min-width: 45px;
+  font-size: 0.9rem;
+  margin-right: 0px;
+}
+
+.control-group select,
+.control-group input[type="number"] {
+  width: auto;
+  max-width: 50px;
+  font-size: 0.9rem;
+}
+
+#globalBarrelType {
+  min-width: 115px;
+}
+
+.control-group input[type="checkbox"] {
+  margin: 0;
+  margin-left: -10px;
+}
+
+input[type="number"] {
+  width: 60px;
+}
+
+.prob-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.prob-item label {
+  width: auto;
+}
+
+/* ==================== 按钮样式 ==================== */
+button {
+  background-color: #4caf50;
+  color: #fff;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color .2s;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+.buttons-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* ==================== 图表容器样式 ==================== */
+.canvas-container {
+  background: #fff;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+/* ==================== 距离图表控制区 ==================== */
+.distance-chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 8px 0;
+  flex-wrap: wrap;
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.distance-chart-controls label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  user-select: none;
+  width: auto;
+}
+
+.distance-chart-controls label input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+.distance-chart-controls .divider {
+  color: #ddd;
+}
+
+.distance-chart-controls .label-text {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.distance-chart-controls .btn-export {
+  padding: 4px 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.2s, transform 0.15s;
+}
+
+.distance-chart-controls .btn-export:hover {
+  transform: scale(1.02);
+}
+
+.distance-chart-controls .btn-export:active {
+  transform: scale(0.97);
+}
+
+.distance-chart-controls .btn-json {
+  background: #4caf50;
+  color: #fff;
+}
+
+.distance-chart-controls .btn-json:hover {
+  background: #388e3c;
+}
+
+.distance-chart-controls .hint-text {
+  font-size: 0.8rem;
+  color: #999;
+  margin-left: auto;
+}
+
+/* ==================== 数据管理提示 ==================== */
+.data-management-tip {
+  margin-top: 10px;
+  padding: 8px 14px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #666;
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.data-management-tip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==================== 数据编辑提示 ==================== */
+.data-edit-tip {
+  margin: 12px 0 8px 0;
+  padding: 10px 14px;
+  background: #e3f2fd;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #1565c0;
+  border-left: 4px solid #2196F3;
+}
+
+.data-edit-tip strong {
+  color: #0d47a1;
+}
+
+.data-edit-tip .tip-sub {
+  font-size: 0.85rem;
+  color: #1976d2;
+  display: block;
+  margin-top: 4px;
+}
+
+/* ==================== 滚动条美化 ==================== */
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ==================== 响应式适配 ==================== */
+@media (max-width: 1400px) {
+  .modal-content.modal-large {
+    width: 96%;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 98%;
+    max-height: 95vh;
+  }
+  
+  .modal-body {
+    padding: 10px 12px;
+  }
+  
+  .modal-header {
+    padding: 10px 16px;
+  }
+  
+  .modal-footer {
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .barrel-editor-table {
+    font-size: 11px;
+  }
+  
+  .barrel-editor-table th,
+  .barrel-editor-table td {
+    padding: 3px 4px;
+  }
+  
+  .barrel-editor-table input[type="text"],
+  .barrel-editor-table input[type="number"] {
+    font-size: 11px;
+    min-width: 30px;
+    padding: 2px 3px;
+  }
+
+  .distance-chart-controls {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  .distance-chart-controls .hint-text {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .tab-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .bullet-management-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bullet-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .bullet-search-input {
+    width: 100%;
+  }
+
+  .bullet-management-table {
+    font-size: 0.8rem;
+  }
+
+  .bullet-management-table th,
+  .bullet-management-table td {
+    padding: 4px 6px;
+  }
+
+  .basic-tab-table {
+    font-size: 0.8rem;
+  }
+
+  .basic-tab-table td,
+  .basic-tab-table th {
+    padding: 4px 6px;
+  }
+
+  .attachment-tab-table {
+    font-size: 0.8rem;
+  }
+
+  .attachment-tab-table td,
+  .attachment-tab-table th {
+    padding: 4px 6px;
+  }
+
+  .attachment-tab-table select {
+    font-size: 0.75rem;
+    padding: 2px 3px;
+  }
+
+  .precision-container {
+    min-width: 70px;
+    gap: 4px;
+  }
+
+  .attachment-precision-slider {
+    width: 40px;
+  }
+
+  .price-tab-table {
+    font-size: 0.75rem;
+  }
+
+  .price-tab-table td,
+  .price-tab-table th {
+    padding: 3px 5px;
+  }
+
+  .price-tab-table input[type="number"],
+  .price-tab-table input[type="text"] {
+    width: 50px !important;
+    font-size: 0.7rem;
+  }
+
+  .price-tab-table select {
+    width: 55px !important;
+    font-size: 0.7rem;
+  }
+
+  .price-tab-table .hitrate-edit-btn {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+    max-width: 80px;
+  }
+
+  .price-tab-table .copy-code-btn,
+  .price-tab-table .add-config-btn,
+  .price-tab-table .remove-config-btn {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+  }
+
+  #attachmentTable {
+    font-size: 0.8rem;
+  }
+
+  #attachmentTable td,
+  #attachmentTable th {
+    padding: 3px 4px;
+  }
+
+  .version-info {
+    position: static;
+    text-align: left;
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-header {
+    flex-wrap: wrap;
+  }
+  
+  .tab-btn {
+    flex: 1;
+    min-width: 60px;
+    text-align: center;
+    padding: 6px 8px;
+    font-size: 0.7rem;
+  }
+
+  .data-management-tip {
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.7rem;
+  }
+
+  .basic-tab-table {
+    font-size: 0.7rem;
+  }
+
+  .basic-tab-table td,
+  .basic-tab-table th {
+    padding: 3px 4px;
+  }
+
+  .attachment-tab-table {
+    font-size: 0.7rem;
+  }
+
+  .attachment-tab-table td,
+  .attachment-tab-table th {
+    padding: 3px 4px;
+  }
+
+  .attachment-tab-table select {
+    font-size: 0.65rem;
+    padding: 1px 2px;
+    max-width: 80px;
+  }
+
+  .precision-container {
+    min-width: 50px;
+  }
+
+  .attachment-precision-slider {
+    width: 30px;
+  }
+
+  .precision-value {
+    font-size: 0.65rem;
+    min-width: 28px;
+  }
+
+  .highlight-green {
+    padding: 1px 2px;
+  }
+
+  .price-tab-table {
+    font-size: 0.65rem;
+  }
+
+  .price-tab-table td,
+  .price-tab-table th {
+    padding: 2px 3px;
+  }
+
+  .price-tab-table input[type="number"],
+  .price-tab-table input[type="text"] {
+    width: 40px !important;
+    font-size: 0.6rem;
+    padding: 1px 2px;
+  }
+
+  .price-tab-table select {
+    width: 45px !important;
+    font-size: 0.6rem;
+    padding: 1px 2px;
+  }
+
+  .price-tab-table .hitrate-edit-btn {
+    font-size: 0.55rem;
+    padding: 1px 3px;
+    max-width: 60px;
+  }
+
+  .price-tab-table .copy-code-btn,
+  .price-tab-table .add-config-btn,
+  .price-tab-table .remove-config-btn {
+    font-size: 0.55rem;
+    padding: 1px 3px;
+  }
+}

@@ -1,10 +1,15 @@
 /**
  * 事件处理器
  * 负责绑定和管理所有UI事件
+ * 
+ * 适配新的 configs 结构：
+ * - 事件处理器本身不直接操作数据结构
+ * - 保持与 main.js 和 DOMController 的接口兼容
  */
 export class EventHandler {
   constructor() {
     this.handlers = new Map();
+    this._jsonExportHandler = null;
   }
 
   /**
@@ -17,41 +22,49 @@ export class EventHandler {
     // 存储处理器引用
     this.handlers.set('calc', calcHandler);
     this.handlers.set('distChart', distChartHandler);
+    this.handlers.set('globalBarrelChange', globalBarrelChangeHandler);
 
     // 绑定计算按钮事件
     const calcBtn = document.getElementById('calcBtn');
     if (calcBtn) {
-      calcBtn.addEventListener('click', () => {
+      // 移除旧监听器，避免重复绑定
+      calcBtn.removeEventListener('click', this._calcHandler);
+      this._calcHandler = () => {
         try {
           calcHandler();
         } catch (error) {
           console.error('计算按钮事件处理错误:', error);
         }
-      });
+      };
+      calcBtn.addEventListener('click', this._calcHandler);
     }
 
     // 绑定距离图表按钮事件
     const distChartBtn = document.getElementById('distChartBtn');
     if (distChartBtn) {
-      distChartBtn.addEventListener('click', () => {
+      distChartBtn.removeEventListener('click', this._distHandler);
+      this._distHandler = () => {
         try {
           distChartHandler();
         } catch (error) {
           console.error('距离图表按钮事件处理错误:', error);
         }
-      });
+      };
+      distChartBtn.addEventListener('click', this._distHandler);
     }
 
     // 绑定全局枪管类型变化事件
     const globalBarrelTypeSelect = document.getElementById('globalBarrelType');
     if (globalBarrelTypeSelect && globalBarrelChangeHandler) {
-      globalBarrelTypeSelect.addEventListener('change', () => {
+      globalBarrelTypeSelect.removeEventListener('change', this._globalBarrelHandler);
+      this._globalBarrelHandler = () => {
         try {
           globalBarrelChangeHandler();
         } catch (error) {
           console.error('全局枪管类型变化事件处理错误:', error);
         }
-      });
+      };
+      globalBarrelTypeSelect.addEventListener('change', this._globalBarrelHandler);
     }
 
     // 绑定距离图表JSON导出按钮事件
@@ -84,29 +97,54 @@ export class EventHandler {
   }
 
   /**
+   * 绑定显示全部武器复选框事件
+   * @param {Function} onChange - 变化回调
+   */
+  bindShowAllWeapons(onChange) {
+    const checkbox = document.getElementById('showAllWeapons');
+    if (checkbox) {
+      checkbox.removeEventListener('change', this._showAllHandler);
+      this._showAllHandler = () => {
+        try {
+          if (onChange) {
+            onChange(checkbox.checked);
+          }
+        } catch (error) {
+          console.error('显示全部武器复选框事件处理错误:', error);
+        }
+      };
+      checkbox.addEventListener('change', this._showAllHandler);
+    }
+  }
+
+  /**
    * 解绑事件处理器
    */
   unbindEventHandlers() {
     const calcBtn = document.getElementById('calcBtn');
     const distChartBtn = document.getElementById('distChartBtn');
     const globalBarrelTypeSelect = document.getElementById('globalBarrelType');
-
-    if (calcBtn) {
-      calcBtn.removeEventListener('click', this.handlers.get('calc'));
-    }
-
-    if (distChartBtn) {
-      distChartBtn.removeEventListener('click', this.handlers.get('distChart'));
-    }
-
-    if (globalBarrelTypeSelect) {
-      globalBarrelTypeSelect.removeEventListener('change', this.handlers.get('globalBarrelChange'));
-    }
-
-    // 解绑JSON导出按钮
     const jsonBtn = document.getElementById('exportJSONBtn');
+    const showAllCheckbox = document.getElementById('showAllWeapons');
+
+    if (calcBtn && this._calcHandler) {
+      calcBtn.removeEventListener('click', this._calcHandler);
+    }
+
+    if (distChartBtn && this._distHandler) {
+      distChartBtn.removeEventListener('click', this._distHandler);
+    }
+
+    if (globalBarrelTypeSelect && this._globalBarrelHandler) {
+      globalBarrelTypeSelect.removeEventListener('change', this._globalBarrelHandler);
+    }
+
     if (jsonBtn && this._jsonExportHandler) {
       jsonBtn.removeEventListener('click', this._jsonExportHandler);
+    }
+
+    if (showAllCheckbox && this._showAllHandler) {
+      showAllCheckbox.removeEventListener('change', this._showAllHandler);
     }
 
     this.handlers.clear();
@@ -128,5 +166,13 @@ export class EventHandler {
    */
   hasHandler(type) {
     return this.handlers.has(type);
+  }
+
+  /**
+   * 获取所有已绑定的处理器类型列表
+   * @returns {string[]} 处理器类型列表
+   */
+  getHandlerTypes() {
+    return Array.from(this.handlers.keys());
   }
 }

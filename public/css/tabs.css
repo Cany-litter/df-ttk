@@ -1,0 +1,740 @@
+/* ============================================================
+   tabs.css - Tab相关样式
+   包含: Tab导航, 基础属性Tab, 配件数据Tab, 价格数据Tab,
+         树状展开, 精校滑块, 绿色高亮, 蓝色差值,
+         配置数量徽章, 新增枪械行, 占位Tab
+   ============================================================ */
+
+/* ==================== Tab导航样式 ==================== */
+.tab-navigation {
+  margin: 12px 0 16px 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.tab-header {
+  display: flex;
+  background: #f0f0f0;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tab-btn {
+  padding: 10px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #666;
+  transition: all 0.25s ease;
+  border-radius: 0;
+  margin: 0;
+}
+
+.tab-btn:hover {
+  background: #e8e8e8;
+  color: #333;
+}
+
+.tab-btn.active {
+  color: #2196F3;
+  border-bottom-color: #2196F3;
+  background: #fff;
+  font-weight: 600;
+}
+
+.tab-content {
+  padding: 16px 20px;
+  background: #fff;
+  min-height: 100px;
+}
+
+.tab-table-wrapper {
+  overflow-x: auto;
+}
+
+/* ==================== 基础属性Tab表格样式 ==================== */
+.basic-tab-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.basic-tab-table th,
+.basic-tab-table td {
+  padding: 6px 10px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid #ddd;
+  white-space: nowrap;
+}
+
+.basic-tab-table thead th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-bottom: 2px solid #ddd;
+}
+
+.basic-tab-table tbody tr:hover td {
+  background-color: #f8faff;
+}
+
+.basic-tab-table td:first-child {
+  text-align: left;
+  min-width: 80px;
+  max-width: 150px;
+}
+
+.basic-tab-table td:nth-child(2) {
+  min-width: 40px;
+  max-width: 70px;
+}
+
+/* ==================== 配件数据Tab表格样式 ==================== */
+.attachment-tab-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.attachment-tab-table th,
+.attachment-tab-table td {
+  padding: 6px 10px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid #ddd;
+  white-space: nowrap;
+}
+
+.attachment-tab-table thead th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-bottom: 2px solid #ddd;
+}
+
+.attachment-tab-table tbody tr:hover td {
+  background-color: #f8faff;
+}
+
+.attachment-tab-table td:first-child {
+  text-align: left;
+  min-width: 80px;
+  max-width: 150px;
+}
+
+.attachment-tab-table td:nth-child(2) {
+  min-width: 40px;
+  max-width: 70px;
+}
+
+.attachment-tab-table select {
+  width: 100%;
+  padding: 3px 4px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+  max-width: 140px;
+}
+
+.attachment-tab-table select:focus {
+  border-color: #2196F3;
+}
+
+.attachment-tab-table .attachment-barrel-select {
+  max-width: 130px;
+}
+
+.attachment-tab-table .attachment-muzzle-select {
+  max-width: 120px;
+}
+
+/* ==================== 价格数据Tab表格样式 ==================== */
+.price-tab-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.price-tab-table th,
+.price-tab-table td {
+  padding: 5px 8px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid #ddd;
+  white-space: nowrap;
+}
+
+.price-tab-table thead th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  font-size: 0.75rem;
+  border-bottom: 2px solid #ddd;
+}
+
+.price-tab-table tbody tr:hover td {
+  background-color: #f8faff;
+}
+
+.price-tab-table td:first-child {
+  font-weight: 600;
+  color: #333;
+}
+
+.price-tab-table td:nth-child(2) {
+  text-align: left;
+  min-width: 80px;
+  max-width: 130px;
+}
+
+.price-tab-table td:nth-child(3) {
+  min-width: 40px;
+  max-width: 70px;
+}
+
+.price-tab-table .bullet-price-display-cell {
+  font-weight: 500;
+  color: #333;
+}
+
+.price-tab-table .ammo-total-display {
+  font-weight: 500;
+  color: #555;
+}
+
+.price-tab-table .weapon-total-display {
+  font-weight: 700;
+  color: #1565c0;
+}
+
+.price-tab-table input[type="number"],
+.price-tab-table input[type="text"] {
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 2px 4px;
+  background: #fafafa;
+  font-size: inherit;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.price-tab-table input[type="number"]:hover,
+.price-tab-table input[type="text"]:hover {
+  border-color: #bbb;
+  background: #fff;
+}
+
+.price-tab-table input[type="number"]:focus,
+.price-tab-table input[type="text"]:focus {
+  border-color: #2196F3;
+  outline: none;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.price-tab-table select {
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 2px 4px;
+  background: #fafafa;
+  font-size: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.price-tab-table select:focus {
+  border-color: #2196F3;
+}
+
+.price-tab-table .hitrate-edit-btn {
+  background: transparent;
+  border: 1px dashed #aaa;
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #555;
+  transition: all 0.2s;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.price-tab-table .hitrate-edit-btn:hover {
+  border-color: #2196F3;
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.price-tab-table .copy-code-btn {
+  background: #9c27b0;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+  margin: 0 1px;
+}
+
+.price-tab-table .copy-code-btn:hover {
+  background: #7b1fa2;
+}
+
+.price-tab-table .add-config-btn {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+  margin: 0 1px;
+}
+
+.price-tab-table .add-config-btn:hover {
+  background: #388e3c;
+}
+
+.price-tab-table .remove-config-btn {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+  margin: 0 1px;
+}
+
+.price-tab-table .remove-config-btn:hover:not(:disabled) {
+  background: #d32f2f;
+}
+
+.price-tab-table .remove-config-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.price-tab-actions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==================== 树状展开样式 ==================== */
+.weapon-header-row td,
+.price-weapon-header-row td {
+  background-color: #f0f4f8 !important;
+  font-weight: 600;
+  border-bottom: 2px solid #d0d8e0 !important;
+}
+
+.weapon-header-row:hover td,
+.price-weapon-header-row:hover td {
+  background-color: #e8edf4 !important;
+}
+
+.barrel-header-row td,
+.price-barrel-header-row td {
+  background-color: #f5f8fa !important;
+  font-weight: 500;
+}
+
+.barrel-header-row:hover td,
+.price-barrel-header-row:hover td {
+  background-color: #eef2f6 !important;
+}
+
+.price-muzzle-header-row td {
+  background-color: #f8fafc !important;
+  font-weight: 400;
+}
+
+.price-muzzle-header-row:hover td {
+  background-color: #f0f4f8 !important;
+}
+
+.price-config-row td {
+  background-color: #fafcfd !important;
+}
+
+.price-config-row:hover td {
+  background-color: #f0f5fa !important;
+}
+
+.price-empty-row td {
+  background-color: #fafcfd !important;
+  color: #999;
+}
+
+.price-empty-row:hover td {
+  background-color: #f5f8fa !important;
+}
+
+/* 预览行样式（配件Tab收起时显示） */
+.preview-row td {
+  background-color: #f0f8ff !important;
+  border-bottom: 1px solid #b8d4f0 !important;
+}
+
+.preview-row:hover td {
+  background-color: #e3f0fa !important;
+}
+
+/* 树状展开切换按钮 */
+.tree-toggle,
+.price-tree-toggle {
+  display: inline-block;
+  width: 20px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #555;
+  user-select: none;
+  transition: color 0.2s;
+  margin-right: 4px;
+}
+
+.tree-toggle:hover,
+.price-tree-toggle:hover {
+  color: #2196F3;
+}
+
+/* 树状行悬停高亮 */
+.weapon-header-row td,
+.barrel-header-row td,
+.price-weapon-header-row td,
+.price-barrel-header-row td,
+.price-muzzle-header-row td {
+  cursor: pointer;
+}
+
+/* ==================== 精校滑块样式 ==================== */
+.precision-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 100px;
+}
+
+.attachment-precision-slider {
+  width: 60px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #ddd;
+  border-radius: 2px;
+  outline: none;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.attachment-precision-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2196F3;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.attachment-precision-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #2196F3;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.attachment-precision-slider:hover {
+  background: #bbb;
+}
+
+.attachment-precision-slider:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+}
+
+.precision-value {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #333;
+  min-width: 36px;
+  text-align: center;
+}
+
+/* ==================== 绿色高亮样式 ==================== */
+.highlight-green {
+  color: #2e7d32 !important;
+  font-weight: 700 !important;
+  background-color: #e8f5e9 !important;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+/* ==================== 蓝色差值样式 ==================== */
+.diff-blue {
+  color: #1565c0 !important;
+  font-size: 0.7rem;
+  margin-left: 4px;
+}
+
+/* ==================== 配置数量徽章 ==================== */
+.config-count-badge {
+  display: inline-block;
+  background: #2196F3;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: bold;
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-left: 6px;
+  vertical-align: middle;
+  min-width: 16px;
+  text-align: center;
+}
+
+.weapon-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==================== 可编辑显示样式 ==================== */
+.weapon-name-display {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.weapon-name-display:hover {
+  background: #e3f2fd;
+}
+
+.weapon-type-display {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.weapon-type-display:hover {
+  background: #e3f2fd;
+}
+
+.weapon-rof-display,
+.weapon-velocity-display,
+.weapon-ranges-display,
+.weapon-flesh-display,
+.weapon-armor-display,
+.weapon-decays-display,
+.weapon-mult-display {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background 0.15s;
+  display: inline-block;
+}
+
+.weapon-rof-display:hover,
+.weapon-velocity-display:hover,
+.weapon-ranges-display:hover,
+.weapon-flesh-display:hover,
+.weapon-armor-display:hover,
+.weapon-decays-display:hover,
+.weapon-mult-display:hover {
+  background: #e3f2fd;
+}
+
+/* ==================== 部位伤害列 ==================== */
+.part-damage-cell {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #333;
+  min-width: 80px;
+  max-width: 110px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* ==================== 新增枪械行 ==================== */
+.add-weapon-row td {
+  background-color: #e8f5e9 !important;
+  border-top: 2px dashed #4caf50 !important;
+  padding: 4px 2px !important;
+}
+
+.add-weapon-row input {
+  border: 1px solid #4caf50 !important;
+  border-radius: 3px !important;
+  padding: 2px 4px !important;
+  background: #f0fff0 !important;
+  transition: all 0.2s ease;
+  font-size: inherit !important;
+}
+
+.add-weapon-row input:focus {
+  border-color: #2196F3 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
+}
+
+.add-weapon-row input::placeholder {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.confirm-add-btn {
+  background-color: #4caf50 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 4px 12px !important;
+  cursor: pointer !important;
+  margin-right: 4px !important;
+  font-size: 0.9rem !important;
+  transition: background-color 0.2s !important;
+}
+
+.confirm-add-btn:hover {
+  background-color: #388e3c !important;
+}
+
+.cancel-add-btn {
+  background-color: #f44336 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 4px 12px !important;
+  cursor: pointer !important;
+  font-size: 0.9rem !important;
+  transition: background-color 0.2s !important;
+}
+
+.cancel-add-btn:hover {
+  background-color: #d32f2f !important;
+}
+
+.edit-weapon-btn {
+  background: #ff9800;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.edit-weapon-btn:hover {
+  background: #f57c00;
+}
+
+/* ==================== 占位Tab样式 ==================== */
+.placeholder-tab {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.placeholder-tab .placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.placeholder-tab h3 {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.placeholder-tab .placeholder-desc {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.placeholder-tab .placeholder-phase {
+  font-size: 13px;
+  color: #ff9800;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.placeholder-tab .placeholder-progress {
+  width: 200px;
+  height: 6px;
+  background: #e0e0e0;
+  border-radius: 3px;
+  margin: 0 auto 12px auto;
+  overflow: hidden;
+}
+
+.placeholder-tab .progress-bar {
+  height: 100%;
+  background: #ff9800;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.placeholder-tab .placeholder-note {
+  font-size: 12px;
+  color: #aaa;
+}
+
+/* ==================== 表格通用样式 ==================== */
+#attachmentTable {
+  table-layout: auto;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+#attachmentTable td,
+#attachmentTable th {
+  padding: 4px 8px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid #ddd;
+  white-space: nowrap;
+}
+
+#attachmentTable thead th {
+  background-color: #f5f5f5;
+  padding: 6px 8px;
+  font-size: 0.8rem;
+  border-bottom: 2px solid #ddd;
+  white-space: nowrap;
+}
+
+#attachmentTable tbody td:first-child {
+  text-align: left;
+  min-width: 80px;
+  max-width: 150px;
+}
+
+#attachmentTable tbody td:nth-child(2) {
+  min-width: 40px;
+  max-width: 70px;
+}

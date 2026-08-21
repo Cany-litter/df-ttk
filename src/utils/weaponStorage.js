@@ -1,6 +1,11 @@
 /**
  * 武器数据存储管理器
- * 现在只用于导出/导入功能，不再自动保存到 localStorage
+ * 负责武器数据的导入导出（JSON 格式）
+ * 
+ * 适配新的 configs 结构：
+ * - 导出时序列化 configs 数组
+ * - 导入时反序列化 configs 数组
+ * - 处理 Infinity 值的序列化/反序列化
  */
 export class WeaponStorage {
   constructor() {
@@ -8,7 +13,7 @@ export class WeaponStorage {
   }
 
   /**
-   * 导出武器数据为 JSON 字符串（用于导出功能）
+   * 导出武器数据为 JSON 字符串
    * @param {Array} weapons - 武器数据数组
    * @returns {string|null} JSON 字符串
    */
@@ -23,7 +28,7 @@ export class WeaponStorage {
   }
 
   /**
-   * 从 JSON 字符串导入武器数据（用于导入功能）
+   * 从 JSON 字符串导入武器数据
    * @param {string} jsonStr - JSON 字符串
    * @returns {Array|null} 武器数据数组
    */
@@ -74,9 +79,6 @@ export class WeaponStorage {
           );
         }
         
-        // 处理 barrel 中的 partMultAdd（保持原样，因为是 JSON 对象）
-        // 不需要特殊处理
-        
         return b;
       });
     }
@@ -87,6 +89,23 @@ export class WeaponStorage {
         d === Infinity ? 'Infinity' : d
       );
     }
+    
+    // 处理 configs（新增）
+    if (Array.isArray(serialized.configs)) {
+      serialized.configs = serialized.configs.map(config => {
+        const c = { ...config };
+        // 命中率点不需要特殊处理（都是数字）
+        // 但确保 hitRatePoints 是数组
+        if (!Array.isArray(c.hitRatePoints)) {
+          c.hitRatePoints = [];
+        }
+        return c;
+      });
+    }
+    
+    // 移除废弃字段（如果有）
+    delete serialized.variants;
+    delete serialized.clonedWeapons;
     
     return serialized;
   }
@@ -125,63 +144,40 @@ export class WeaponStorage {
           );
         }
         
-        // 恢复 barrel 中的 rangeMult（确保是数字）
+        // 恢复数值字段（防止字符串）
         if (b.rangeMult !== undefined && typeof b.rangeMult === 'string') {
           b.rangeMult = parseFloat(b.rangeMult) || 1.0;
         }
-        
-        // 恢复 barrel 中的 rangeAdd
         if (b.rangeAdd !== undefined && typeof b.rangeAdd === 'string') {
           b.rangeAdd = parseFloat(b.rangeAdd) || 0;
         }
-        
-        // 恢复 barrel 中的 velocityMult
         if (b.velocityMult !== undefined && typeof b.velocityMult === 'string') {
           b.velocityMult = parseFloat(b.velocityMult) || 1.0;
         }
-        
-        // 恢复 barrel 中的 velocityAdd
         if (b.velocityAdd !== undefined && typeof b.velocityAdd === 'string') {
           b.velocityAdd = parseFloat(b.velocityAdd) || 0;
         }
-        
-        // 恢复 barrel 中的 rofMult
         if (b.rofMult !== undefined && typeof b.rofMult === 'string') {
           b.rofMult = parseFloat(b.rofMult) || 1.0;
         }
-        
-        // 恢复 barrel 中的 damageBonus
         if (b.damageBonus !== undefined && typeof b.damageBonus === 'string') {
           b.damageBonus = parseFloat(b.damageBonus) || 0;
         }
-        
-        // 恢复 barrel 中的 armorDamageBonus
         if (b.armorDamageBonus !== undefined && typeof b.armorDamageBonus === 'string') {
           b.armorDamageBonus = parseFloat(b.armorDamageBonus) || 0;
         }
-        
-        // 恢复 barrel 中的 triggerDelayDelta
         if (b.triggerDelayDelta !== undefined && typeof b.triggerDelayDelta === 'string') {
           b.triggerDelayDelta = parseFloat(b.triggerDelayDelta) || 0;
         }
-        
-        // 恢复 barrel 中的 burstCount
         if (b.burstCount !== undefined && typeof b.burstCount === 'string') {
           b.burstCount = parseInt(b.burstCount) || 3;
         }
-        
-        // 恢复 barrel 中的 burstInternalROF
         if (b.burstInternalROF !== undefined && typeof b.burstInternalROF === 'string') {
           b.burstInternalROF = parseInt(b.burstInternalROF) || 800;
         }
-        
-        // 恢复 barrel 中的 burstInterval
         if (b.burstInterval !== undefined && typeof b.burstInterval === 'string') {
           b.burstInterval = parseFloat(b.burstInterval) || 0.1;
         }
-        
-        // 恢复 barrel 中的 partMultAdd（JSON 对象，直接保留）
-        // 不需要额外处理
         
         return b;
       });
@@ -193,6 +189,44 @@ export class WeaponStorage {
         d === 'Infinity' ? Infinity : d
       );
     }
+    
+    // 恢复 configs（新增）
+    if (Array.isArray(deserialized.configs)) {
+      deserialized.configs = deserialized.configs.map(config => {
+        const c = { ...config };
+        // 确保必要字段存在
+        if (c.id === undefined) c.id = 'cfg-1';
+        if (c.code === undefined) c.code = `${deserialized.name}-01`;
+        if (c.price === undefined) c.price = 0;
+        if (c.selectedBarrel === undefined) c.selectedBarrel = 0;
+        if (c.selectedMuzzle === undefined) c.selectedMuzzle = 0;
+        if (c.precision === undefined) c.precision = 0.09;
+        if (!Array.isArray(c.hitRatePoints)) c.hitRatePoints = [];
+        if (c.bulletType === undefined) c.bulletType = 4;
+        if (c.ammoCount === undefined) c.ammoCount = 120;
+        return c;
+      });
+    } else {
+      // 如果没有 configs，创建一个默认的
+      deserialized.configs = [{
+        id: 'cfg-1',
+        code: `${deserialized.name || 'Weapon'}-01`,
+        price: 0,
+        selectedBarrel: 0,
+        selectedMuzzle: 0,
+        precision: 0.09,
+        hitRatePoints: [],
+        bulletType: 4,
+        ammoCount: 120
+      }];
+    }
+    
+    // 移除废弃字段
+    delete deserialized.variants;
+    delete deserialized.clonedWeapons;
+    delete deserialized.selectedBarrel;
+    delete deserialized.selectedMuzzle;
+    delete deserialized.precision;
     
     return deserialized;
   }
@@ -246,10 +280,10 @@ export class WeaponStorage {
     });
   }
 
-  // ========== 以下方法已废弃，保留用于兼容性，但不再使用 ==========
+  // ==================== 兼容性方法（已废弃） ====================
 
   /**
-   * @deprecated 不再使用 localStorage 自动保存，此方法仅用于兼容
+   * @deprecated 不再使用 localStorage 自动保存
    */
   saveWeapons(weapons) {
     console.warn('⚠️ saveWeapons 已废弃，不再自动保存到 localStorage');
@@ -257,7 +291,7 @@ export class WeaponStorage {
   }
 
   /**
-   * @deprecated 不再使用 localStorage 自动加载，此方法仅用于兼容
+   * @deprecated 不再使用 localStorage 自动加载
    */
   loadWeapons(defaultWeapons) {
     console.warn('⚠️ loadWeapons 已废弃，不再从 localStorage 加载');
@@ -277,21 +311,5 @@ export class WeaponStorage {
    */
   hasSavedData() {
     return !!localStorage.getItem(this.storageKey);
-  }
-
-  /**
-   * @deprecated 验证武器数据
-   */
-  validateWeaponData(weapons) {
-    console.warn('⚠️ validateWeaponData 已废弃');
-    return weapons;
-  }
-
-  /**
-   * @deprecated 合并保存的数据与默认数据
-   */
-  mergeWithDefaults(savedWeapons, defaultWeapons) {
-    console.warn('⚠️ mergeWithDefaults 已废弃');
-    return defaultWeapons;
   }
 }

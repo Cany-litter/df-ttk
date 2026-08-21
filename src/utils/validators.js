@@ -1,4 +1,4 @@
-import { HIT_KEYS, HIT_PROB_TOLERANCE } from '../constants/config.js';
+import { HIT_KEYS, HIT_PROB_TOLERANCE } from '../core/config.js';
 
 /**
  * 校验命中概率之和是否为 1
@@ -76,4 +76,135 @@ export function validatePageParams(params) {
   return true;
 }
 
+/**
+ * 验证改枪配置的有效性
+ * @param {Object} config - 改枪配置对象
+ * @returns {boolean} 验证是否通过
+ * @throws {Error} 当配置无效时抛出错误
+ */
+export function validateConfig(config) {
+  if (!config) {
+    throw new Error('改枪配置不能为空');
+  }
 
+  // 验证价格
+  if (config.price !== undefined && (config.price < 0 || isNaN(config.price))) {
+    throw new Error('价格必须为非负数字');
+  }
+
+  // 验证改枪码
+  if (config.code !== undefined && typeof config.code !== 'string') {
+    throw new Error('改枪码必须为字符串');
+  }
+
+  // 验证子弹类型
+  if (config.bulletType !== undefined && config.bulletType === '') {
+    throw new Error('子弹类型不能为空');
+  }
+
+  // 验证携带数量
+  if (config.ammoCount !== undefined && (config.ammoCount < 0 || isNaN(config.ammoCount))) {
+    throw new Error('携带数量必须为非负数字');
+  }
+
+  // 验证精校值
+  if (config.precision !== undefined && (config.precision < -0.09 || config.precision > 0.09)) {
+    throw new Error('精校值必须在 -0.09 到 0.09 之间');
+  }
+
+  // 验证枪管索引
+  if (config.selectedBarrel !== undefined && config.selectedBarrel < 0) {
+    throw new Error('枪管索引不能为负数');
+  }
+
+  // 验证枪口索引
+  if (config.selectedMuzzle !== undefined && config.selectedMuzzle < 0) {
+    throw new Error('枪口索引不能为负数');
+  }
+
+  // 验证命中率点
+  if (config.hitRatePoints !== undefined) {
+    if (!Array.isArray(config.hitRatePoints)) {
+      throw new Error('命中率点必须为数组');
+    }
+    if (config.hitRatePoints.length > 3) {
+      throw new Error('最多配置3个命中率点');
+    }
+    for (const point of config.hitRatePoints) {
+      if (point.distance === undefined || point.distance < 0) {
+        throw new Error('命中率点的距离必须为非负数字');
+      }
+      if (point.rate === undefined || point.rate < 0 || point.rate > 1) {
+        throw new Error('命中率点的命中率必须在 0 到 1 之间');
+      }
+    }
+  }
+
+  return true;
+}
+
+/**
+ * 验证武器数据的完整性
+ * @param {Object} weapon - 武器对象
+ * @returns {boolean} 验证是否通过
+ * @throws {Error} 当武器数据不完整时抛出错误
+ */
+export function validateWeaponData(weapon) {
+  if (!weapon) {
+    throw new Error('武器数据不能为空');
+  }
+
+  // 验证必填字段
+  if (!weapon.name || typeof weapon.name !== 'string') {
+    throw new Error('武器名称必须为非空字符串');
+  }
+
+  if (weapon.rof === undefined || isNaN(weapon.rof) || weapon.rof <= 0) {
+    throw new Error('射速必须为正数');
+  }
+
+  if (weapon.velocity === undefined || isNaN(weapon.velocity) || weapon.velocity <= 0) {
+    throw new Error('初速必须为正数');
+  }
+
+  if (weapon.flesh === undefined || isNaN(weapon.flesh) || weapon.flesh <= 0) {
+    throw new Error('基础伤害必须为正数');
+  }
+
+  if (weapon.armor === undefined || isNaN(weapon.armor) || weapon.armor < 0) {
+    throw new Error('护甲伤害必须为非负数');
+  }
+
+  // 验证射程
+  if (!Array.isArray(weapon.ranges) || weapon.ranges.length !== 4) {
+    throw new Error('射程必须为包含4个元素的数组');
+  }
+
+  // 验证衰减
+  if (!Array.isArray(weapon.decays) || weapon.decays.length !== 5) {
+    throw new Error('衰减必须为包含5个元素的数组');
+  }
+
+  // 验证部位倍率
+  if (!weapon.mult || typeof weapon.mult !== 'object') {
+    throw new Error('部位倍率必须为对象');
+  }
+  const requiredParts = ['head', 'chest', 'stomach', 'limbs'];
+  for (const part of requiredParts) {
+    if (weapon.mult[part] === undefined || isNaN(weapon.mult[part]) || weapon.mult[part] <= 0) {
+      throw new Error(`部位倍率 ${part} 必须为正数`);
+    }
+  }
+
+  // 验证改枪配置
+  if (weapon.configs !== undefined) {
+    if (!Array.isArray(weapon.configs) || weapon.configs.length === 0) {
+      throw new Error('至少需要一个改枪配置');
+    }
+    for (const config of weapon.configs) {
+      validateConfig(config);
+    }
+  }
+
+  return true;
+}

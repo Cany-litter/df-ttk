@@ -1,6 +1,12 @@
+import { seededRandom } from '../utils/rng.js';
+
 /**
  * 战斗工具类
  * 包含所有战斗相关的计算公式和工具方法
+ * 
+ * 适配新的 configs 结构：
+ * - 战斗计算不直接依赖 configs
+ * - configs 中的命中率曲线在 SimulationEngine 中处理
  */
 
 /**
@@ -68,8 +74,6 @@ export class ArmorDamageCalculator {
   }
 }
 
-import { seededRandom } from '../utils/rng.js';
-
 /**
  * 命中部位选择器
  */
@@ -89,3 +93,101 @@ export class HitPartSelector {
     return 'chest'; // 默认值
   }
 }
+
+/**
+ * 伤害计算工具类（整合版）
+ * 提供一站式伤害计算
+ */
+export class DamageCalculator {
+  /**
+   * 计算单次命中的完整伤害
+   * @param {Object} weapon - 武器对象
+   * @param {Object} bulletData - 子弹数据
+   * @param {Object} params - 游戏参数
+   * @param {number} distance - 交战距离
+   * @param {Object} hitProb - 命中概率
+   * @param {Object} armorState - 护甲状态 { armorVal, helmetVal }
+   * @param {string} hitPart - 可选，指定命中部位（不指定则随机）
+   * @returns {Object} { damage, newArmorState, hitPart }
+   */
+  static calculateHit(weapon, bulletData, params, distance, hitProb, armorState, hitPart = null) {
+    const { armorLevel, helmetLevel } = params;
+    const { armorVal, helmetVal } = armorState;
+    
+    // 选择命中部位
+    const selectedPart = hitPart || HitPartSelector.select(hitProb);
+    
+    // 计算衰减
+    const decay = DistanceDecayCalculator.calculate(distance, weapon);
+    
+    // 计算基础伤害
+    const pureDamage = BaseDamageCalculator.calculate(weapon, bulletData, selectedPart, decay);
+    
+    // 计算穿透伤害
+    const penArmor = bulletData.armor[armorLevel].pen;
+    const penHelmet = bulletData.armor[helmetLevel].pen;
+    const penF = pureDamage * (selectedPart === 'head' ? penHelmet : penArmor);
+    
+    let finalDamage;
+    let newArmorState = { ...armorState };
+    
+    if (selectedPart === 'limbs') {
+      // 四肢：直接纯肉伤，无护甲减伤
+      finalDamage = pureDamage;
+    } else if (selectedPart === 'head') {
+      // 头部：走头盔减伤逻辑
+      if (helmetVal <= 0) {
+        finalDamage = pureDamage;
+      } else {
+        const aMultHelmet = bulletData.armor[helmetLevel].armorMult;
+        const helmetD = weapon.armor * aMultHelmet;
+        const result = ArmorDamageCalculator.calculate(pureDamage, penF, helmetD, helmetVal);
+        finalDamage = result.finalDamage;
+        newArmorState.helmetVal = result.remainingArmor;
+      }
+    } else {
+      // 胸部和腹部：走护甲减伤逻辑
+      if (armorVal <= 0) {
+        finalDamage = pureDamage;
+      } else {
+        const aMultArmor = bulletData.armor[armorLevel].armorMult;
+        const armorD = weapon.armor * aMultArmor;
+        const result = ArmorDamageCalculator.calculate(pureDamage, penF, armorD, armorVal);
+        finalDamage = result.finalDamage;
+        newArmorState.armorVal = result.remainingArmor;
+      }
+    }
+    
+    return {
+      damage: finalDamage,
+      newArmorState,
+      hitPart: selectedPart,
+      pureDamage,
+      decay
+    };
+  }
+
+  /**
+   * 检查是否击杀
+   * @param {number} health - 当前生命值
+   * @param {number} damage - 造成伤害
+   * @returns {boolean} 是否击杀
+   */
+  static isKill(health, damage) {
+    return health - damage <= 0;
+  }
+
+  /**
+   * 计算击杀所需命中次数（理论值）
+   * @param {number} health - 目标生命值
+   * @param {number} damagePerHit - 每次命中伤害
+   * @returns {number} 所需命中次数（向上取整）
+   */
+  static hitsToKill(health, damagePerHit) {
+    if (damagePerHit <= 0) return Infinity;
+    return Math.ceil(health / damagePerHit);
+  }
+}
+
+// 向后兼容的导出
+export const getDecay = DistanceDecayCalculator.calculate;

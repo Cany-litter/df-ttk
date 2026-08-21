@@ -1,4 +1,4 @@
-import { TIME_UNITS } from '../constants/config.js';
+import { TIME_UNITS } from '../core/config.js';
 
 /**
  * 格式化射程显示，将Infinity转换为∞符号
@@ -12,7 +12,7 @@ export function formatRanges(ranges) {
 /**
  * 格式化时间显示
  * @param {number} seconds - 秒数
- * @param {string} unit - 单位 ('ms', 's', 'min')
+ * @param {string} unit - 单位 ('ms', 's', 'min', 'ms_raw')
  * @returns {string} 格式化后的时间字符串
  */
 export function formatTime(seconds, unit = 'ms') {
@@ -131,4 +131,59 @@ export function formatMultipliers(mult) {
   const s = round(mult.stomach);
   const l = round(mult.limbs);
   return `${h}/${c}/${s}/${l}`;
+}
+
+/**
+ * 格式化改枪配置摘要
+ * @param {Object} config - 改枪配置对象
+ * @returns {string} 格式化后的摘要字符串
+ */
+export function formatConfigSummary(config) {
+  if (!config) return '无配置';
+  const parts = [];
+  if (config.code) parts.push(`改枪码: ${config.code}`);
+  if (config.price !== undefined) parts.push(`价格: ${config.price}`);
+  if (config.bulletType !== undefined) parts.push(`子弹: ${config.bulletType}`);
+  if (config.ammoCount !== undefined) parts.push(`携带: ${config.ammoCount}`);
+  return parts.join(' | ') || '空配置';
+}
+
+/**
+ * 格式化武器配置数量
+ * @param {Array} configs - 改枪配置数组
+ * @returns {string} 格式化后的数量显示
+ */
+export function formatConfigCount(configs) {
+  if (!configs || !Array.isArray(configs)) return '[0]';
+  return `[${configs.length}]`;
+}
+
+/**
+ * 格式化货币（带单位）
+ * @param {number} value - 数值
+ * @param {string} currency - 货币符号
+ * @returns {string} 格式化后的货币字符串
+ */
+export function formatCurrency(value, currency = '¥') {
+  if (typeof value !== 'number') return `${currency}0`;
+  if (value >= 100000000) {
+    return `${currency}${(value / 100000000).toFixed(2)}亿`;
+  } else if (value >= 10000) {
+    return `${currency}${(value / 10000).toFixed(1)}万`;
+  }
+  return `${currency}${value.toLocaleString()}`;
+}
+
+/**
+ * 格式化命中率点显示
+ * @param {Array} points - 命中率点数组
+ * @param {number} defaultHitRate - 默认命中率
+ * @returns {string} 格式化后的显示字符串
+ */
+export function formatHitRatePoints(points, defaultHitRate = 0.80) {
+  if (!points || points.length === 0) {
+    return `统一: ${Math.round(defaultHitRate * 100)}%`;
+  }
+  const sorted = [...points].sort((a, b) => a.distance - b.distance);
+  return sorted.map(p => `${p.distance}m: ${Math.round(p.rate * 100)}%`).join(', ');
 }

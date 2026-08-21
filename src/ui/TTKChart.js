@@ -3,11 +3,15 @@ import {
   CHART_COLORS, 
   RANK_COLORS, 
   CHART_CONFIG 
-} from '../../constants/config.js';
-import { formatTime } from '../../utils/formatters.js';
+} from '../core/config.js';
+import { formatTime } from '../utils/formatters.js';
 
 /**
  * TTK柱状图专用类
+ * 
+ * 适配新的 configs 结构：
+ * - 从 weapon 对象中读取数据（_current 中已包含应用附件后的值）
+ * - 支持从 config 读取 triggerDelay 等配置
  */
 export class TTKChart {
   constructor() {
@@ -79,6 +83,11 @@ export class TTKChart {
     });
   }
 
+  /**
+   * 更新图表数据
+   * @param {Array} stats - 统计数据
+   * @param {Object} params - 页面参数
+   */
   update(stats, params) {
     this.previousResults = this.lastResults.slice();
     const newResults = stats.map(stat => this.calculateDelays(stat, params));
@@ -98,8 +107,6 @@ export class TTKChart {
    * - 平均空枪延迟：未命中导致的延迟
    * - 扳机延迟：开火前的延迟
    * 
-   * 关键：从 avgTime 反推各部分，确保各部分之和等于 avgTime
-   * 
    * @param {Object} stats - 统计结果 { weapon, avgTime, avgShots, avgMisses, avgBurstInterval }
    * @param {Object} params - 参数 { distance, triggerDelayEnable }
    * @returns {Object} 包含各部分延迟的结果对象
@@ -107,7 +114,7 @@ export class TTKChart {
   calculateDelays(stats, params) {
     const { weapon, avgTime, avgShots, avgMisses, avgBurstInterval } = stats;
     
-    // 🔥 修复：优先从 _current 读取 triggerDelay，兼容旧数据
+    // 🔥 优先从 _current 读取 triggerDelay，兼容旧数据
     const velocity = weapon.velocity || weapon._current?.velocity || 1;
     const triggerDelayValue = weapon._current?.triggerDelay ?? weapon.triggerDelay ?? 0;
     
@@ -141,11 +148,6 @@ export class TTKChart {
 
   /**
    * 计算射击延迟（命中间隔 + 空枪间隔）
-   * 
-   * 核心思路：
-   * 1. 从 avgTime 反推所有间隔时间：allIntervalTime = avgTime - flight - burstInterval
-   * 2. 将所有间隔时间按命中/空枪比例分配
-   * 
    * @private
    */
   _calculateShootingDelays(weapon, avgTime, avgShots, avgMisses, flight, burstInterval, isBurstMode) {
@@ -175,7 +177,6 @@ export class TTKChart {
    * @private
    */
   _calculateBurstModeDelays(weapon, avgShots, avgMisses, allIntervalTime) {
-    // 🔥 修复：添加空值保护
     const burstCount = weapon.burstCount || 1;
     
     // 计算连发间隔数量
@@ -188,7 +189,6 @@ export class TTKChart {
     }
     
     // 按空枪比例分配间隔时间
-    // 限制missRatio在[0, 1]范围内，防止avgMisses超过totalIntervalCount时产生负值
     const missRatio = Math.min(1, Math.max(0, avgMisses / totalIntervalCount));
     const emptyDelay = allIntervalTime * missRatio;
     const noMissFireDelay = allIntervalTime * (1 - missRatio);
@@ -207,8 +207,6 @@ export class TTKChart {
       return { noMissFireDelay: 0, emptyDelay: 0 };
     }
     
-    // 按空枪比例分配间隔时间
-    // 限制missRatio在[0, 1]范围内，防止avgMisses超过totalIntervalCount时产生负值
     const missRatio = Math.min(1, Math.max(0, avgMisses / totalIntervalCount));
     const emptyDelay = allIntervalTime * missRatio;
     const noMissFireDelay = allIntervalTime * (1 - missRatio);
@@ -216,6 +214,10 @@ export class TTKChart {
     return { noMissFireDelay, emptyDelay };
   }
 
+  /**
+   * 计算排名变化
+   * @param {Array} newResults - 新的结果数组
+   */
   calculateRankChanges(newResults) {
     newResults.forEach((r, newIdx) => {
       const oldIdx = this.previousResults.findIndex(o => o.name === r.name);
@@ -229,9 +231,12 @@ export class TTKChart {
     });
   }
 
+  /**
+   * 更新图表数据
+   * @param {Array} newResults - 新的结果数组
+   */
   updateChartData(newResults) {
     this.chart.data.labels = newResults.map(r => r.name);
-    // 修复：keys顺序要与数据集顺序匹配
     const keys = ['noMissFireDelay', 'burstInterval', 'emptyDelay', 'flight', 'triggerDelay'];
     this.chart.data.datasets.forEach((ds, i) => {
       ds.data = newResults.map(r => r[keys[i]]);
@@ -239,6 +244,10 @@ export class TTKChart {
     this.chart.update();
   }
 
+  /**
+   * 绘制排名延迟插件
+   * @param {Object} chart - Chart.js 图表实例
+   */
   drawRankDelayPlugin(chart) {
     if (chart.config.type !== 'bar') return;
     
@@ -279,10 +288,26 @@ export class TTKChart {
     });
   }
 
+  /**
+   * 获取图表上下文
+   * @param {string} chartId - 图表元素ID
+   * @returns {CanvasRenderingContext2D} Canvas上下文
+   */
   getChartContext(chartId) {
-    return document.getElementById(chartId).getContext('2d');
+    const canvas = document.getElementById(chartId);
+    if (!canvas) {
+      console.warn(`图表元素 #${chartId} 未找到`);
+      return null;
+    }
+    return canvas.getContext('2d');
   }
 
+  /**
+   * 格式化TTK标签
+   * @param {number} value - 数值
+   * @param {Object} ctx - Chart.js 上下文
+   * @returns {string} 格式化后的标签
+   */
   formatTTKLabel(value, ctx) {
     const totals = this.lastResults.map(r => r.totalTime);
     const sum = totals[ctx.dataIndex];
@@ -291,6 +316,10 @@ export class TTKChart {
     return `${pct}%\n${formatTime(sum, 'ms_raw')}`;
   }
 
+  /**
+   * 获取工具提示回调
+   * @returns {Object} 工具提示回调对象
+   */
   getTooltipCallbacks() {
     return {
       title: items => items[0].label,
@@ -303,7 +332,7 @@ export class TTKChart {
         const currentRank = idx + 1;
         const totalWeapons = this.lastResults.length;
         
-        // 判断是否为半自动武器（连发模式）- 添加空值保护
+        // 判断是否为半自动武器（连发模式）
         const isSemiAuto = r.weapon && 
                            r.weapon.fireMode === 'burst' && 
                            r.weapon.burstCount && 
@@ -333,10 +362,30 @@ export class TTKChart {
     };
   }
 
+  /**
+   * 销毁图表
+   */
   destroy() {
     if (this.chart) {
       this.chart.destroy();
       this.chart = null;
     }
+  }
+
+  /**
+   * 获取当前图表数据
+   * @returns {Object} 图表数据
+   */
+  getData() {
+    if (!this.chart) return null;
+    return this.chart.data;
+  }
+
+  /**
+   * 获取当前结果
+   * @returns {Array} 结果数组
+   */
+  getResults() {
+    return this.lastResults;
   }
 }

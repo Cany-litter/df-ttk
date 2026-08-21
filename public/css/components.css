@@ -1,0 +1,973 @@
+/* ============================================================
+   components.css - 组件样式 + 弹窗
+   包含: 子弹管理, 命中率弹窗, 枪管编辑弹窗, 通用弹窗,
+         通用按钮, 内联编辑, 新增枪管表单, 滚动条美化,
+         响应式适配补充
+   ============================================================ */
+
+/* ==================== 子弹管理模块 ==================== */
+.bullet-management-wrapper {
+  margin: 16px 0 12px 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.bullet-management-toggle {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  background: #f5f5f5;
+  transition: background 0.2s;
+  user-select: none;
+}
+
+.bullet-management-toggle:hover {
+  background: #eeeeee;
+}
+
+.bullet-management-toggle .toggle-icon {
+  font-size: 14px;
+  margin-right: 8px;
+  color: #666;
+  transition: transform 0.25s ease;
+}
+
+.bullet-management-toggle .toggle-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.bullet-management-toggle .bullet-summary {
+  margin-left: 12px;
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.bullet-management-body {
+  padding: 12px 16px 16px 16px;
+  background: #fff;
+  border-top: 1px solid #e8e8e8;
+}
+
+/* ==================== 子弹管理表格 ==================== */
+.bullet-management-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.bullet-management-table th,
+.bullet-management-table td {
+  padding: 6px 10px;
+  text-align: center;
+  vertical-align: middle;
+  border-bottom: 1px solid #eee;
+}
+
+.bullet-management-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #555;
+  border-bottom: 2px solid #ddd;
+}
+
+.bullet-management-table tr:hover td {
+  background: #f8faff;
+}
+
+.bullet-management-table .bullet-add-row td {
+  background: #f0fff0;
+  border-top: 2px dashed #4caf50;
+}
+
+/* ==================== 子弹管理 - 穿透水平标签 ==================== */
+.pen-levels-cell {
+  gap: 3px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+  min-width: 120px;
+}
+
+.pen-level-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fff;
+  min-width: 32px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ==================== 子弹管理 - 特殊子弹 ==================== */
+.special-row .bullet-name-cell {
+  text-align: left;
+  padding-left: 8px;
+}
+
+.special-note {
+  font-size: 0.7rem;
+  color: #666;
+  margin-top: 2px;
+  font-weight: normal;
+}
+
+.special-type-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  color: #fff;
+  margin-left: 4px;
+  font-weight: bold;
+}
+
+/* ==================== 子弹管理 - 组折叠 ==================== */
+.bullet-group {
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.bullet-group-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: background 0.15s;
+  user-select: none;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bullet-group-header:hover {
+  background: #f0f2f5;
+}
+
+.bullet-group-toggle {
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.2s;
+  width: 20px;
+  text-align: center;
+}
+
+.bullet-group-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.bullet-group-summary {
+  font-size: 0.8rem;
+  color: #666;
+  margin-left: 8px;
+}
+
+.bullet-group-count {
+  font-size: 0.75rem;
+  color: #999;
+  margin-left: auto;
+}
+
+.bullet-group-add-btn {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 2px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+  margin-left: 4px;
+}
+
+.bullet-group-add-btn:hover {
+  background: #388e3c;
+}
+
+.bullet-group-body {
+  padding: 8px 12px 12px 12px;
+  background: #fff;
+  overflow-x: auto;
+}
+
+/* ==================== 子弹管理头部 ==================== */
+.bullet-management-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.bullet-stats {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.bullet-stats-divider {
+  margin: 0 8px;
+  color: #ddd;
+}
+
+.bullet-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.bullet-search-input {
+  padding: 4px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  width: 180px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.bullet-search-input:focus {
+  border-color: #2196F3;
+}
+
+/* ==================== 子弹管理 - 添加口径行 ==================== */
+.bullet-add-caliber-row {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ==================== 子弹管理操作按钮 ==================== */
+.bullet-edit-btn,
+.bullet-delete-btn,
+.bullet-add-confirm-btn,
+.bullet-add-cancel-btn {
+  padding: 2px 10px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  margin: 0 2px;
+}
+
+.bullet-edit-btn {
+  background: #ff9800;
+  color: #fff;
+}
+
+.bullet-edit-btn:hover {
+  background: #f57c00;
+}
+
+.bullet-delete-btn {
+  background: #f44336;
+  color: #fff;
+}
+
+.bullet-delete-btn:hover {
+  background: #d32f2f;
+}
+
+.bullet-add-confirm-btn {
+  background: #4caf50;
+  color: #fff;
+}
+
+.bullet-add-confirm-btn:hover {
+  background: #388e3c;
+}
+
+.bullet-add-cancel-btn {
+  background: #9e9e9e;
+  color: #fff;
+}
+
+.bullet-add-cancel-btn:hover {
+  background: #757575;
+}
+
+.bullet-add-input {
+  border: 1px solid #4caf50;
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 0.85rem;
+  width: 100px;
+  background: #fafffa;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.bullet-add-input:focus {
+  border-color: #2196F3;
+}
+
+.bullet-add-select {
+  border: 1px solid #4caf50;
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 0.85rem;
+  background: #fafffa;
+  outline: none;
+  cursor: pointer;
+}
+
+.bullet-add-select:focus {
+  border-color: #2196F3;
+}
+
+.bullet-key-cell {
+  font-weight: 600;
+  color: #333;
+}
+
+.bullet-price-cell {
+  text-align: right;
+  font-weight: 500;
+}
+
+.bullet-price-display {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.bullet-price-display:hover {
+  background: #e3f2fd;
+}
+
+.bullet-type-display {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.bullet-type-display:hover {
+  background: #e3f2fd;
+}
+
+.bullet-actions-cell {
+  white-space: nowrap;
+}
+
+/* ==================== 子弹添加行输入 ==================== */
+.bullet-add-row input[type="number"],
+.bullet-add-row input[type="text"] {
+  border: 1px solid #4caf50;
+  border-radius: 3px;
+  padding: 2px 4px;
+  background: #fafffa;
+  font-size: 0.85rem;
+  text-align: center;
+  width: 50px;
+}
+
+.bullet-add-row .bullet-add-pen-levels input {
+  width: 32px;
+  font-size: 0.7rem;
+  padding: 1px 2px;
+}
+
+/* ==================== 命中率配置弹窗 ==================== */
+.hitrate-modal-content {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.hitrate-modal-header {
+  padding: 14px 20px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.hitrate-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.hitrate-modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.hitrate-modal-footer {
+  padding: 12px 20px;
+  background: #f5f7fa;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.hitrate-info {
+  background: #e3f2fd;
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin-bottom: 14px;
+  font-size: 0.85rem;
+  color: #1565c0;
+}
+
+.hitrate-info p {
+  margin: 4px 0;
+}
+
+.hitrate-info strong {
+  color: #0d47a1;
+}
+
+.hitrate-points-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.hitrate-points-table th,
+.hitrate-points-table td {
+  padding: 6px 10px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+}
+
+.hitrate-points-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: #555;
+  border-bottom: 2px solid #ddd;
+}
+
+.hitrate-points-table tr:hover td {
+  background: #f8faff;
+}
+
+.hitrate-points-table input[type="number"] {
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 3px 4px;
+  font-size: 0.9rem;
+  background: #fafafa;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.hitrate-points-table input[type="number"]:focus {
+  border-color: #2196F3;
+  background: #fff;
+}
+
+.hitrate-empty-row td {
+  color: #999;
+  font-style: italic;
+}
+
+.hitrate-actions {
+  display: flex;
+  gap: 10px;
+  margin: 12px 0 16px 0;
+  flex-wrap: wrap;
+}
+
+.hitrate-actions .btn-primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.hitrate-preview {
+  background: #fafafa;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  padding: 8px;
+  text-align: center;
+}
+
+.hitrate-preview canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ==================== 通用弹窗样式 ==================== */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modalFadeIn 0.2s ease;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 10px;
+  max-width: 95%;
+  max-height: 92vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+  width: 1200px;
+}
+
+.modal-content.modal-large {
+  width: 1300px;
+  max-width: 98%;
+}
+
+.modal-header {
+  padding: 14px 24px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-header h3 #barrelEditorWeaponName {
+  color: #1976d2;
+}
+
+.modal-close {
+  font-size: 28px;
+  cursor: pointer;
+  line-height: 1;
+  color: #999;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  padding: 12px 24px;
+  background: #f5f7fa;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ==================== 枪管编辑表格 ==================== */
+.barrel-editor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.barrel-editor-table th,
+.barrel-editor-table td {
+  border: 1px solid #ddd;
+  padding: 4px 6px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.barrel-editor-table th {
+  background: #f0f2f5;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.barrel-editor-table td {
+  background: #fff;
+}
+
+.barrel-editor-table tr:hover td {
+  background: #f8faff;
+}
+
+.barrel-editor-table input[type="text"],
+.barrel-editor-table input[type="number"] {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 3px 4px;
+  font-size: 12px;
+  box-sizing: border-box;
+  background: #fafafa;
+  transition: border-color 0.2s, background 0.2s;
+  min-width: 40px;
+}
+
+.barrel-editor-table input:focus {
+  border-color: #4caf50;
+  background: #fff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
+}
+
+.barrel-delete-btn {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.barrel-delete-btn:hover {
+  background: #d32f2f;
+}
+
+.empty-barrel-msg {
+  text-align: center;
+  padding: 40px 0;
+  color: #999;
+}
+
+.empty-barrel-msg p {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.barrel-editor-actions {
+  margin-top: 14px;
+  text-align: center;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+/* ==================== 通用按钮样式 ==================== */
+.btn-primary {
+  background: #2196f3;
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover {
+  background: #1976d2;
+}
+
+.btn-success {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 8px 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.btn-success:hover {
+  background: #388e3c;
+}
+
+.btn-secondary {
+  background: #9e9e9e;
+  color: #fff;
+  border: none;
+  padding: 8px 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #757575;
+}
+
+/* ==================== 内联编辑输入框样式 ==================== */
+.edit-inline-input {
+  border: 1px solid #2196F3 !important;
+  border-radius: 3px !important;
+  padding: 2px 4px !important;
+  background: #fff !important;
+  font-size: inherit !important;
+  text-align: center !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.15) !important;
+}
+
+.edit-inline-select {
+  border: 1px solid #2196F3 !important;
+  border-radius: 3px !important;
+  padding: 2px 4px !important;
+  background: #fff !important;
+  font-size: inherit !important;
+  outline: none !important;
+}
+
+/* ==================== 新增枪管弹窗表单 ==================== */
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 3px;
+  color: #333;
+}
+
+.form-group label .required {
+  color: #f44336;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  box-sizing: border-box;
+  background: #fafafa;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #4caf50;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.12);
+}
+
+.form-group .hint {
+  font-size: 11px;
+  color: #999;
+  display: block;
+  margin-top: 2px;
+}
+
+.form-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.form-row .form-group.half {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ==================== 新增样式 - 子弹管理表格内联显示 ==================== */
+/* 确保护甲伤害衰减和护甲穿透水平在同一行水平排列 */
+.bullet-management-table .pen-levels-cell {
+  gap: 3px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+}
+
+.bullet-management-table .pen-level-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fff;
+  min-width: 32px;
+  text-align: center;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+
+/* ==================== 响应式适配 ==================== */
+@media (max-width: 768px) {
+  .modal-content {
+    width: 98%;
+    max-height: 95vh;
+  }
+
+  .modal-body {
+    padding: 10px 12px;
+  }
+
+  .modal-header {
+    padding: 10px 16px;
+  }
+
+  .modal-footer {
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .barrel-editor-table {
+    font-size: 11px;
+  }
+
+  .barrel-editor-table th,
+  .barrel-editor-table td {
+    padding: 3px 4px;
+  }
+
+  .barrel-editor-table input[type="text"],
+  .barrel-editor-table input[type="number"] {
+    font-size: 11px;
+    min-width: 30px;
+    padding: 2px 3px;
+  }
+
+  .bullet-management-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bullet-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .bullet-search-input {
+    width: 100%;
+  }
+
+  .bullet-management-table {
+    font-size: 0.75rem;
+  }
+
+  .bullet-management-table th,
+  .bullet-management-table td {
+    padding: 4px 6px;
+  }
+
+  .bullet-group-header {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .bullet-group-summary {
+    font-size: 0.7rem;
+    margin-left: 4px;
+  }
+
+  .bullet-management-table .pen-level-badge {
+    font-size: 0.6rem;
+    min-width: 24px;
+    padding: 1px 3px;
+  }
+
+  .bullet-management-table .pen-levels-cell {
+    gap: 2px;
+  }
+
+  .bullet-add-row input[type="number"],
+  .bullet-add-row input[type="text"] {
+    width: 35px;
+    font-size: 0.7rem;
+  }
+
+  .bullet-add-row .bullet-add-pen-levels input {
+    width: 24px;
+    font-size: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .bullet-management-table {
+    font-size: 0.65rem;
+  }
+
+  .bullet-management-table th,
+  .bullet-management-table td {
+    padding: 3px 4px;
+  }
+
+  .bullet-management-table .pen-level-badge {
+    font-size: 0.55rem;
+    min-width: 20px;
+    padding: 1px 2px;
+  }
+
+  .bullet-group-header {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .bullet-group-summary {
+    font-size: 0.6rem;
+  }
+
+  .bullet-group-add-btn {
+    font-size: 0.65rem;
+    padding: 1px 6px;
+  }
+
+  .bullet-edit-btn,
+  .bullet-delete-btn,
+  .bullet-add-confirm-btn,
+  .bullet-add-cancel-btn {
+    font-size: 0.6rem;
+    padding: 1px 6px;
+  }
+}
