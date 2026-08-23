@@ -1,4 +1,4 @@
-import { HIT_KEYS, HIT_PROB_TOLERANCE } from '../constants/config.js';
+import { HIT_KEYS, HIT_PROB_TOLERANCE } from '../core/config.js';
 
 /**
  * 校验命中概率之和是否为 1
@@ -11,6 +11,43 @@ export function validateHitProb(params) {
   if (Math.abs(sum - 1) > HIT_PROB_TOLERANCE) {
     throw new Error('命中率总和必须为 1！');
   }
+  return true;
+}
+
+/**
+ * 🔥 验证距离-命中率映射字符串格式
+ * @param {string} hitRateRaw - 格式 "30:0.85,50:0.8,100:0.7"
+ * @returns {boolean} 验证是否通过
+ * @throws {Error} 当格式无效时抛出错误
+ */
+export function validateHitRateMap(hitRateRaw) {
+  if (!hitRateRaw || hitRateRaw.trim() === '') {
+    throw new Error('全局命中率不能为空，请使用格式: 距离:命中率,距离:命中率');
+  }
+  
+  const parts = hitRateRaw.split(',').map(p => p.trim());
+  if (parts.length === 0) {
+    throw new Error('全局命中率格式无效，请使用格式: 距离:命中率,距离:命中率');
+  }
+  
+  for (const part of parts) {
+    const [dist, rate] = part.split(':');
+    if (!dist || !rate) {
+      throw new Error(`全局命中率格式无效: "${part}"，应为 "距离:命中率"`);
+    }
+    
+    const distance = parseFloat(dist);
+    const hitRate = parseFloat(rate);
+    
+    if (isNaN(distance) || distance < 0) {
+      throw new Error(`距离必须为正数: "${dist}"`);
+    }
+    
+    if (isNaN(hitRate) || hitRate < 0 || hitRate > 1) {
+      throw new Error(`命中率必须在 0 到 1 之间: "${rate}"`);
+    }
+  }
+  
   return true;
 }
 
@@ -53,9 +90,19 @@ export function validatePageParams(params) {
     throw new Error('头盔值必须在 0 到 100 之间');
   }
 
-  // 验证命中率
-  if (params.hitRate < 0 || params.hitRate > 1) {
-    throw new Error('命中率必须在 0 到 1 之间');
+  // 🔥 验证全局命中率映射（如果存在）
+  if (params.hitRateMap !== undefined) {
+    if (!Array.isArray(params.hitRateMap) || params.hitRateMap.length === 0) {
+      throw new Error('全局命中率映射不能为空，请配置至少一个距离-命中率对');
+    }
+    for (const entry of params.hitRateMap) {
+      if (entry.distance < 0) {
+        throw new Error(`距离 ${entry.distance} 不能为负数`);
+      }
+      if (entry.rate < 0 || entry.rate > 1) {
+        throw new Error(`命中率 ${entry.rate} 必须在 0 到 1 之间`);
+      }
+    }
   }
 
   // 验证子弹等级
@@ -75,5 +122,3 @@ export function validatePageParams(params) {
 
   return true;
 }
-
-

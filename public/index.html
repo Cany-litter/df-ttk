@@ -1,361 +1,316 @@
 <!DOCTYPE html>
-<html lang="zh">
-
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>三角洲 TTK计算器</title>
-  <link rel="stylesheet" href="./styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delta Force TTK 计算器</title>
+
+  <!-- 外部库 -->
   <script src="./assets/libs/chart.umd.min.js"></script>
   <script src="./assets/libs/chartjs-plugin-datalabels.min.js"></script>
+
+  <!-- 样式 -->
+  <link rel="stylesheet" href="./styles.css" />
 </head>
-
 <body>
-  <div class="title-container">
-    <h2>TTK计算器</h2>
-  </div>
-  
-  <div class="version-info">
-    <span class="update-date">
-      <span class="date-label">更新日期:</span>
-      <span class="date-value">2026/8/8</span>
-    </span>
-    <span class="version-log">
-      <a href="./assets/Version.txt" target="_blank" title="查看更新日志">
-        <span class="version-label">版本日志</span>
-      </a>
-    </span>
-    <span class="author">
-      <a href="https://space.bilibili.com/128602631?spm_id_from=333.1007.0.0" target="_blank" title="访问UP主B站页面">
-        <img src="./assets/bili.png" alt="B站" class="author-icon" width="16" height="16">
-        <span class="author-name">殘雲碎夢</span>
-      </a>
-    </span>
-  </div>
-  
-  <div class="control-group">
-    <label for="bulletLevel">子弹等级</label>
-    <select id="bulletLevel">
-      <option value="1">1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4" selected>4</option>
-      <option value="5">5</option>
-    </select>
-    <label for="healthValue">生命值</label>
-    <input type="number" id="healthValue" value="100" min="1" max="800">
-  </div>
-  
-  <div class="control-group">
-    <label for="armorLevel">护甲等级</label>
-    <select id="armorLevel">
-      <option value="1">1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4" selected>4</option>
-      <option value="5">5</option>
-      <option value="6">6</option>
-    </select>
-    <label for="armorValue">护甲值</label>
-    <input type="number" id="armorValue" value="80" min="0" max="200">
+  <div id="app">
+    <!-- ========== 头部 ========== -->
+    <header class="app-header">
+      <div class="header-left">
+         <span>三角洲 TTK 计算器</span>
+      </div>
+      <div class="header-right">
+        <a href="https://space.bilibili.com/128602631?spm_id_from=333.1007.0.0" target="_blank">
+          <span>殘雲碎夢</span>
+          <img src="./assets/bili.png" alt="B站" class="bili-icon" />
+        </a>
+      </div>
+    </header>
+
+    <!-- ========== 主内容 ========== -->
+    <main class="app-main">
+      <!-- 🔥 顶部：参数面板（水平布局） -->
+      <div class="params-panel">
+        <!-- 🔥 第1行：核心战斗参数 -->
+        <div class="params-row">
+          <!-- 子弹等级 -->
+          <div class="param-group compact">
+            <label for="bulletLevel">子弹等级</label>
+            <select id="bulletLevel">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4" selected>4</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+
+          <!-- 护甲等级 -->
+          <div class="param-group compact">
+            <label for="armorLevel">护甲等级</label>
+            <select id="armorLevel">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4" selected>4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+
+          <!-- 护甲值 -->
+          <div class="param-group compact">
+            <label for="armorValue">护甲值</label>
+            <input type="number" id="armorValue" value="110" min="0" max="200" />
+          </div>
+
+          <!-- 头盔等级 -->
+          <div class="param-group compact">
+            <label for="helmetLevel">头盔等级</label>
+            <select id="helmetLevel">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4" selected>4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+
+          <!-- 头盔值 -->
+          <div class="param-group compact">
+            <label for="helmetValue">头盔值</label>
+            <input type="number" id="helmetValue" value="48" min="0" max="100" />
+          </div>
+
+          <!-- 生命值 -->
+          <div class="param-group compact">
+            <label for="healthValue">生命值</label>
+            <input type="number" id="healthValue" value="100" min="1" max="200" />
+          </div>
+        </div>
+
+        <!-- 🔥 第2行：命中相关参数 -->
+        <div class="params-row">
+          <!-- 距离 -->
+          <div class="param-group compact">
+            <label for="distance">距离 (m)</label>
+            <input type="number" id="distance" value="30" min="0" max="300" />
+          </div>
+
+          <!-- 全局命中率 -->
+          <div class="param-group compact">
+            <label for="hitRate">全局命中率</label>
+            <input type="text" id="hitRate" value="30:0.85,50:0.8,100:0.7,150:0.6" placeholder="30:0.85,50:0.8,100:0.7" />
+            <span class="hint-text">格式: 距离:命中率,距离:命中率</span>
+          </div>
+
+          <!-- 扳机延迟 -->
+          <div class="param-group compact checkbox-group">
+            <label>
+              <input type="checkbox" id="triggerDelayEnable" checked />
+              扳机延迟
+            </label>
+          </div>
+
+          <!-- 命中概率 -->
+          <div class="hit-prob-horizontal">
+            <label>命中概率</label>
+            <div class="hit-prob-row">
+              <span>头部</span>
+              <input type="number" id="pHead" value="0.1" min="0" max="1" step="0.01" />
+            </div>
+            <div class="hit-prob-row">
+              <span>胸部</span>
+              <input type="number" id="pChest" value="0.3" min="0" max="1" step="0.01" />
+            </div>
+            <div class="hit-prob-row">
+              <span>腹部</span>
+              <input type="number" id="pStomach" value="0.3" min="0" max="1" step="0.01" />
+            </div>
+            <div class="hit-prob-row">
+              <span>四肢</span>
+              <input type="number" id="pLimbs" value="0.3" min="0" max="1" step="0.01" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 🔥 第3行：操作按钮 -->
+        <div class="params-row">
+          <div class="buttons-group">
+            <button id="calcBtn" class="btn-primary">📊 计算 TTK</button>
+            <button id="distChartBtn" class="btn-secondary">📈 距离折线图</button>
+            <button id="resetDataBtn" class="btn-secondary" style="background:#ff9800;color:#fff;">🔄 重置</button>
+            <button id="exportDataBtn" class="btn-secondary" style="background:#9c27b0;color:#fff;">📤 导出</button>
+            <button id="importDataBtn" class="btn-secondary" style="background:#607d8b;color:#fff;">📥 导入</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== 图表区域（垂直堆叠） ========== -->
+      <div class="charts-area">
+        <!-- TTK 柱状图 -->
+        <div class="chart-wrapper">
+          <h3>TTK 对比</h3>
+          <canvas id="ttkChart"></canvas>
+        </div>
+
+        <!-- 距离折线图 -->
+        <div class="chart-wrapper">
+          <div class="chart-header">
+            <h3>距离 - TTK 折线图</h3>
+            <div class="chart-controls">
+              <label>
+                <input type="checkbox" id="showAllWeapons" />
+                显示全部武器
+              </label>
+              <button id="exportJSONBtn" class="btn-small">📤 导出JSON</button>
+            </div>
+          </div>
+          <canvas id="distanceChart"></canvas>
+        </div>
+      </div>
+
+      <!-- ========== 底部表格区域 ========== -->
+      <div class="table-section">
+        <!-- Tab 导航栏 -->
+        <div class="table-tabs">
+          <button class="tab-btn active" data-tab="weapon">🔫 枪械数据</button>
+          <button class="tab-btn" data-tab="price">💰 价格数据</button>
+          <button class="tab-btn" data-tab="bullet">💊 子弹数据</button>
+        </div>
+
+        <!-- Tab 内容容器 -->
+        <div class="tab-content-wrapper">
+          <!-- Tab 1: 枪械数据 -->
+          <div id="tab-weapon" class="tab-content active">
+            <!-- 由 WeaponTable 动态渲染 -->
+          </div>
+
+          <!-- Tab 2: 价格数据 -->
+          <div id="tab-price" class="tab-content">
+            <!-- 由 PriceTable 动态渲染 -->
+          </div>
+
+          <!-- Tab 3: 子弹数据 -->
+          <div id="tab-bullet" class="tab-content">
+            <!-- 由 BulletTable 动态渲染 -->
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ========== 页脚 ========== -->
+    <footer class="app-footer">
+      <span>Delta Force TTK Calculator &copy; 2026</span>
+      <span class="footer-separator">|</span>
+      <span>数据仅供参考，以游戏内为准</span>
+    </footer>
   </div>
 
-  <div class="control-group">
-    <label for="helmetLevel">头盔等级</label>
-    <select id="helmetLevel">
-      <option value="1">1</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4" selected>4</option>
-      <option value="5">5</option>
-      <option value="6">6</option>
-    </select>
-    <label for="helmetValue">头盔值</label>
-    <input type="number" id="helmetValue" value="35" min="0" max="100">
-  </div>
-  
-  <div class="control-group" id="distance-group">
-    <label for="distance">交战距离 (m)</label>
-    <input type="number" id="distance" value="30" min="0">
-  </div>
-   
-  <fieldset class="control-group">
-    <legend>击中部位概率</legend>
-    <div class="prob-item">
-      <label>头部:</label><input type="number" id="pHead" value="0.18" step="0.01" min="0" max="1">
-      <label>胸部:</label><input type="number" id="pChest" value="0.3" step="0.01" min="0" max="1">
-      <label>腹部:</label><input type="number" id="pStomach" value="0.22" step="0.01" min="0" max="1">
-      <label>四肢:</label><input type="number" id="pLimbs" value="0.3" step="0.01" min="0" max="1">
-    </div>
-  </fieldset>
-  
-  <div class="control-group">
-    <label for="triggerDelayEnable">扳机延迟</label>
-    <input type="checkbox" id="triggerDelayEnable" checked>
-    <label for="globalBarrelType">枪管类型:</label>
-    <select id="globalBarrelType">
-      <option value="none">无</option>
-      <option value="longest" selected>射程最长枪管</option>
-    </select>
-    <label for="hitRate">命中率:</label>
-    <input type="number" id="hitRate" value="0.85" min="0" max="1" step="0.01">
-  </div>
-
-  <div class="buttons-container">
-    <button id="calcBtn">生成TTK排行榜</button>
-    <button id="distChartBtn">生成TTK折线图</button>
-  </div>
-  
-  <div class="canvas-container">
-    <canvas id="ttkChart" width="800" height="400"></canvas>
-  </div>
-
-  <!-- 距离图表控制区 -->
-  <div class="distance-chart-controls">
-    <label for="showAllWeapons">
-      <input type="checkbox" id="showAllWeapons"> 显示全部枪械
-    </label>
-    <span class="divider">|</span>
-    <span class="label-text">导出数据:</span>
-    <button id="exportJSONBtn" class="btn-export btn-json">📄 JSON</button>
-    <span class="hint-text">💡 勾选"显示全部"后重新生成折线图生效</span>
-  </div>
-  
-  <div class="canvas-container">
-    <canvas id="distanceChart" width="800" height="400"></canvas>
-  </div>
-
-  <!-- 武器数据编辑提示 -->
-  <div class="data-edit-tip">
-    <strong>💡 提示：</strong>
-    <span style="color: #1565c0;">左侧"原始"列可编辑，右侧"当前"列为计算值（只读）</span>
-    <span class="tip-sub">
-      📌 修改原始数据后，当前列会根据枪管/枪口/精校自动重新计算
-    </span>
-  </div>
-
-  <!-- 表格容器 - 添加 overflow-x: auto 以支持水平滚动 -->
-  <div style="overflow-x: auto; width: 100%;">
-    <table id="attachmentTable">
-      <thead>
-        <tr>
-          <th rowspan="2">武器</th>
-          <th rowspan="2">类型</th>
-          <th colspan="2">射速</th>
-          <th colspan="2">初速</th>
-          <th colspan="2">射程</th>
-          <th colspan="2">基础伤害</th>
-          <th colspan="2">护甲伤害</th>
-          <th colspan="2">部位倍率</th>
-          <th rowspan="2">部位伤害</th>
-          <th rowspan="2">枪管</th>
-          <th rowspan="2">枪口</th>
-          <th rowspan="2">子弹类型</th>
-          <th rowspan="2">命中率</th>
-          <th rowspan="2">枪口初速精校</th>
-          <th rowspan="2">操作</th>
-        </tr>
-        <tr>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-          <th class="sub-header">原始</th>
-          <th class="sub-header">当前</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- 新增枪械按钮区域 -->
-  <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-    <button id="addWeaponBtn" style="background-color: #4caf50; color: #fff; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; transition: background-color 0.2s;">
-      ➕ 新增枪械
-    </button>
-    <span style="font-size: 0.85rem; color: #666;">点击后在表格底部添加新行，填写数据后点击"确认添加"保存</span>
-  </div>
-
-  <!-- 数据管理提示 -->
-  <div class="data-management-tip">
-    <span>💾 数据自动保存在浏览器本地</span>
-    <span>📤 点击"导出数据"可备份为JSON文件</span>
-    <span>📥 点击"导入数据"可恢复备份</span>
-    <span>🔄 点击"重置为默认"恢复原始数据</span>
-  </div>
-
-  <!-- ==================== 枪管编辑弹窗 ==================== -->
+  <!-- ========== 弹窗：枪管编辑器 ========== -->
   <div id="barrelEditorModal" class="modal" style="display:none;">
     <div class="modal-content modal-large">
       <div class="modal-header">
-        <h3>编辑枪管 - <span id="barrelEditorWeaponName"></span></h3>
-        <span class="modal-close" id="barrelEditorClose">&times;</span>
+        <h3>🔧 编辑枪管 — <span id="barrelEditorWeaponName"></span></h3>
+        <button id="barrelEditorClose" class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
         <div id="barrelEditorContainer">
-          <!-- 枪管列表将动态渲染到这里 -->
-          <div class="empty-barrel-msg">加载中...</div>
+          <!-- 由 BarrelEditor 动态渲染 -->
         </div>
-        <div class="barrel-editor-actions">
-          <button id="addBarrelBtn" class="btn-primary">+ 新增枪管</button>
+        <div class="modal-actions">
+          <button id="addBarrelBtn" class="btn-secondary">➕ 新增枪管</button>
+          <button id="saveBarrelBtn" class="btn-primary">💾 保存</button>
+          <button id="cancelBarrelBtn" class="btn-secondary">取消</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button id="saveBarrelBtn" class="btn-success">💾 保存</button>
-        <button id="cancelBarrelBtn" class="btn-secondary">取消</button>
       </div>
     </div>
   </div>
 
-  <!-- ==================== 新增枪管弹窗 ==================== -->
+  <!-- ========== 弹窗：新增枪管 ========== -->
   <div id="addBarrelModal" class="modal" style="display:none;">
-    <div class="modal-content" style="max-width:560px;">
+    <div class="modal-content">
       <div class="modal-header">
-        <h3>新增枪管</h3>
-        <span class="modal-close" id="addBarrelModalClose">&times;</span>
+        <h3>➕ 新增枪管</h3>
+        <button id="addBarrelModalClose" class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label>枪管名称 <span class="required">*</span></label>
-          <input type="text" id="newBarrelName" placeholder="如: 长枪管" />
-        </div>
-        <div class="form-row">
-          <div class="form-group half">
-            <label>射程倍率 (rangeMult)</label>
-            <input type="number" id="newBarrelRangeMult" step="0.01" value="1.0" />
-            <span class="hint">基础射程倍率</span>
-          </div>
-          <div class="form-group half">
-            <label>射程增量 (rangeAdd)</label>
-            <input type="number" id="newBarrelRangeAdd" step="0.01" value="0" />
-            <span class="hint">额外增加射程</span>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group half">
-            <label>初速倍率 (velocityMult)</label>
-            <input type="number" id="newBarrelVelocityMult" step="0.01" value="1.0" />
-            <span class="hint">初速 × (rangeMult + muzzleMult) × velocityMult</span>
-          </div>
-          <div class="form-group half">
-            <label>初速增量 (velocityAdd)</label>
-            <input type="number" id="newBarrelVelocityAdd" step="1" value="0" />
-            <span class="hint">初速直接增加量</span>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group half">
-            <label>射速倍率 (rofMult)</label>
-            <input type="number" id="newBarrelRofMult" step="0.01" value="1.0" />
-          </div>
-          <div class="form-group half">
-            <label>扳机延迟增量 (triggerDelayDelta)</label>
-            <input type="number" id="newBarrelTriggerDelayDelta" step="1" value="0" />
-            <span class="hint">单位: 毫秒</span>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group half">
-            <label>肉伤加成 (damageBonus)</label>
-            <input type="number" id="newBarrelDamageBonus" step="0.1" value="0" />
-          </div>
-          <div class="form-group half">
-            <label>甲伤加成 (armorDamageBonus)</label>
-            <input type="number" id="newBarrelArmorDamageBonus" step="0.1" value="0" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>自定义射程 (ranges)</label>
-          <input type="text" id="newBarrelRanges" placeholder="40,70,∞,∞" value="" />
-          <span class="hint">留空则使用武器默认射程 × 倍率</span>
-        </div>
-        <div class="form-group">
-          <label>自定义衰减 (decays)</label>
-          <input type="text" id="newBarrelDecays" placeholder="1.0,0.85,0.7,0.7,0.7" value="" />
-          <span class="hint">留空则使用武器默认衰减</span>
-        </div>
-        <div class="form-group">
-          <label>部位倍率加成 (partMultAdd)</label>
-          <input type="text" id="newBarrelPartMultAdd" placeholder='{"head":0.1,"chest":0.05}' value="" />
-          <span class="hint">JSON格式，如 {"head":0.1,"chest":0.05}</span>
-        </div>
-        <div class="form-group">
-          <label>开火模式 (fireMode)</label>
-          <select id="newBarrelFireMode">
-            <option value="">继承武器</option>
-            <option value="auto">全自动</option>
-            <option value="burst">连发</option>
-          </select>
-        </div>
-        <div id="newBarrelBurstFields" style="display:none;">
-          <div class="form-row">
-            <div class="form-group half">
-              <label>连发数量 (burstCount)</label>
-              <input type="number" id="newBarrelBurstCount" step="1" value="3" />
-            </div>
-            <div class="form-group half">
-              <label>连发内部射速 (burstInternalROF)</label>
-              <input type="number" id="newBarrelBurstInternalROF" step="1" value="800" />
-            </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>枪管名称 *</label>
+            <input type="text" id="newBarrelName" placeholder="如：长枪管" />
           </div>
           <div class="form-group">
-            <label>连发间隔 (burstInterval)</label>
-            <input type="number" id="newBarrelBurstInterval" step="0.001" value="0.1" />
-            <span class="hint">单位: 秒</span>
+            <label>射程倍率</label>
+            <input type="number" id="newBarrelRangeMult" step="0.01" value="1.0" />
+          </div>
+          <div class="form-group">
+            <label>射程增量</label>
+            <input type="number" id="newBarrelRangeAdd" step="0.01" value="0" />
+          </div>
+          <div class="form-group">
+            <label>初速倍率</label>
+            <input type="number" id="newBarrelVelocityMult" step="0.01" value="1.0" />
+          </div>
+          <div class="form-group">
+            <label>初速增量</label>
+            <input type="number" id="newBarrelVelocityAdd" step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label>射速倍率</label>
+            <input type="number" id="newBarrelRofMult" step="0.01" value="1.0" />
+          </div>
+          <div class="form-group">
+            <label>肉伤加成</label>
+            <input type="number" id="newBarrelDamageBonus" step="0.1" value="0" />
+          </div>
+          <div class="form-group">
+            <label>甲伤加成</label>
+            <input type="number" id="newBarrelArmorDamageBonus" step="0.1" value="0" />
+          </div>
+          <div class="form-group">
+            <label>扳机延迟 Δ</label>
+            <input type="number" id="newBarrelTriggerDelayDelta" step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label>自定义射程</label>
+            <input type="text" id="newBarrelRanges" placeholder="40,70,∞,∞" />
+          </div>
+          <div class="form-group">
+            <label>自定义衰减</label>
+            <input type="text" id="newBarrelDecays" placeholder="1.0,0.85,0.7,0.7,0.7" />
+          </div>
+          <div class="form-group">
+            <label>部位倍率加成 (JSON)</label>
+            <input type="text" id="newBarrelPartMultAdd" placeholder='{"head":0.1,"chest":0.05}' />
+          </div>
+          <div class="form-group">
+            <label>开火模式</label>
+            <select id="newBarrelFireMode">
+              <option value="">默认</option>
+              <option value="auto">全自动</option>
+              <option value="burst">连发</option>
+            </select>
+          </div>
+          <div class="form-group" id="newBarrelBurstFields" style="display:none;">
+            <label>连发参数</label>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+              <input type="number" id="newBarrelBurstCount" placeholder="连发数" value="3" style="width:60px;" />
+              <input type="number" id="newBarrelBurstInternalROF" placeholder="内部射速" value="800" style="width:70px;" />
+              <input type="number" id="newBarrelBurstInterval" placeholder="间隔(s)" value="0.1" step="0.01" style="width:70px;" />
+            </div>
           </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button id="confirmAddBarrelBtn" class="btn-success">确认添加</button>
-        <button id="cancelAddBarrelBtn" class="btn-secondary">取消</button>
+        <div class="modal-actions">
+          <button id="confirmAddBarrelBtn" class="btn-primary">✅ 确认添加</button>
+          <button id="cancelAddBarrelBtn" class="btn-secondary">取消</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- 新增枪械按钮的JavaScript事件绑定 -->
-  <script>
-    // 等待DOM加载完成后绑定新增枪械按钮事件
-    document.addEventListener('DOMContentLoaded', function() {
-      const addWeaponBtn = document.getElementById('addWeaponBtn');
-      if (addWeaponBtn) {
-        addWeaponBtn.addEventListener('click', function() {
-          // 找到新增行
-          const addRow = document.getElementById('addWeaponRow');
-          if (addRow) {
-            // 如果已经存在，滚动到该行并聚焦第一个输入框
-            addRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            const firstInput = addRow.querySelector('input');
-            if (firstInput) {
-              firstInput.focus();
-            }
-          } else {
-            // 如果不存在，重新渲染表格以显示新增行
-            if (window.app && window.app.domController) {
-              window.app.domController.renderAttachmentTable();
-              setTimeout(function() {
-                const newAddRow = document.getElementById('addWeaponRow');
-                if (newAddRow) {
-                  newAddRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  const firstInput = newAddRow.querySelector('input');
-                  if (firstInput) {
-                    firstInput.focus();
-                  }
-                }
-              }, 100);
-            }
-          }
-        });
-      }
-    });
-  </script>
-
+  <!-- ========== 主脚本 ========== -->
   <script src="./bundle.js"></script>
 </body>
-
 </html>

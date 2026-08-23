@@ -55,16 +55,35 @@ export class ArmorDamageCalculator {
    * @param {number} penDamage - 穿透伤害
    * @param {number} armorDamage - 护甲伤害
    * @param {number} armorValue - 护甲值
+   * @param {boolean} debug - 是否打印调试日志
    * @returns {Object} { finalDamage, remainingArmor }
    */
-  static calculate(pureDamage, penDamage, armorDamage, armorValue) {
-    if (armorDamage >= armorValue) {
-      const frac = armorValue / armorDamage;
-      const finalDamage = frac * penDamage + (1 - frac) * pureDamage;
-      return { finalDamage, remainingArmor: 0 };
-    } else {
-      return { finalDamage: penDamage, remainingArmor: armorValue - armorDamage };
+  static calculate(pureDamage, penDamage, armorDamage, armorValue, debug = false) {
+    if (debug) {
+      console.log(`      [ArmorDamageCalculator] 输入: pureDamage=${pureDamage.toFixed(2)}, penDamage=${penDamage.toFixed(2)}, armorDamage=${armorDamage.toFixed(2)}, armorValue=${armorValue.toFixed(2)}`);
     }
+    
+    let finalDamage;
+    let remainingArmor;
+    
+    if (armorDamage >= armorValue) {
+      // 护甲被击穿
+      const frac = armorValue / armorDamage;
+      finalDamage = frac * penDamage + (1 - frac) * pureDamage;
+      remainingArmor = 0;
+      if (debug) {
+        console.log(`      [ArmorDamageCalculator] 护甲击穿! frac=${frac.toFixed(3)}, finalDamage=${finalDamage.toFixed(2)}`);
+      }
+    } else {
+      // 护甲未被击穿
+      finalDamage = penDamage;
+      remainingArmor = armorValue - armorDamage;
+      if (debug) {
+        console.log(`      [ArmorDamageCalculator] 护甲未击穿, finalDamage=${finalDamage.toFixed(2)}, remainingArmor=${remainingArmor.toFixed(2)}`);
+      }
+    }
+    
+    return { finalDamage, remainingArmor };
   }
 }
 

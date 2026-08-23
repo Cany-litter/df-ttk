@@ -1,4 +1,4 @@
-import { TIME_UNITS } from '../constants/config.js';
+import { TIME_UNITS } from '../core/config.js';
 
 /**
  * 格式化射程显示，将Infinity转换为∞符号

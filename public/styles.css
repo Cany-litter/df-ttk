@@ -1,1262 +1,1346 @@
-body {
-  font-family: sans-serif;
-  margin: 20px;
+/* ============================================================
+   全局重置 & 基础样式
+   ============================================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* 标题容器样式 */
-.title-container {
-  text-align: left;
-  margin-bottom: 20px;
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f0f2f5;
+  color: #1a1a2e;
+  line-height: 1.6;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   应用容器 - 允许滚动
+   ============================================================ */
+#app {
+  max-width: 100vw;
+  margin: 0 auto;
+  padding: 8px 16px 20px 16px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-.title-image {
-  width: 550px;
-  height: auto;
-}
-
-.title-container h2 {
-  margin: 0;
-  color: #333;
-  font-size: 1.8rem;
-}
-
-/* 版本信息样式 */
-.version-info {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  text-align: right;
-  font-size: 0.75rem;
-  color: #666;
-  line-height: 1.2;
-}
-
-.version-info .update-date {
-  display: block;
-  color: #666;
-}
-
-.version-info .date-label {
-  color: #666;
-}
-
-.version-info .date-value {
-  color: #4caf50;
-  font-weight: bold;
-}
-
-.version-info .author {
-  display: block;
-  margin-top: 4px;
-}
-
-.version-info .author a {
-  color: #666;
-  text-decoration: none;
-  transition: color 0.2s ease;
-  display: inline-flex;
+/* ============================================================
+   头部
+   ============================================================ */
+.app-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  padding: 4px 0 8px 0;
+  border-bottom: 2px solid #e8e8e8;
+  flex-shrink: 0;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
-.version-info .author a:hover {
-  color: #4caf50;
-  text-decoration: underline;
-}
-
-.version-info .author-icon {
-  width: 16px;
-  height: 16px;
-  vertical-align: middle;
-  object-fit: contain;
-  border-radius: 2px;
-  transition: transform 0.2s ease;
-}
-
-.version-info .author a:hover .author-icon {
-  transform: scale(1.1);
-}
-
-.version-info .author-name {
-  color: #ff69b4;
-  font-weight: bold;
-}
-
-.version-info .social-links {
-  margin-top: 4px;
+.header-left {
   display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a2e;
 }
 
-.version-info .social-link {
-  color: #999;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #555;
+}
+
+.header-right a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   text-decoration: none;
-  transition: all 0.2s ease;
-  padding: 2px;
-  border-radius: 3px;
+  color: #555;
+  transition: color 0.2s;
 }
 
-.version-info .social-link:hover {
-  color: #4caf50;
-  background-color: rgba(76, 175, 80, 0.1);
+.header-right a:hover {
+  color: #4a6cf7;
+}
+
+.bili-icon {
+  height: 28px;
+  width: 28px;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.bili-icon:hover {
   transform: scale(1.1);
 }
 
-.version-info .social-icon {
-  font-size: 0.9rem;
-}
-
-body {
-  position: relative;
-}
-
-.control-group {
+/* ============================================================
+   主布局：垂直布局
+   ============================================================ */
+.app-main {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin-bottom: 8px;
-}
-
-.control-group#distance-group {
-  white-space: nowrap;
-}
-
-fieldset.control-group {
-  display: grid;
-  grid-template-columns: auto auto;
-  column-gap: 12px;
-  row-gap: 4px;
-  padding: 8px;
-  max-width: 340px;
-}
-
-.control-group label {
-  width: auto;
-  min-width: 45px;
-  font-size: 0.9rem;
-  margin-right: 0px;
-}
-
-.control-group select,
-.control-group input[type="number"] {
-  width: auto;
-  max-width: 50px;
-  font-size: 0.9rem;
-}
-
-#globalBarrelType {
-  min-width: 115px;
-}
-
-.control-group input[type="checkbox"] {
-  margin: 0;
-  margin-left: -10px;
-}
-
-label {
-  display: inline-block;
-  width: 100px;
-}
-
-input[type="number"] {
-  width: 60px;
-}
-
-button {
-  background-color: #4caf50;
-  color: #fff;
-  padding: 6px 14px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color .2s;
-}
-
-button:hover {
-  background-color: #45a049;
-}
-
-.buttons-container {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.canvas-container {
-  background: #fff;
-  padding: 16px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-}
-
-.prob-item label {
-  width: auto;
-}
-
-/* ==================== 枪口初速精校列样式 ==================== */
-
-.velocity-precision-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 95px;
-  min-width: 95px;
-  max-width: 95px;
-  padding: 0 2px;
-}
-
-.velocity-precision-slider {
-  width: 70px;
-  min-width: 70px;
-  max-width: 70px;
-  height: 18px;
-  flex: 0 0 auto;
-  background: #ddd;
-  outline: none;
-  border-radius: 10px;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.velocity-precision-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  background: #4caf50;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.velocity-precision-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  background: #4caf50;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.velocity-precision-value {
-  font-size: 0.8rem;
-  font-weight: bold;
-  color: #333;
-  min-width: 32px;
-  width: 32px;
-  text-align: center;
+  flex-direction: column;
+  gap: 10px;
   flex-shrink: 0;
 }
 
-.velocity-precision-display {
+/* ============================================================
+   顶部参数面板 - 水平布局，三行
+   ============================================================ */
+.params-panel {
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 95px;
-  min-width: 95px;
-  max-width: 95px;
-  padding: 2px 8px;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-}
-
-.velocity-precision-display .velocity-precision-value {
-  min-width: 32px;
-  width: 32px;
-  text-align: center;
-  color: #666;
-  font-style: italic;
-}
-
-.prob-item {
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 4px;
 }
 
-/* ==================== 部位伤害列样式 ==================== */
-
-/* 部位伤害列 - 显示 头,胸,腹,四肢 四个值，用逗号分隔 */
-.part-damage-cell {
-  text-align: center;
-  font-size: 0.85rem;
-  color: #333;
-  min-width: 80px;
-  max-width: 110px;
-  white-space: nowrap;
-  font-weight: 500;
-}
-
-/* 部位伤害值中的每个数字使用等宽字体，方便对齐 */
-.part-damage-cell .damage-value {
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  color: #1565c0;
-}
-
-/* 部位伤害列的表头样式 */
-#attachmentTable thead th.part-damage-header {
-  min-width: 70px;
-  max-width: 100px;
-  font-size: 0.8rem;
-  text-align: center;
-}
-
-/* ==================== 表格自适应列宽 - 核心样式 ==================== */
-
-#attachmentTable {
-  table-layout: auto;
-  width: 100%;
-  border-collapse: collapse;
-}
-
-#attachmentTable td,
-#attachmentTable th {
-  padding: 4px 6px;
-  text-align: center;
-  vertical-align: middle;
-  border: 1px solid #ddd;
-  white-space: nowrap;
-}
-
-/* 表体武器名称列 - 左对齐，限制最大宽度防止过宽 */
-#attachmentTable tbody td:first-child {
-  text-align: left;
-  min-width: 60px;
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 表头"武器"列 - 居中（默认） */
-
-/* 枪管和枪口列左对齐 */
-#attachmentTable td:nth-child(16),
-#attachmentTable td:nth-child(17) {
-  text-align: left;
-}
-
-/* ==================== 限制过宽的列 ==================== */
-
-/* 武器类型列 - 限制宽度 */
-#attachmentTable td:nth-child(2),
-#attachmentTable th:nth-child(2) {
-  min-width: 40px;
-  max-width: 70px;
-}
-
-/* 射程原始列 - 限制宽度 */
-#attachmentTable td:nth-child(7),
-#attachmentTable th:nth-child(7) {
-  min-width: 60px;
-  max-width: 100px;
-}
-
-/* 部位倍率原始列 - 限制宽度 */
-#attachmentTable td:nth-child(13),
-#attachmentTable th:nth-child(13) {
-  min-width: 60px;
-  max-width: 100px;
-}
-
-/* 部位倍率当前列 - 限制宽度 */
-#attachmentTable td:nth-child(14),
-#attachmentTable th:nth-child(14) {
-  min-width: 60px;
-  max-width: 100px;
-}
-
-/* 射程当前列 - 限制宽度 */
-#attachmentTable td:nth-child(8),
-#attachmentTable th:nth-child(8) {
-  min-width: 50px;
-  max-width: 80px;
-}
-
-/* ==================== 附件下拉框列宽度 ==================== */
-
-#attachmentTable .barrelSel {
-  margin: 0;
-  display: inline-block;
-  width: 130px;
-  min-width: 130px;
-  max-width: 150px;
-}
-
-#attachmentTable .muzzleSel {
-  margin: 0;
-  display: inline-block;
-  width: 100px;
-  min-width: 80px;
-  max-width: 120px;
-}
-
-#attachmentTable .bulletSel {
-  margin: 0;
-  display: inline-block;
-  width: 60px;
-  min-width: 50px;
-  max-width: 70px;
-}
-
-/* ==================== 数值列保持紧凑 ==================== */
-
-/* 射速原始/当前列 */
-#attachmentTable td:nth-child(3),
-#attachmentTable td:nth-child(4),
-#attachmentTable th:nth-child(3),
-#attachmentTable th:nth-child(4) {
-  min-width: 35px;
-  max-width: 55px;
-}
-
-/* 初速原始/当前列 */
-#attachmentTable td:nth-child(5),
-#attachmentTable td:nth-child(6),
-#attachmentTable th:nth-child(5),
-#attachmentTable th:nth-child(6) {
-  min-width: 40px;
-  max-width: 60px;
-}
-
-/* 基础伤害原始/当前列 */
-#attachmentTable td:nth-child(9),
-#attachmentTable td:nth-child(10),
-#attachmentTable th:nth-child(9),
-#attachmentTable th:nth-child(10) {
-  min-width: 30px;
-  max-width: 45px;
-}
-
-/* 护甲伤害原始/当前列 */
-#attachmentTable td:nth-child(11),
-#attachmentTable td:nth-child(12),
-#attachmentTable th:nth-child(11),
-#attachmentTable th:nth-child(12) {
-  min-width: 30px;
-  max-width: 45px;
-}
-
-/* 子弹类型列 */
-#attachmentTable td:nth-child(18),
-#attachmentTable th:nth-child(18) {
-  min-width: 40px;
-  max-width: 60px;
-}
-
-/* 命中率列 */
-#attachmentTable td:nth-child(19),
-#attachmentTable th:nth-child(19) {
-  min-width: 40px;
-  max-width: 55px;
-}
-
-/* ==================== 副本行样式 ==================== */
-
-.clone-row {
-  background-color: #f5f5f5;
-  font-size: 16px;
-}
-
-.clone-row:hover {
-  background-color: #e9e9e9;
-}
-
-.clone-row td {
-  background-color: inherit;
-  border-top: 1px solid #dee2e6;
-  font-size: inherit;
-}
-
-/* ==================== 操作按钮样式 ==================== */
-
-.add-clone-btn,
-.remove-clone-btn {
-  width: 18px;
-  height: 18px;
-  border: none;
-  border-radius: 50%;
-  font-size: 13px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  line-height: 1;
-  padding: 0;
-}
-
-.add-clone-btn {
-  background-color: #5abb56;
-  color: white;
-}
-
-.add-clone-btn:hover {
-  background-color: #5abb56;
-}
-
-.remove-clone-btn {
-  background-color: #dc3545;
-  color: white;
-}
-
-.remove-clone-btn:hover {
-  background-color: #c82333;
-}
-
-.add-clone-btn:disabled {
-  background-color: #d2d4d6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ==================== 可编辑输入框样式 ==================== */
-
-.editable-input {
-  border: 1px solid #ddd !important;
-  border-radius: 3px !important;
-  padding: 2px 4px !important;
-  background: #fafafa !important;
-  transition: all 0.2s ease;
-  font-size: inherit !important;
-  text-align: center !important;
-}
-
-.editable-input:hover {
-  border-color: #4caf50 !important;
-  background: #fff !important;
-}
-
-.editable-input:focus {
-  border-color: #2196F3 !important;
-  background: #fff !important;
-  outline: none !important;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
-}
-
-.editable-input[type="number"] {
-  -moz-appearance: textfield;
-}
-
-.editable-input[type="number"]::-webkit-inner-spin-button,
-.editable-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* ==================== 当前值只读样式 ==================== */
-
-.current-value {
-  display: inline-block;
-  padding: 2px 6px;
-  background: #f0f0f0;
-  border-radius: 3px;
-  font-weight: bold;
-  color: #333;
-  min-width: 30px;
-  font-size: inherit;
-}
-
-.current-value.velocity-current {
-  color: #1565c0;
-}
-
-.current-value.rof-current {
-  color: #2e7d32;
-}
-
-.current-value.damage-current {
-  color: #c62828;
-}
-
-.current-value.armor-current {
-  color: #e65100;
-}
-
-.current-value.ranges-current {
-  color: #6a1b9a;
-  font-weight: normal;
-}
-
-.current-value.mult-current {
-  color: #00695c;
-  font-weight: normal;
-}
-
-/* ==================== 表头样式 ==================== */
-
-#attachmentTable thead th {
-  background-color: #f5f5f5;
-  padding: 6px 4px;
-  font-size: 0.8rem;
-  border-bottom: 2px solid #ddd;
-  white-space: nowrap;
-}
-
-#attachmentTable thead th.sub-header {
-  background-color: #e8e8e8;
-  font-size: 0.7rem;
-  font-weight: normal;
-  border-bottom: 1px solid #ddd;
-  padding: 3px 2px;
-}
-
-#attachmentTable thead th[rowspan="2"] {
-  background-color: #e0e0e0;
-  font-weight: bold;
-}
-
-#attachmentTable td.current-col {
-  background-color: #f8f9fa !important;
-}
-
-.clone-row td.current-col {
-  background-color: #eef0f1 !important;
-}
-
-/* ==================== 射程和倍率列输入框宽度 ==================== */
-
-.weapon-ranges-input {
-  min-width: 60px;
-  max-width: 100px;
-  text-align: left !important;
-}
-
-.ranges-current {
-  min-width: 40px;
-  display: inline-block;
-}
-
-.weapon-mult-input {
-  min-width: 60px;
-  max-width: 100px;
-  text-align: left !important;
-}
-
-.mult-current {
-  min-width: 40px;
-  display: inline-block;
-}
-
-/* ==================== 精校列和操作列 ==================== */
-
-#attachmentTable td:nth-child(20),
-#attachmentTable th:nth-child(20) {
-  min-width: 95px !important;
-  max-width: 120px !important;
-  padding: 2px 4px !important;
-}
-
-#attachmentTable td:nth-child(21),
-#attachmentTable th:nth-child(21) {
-  min-width: 30px !important;
-  max-width: 40px !important;
-  padding: 2px 2px !important;
-  text-align: center !important;
-}
-
-.clone-row td:nth-child(20) {
-  min-width: 95px !important;
-  max-width: 120px !important;
-}
-
-.clone-row td:nth-child(21) {
-  min-width: 30px !important;
-  max-width: 40px !important;
-}
-
-/* ==================== 新增枪械行样式 ==================== */
-
-.add-weapon-row td {
-  background-color: #e8f5e9 !important;
-  border-top: 2px dashed #4caf50 !important;
-  padding: 4px 2px !important;
-}
-
-.add-weapon-row input {
-  border: 1px solid #4caf50 !important;
-  border-radius: 3px !important;
-  padding: 2px 4px !important;
-  background: #f0fff0 !important;
-  transition: all 0.2s ease;
-  font-size: inherit !important;
-}
-
-.add-weapon-row input:focus {
-  border-color: #2196F3 !important;
-  outline: none !important;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2) !important;
-}
-
-.add-weapon-row input::placeholder {
-  color: #aaa;
-  font-size: 0.85rem;
-}
-
-.confirm-add-btn {
-  background-color: #4caf50 !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: 4px !important;
-  padding: 4px 12px !important;
-  cursor: pointer !important;
-  margin-right: 4px !important;
-  font-size: 0.9rem !important;
-  transition: background-color 0.2s !important;
-}
-
-.confirm-add-btn:hover {
-  background-color: #388e3c !important;
-}
-
-.cancel-add-btn {
-  background-color: #f44336 !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: 4px !important;
-  padding: 4px 12px !important;
-  cursor: pointer !important;
-  font-size: 0.9rem !important;
-  transition: background-color 0.2s !important;
-}
-
-.cancel-add-btn:hover {
-  background-color: #d32f2f !important;
-}
-
-/* ==================== 数据管理区域样式 ==================== */
-
-.data-management-tip {
-  margin-top: 10px;
-  padding: 8px 14px;
-  background: #f5f5f5;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  color: #666;
+.params-row {
   display: flex;
-  gap: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}
+
+.param-group.compact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.param-group.compact label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #444;
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.param-group.compact select,
+.param-group.compact input[type="number"],
+.param-group.compact input[type="text"] {
+  width: 60px;
+  padding: 2px 4px;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  font-size: 12px;
+  background: #fafafa;
+  transition: border-color 0.2s;
+  height: 26px;
+}
+
+.param-group.compact select:focus,
+.param-group.compact input[type="number"]:focus,
+.param-group.compact input[type="text"]:focus {
+  border-color: #4a6cf7;
+  outline: none;
+  background: #fff;
+}
+
+/* 全局命中率输入框特殊宽度 */
+.param-group.compact #hitRate {
+  width: 140px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+
+.param-group.compact .hint-text {
+  font-size: 10px;
+  color: #aaa;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+/* 复选框组 */
+.param-group.compact.checkbox-group label {
+  font-weight: 400;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.param-group.compact.checkbox-group input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* 命中概率 - 水平紧凑 */
+.hit-prob-horizontal {
+  display: flex;
+  align-items: center;
+  gap: 4px 10px;
   flex-wrap: wrap;
 }
 
-.data-management-tip span {
-  display: inline-flex;
+.hit-prob-horizontal > label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #444;
+  margin-right: 2px;
+}
+
+.hit-prob-horizontal .hit-prob-row {
+  display: flex;
   align-items: center;
+  gap: 2px;
+}
+
+.hit-prob-horizontal .hit-prob-row span {
+  font-size: 11px;
+  color: #555;
+  width: 32px;
+  text-align: right;
+}
+
+.hit-prob-horizontal .hit-prob-row input[type="number"] {
+  width: 42px;
+  padding: 1px 2px;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  font-size: 11px;
+  background: #fafafa;
+  height: 22px;
+}
+
+.hit-prob-horizontal .hit-prob-row input[type="number"]:focus {
+  border-color: #4a6cf7;
+  outline: none;
+}
+
+/* 操作按钮组 */
+.buttons-group {
+  display: flex;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
-.data-edit-tip {
-  margin: 12px 0 8px 0;
-  padding: 10px 14px;
-  background: #e3f2fd;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  color: #1565c0;
-  border-left: 4px solid #2196F3;
+.buttons-group button {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  height: 26px;
 }
 
-.data-edit-tip strong {
-  color: #0d47a1;
+.btn-primary {
+  background: #4a6cf7;
+  color: #fff;
 }
 
-.data-edit-tip .tip-sub {
-  font-size: 0.85rem;
-  color: #1976d2;
+.btn-primary:hover {
+  background: #3a5cd7;
+}
+
+.btn-secondary {
+  background: #e8e8e8;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background: #d5d5d5;
+}
+
+/* ============================================================
+   图表区域 - 垂直堆叠
+   ============================================================ */
+.charts-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* 图表容器 - 修复 tooltip 偏移 */
+.chart-wrapper {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   display: block;
-  margin-top: 4px;
+  flex-shrink: 0;
+  border: 1px solid #ddd;
 }
 
-/* ==================== 枪管编辑弹窗样式 ==================== */
+.chart-wrapper h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
 
-/* 弹窗遮罩层 */
+.chart-wrapper canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 8px;
+}
+
+.chart-header h3 {
+  margin-bottom: 0;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.chart-controls label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  color: #555;
+}
+
+.chart-controls input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.btn-small {
+  padding: 2px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #f5f5f5;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 22px;
+}
+
+.btn-small:hover {
+  background: #e8e8e8;
+  border-color: #999;
+}
+
+/* ============================================================
+   底部表格区域 - 自适应高度
+   ============================================================ */
+.table-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 14px 10px 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Tab 导航栏 ---------- */
+.table-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 2px solid #e8e8e8;
+  padding-bottom: 0;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  padding: 4px 14px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.25s ease;
+  border-radius: 4px 4px 0 0;
+}
+
+.tab-btn:hover {
+  color: #4a6cf7;
+  background: #f0f4ff;
+}
+
+.tab-btn.active {
+  color: #4a6cf7;
+  border-bottom-color: #4a6cf7;
+  background: #f0f4ff;
+}
+
+/* ---------- Tab 内容容器 ---------- */
+.tab-content-wrapper {
+  flex: 1;
+  min-height: 200px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-content {
+  display: none;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* ---------- 表格滚动容器 ---------- */
+.table-scroll {
+  overflow: auto;
+  height: 100%;
+  max-height: 500px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.table-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 3px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* ---------- 通用表格样式 ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 600px;
+}
+
+table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+table thead th {
+  background: #f7f8fa;
+  color: #333;
+  font-weight: 600;
+  padding: 4px 5px;
+  border: 1px solid #e0e0e0;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+table tbody td {
+  padding: 3px 4px;
+  border: 1px solid #e8e8e8;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 11px;
+}
+
+table tbody tr:hover {
+  background: #f8faff;
+}
+
+/* ============================================================
+   枪械数据表格 (Tab 1) 专属样式
+   ============================================================ */
+#weaponTable thead tr.sub-header th {
+  background: #edf0f5;
+  font-weight: 400;
+  font-size: 10px;
+  color: #666;
+  padding: 1px 3px;
+}
+
+#weaponTable tbody td input.editable-input {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  padding: 1px 3px;
+  background: #fafafa;
+  font-size: 11px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+#weaponTable tbody td input.editable-input:hover {
+  background: #fff;
+  border-color: #bbb;
+}
+
+#weaponTable tbody td input.editable-input:focus {
+  border-color: #4a6cf7;
+  background: #fff;
+  outline: none;
+}
+
+#weaponTable tbody td input.editable-input[type="number"] {
+  width: 45px;
+}
+
+#weaponTable tbody td input.weapon-ranges-input {
+  width: 100%;
+  min-width: 70px;
+}
+
+#weaponTable tbody td input.weapon-mult-input {
+  width: 100%;
+  min-width: 60px;
+}
+
+#weaponTable tbody td select {
+  padding: 1px 3px;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  background: #fafafa;
+  font-size: 11px;
+  max-width: 80px;
+  cursor: pointer;
+}
+
+#weaponTable tbody td select:focus {
+  border-color: #4a6cf7;
+  outline: none;
+}
+
+/* 当前值（只读） */
+#weaponTable .current-value {
+  font-weight: 500;
+  color: #1a1a2e;
+  background: #f5f7fb;
+  padding: 1px 3px;
+  border-radius: 2px;
+  display: inline-block;
+  min-width: 24px;
+}
+
+#weaponTable .rof-current,
+#weaponTable .velocity-current,
+#weaponTable .damage-current,
+#weaponTable .armor-current {
+  font-weight: 600;
+  color: #4a6cf7;
+}
+
+/* 部位伤害列 */
+#weaponTable .part-damage-cell {
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: #2d3748;
+  white-space: nowrap;
+}
+
+/* 枪口初速精校 */
+.velocity-precision-container {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  justify-content: center;
+}
+
+.velocity-precision-slider {
+  width: 40px;
+  cursor: pointer;
+  accent-color: #4a6cf7;
+}
+
+.velocity-precision-value {
+  font-size: 10px;
+  font-weight: 500;
+  color: #555;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* 操作按钮（添加/删除副本、编辑枪管） */
+#weaponTable .add-clone-btn,
+#weaponTable .remove-clone-btn,
+#weaponTable .edit-barrel-btn {
+  padding: 0 6px;
+  border: none;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin: 0 1px;
+  line-height: 1.6;
+}
+
+#weaponTable .add-clone-btn {
+  background: #4caf50;
+  color: #fff;
+}
+
+#weaponTable .add-clone-btn:hover {
+  background: #388e3c;
+}
+
+#weaponTable .remove-clone-btn {
+  background: #f44336;
+  color: #fff;
+}
+
+#weaponTable .remove-clone-btn:hover {
+  background: #d32f2f;
+}
+
+#weaponTable .edit-barrel-btn {
+  background: #ff9800;
+  color: #fff;
+  font-size: 11px;
+  padding: 0 5px;
+}
+
+#weaponTable .edit-barrel-btn:hover {
+  background: #e68900;
+}
+
+/* 副本行样式 */
+#weaponTable .clone-row {
+  background: #fafffe;
+}
+
+#weaponTable .clone-row:hover {
+  background: #f0faf5;
+}
+
+#weaponTable .clone-name,
+#weaponTable .clone-type {
+  color: #666;
+}
+
+/* ============================================================
+   价格数据表格 (Tab 2) 专属样式
+   ============================================================ */
+#priceTable thead th {
+  background: #f0f7ff;
+  color: #1a3a6a;
+}
+
+#priceTable tbody td {
+  padding: 3px 6px;
+}
+
+#priceTable .build-code {
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  background: #f0f4f8;
+  padding: 0 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+/* 价格表格操作按钮 */
+#priceTable .confirm-add-price-btn,
+#priceTable .cancel-add-price-btn,
+#priceTable .delete-price-btn {
+  padding: 0 5px;
+  border: none;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1.6;
+}
+
+#priceTable .confirm-add-price-btn {
+  background: #4caf50;
+  color: #fff;
+}
+
+#priceTable .confirm-add-price-btn:hover {
+  background: #388e3c;
+}
+
+#priceTable .cancel-add-price-btn {
+  background: #f44336;
+  color: #fff;
+}
+
+#priceTable .cancel-add-price-btn:hover {
+  background: #d32f2f;
+}
+
+#priceTable .delete-price-btn {
+  background: #e0e0e0;
+  color: #333;
+}
+
+#priceTable .delete-price-btn:hover {
+  background: #ccc;
+}
+
+/* 新增价格行 */
+#priceTable .new-price-row td {
+  background: #fff8e1;
+  border-top: 2px solid #ff9800;
+}
+
+/* ============================================================
+   子弹数据表格 (Tab 3) 专属样式
+   ============================================================ */
+#bulletTable thead th {
+  background: #f0fff4;
+  color: #1a6a3a;
+}
+
+#bulletTable tbody td {
+  padding: 3px 6px;
+}
+
+/* 特殊子弹等级标签 */
+#bulletTable .special-level-badge {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  background: #ff9800;
+  color: #fff;
+}
+
+/* 子弹表格操作按钮 */
+#bulletTable .confirm-add-bullet-btn,
+#bulletTable .cancel-add-bullet-btn,
+#bulletTable .delete-bullet-btn {
+  padding: 0 5px;
+  border: none;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1.6;
+}
+
+#bulletTable .confirm-add-bullet-btn {
+  background: #4caf50;
+  color: #fff;
+}
+
+#bulletTable .confirm-add-bullet-btn:hover {
+  background: #388e3c;
+}
+
+#bulletTable .cancel-add-bullet-btn {
+  background: #f44336;
+  color: #fff;
+}
+
+#bulletTable .cancel-add-bullet-btn:hover {
+  background: #d32f2f;
+}
+
+#bulletTable .delete-bullet-btn {
+  background: #e0e0e0;
+  color: #333;
+}
+
+#bulletTable .delete-bullet-btn:hover {
+  background: #ccc;
+}
+
+/* 新增子弹行 */
+#bulletTable .new-bullet-row td {
+  background: #fff8e1;
+  border-top: 2px solid #ff9800;
+}
+
+/* ============================================================
+   表格编辑器样式（TableRenderer 编辑模式）
+   ============================================================ */
+.table-editor-input,
+.table-editor-select {
+  width: 100%;
+  padding: 1px 3px;
+  border: 2px solid #4a6cf7;
+  border-radius: 2px;
+  font-size: 11px;
+  background: #fff;
+  box-sizing: border-box;
+  min-width: 30px;
+}
+
+.table-editor-input:focus,
+.table-editor-select:focus {
+  outline: none;
+  border-color: #3a5cd7;
+  box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.2);
+}
+
+.table-editor-select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+td.editing {
+  background: #f0f4ff !important;
+  padding: 1px 1px !important;
+}
+
+td.editing .table-editor-input,
+td.editing .table-editor-select {
+  min-height: 22px;
+}
+
+/* ============================================================
+   空状态样式
+   ============================================================ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  color: #999;
+  text-align: center;
+  min-height: 80px;
+}
+
+.empty-icon {
+  font-size: 28px;
+  margin-bottom: 4px;
+}
+
+.empty-text {
+  font-size: 13px;
+  color: #bbb;
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 20px !important;
+  color: #bbb;
+  font-size: 12px;
+}
+
+/* ============================================================
+   弹窗 (Modal) 样式
+   ============================================================ */
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.55);
-  z-index: 10000;
-  display: flex;
-  align-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  display: none;
   justify-content: center;
-  animation: modalFadeIn 0.2s ease;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
 }
 
-@keyframes modalFadeIn {
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 800px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.25s ease;
+}
+
+.modal-large {
+  width: 95vw;
+  max-width: 1200px;
+}
+
+@keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: translateY(-30px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
-/* 弹窗内容容器 */
-.modal-content {
-  background: #fff;
-  border-radius: 10px;
-  max-width: 95%;
-  max-height: 92vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
-  width: 1200px;
-}
-
-.modal-content.modal-large {
-  width: 1300px;
-  max-width: 98%;
-}
-
-/* 弹窗头部 */
 .modal-header {
-  padding: 14px 24px;
-  background: #f5f7fa;
-  border-bottom: 1px solid #e0e0e0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e8e8e8;
   flex-shrink: 0;
 }
 
 .modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
-
-.modal-header h3 #barrelEditorWeaponName {
-  color: #1976d2;
+  font-size: 16px;
+  color: #1a1a2e;
 }
 
 .modal-close {
-  font-size: 28px;
-  cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 24px;
   line-height: 1;
   color: #999;
-  padding: 0 4px;
+  cursor: pointer;
   transition: color 0.2s;
+  padding: 0 4px;
 }
 
 .modal-close:hover {
   color: #333;
 }
 
-/* 弹窗主体 */
 .modal-body {
-  padding: 16px 20px;
+  padding: 14px 18px;
   overflow-y: auto;
   flex: 1;
 }
 
-/* 弹窗底部 */
-.modal-footer {
-  padding: 12px 24px;
-  background: #f5f7fa;
-  border-top: 1px solid #e0e0e0;
+.modal-actions {
   display: flex;
+  gap: 8px;
   justify-content: flex-end;
-  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+  margin-top: 10px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
-/* ==================== 枪管编辑表格样式 ==================== */
+/* ---------- 枪管编辑器弹窗 ---------- */
+#barrelEditorContainer {
+  min-height: 80px;
+}
+
+.empty-barrel-msg {
+  text-align: center;
+  padding: 20px 0;
+  color: #999;
+  font-size: 14px;
+}
+
+.empty-barrel-msg .hint {
+  font-size: 12px;
+  color: #bbb;
+}
 
 .barrel-editor-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+  font-size: 11px;
+  min-width: 700px;
 }
 
-.barrel-editor-table th,
-.barrel-editor-table td {
-  border: 1px solid #ddd;
-  padding: 4px 6px;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.barrel-editor-table th {
-  background: #f0f2f5;
-  font-weight: 600;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  font-size: 12px;
+.barrel-editor-table thead th {
+  background: #f0f4f8;
+  font-size: 10px;
+  padding: 3px 3px;
   white-space: nowrap;
 }
 
-.barrel-editor-table td {
-  background: #fff;
-}
-
-.barrel-editor-table tr:hover td {
-  background: #f8faff;
-}
-
-.barrel-editor-table input[type="text"],
-.barrel-editor-table input[type="number"] {
-  width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 3px;
-  padding: 3px 4px;
-  font-size: 12px;
-  box-sizing: border-box;
-  background: #fafafa;
-  transition: border-color 0.2s, background 0.2s;
-  min-width: 40px;
-}
-
-.barrel-editor-table input:focus {
-  border-color: #4caf50;
-  background: #fff;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
-}
-
-.barrel-editor-table td input {
-  min-width: 50px;
-}
-
-/* 枪管编辑表格中的删除按钮 */
-.barrel-delete-btn {
-  background: #f44336;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 3px 10px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background 0.2s;
-}
-
-.barrel-delete-btn:hover {
-  background: #d32f2f;
-}
-
-/* 空状态提示 */
-.empty-barrel-msg {
-  text-align: center;
-  padding: 40px 0;
-  color: #999;
-}
-
-.empty-barrel-msg p {
-  font-size: 16px;
-  margin-bottom: 8px;
-}
-
-/* 枪管编辑器底部操作栏 */
-.barrel-editor-actions {
-  margin-top: 14px;
-  text-align: center;
-  padding-top: 12px;
-  border-top: 1px solid #eee;
-}
-
-/* ==================== 按钮通用样式 ==================== */
-
-.btn-primary {
-  background: #2196f3;
-  color: #fff;
-  border: none;
-  padding: 6px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: background 0.2s;
-}
-
-.btn-primary:hover {
-  background: #1976d2;
-}
-
-.btn-success {
-  background: #4caf50;
-  color: #fff;
-  border: none;
-  padding: 8px 22px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-}
-
-.btn-success:hover {
-  background: #388e3c;
-}
-
-.btn-secondary {
-  background: #9e9e9e;
-  color: #fff;
-  border: none;
-  padding: 8px 22px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-}
-
-.btn-secondary:hover {
-  background: #757575;
-}
-
-.btn-danger {
-  background: #f44336;
-  color: #fff;
-  border: none;
-  padding: 3px 12px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background 0.2s;
-}
-
-.btn-danger:hover {
-  background: #d32f2f;
-}
-
-/* 编辑枪管按钮（表格操作列中的小按钮） */
-.edit-barrel-btn {
-  background: #ff9800;
-  color: #fff;
-  border: none;
-  border-radius: 3px;
-  padding: 2px 6px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-left: 3px;
-  transition: background 0.2s;
+.barrel-editor-table tbody td {
+  padding: 1px 2px;
   vertical-align: middle;
 }
 
-.edit-barrel-btn:hover {
-  background: #f57c00;
+.barrel-editor-table tbody td input {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  padding: 1px 3px;
+  font-size: 11px;
+  background: #fafafa;
+  box-sizing: border-box;
 }
 
-/* ==================== 新增枪管弹窗表单样式 ==================== */
+.barrel-editor-table tbody td input:focus {
+  border-color: #4a6cf7;
+  outline: none;
+  background: #fff;
+}
+
+.barrel-editor-table .barrel-delete-btn {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  padding: 0 6px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.barrel-editor-table .barrel-delete-btn:hover {
+  background: #d32f2f;
+}
+
+/* ---------- 新增枪管弹窗 ---------- */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+}
 
 .form-group {
-  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 .form-group label {
-  display: block;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 3px;
-  color: #333;
+  font-size: 11px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 1px;
 }
 
-.form-group label .required {
-  color: #f44336;
-}
-
-.form-group input[type="text"],
-.form-group input[type="number"],
+.form-group input,
 .form-group select {
-  width: 100%;
-  padding: 6px 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 13px;
-  box-sizing: border-box;
+  padding: 3px 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  font-size: 12px;
   background: #fafafa;
-  transition: border-color 0.2s;
 }
 
 .form-group input:focus,
 .form-group select:focus {
-  border-color: #4caf50;
+  border-color: #4a6cf7;
   outline: none;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.12);
+  background: #fff;
 }
 
-.form-group .hint {
-  font-size: 11px;
-  color: #999;
-  display: block;
-  margin-top: 2px;
+/* ============================================================
+   响应式
+   ============================================================ */
+@media (max-width: 1200px) {
+  .params-row {
+    gap: 4px 10px;
+  }
+  
+  .param-group.compact select,
+  .param-group.compact input[type="number"],
+  .param-group.compact input[type="text"] {
+    width: 50px;
+    font-size: 11px;
+  }
+  
+  .param-group.compact #hitRate {
+    width: 110px;
+  }
+  
+  .buttons-group button {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+  
+  .chart-wrapper {
+    padding: 12px;
+  }
+  
+  .table-scroll {
+    max-height: 400px;
+  }
 }
 
-/* 表单双列布局 */
-.form-row {
-  display: flex;
-  gap: 14px;
-  margin-bottom: 8px;
-}
-
-.form-row .form-group.half {
-  flex: 1;
-  min-width: 0;
-}
-
-/* ==================== 滚动条美化 ==================== */
-
-.modal-body::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.modal-body::-webkit-scrollbar-track {
-  background: #f0f0f0;
-  border-radius: 3px;
-}
-
-.modal-body::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.modal-body::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* ==================== 距离图表控制区样式 ==================== */
-
-.distance-chart-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 12px 0 8px 0;
-  flex-wrap: wrap;
-  padding: 8px 16px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
-}
-
-.distance-chart-controls label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  user-select: none;
-  width: auto;
-}
-
-.distance-chart-controls label input[type="checkbox"] {
-  width: auto;
-  margin: 0;
-  cursor: pointer;
-}
-
-.distance-chart-controls .divider {
-  color: #ddd;
-}
-
-.distance-chart-controls .label-text {
-  font-size: 0.85rem;
-  color: #666;
-}
-
-.distance-chart-controls .btn-export {
-  padding: 4px 14px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: background-color 0.2s, transform 0.15s;
-}
-
-.distance-chart-controls .btn-export:hover {
-  transform: scale(1.02);
-}
-
-.distance-chart-controls .btn-export:active {
-  transform: scale(0.97);
-}
-
-.distance-chart-controls .btn-json {
-  background: #4caf50;
-  color: #fff;
-}
-
-.distance-chart-controls .btn-json:hover {
-  background: #388e3c;
-}
-
-.distance-chart-controls .hint-text {
-  font-size: 0.8rem;
-  color: #999;
-  margin-left: auto;
-}
-
-/* ==================== 响应式调整 ==================== */
-
-@media (max-width: 1400px) {
-  .modal-content.modal-large {
-    width: 96%;
+@media (max-width: 960px) {
+  .params-panel {
+    padding: 6px 10px;
+  }
+  
+  .params-row {
+    gap: 4px 8px;
+  }
+  
+  .param-group.compact {
+    gap: 2px;
+  }
+  
+  .param-group.compact label {
+    font-size: 11px;
+  }
+  
+  .param-group.compact select,
+  .param-group.compact input[type="number"],
+  .param-group.compact input[type="text"] {
+    width: 44px;
+    font-size: 10px;
+    height: 22px;
+    padding: 1px 3px;
+  }
+  
+  .param-group.compact #hitRate {
+    width: 90px;
+  }
+  
+  .hit-prob-horizontal .hit-prob-row input[type="number"] {
+    width: 34px;
+    height: 20px;
+    font-size: 10px;
+  }
+  
+  .buttons-group button {
+    font-size: 10px;
+    padding: 2px 6px;
+    height: 22px;
+  }
+  
+  .chart-wrapper {
+    padding: 10px;
+  }
+  
+  .table-scroll {
+    max-height: 350px;
+  }
+  
+  .table-section {
+    min-height: 200px;
   }
 }
 
 @media (max-width: 768px) {
-  .modal-content {
-    width: 98%;
-    max-height: 95vh;
+  #app {
+    padding: 4px 6px;
   }
   
-  .modal-body {
-    padding: 10px 12px;
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 2px 0 4px 0;
   }
   
-  .modal-header {
-    padding: 10px 16px;
+  .header-right {
+    align-self: flex-end;
   }
   
-  .modal-footer {
-    padding: 10px 16px;
+  .params-panel {
+    padding: 4px 8px;
+  }
+  
+  .params-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 3px;
+  }
+  
+  .param-group.compact {
     flex-wrap: wrap;
+  }
+  
+  .param-group.compact label {
+    min-width: 50px;
+  }
+  
+  .param-group.compact select,
+  .param-group.compact input[type="number"],
+  .param-group.compact input[type="text"] {
+    width: 60px;
+    flex: 1;
+    min-width: 40px;
+  }
+  
+  .param-group.compact #hitRate {
+    width: 100%;
+  }
+  
+  .hit-prob-horizontal {
+    flex-wrap: wrap;
+  }
+  
+  .buttons-group {
     justify-content: center;
   }
   
-  .form-row {
-    flex-direction: column;
-    gap: 6px;
+  .chart-wrapper {
+    padding: 8px;
   }
   
-  .barrel-editor-table {
-    font-size: 11px;
+  .table-section {
+    min-height: 150px;
+    padding: 4px 8px 6px 8px;
   }
   
-  .barrel-editor-table th,
-  .barrel-editor-table td {
-    padding: 3px 4px;
+  .table-scroll {
+    max-height: 250px;
   }
   
-  .barrel-editor-table input[type="text"],
-  .barrel-editor-table input[type="number"] {
-    font-size: 11px;
-    min-width: 30px;
+  .table-tabs {
+    flex-wrap: wrap;
+  }
+  
+  .tab-btn {
+    padding: 3px 10px;
+    font-size: 12px;
+  }
+  
+  table {
+    font-size: 10px;
+    min-width: 400px;
+  }
+  
+  table thead th,
+  table tbody td {
     padding: 2px 3px;
+    font-size: 10px;
   }
-
-  .distance-chart-controls {
-    padding: 6px 12px;
-    gap: 8px;
+  
+  .modal-content {
+    width: 98vw;
+    max-width: 98vw;
   }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
-  .distance-chart-controls .hint-text {
-    margin-left: 0;
-    width: 100%;
-    text-align: center;
+/* ============================================================
+   工具类
+   ============================================================ */
+.text-muted {
+  color: #999;
+  font-size: 11px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-8 {
+  margin-top: 6px;
+}
+
+.mb-8 {
+  margin-bottom: 6px;
+}
+
+/* ============================================================
+   页脚
+   ============================================================ */
+.app-footer {
+  margin-top: 6px;
+  padding: 4px 0;
+  border-top: 1px solid #e8e8e8;
+  text-align: center;
+  font-size: 11px;
+  color: #999;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.footer-separator {
+  color: #ddd;
+}
+
+/* ============================================================
+   Chart.js 图例样式
+   ============================================================ */
+.chartjs-legend {
+  display: block !important;
+  padding: 8px 0 !important;
+  margin-top: 4px !important;
+}
+
+.chartjs-legend ul {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 6px 16px !important;
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.chartjs-legend li {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  font-size: 12px !important;
+  color: #333 !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  transition: background-color 0.2s !important;
+}
+
+.chartjs-legend li:hover {
+  background-color: #f0f4ff !important;
+}
+
+.chartjs-legend li .legend-item-hidden {
+  opacity: 0.4 !important;
+  text-decoration: line-through !important;
+}
+
+.chartjs-legend .legend-item {
+  display: inline-block !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 2px !important;
+  flex-shrink: 0 !important;
+}
+
+/* 确保图例在 canvas 下方 */
+#ttkChart + .chartjs-legend,
+#distanceChart + .chartjs-legend {
+  margin-top: 8px !important;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .chartjs-legend li {
+    font-size: 10px !important;
+    padding: 1px 4px !important;
+  }
+  .chartjs-legend ul {
+    gap: 4px 10px !important;
   }
 }

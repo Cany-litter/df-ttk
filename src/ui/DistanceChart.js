@@ -2,11 +2,11 @@ import {
   TIME_UNITS, 
   CHART_CONFIG, 
   SIMULATION_CONFIG 
-} from '../../constants/config.js';
-import { SimulationEngine } from '../../core/SimulationEngine.js';
-import { BulletStrategyFactory } from '../../core/BulletStrategy.js';
-import { formatTime } from '../../utils/formatters.js';
-import { resetSeed } from '../../utils/rng.js';
+} from '../core/config.js';
+import { SimulationEngine } from '../core/SimulationEngine.js';
+import { BulletStrategyFactory } from '../core/BulletStrategy.js';
+import { formatTime } from '../utils/formatters.js';
+import { resetSeed } from '../utils/rng.js';
 
 /**
  * 垂直线插件
@@ -75,13 +75,32 @@ export class DistanceChart {
    * 计算距离统计数据
    */
   calculateDistanceStats(armed, attachments, params, distances) {
+    // 🔥 获取 DataManager
+    const dm = window.__app__?.dataManager;
+    if (!dm) {
+      console.error('DistanceChart: DataManager 未找到');
+      return [];
+    }
+
     return armed.map((w, idx) => {
-      const selectedBulletType = attachments[idx].bulletType;
-      let realBulletKey = SimulationEngine.getRealBulletKey(selectedBulletType, w, params);
+      const selectedBulletType = attachments[idx]?.bulletType;
       
-      if (!realBulletKey) return null;
+      // 🔥 获取真实子弹 key
+      let realBulletKey = SimulationEngine.getRealBulletKey(selectedBulletType, w, params, dm);
       
-      const hitRate = attachments[idx].hitRate != null ? attachments[idx].hitRate : params.hitRate;
+      if (!realBulletKey) {
+        console.warn(`武器 ${w.name} 没有匹配的子弹，跳过`);
+        return null;
+      }
+      
+      // 🔥 获取子弹数据
+      const bulletData = dm.getBulletById(realBulletKey);
+      if (!bulletData) {
+        console.warn(`武器 ${w.name} 的子弹 ${realBulletKey} 不存在，跳过`);
+        return null;
+      }
+      
+      const hitRate = attachments[idx]?.hitRate != null ? attachments[idx].hitRate : params.hitRate;
       const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
       
       const validRanges = w.ranges.filter(r => r !== Infinity && r <= CHART_CONFIG.MAX_DISTANCE);
@@ -91,7 +110,8 @@ export class DistanceChart {
       
       keyDistances.forEach(distance => {
         const simParams = { ...params, distance, hitRate, bulletLevel: realBulletKey };
-        const { avgTime } = SimulationEngine.calculateAvgStats(w, simParams, SIMULATION_CONFIG.DISTANCE_SIM_COUNT, strategy);
+        // 🔥 传入 bulletData
+        const { avgTime } = SimulationEngine.calculateAvgStats(w, simParams, SIMULATION_CONFIG.DISTANCE_SIM_COUNT, strategy, bulletData);
         const trigger = params.triggerDelayEnable ? w.triggerDelay / TIME_UNITS.SECONDS_TO_MS : 0;
         simulationCache.set(distance, avgTime + trigger);
       });
@@ -159,6 +179,7 @@ export class DistanceChart {
               label: i => `${i.dataset.label}: ${formatTime(i.raw, 'ms')}`
             }
           },
+          // 🔥 修复：添加 legend 配置
           legend: { 
             position: 'bottom', 
             labels: { 
@@ -382,10 +403,10 @@ export class DistanceChart {
     const armed = this.lastArmed || [];
     const attachments = this.lastAttachments || [];
 
-    // 获取枪口数据（从 WeaponManager 获取）
+    // 获取枪口数据（从 DataManager 获取）
     let muzzles = [];
-    if (window.app?.weaponManager) {
-      muzzles = window.app.weaponManager.getMuzzles() || [];
+    if (window.__app__?.dataManager) {
+      muzzles = window.__app__.dataManager.getMuzzles() || [];
     }
 
     // 1. 获取底部枪械表格数据

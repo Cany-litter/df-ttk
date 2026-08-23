@@ -527,3 +527,5 @@ export class BarrelEditor {
     return false;
   }
 }
+
+export default BarrelEditor;

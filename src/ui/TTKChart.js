@@ -3,8 +3,8 @@ import {
   CHART_COLORS, 
   RANK_COLORS, 
   CHART_CONFIG 
-} from '../../constants/config.js';
-import { formatTime } from '../../utils/formatters.js';
+} from '../core/config.js';
+import { formatTime } from '../utils/formatters.js';
 
 /**
  * TTK柱状图专用类
@@ -42,13 +42,13 @@ export class TTKChart {
       type: 'bar',
       data: {
         labels: [], 
-      datasets: [
-        { label: '无空枪射击延迟', backgroundColor: CHART_COLORS.NO_MISS_FIRE, data: [] },
-        { label: '平均连发间隔', backgroundColor: CHART_COLORS.BURST_INTERVAL, data: [] },
-        { label: '平均空枪延迟', backgroundColor: CHART_COLORS.EMPTY_DELAY, data: [] },
-        { label: '飞行延迟', backgroundColor: CHART_COLORS.FLIGHT_DELAY, data: [] },
-        { label: '扳机延迟', backgroundColor: CHART_COLORS.TRIGGER_DELAY, data: [] }
-      ]
+        datasets: [
+          { label: '无空枪射击延迟', backgroundColor: CHART_COLORS.NO_MISS_FIRE, data: [] },
+          { label: '平均连发间隔', backgroundColor: CHART_COLORS.BURST_INTERVAL, data: [] },
+          { label: '平均空枪延迟', backgroundColor: CHART_COLORS.EMPTY_DELAY, data: [] },
+          { label: '飞行延迟', backgroundColor: CHART_COLORS.FLIGHT_DELAY, data: [] },
+          { label: '扳机延迟', backgroundColor: CHART_COLORS.TRIGGER_DELAY, data: [] }
+        ]
       },
       options: {
         layout: { padding: { top: CHART_CONFIG.PADDING_TOP } },
@@ -64,6 +64,21 @@ export class TTKChart {
             mode: 'index', 
             intersect: false, 
             callbacks: this.getTooltipCallbacks()
+          },
+          // 🔥 修复：添加 legend 配置（老版本中有此配置）
+          legend: { 
+            position: 'bottom', 
+            labels: { 
+              usePointStyle: true,
+              font: (ctx) => {
+                const stats = this.lastResults;
+                return stats.length > 20 ? { size: 10 } : { size: 12 };
+              },
+              padding: (ctx) => {
+                const stats = this.lastResults;
+                return stats.length > 20 ? 4 : 8;
+              }
+            } 
           }
         },
         responsive: true,

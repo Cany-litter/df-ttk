@@ -21,8 +21,8 @@ async function build() {
       }
     });
 
-    // 拷贝 public 根文件（包含 index.html, styles.css, weapons.json）
-    const publicFiles = ['index.html', 'styles.css', 'weapons.json'];
+    // 拷贝 public 根文件（包含 index.html, styles.css, data.json）
+    const publicFiles = ['index.html', 'styles.css', 'data.json'];
     publicFiles.forEach(file => {
       const srcPath = path.join('public', file);
       const dstPath = path.join('dist', file);

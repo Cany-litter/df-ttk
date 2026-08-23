@@ -1,162 +1,89 @@
-import { WeaponManager } from '../core/WeaponManager.js';
-import { ViewRenderer } from './ViewRenderer.js';
-import { formatMultipliers } from '../utils/formatters.js';
-import { CacheManager } from '../utils/cacheManager.js';
-import { BarrelEditor } from './BarrelEditor.js';
-
 /**
- * DOM控制器
- * 负责DOM操作、数据读取和协调其他组件
+ * DOM 控制器
+ * 
+ * 负责协调三个表格组件、DataManager 和 UI 交互
+ * 
+ * 职责：
+ * 1. 初始化三个表格（武器、价格、子弹）
+ * 2. Tab 切换管理
+ * 3. 读取页面参数
+ * 4. 数据变更时同步到 DataManager 并刷新表格
+ * 5. 导入/导出功能
+ * 6. 操作按钮（添加副本、编辑枪管、新增/删除行）
  */
-export class DOMController {
-  constructor(weaponManager) {
-    this.weaponManager = weaponManager;
-    this.viewRenderer = new ViewRenderer();
-    this.cacheManager = new CacheManager();
-    this.isUpdating = false;
+import { getDataManager } from '../core/DataManager.js';
+import WeaponTable from './WeaponTable.js';
+import PriceTable from './PriceTable.js';
+import BulletTable from './BulletTable.js';
+
+export default class DOMController {
+  constructor() {
+    this.dataManager = getDataManager();
+    this.currentTab = 'weapon';
+    this.weaponTableInstance = null;
+    this.priceTableInstance = null;
+    this.bulletTableInstance = null;
+    // 🔥 枪口选项从 DataManager 获取
+    this.muzzleOptions = this.dataManager.getMuzzleNames();
     
-    // 初始化枪管编辑器
-    this.barrelEditor = null;
-    
-    // 加载武器数据（直接从 WeaponManager 获取）
-    // 此时数据应该已经由 main.js 加载完成
-    this.loadWeaponData();
-    
-    // 延迟加载保存的配置（页面参数配置）
-    setTimeout(() => {
-      this.loadSavedConfig();
-    }, 0);
-    
-    // 设置参数自动保存（只保存页面参数，不保存武器数据）
-    this.setupAutoSave();
-    
-    // 延迟初始化枪管编辑器（等待DOM完全渲染）
-    setTimeout(() => {
-      this.setupBarrelEditor();
-    }, 100);
+    this.weaponAttachments = {};
+    this.weaponPrecisions = {};
+    this.isRefreshing = false;
+    this._refreshTimer = null;
   }
 
-  /**
-   * 加载武器数据（直接从 WeaponManager 获取）
-   * 此时数据应该已经由 main.js 加载完成
-   */
-  loadWeaponData() {
-    const weapons = this.weaponManager.getWeapons();
-    if (weapons && weapons.length > 0) {
-      console.log(`📂 从 WeaponManager 加载了 ${weapons.length} 把武器`);
-      return;
-    }
-    
-    // 如果 WeaponManager 没有数据，说明加载顺序有问题
-    console.error('❌ WeaponManager 中没有武器数据，请确保 main.js 先加载 weapons.json');
-    this.showError('武器数据加载失败，请刷新页面重试');
-  }
+  // ============================================================
+  // 1. 初始化
+  // ============================================================
 
   /**
-   * 由外部（main.js）调用，加载从 JSON 获取的数据
-   * @param {Array} data - 武器数据数组
+   * 初始化 DOM 控制器
+   * @param {Object} options - 配置选项
+   * @param {Function} options.onBarrelEdit - 打开枪管编辑器回调
    */
-  loadWeaponsFromJSON(data) {
-    if (!data || data.length === 0) {
-      console.error('❌ JSON 数据为空');
-      this.showError('武器数据为空，请检查 weapons.json 文件');
-      return;
-    }
-    
-    // 加载数据到 WeaponManager
-    this.weaponManager.loadWeapons(data);
-    
-    // 重新渲染表格
-    this.renderAttachmentTable();
-    
-    // 重新应用全局枪管设置
-    this.updateGlobalBarrelSelections();
-    
-    console.log(`✅ 从 JSON 加载了 ${data.length} 把武器数据`);
+  initialize(options = {}) {
+    const { onBarrelEdit = null } = options;
+
+    this.setupTabs();
+    this.initWeaponTable(onBarrelEdit);
+    this.initPriceTable();
+    this.initBulletTable();
+    this.bindControlEvents();
+    this.bindImportExportEvents();
+
+    console.log('✅ DOMController 初始化完成');
   }
 
+  // ============================================================
+  // 2. 读取页面参数
+  // ============================================================
+
   /**
-   * 加载保存的配置（只加载页面参数配置）
+   * 🔥 解析距离-命中率映射字符串
+   * @param {string} str - 格式 "30:0.85,50:0.8,100:0.7"
+   * @returns {Array} [{ distance, rate }, ...] 或空数组
    */
-  loadSavedConfig() {
+  parseHitRateMap(str) {
+    if (!str || str.trim() === '') return [];
+    
     try {
-      const savedConfig = this.cacheManager.loadConfig();
-      this.applyConfigToPage(savedConfig);
-    } catch (error) {
-      console.error('加载配置时出错:', error);
-    }
-  }
-
-  /**
-   * 将配置应用到页面控件
-   * @param {Object} config - 配置对象
-   */
-  applyConfigToPage(config) {
-    document.getElementById('bulletLevel').value = config.bulletLevel;
-    document.getElementById('armorLevel').value = config.armorLevel;
-    document.getElementById('armorValue').value = config.armorValue;
-    document.getElementById('helmetLevel').value = config.helmetLevel;
-    document.getElementById('helmetValue').value = config.helmetValue;
-    document.getElementById('distance').value = config.distance;
-    document.getElementById('healthValue').value = config.healthValue || 100;
-    document.getElementById('hitRate').value = config.hitRate;
-    document.getElementById('triggerDelayEnable').checked = config.triggerDelayEnable;
-    document.getElementById('globalBarrelType').value = config.globalBarrelType;
-
-    const hitKeys = ['head', 'chest', 'stomach', 'limbs'];
-    hitKeys.forEach(key => {
-      const el = document.getElementById('p' + key.charAt(0).toUpperCase() + key.slice(1));
-      el.value = config.hitProb[key];
-    });
-
-    this.applyVelocityPrecisionSettings(config.velocityPrecisionSettings);
-  }
-
-  /**
-   * 设置自动保存功能（只保存页面参数）
-   */
-  setupAutoSave() {
-    const paramElements = [
-      'bulletLevel', 'armorLevel', 'armorValue', 'helmetLevel', 'helmetValue',
-      'distance', 'healthValue', 'hitRate', 'triggerDelayEnable',
-      'globalBarrelType', 'pHead', 'pChest', 'pStomach', 'pLimbs'
-    ];
-
-    paramElements.forEach(id => {
-      const element = document.getElementById(id);
-      if (element) {
-        element.addEventListener('change', () => {
-          this.saveCurrentConfig();
-        });
-        
-        if (element.type === 'number') {
-          element.addEventListener('input', () => {
-            this.saveCurrentConfig();
-          });
+      const parts = str.split(',').map(p => p.trim());
+      const result = [];
+      for (const part of parts) {
+        const [dist, rate] = part.split(':');
+        if (dist && rate) {
+          const distance = parseFloat(dist);
+          const hitRate = parseFloat(rate);
+          if (!isNaN(distance) && !isNaN(hitRate) && distance >= 0 && hitRate >= 0 && hitRate <= 1) {
+            result.push({ distance, rate: hitRate });
+          }
         }
       }
-    });
-
-    this.setupVelocityPrecisionAutoSave();
-  }
-
-  /**
-   * 设置枪口初速精校滑块的自动保存
-   */
-  setupVelocityPrecisionAutoSave() {
-    document.addEventListener('input', (e) => {
-      if (e.target.classList.contains('velocity-precision-slider')) {
-        this.saveCurrentConfig();
-      }
-    });
-  }
-
-  /**
-   * 保存当前配置（只保存页面参数）
-   */
-  saveCurrentConfig() {
-    const currentConfig = this.readPageParams();
-    this.cacheManager.saveConfig(currentConfig);
+      return result;
+    } catch (e) {
+      console.warn('解析命中率映射失败:', e);
+      return [];
+    }
   }
 
   /**
@@ -164,580 +91,1107 @@ export class DOMController {
    * @returns {Object} 页面参数对象
    */
   readPageParams() {
-    const toNum = id => Number(document.getElementById(id).value);
-    const params = {
-      bulletLevel: toNum('bulletLevel'),
-      armorLevel: toNum('armorLevel'),
-      armorValue: toNum('armorValue'),
-      helmetLevel: toNum('helmetLevel'),
-      helmetValue: toNum('helmetValue'),
-      distance: toNum('distance'),
-      healthValue: toNum('healthValue'),
-      hitProb: {},
-      hitRate: toNum('hitRate'),
-      triggerDelayEnable: document.getElementById('triggerDelayEnable').checked,
-      globalBarrelType: document.getElementById('globalBarrelType').value 
+    const toNum = (id) => {
+      const el = document.getElementById(id);
+      return el ? Number(el.value) || 0 : 0;
     };
     
-    const hitKeys = ['head', 'chest', 'stomach', 'limbs'];
-    hitKeys.forEach(key => {
-      const el = document.getElementById('p' + key.charAt(0).toUpperCase() + key.slice(1));
-      params.hitProb[key] = Number(el.value);
-    });
-    
-    params.velocityPrecisionSettings = this.getVelocityPrecisionSettings();
-    
-    return params;
-  }
-
-  /**
-   * 获取枪口初速精校设置
-   * @returns {Object} 精校设置对象
-   */
-  getVelocityPrecisionSettings() {
-    const settings = {
-      weaponSettings: {}
+    const toFloat = (id) => {
+      const el = document.getElementById(id);
+      return el ? Number(el.value) || 0 : 0;
     };
-
-    const sliders = document.querySelectorAll('.velocity-precision-slider');
     
-    sliders.forEach(slider => {
-      const weaponIndex = slider.dataset.weapon;
-      const cloneIndex = slider.dataset.clone;
-      const precisionValue = parseFloat(slider.value);
-      
-      if (weaponIndex !== undefined) {
-        settings.weaponSettings[`weapon_${weaponIndex}`] = precisionValue;
-      } else if (cloneIndex !== undefined) {
-        settings.weaponSettings[`clone_${cloneIndex}`] = precisionValue;
+    // 🔥 获取全局命中率映射
+    const hitRateInput = document.getElementById('hitRate');
+    const hitRateRaw = hitRateInput ? hitRateInput.value : '30:0.85,50:0.8,100:0.7,150:0.6';
+    const hitRateMap = this.parseHitRateMap(hitRateRaw);
+    
+    // 🔥 获取当前距离下的命中率（用于兼容旧代码）
+    const distance = toNum('distance') || 30;
+    const hitRate = this.getHitRateFromMap(hitRateMap, distance, 0.85);
+    
+    return {
+      bulletLevel: toNum('bulletLevel') || 4,
+      armorLevel: toNum('armorLevel') || 4,
+      armorValue: toNum('armorValue') || 80,
+      helmetLevel: toNum('helmetLevel') || 4,
+      helmetValue: toNum('helmetValue') || 35,
+      distance: distance,
+      healthValue: toNum('healthValue') || 100,
+      // 🔥 全局命中率映射
+      hitRateMap: hitRateMap,
+      hitRate: hitRate,  // 兼容旧代码：当前距离下的命中率
+      hitRateRaw: hitRateRaw,  // 原始输入字符串
+      triggerDelayEnable: document.getElementById('triggerDelayEnable')?.checked ?? true,
+      hitProb: {
+        head: toFloat('pHead') || 0.18,
+        chest: toFloat('pChest') || 0.30,
+        stomach: toFloat('pStomach') || 0.22,
+        limbs: toFloat('pLimbs') || 0.30
       }
-    });
-
-    return settings;
+    };
   }
 
   /**
-   * 应用枪口初速精校设置
-   * @param {Object} settings - 精校设置对象
+   * 🔥 从命中率映射中获取指定距离的命中率
+   * @param {Array} hitRateMap - [{ distance, rate }, ...]
+   * @param {number} distance - 当前距离
+   * @param {number} fallback - 默认值
+   * @returns {number} 命中率
    */
-  applyVelocityPrecisionSettings(settings) {
-    const sliders = document.querySelectorAll('.velocity-precision-slider');
+  getHitRateFromMap(hitRateMap, distance, fallback = 0.85) {
+    if (!hitRateMap || hitRateMap.length === 0) return fallback;
     
-    if (settings && settings.weaponSettings) {
-      Object.keys(settings.weaponSettings).forEach(key => {
-        const precisionValue = settings.weaponSettings[key];
-        let slider = null;
-        
-        if (key.startsWith('weapon_')) {
-          const weaponIndex = key.replace('weapon_', '');
-          slider = document.querySelector(`.velocity-precision-slider[data-weapon="${weaponIndex}"]`);
-        } else if (key.startsWith('clone_')) {
-          const cloneIndex = key.replace('clone_', '');
-          slider = document.querySelector(`.velocity-precision-slider[data-clone="${cloneIndex}"]`);
+    // 按距离排序
+    const sorted = [...hitRateMap].sort((a, b) => a.distance - b.distance);
+    
+    // 查找第一个 distance >= 当前距离 的条目
+    for (const entry of sorted) {
+      if (distance <= entry.distance) {
+        return entry.rate;
+      }
+    }
+    
+    // 如果超出最大距离，使用最后一个
+    return sorted[sorted.length - 1]?.rate || fallback;
+  }
+
+  /**
+   * 获取武器的子弹类型
+   * @param {number} weaponIndex - 武器索引
+   * @returns {string|null} 子弹类型
+   */
+  getWeaponBulletType(weaponIndex) {
+    const select = document.querySelector(`.bulletSel[data-weapon="${weaponIndex}"]`);
+    if (select) {
+      return select.value || null;
+    }
+    return null;
+  }
+
+  // ============================================================
+  // 3. Tab 切换
+  // ============================================================
+
+  /**
+   * 设置 Tab 切换事件
+   */
+  setupTabs() {
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        this.switchTab(tab);
+      });
+    });
+  }
+
+  /**
+   * 切换 Tab
+   * @param {string} tab - tab 名称 (weapon / price / bullet)
+   */
+  switchTab(tab) {
+    this.currentTab = tab;
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.toggle('active', content.id === `tab-${tab}`);
+    });
+
+    if (tab === 'weapon') {
+      this.refreshWeaponTable();
+    } else if (tab === 'price') {
+      this.refreshPriceTable();
+    } else if (tab === 'bullet') {
+      this.refreshBulletTable();
+    }
+  }
+
+  // ============================================================
+  // 4. 武器表格
+  // ============================================================
+
+  /**
+   * 初始化武器表格
+   * @param {Function} onBarrelEdit - 打开枪管编辑器回调
+   */
+  initWeaponTable(onBarrelEdit) {
+    const container = document.getElementById('tab-weapon');
+    if (!container) {
+      console.warn('武器表格容器 #tab-weapon 不存在');
+      return;
+    }
+
+    const weapons = this.dataManager.getWeapons();
+    
+    // 🔥 初始化武器附件配置（使用最佳枪管）
+    this.initWeaponAttachments(weapons);
+    
+    const rowData = this.buildWeaponRows(weapons);
+
+    // 🔥 修复：getBarrelOptions 始终返回包含 '无' 的选项列表
+    // 格式：['无', '枪管1', '枪管2', ...]
+    const getBarrelOptions = (row) => {
+      const weapon = this.dataManager.getWeaponById(row.id);
+      if (!weapon || !Array.isArray(weapon.barrels) || weapon.barrels.length === 0) {
+        return ['无'];
+      }
+      const options = weapon.barrels.map(b => b.name || '无');
+      // 确保 '无' 在第一位
+      return ['无', ...options];
+    };
+
+    this.weaponTableInstance = WeaponTable.render({
+      data: rowData,
+      muzzleOptions: this.muzzleOptions,
+      getBarrelOptions: getBarrelOptions,
+      getDataManager: () => this.dataManager,
+      onCellChange: (rowIndex, key, value, row) => {
+        this.handleWeaponCellChange(rowIndex, key, value, row);
+      },
+      onAttachmentChange: (rowIndex, type, value) => {
+        this.handleWeaponAttachmentChange(rowIndex, type, value);
+      },
+      onPrecisionChange: (rowIndex, value) => {
+        this.handleWeaponPrecisionChange(rowIndex, value);
+      },
+      onAddClone: (rowIndex, isDelete) => {
+        if (isDelete) {
+          this.handleRemoveClone(rowIndex);
+        } else {
+          this.handleAddClone(rowIndex);
         }
-        
-        if (slider) {
-          slider.value = precisionValue;
-          const valueSpan = slider.parentElement.querySelector('.velocity-precision-value');
-          if (valueSpan) {
-            valueSpan.textContent = `${Math.round(precisionValue * 100)}%`;
+      },
+      onEditBarrel: (rowIndex) => {
+        if (onBarrelEdit) {
+          const row = this.weaponTableInstance?.getData()?.[rowIndex];
+          if (row) {
+            onBarrelEdit(row.id);
           }
         }
-      });
-    }
-    
-    sliders.forEach(slider => {
-      if (slider.value === '0' || slider.value === '') {
-        slider.value = 0.09;
-        const valueSpan = slider.parentElement.querySelector('.velocity-precision-value');
-        if (valueSpan) {
-          valueSpan.textContent = '9%';
-        }
-      } else {
-        const valueSpan = slider.parentElement.querySelector('.velocity-precision-value');
-        if (valueSpan) {
-          const percentage = Math.round(parseFloat(slider.value) * 100);
-          valueSpan.textContent = `${percentage}%`;
-        }
       }
+    });
+
+    container.innerHTML = this.weaponTableInstance.getHTML();
+    this.weaponTableInstance.bindEdit();
+
+    console.log(`✅ 武器表格初始化完成，${rowData.length} 把武器`);
+  }
+
+  /**
+   * 🔥 初始化武器附件配置（使用最佳枪管）
+   * @param {Array} weapons - 武器数据数组
+   */
+  initWeaponAttachments(weapons) {
+    weapons.forEach(weapon => {
+      // 如果已经有选择（用户之前选过），保留
+      // 否则使用最佳枪管
+      const existing = this.weaponAttachments[weapon.id];
+      if (existing && existing.barrelId !== undefined && existing.barrelId !== -1) {
+        // 已有选择，保留
+        return;
+      }
+      
+      // 🔥 查找射程最长的枪管
+      const bestBarrelIndex = this.dataManager.findBestBarrelIndex(weapon.id);
+      
+      this.weaponAttachments[weapon.id] = {
+        barrelId: bestBarrelIndex,
+        muzzleId: 0,
+        precision: 0.09
+      };
+      this.weaponPrecisions[weapon.id] = 0.09;
+      
+      if (weapon.id === 2 && bestBarrelIndex >= 0) {
+        const barrelName = weapon.barrels[bestBarrelIndex]?.name || '未知';
+        console.log(`🔧 武器 ${weapon.name} 默认使用最佳枪管: ${barrelName} (索引: ${bestBarrelIndex})`);
+      }
+
     });
   }
 
   /**
-   * 读取每把枪的子弹类型选择
-   * @returns {Array} 每把枪的子弹类型（未选为null）
+   * 构建武器行数据
+   * @param {Array} weapons - 武器数据
+   * @returns {Array} 行数据
    */
-  readWeaponBullets() {
-    const bulletSelects = document.querySelectorAll('.bulletSel');
-    return Array.from(bulletSelects).map(sel => sel.value || null);
-  }
-
-  /**
-   * 收集附件选择数据
-   * @returns {Object} 包含 barrelValues, muzzleValues, hitRateValues 的对象
-   */
-  collectAttachmentData() {
-    const barrelValues = Array.from(document.querySelectorAll('.barrelSel')).map(el => el.value);
-    const muzzleValues = Array.from(document.querySelectorAll('.muzzleSel')).map(el => el.value);
-    const hitRateValues = Array.from(document.querySelectorAll('.hitRateInput')).map(el => el.value || '');
-    
-    return { barrelValues, muzzleValues, hitRateValues };
-  }
-
-  /**
-   * 渲染附件选择表格
-   */
-  renderAttachmentTable() {
-    const weapons = this.weaponManager.getWeapons();
-    const muzzles = this.weaponManager.getMuzzles();
-    const clonedWeapons = this.weaponManager.getClonedWeapons();
-    
-    // 传入编辑回调
-    this.viewRenderer.renderAttachmentTable(
-      weapons, 
-      muzzles, 
-      (index, property, value) => {
-        this.handleWeaponEdit(index, property, value);
-      },
-      clonedWeapons,
-      (weaponIndex) => this.handleAddClone(weaponIndex),
-      (cloneIndex) => this.handleRemoveClone(cloneIndex)
-    );
-    
-    // 绑定新增枪械的确认和取消事件
-    this.setupAddWeaponListeners();
-    
-    // 绑定枪管编辑按钮事件
-    this.viewRenderer.bindBarrelEditListeners((weaponIndex) => {
-      if (this.barrelEditor) {
-        this.barrelEditor.openEditor(weaponIndex);
-      }
+  buildWeaponRows(weapons) {
+    return weapons.map(weapon => {
+      const attachment = this.weaponAttachments[weapon.id] || {
+        barrelId: -1,
+        muzzleId: 0,
+        precision: 0.09
+      };
+      // 🔥 确保附件值类型正确
+      const cleanAttachment = {
+        barrelId: typeof attachment.barrelId === 'string' ? parseInt(attachment.barrelId) : attachment.barrelId,
+        muzzleId: typeof attachment.muzzleId === 'string' ? parseInt(attachment.muzzleId) : attachment.muzzleId,
+        precision: typeof attachment.precision === 'string' ? parseFloat(attachment.precision) : attachment.precision
+      };
+      return WeaponTable.buildRowData(weapon, cleanAttachment, this.muzzleOptions);
     });
-    
-    setTimeout(() => {
-      this.updateWeaponStats();
-    }, 0);
   }
 
   /**
-   * 初始化枪管编辑器
+   * 刷新武器表格
    */
-  setupBarrelEditor() {
-    this.barrelEditor = new BarrelEditor(
-      this.weaponManager,
-      this.viewRenderer,
-      () => {
-        // 数据变化回调 - 刷新表格和枪管选择下拉框
-        this.renderAttachmentTable();
-        this.updateGlobalBarrelSelections();
-      }
-    );
-    console.log('🔧 枪管编辑器已初始化');
-  }
+  refreshWeaponTable() {
+    if (this.isRefreshing) return;
+    this.isRefreshing = true;
 
-  /**
-   * 处理武器属性编辑（核心修改）
-   * @param {number} index - 武器索引
-   * @param {string} property - 属性名
-   * @param {*} value - 新值
-   */
-  handleWeaponEdit(index, property, value) {
-    // 如果是附件变化（_attachment, _bullet, _precision, _clonePrecision），不需要更新武器数据，只需要刷新显示
-    // ⚠️ _hitRate 不再在这里处理，单独处理
-    if (property === '_attachment' || property === '_bullet' || property === '_precision' || 
-        property === '_clonePrecision') {
-      // 附件变化时，直接刷新统计显示
-      setTimeout(() => {
-        this.updateWeaponStats();
-      }, 10);
-      return;
-    }
-    
-    // ✅ 单独处理 _hitRate，保存到 WeaponManager
-    if (property === '_hitRate') {
-      // 将值保存到 WeaponManager
-      const success = this.weaponManager.updateWeaponProperty(index, 'hitRate', value);
-      if (success) {
-        setTimeout(() => {
-          this.updateWeaponStats();
-        }, 10);
-        console.log(`✅ 保存命中率成功: [${index}] ${value}`);
-      } else {
-        console.warn(`⚠️ 保存命中率失败: [${index}] ${value}`);
-      }
-      return;
-    }
-    
-    // 更新 WeaponManager 中的数据源
-    const success = this.weaponManager.updateWeaponProperty(index, property, value);
-    
-    if (success) {
-      // 使用 setTimeout 确保数据更新后再刷新 UI
-      setTimeout(() => {
-        // 刷新表格显示
-        this.updateWeaponStats();
-      }, 10);
-      
-      console.log(`✏️ 更新武器 [${index}] ${property} = ${value}`);
-    } else {
-      console.warn(`⚠️ 更新武器属性失败: [${index}] ${property} = ${value}`);
-    }
-  }
-
-  /**
-   * 设置新增枪械的事件监听器
-   */
-  setupAddWeaponListeners() {
-    const confirmBtn = document.getElementById('confirmAddWeapon');
-    if (confirmBtn) {
-      const newConfirmBtn = confirmBtn.cloneNode(true);
-      confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-      
-      newConfirmBtn.addEventListener('click', () => {
-        this.handleAddWeapon();
-      });
-    }
-    
-    const cancelBtn = document.getElementById('cancelAddWeapon');
-    if (cancelBtn) {
-      const newCancelBtn = cancelBtn.cloneNode(true);
-      cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-      
-      newCancelBtn.addEventListener('click', () => {
-        this.viewRenderer.clearNewWeaponInputs();
-      });
-    }
-  }
-
-  /**
-   * 处理新增枪械
-   */
-  handleAddWeapon() {
     try {
-      const weaponData = this.viewRenderer.readNewWeaponData();
-      if (!weaponData) return;
-      
-      // 添加到武器管理器
-      const weapons = this.weaponManager.getWeapons();
-      weapons.push(weaponData);
-      
-      // 重新渲染表格
-      this.renderAttachmentTable();
-      
-      // 重新应用全局枪管设置
-      this.updateGlobalBarrelSelections();
-      
-      console.log(`✅ 已添加新武器: ${weaponData.name}`);
-      
-      setTimeout(() => {
-        const rows = document.querySelectorAll('#attachmentTable tbody tr:not(.clone-row):not(.add-weapon-row)');
-        const lastRow = rows[rows.length - 1];
-        if (lastRow) {
-          lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          lastRow.style.backgroundColor = '#e8f5e9';
-          setTimeout(() => {
-            lastRow.style.backgroundColor = '';
-          }, 2000);
+      const container = document.getElementById('tab-weapon');
+      if (!container) return;
+
+      const weapons = this.dataManager.getWeapons();
+      const rowData = this.buildWeaponRows(weapons);
+
+      // 🔥 修复：getBarrelOptions 始终返回包含 '无' 的选项列表
+      const getBarrelOptions = (row) => {
+        const weapon = this.dataManager.getWeaponById(row.id);
+        if (!weapon || !Array.isArray(weapon.barrels) || weapon.barrels.length === 0) {
+          return ['无'];
         }
-      }, 100);
-      
+        const options = weapon.barrels.map(b => b.name || '无');
+        return ['无', ...options];
+      };
+
+      WeaponTable.update(container, rowData, {
+        muzzleOptions: this.muzzleOptions,
+        getBarrelOptions: getBarrelOptions,
+        getDataManager: () => this.dataManager,
+        onCellChange: (rowIndex, key, value, row) => {
+          this.handleWeaponCellChange(rowIndex, key, value, row);
+        },
+        onAttachmentChange: (rowIndex, type, value) => {
+          this.handleWeaponAttachmentChange(rowIndex, type, value);
+        },
+        onPrecisionChange: (rowIndex, value) => {
+          this.handleWeaponPrecisionChange(rowIndex, value);
+        },
+        onAddClone: (rowIndex, isDelete) => {
+          if (isDelete) {
+            this.handleRemoveClone(rowIndex);
+          } else {
+            this.handleAddClone(rowIndex);
+          }
+        },
+        onEditBarrel: (rowIndex) => {}
+      });
+
+      if (this.weaponTableInstance) {
+        this.weaponTableInstance.setData(rowData);
+      }
+
     } catch (error) {
-      console.error('添加武器失败:', error);
-      this.showError('添加武器失败: ' + error.message);
+      console.error('刷新武器表格失败:', error);
+    } finally {
+      this.isRefreshing = false;
     }
+  }
+
+  /**
+   * 处理武器单元格变更
+   */
+  handleWeaponCellChange(rowIndex, key, value, row) {
+    const weaponId = row.id;
+    let updateData = {};
+
+    if (key === 'name' || key === 'type') {
+      updateData[key] = value;
+    } else if (key === 'rof' || key === 'velocity' || key === 'flesh' || key === 'armor') {
+      updateData[key] = parseFloat(value) || 0;
+    } else if (key === 'ranges') {
+      const ranges = value.split(',').map(v => {
+        const trimmed = v.trim();
+        if (trimmed === '∞' || trimmed === 'Infinity' || trimmed === '') return Infinity;
+        return parseFloat(trimmed) || 40;
+      });
+      updateData.ranges = ranges;
+    } else if (key === 'mult') {
+      const parts = value.split(',').map(v => parseFloat(v.trim()) || 1);
+      updateData.mult = {
+        head: parts[0] || 1.9,
+        chest: parts[1] || 1,
+        stomach: parts[2] || 0.9,
+        limbs: parts[3] || 0.4
+      };
+    } else {
+      updateData[key] = value;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      this.dataManager.updateWeapon(weaponId, updateData);
+    }
+
+    this.scheduleRefresh('weapon');
+  }
+
+  /**
+   * 处理武器附件变更（枪管/枪口选择）
+   */
+  handleWeaponAttachmentChange(rowIndex, type, value) {
+    const row = this.weaponTableInstance?.getData()?.[rowIndex];
+    if (!row) {
+      console.warn('handleWeaponAttachmentChange: 未找到行数据', rowIndex);
+      return;
+    }
+
+    const weaponId = row.id;
+    
+    if (!this.weaponAttachments[weaponId]) {
+      this.weaponAttachments[weaponId] = { barrelId: -1, muzzleId: 0, precision: 0.09 };
+    }
+
+    // 🔥 确保值是数字
+    const numValue = typeof value === 'string' ? parseInt(value) : value;
+    
+    if (type === 'barrel') {
+      this.weaponAttachments[weaponId].barrelId = isNaN(numValue) ? -1 : numValue;
+      console.log(`🔧 武器 ${weaponId} (${row.name}) 枪管变更为: ${numValue}`);
+    } else if (type === 'muzzle') {
+      this.weaponAttachments[weaponId].muzzleId = isNaN(numValue) ? 0 : numValue;
+      console.log(`🔧 武器 ${weaponId} (${row.name}) 枪口变更为: ${numValue}`);
+    }
+
+    // 🔥 触发刷新，重新计算当前值
+    this.scheduleRefresh('weapon');
+  }
+
+  /**
+   * 处理武器精校变更
+   */
+  handleWeaponPrecisionChange(rowIndex, value) {
+    const row = this.weaponTableInstance?.getData()?.[rowIndex];
+    if (!row) return;
+
+    const weaponId = row.id;
+    
+    if (!this.weaponAttachments[weaponId]) {
+      this.weaponAttachments[weaponId] = { barrelId: -1, muzzleId: 0, precision: 0.09 };
+    }
+    
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    this.weaponAttachments[weaponId].precision = isNaN(numValue) ? 0.09 : numValue;
+    this.weaponPrecisions[weaponId] = this.weaponAttachments[weaponId].precision;
+
+    this.scheduleRefresh('weapon');
   }
 
   /**
    * 处理添加副本
-   * @param {number} weaponIndex - 原始武器索引
    */
-  handleAddClone(weaponIndex) {
-    if (!this.weaponManager.canAddClone()) {
-      alert('最多添加5个副本~');
-      return;
-    }
+  handleAddClone(rowIndex) {
+    const row = this.weaponTableInstance?.getData()?.[rowIndex];
+    if (!row) return;
 
-    const bulletTypes = this.readWeaponBullets();
-    const { barrelValues, muzzleValues, hitRateValues } = this.collectAttachmentData();
-    
-    const attachmentConfig = {
-      barrelIndex: this.parseBarrelIndex(barrelValues[weaponIndex]),
-      muzzleIndex: this.parseMuzzleIndex(muzzleValues[weaponIndex]),
-      hitRate: hitRateValues[weaponIndex] === '' ? null : Number(hitRateValues[weaponIndex]),
-      bulletType: bulletTypes[weaponIndex]
+    const weapon = this.dataManager.getWeaponById(row.id);
+    if (!weapon) return;
+
+    const clone = {
+      ...weapon,
+      id: `clone_${Date.now()}_${row.id}`,
+      name: `${weapon.name} [副本]`,
+      isClone: true,
+      originalId: row.id
     };
 
-    const currentWeaponState = this.readCurrentWeaponState(weaponIndex);
-
-    if (this.weaponManager.addClone(weaponIndex, attachmentConfig, currentWeaponState)) {
-      this.addCloneRow(weaponIndex, attachmentConfig);
-      this.updateWeaponStats();
-    }
+    this.dataManager.data.weapons.push(clone);
+    this.scheduleRefresh('weapon');
   }
 
   /**
    * 处理删除副本
-   * @param {number} cloneIndex - 副本索引
    */
-  handleRemoveClone(cloneIndex) {
-    this.weaponManager.removeClone(cloneIndex);
-    this.removeCloneRow(cloneIndex);
-    this.updateWeaponStats();
-  }
+  handleRemoveClone(rowIndex) {
+    const row = this.weaponTableInstance?.getData()?.[rowIndex];
+    if (!row) return;
 
-  /**
-   * 解析枪管索引
-   * @param {string} barrelValue - 枪管选择值
-   * @returns {number} 枪管索引
-   */
-  parseBarrelIndex(barrelValue) {
-    if (!barrelValue) return 0;
-    const [, index] = barrelValue.split('|').map(Number);
-    return index === -1 ? 0 : index;
-  }
-
-  /**
-   * 解析枪口索引
-   * @param {string} muzzleValue - 枪口选择值
-   * @returns {number} 枪口索引
-   */
-  parseMuzzleIndex(muzzleValue) {
-    if (!muzzleValue) return 0;
-    const [, index] = muzzleValue.split('|').map(Number);
-    return index === -1 ? 0 : index;
-  }
-
-  /**
-   * 从页面上读取当前武器的状态（已经应用了附件）
-   * @param {number} weaponIndex - 武器索引
-   * @returns {Object} 当前武器状态
-   */
-  readCurrentWeaponState(weaponIndex) {
-    const rof = Number(document.querySelector(`.currentRof[data-weapon="${weaponIndex}"]`).textContent);
-    const velocity = Number(document.querySelector(`.currentVelocity[data-weapon="${weaponIndex}"]`).textContent);
-    const rangesText = document.querySelector(`.currentRanges[data-weapon="${weaponIndex}"]`).textContent;
-    const flesh = Number(document.querySelector(`.currentFlesh[data-weapon="${weaponIndex}"]`).textContent);
-    const armor = Number(document.querySelector(`.currentArmor[data-weapon="${weaponIndex}"]`).textContent);
-    
-    const ranges = rangesText.split(',').map(r => {
-      const trimmed = r.trim();
-      if (trimmed === '∞' || trimmed === 'Infinity') {
-        return Infinity;
-      }
-      const num = Number(trimmed);
-      if (isNaN(num)) {
-        return 0; 
-      }
-      return num;
-    });
-    
-    const weapons = this.weaponManager.getWeapons();
-    const originalWeapon = weapons[weaponIndex];
-    
-    return {
-      ...originalWeapon,
-      rof: rof,
-      velocity: velocity,
-      ranges: ranges,
-      flesh: flesh,
-      armor: armor
-    };
-  }
-
-  /**
-   * 添加副本行到表格
-   * @param {number} weaponIndex - 原始武器索引
-   * @param {Object} attachmentConfig - 附件配置
-   */
-  addCloneRow(weaponIndex, attachmentConfig) {
-    const weapons = this.weaponManager.getWeapons();
-    const muzzles = this.weaponManager.getMuzzles();
-    const clonedWeapons = this.weaponManager.getClonedWeapons();
-    
-    const newClone = clonedWeapons[clonedWeapons.length - 1];
-    const cloneIndex = clonedWeapons.length - 1;
-    
-    const params = this.readPageParams();
-    const displayData = this.weaponManager.calculateCloneDisplayData(newClone, params);
-    
-    const tbody = document.querySelector('#attachmentTable tbody');
-    const tr = document.createElement('tr');
-    tr.className = 'clone-row';
-    tr.innerHTML = `
-      <td>${newClone.name}</td>
-      <td>${newClone.type}</td>
-      <td class="currentRof" data-clone="${cloneIndex}">${displayData.rof}</td>
-      <td class="currentVelocity" data-clone="${cloneIndex}">${displayData.velocity}</td>
-      <td class="currentRanges" data-clone="${cloneIndex}">${this.formatRanges(displayData.ranges)}</td>
-      <td class="currentFlesh" data-clone="${cloneIndex}">${displayData.flesh}</td>
-      <td class="currentArmor" data-clone="${cloneIndex}">${displayData.armor}</td>
-      <td class="multipliers" data-clone="${cloneIndex}">${formatMultipliers(displayData.mult)}</td>
-      <td>${attachmentConfig.barrelIndex > 0 ? weapons[weaponIndex].barrels[attachmentConfig.barrelIndex - 1].name : '无'}</td>
-      <td>${attachmentConfig.muzzleIndex > 0 ? muzzles[attachmentConfig.muzzleIndex].name : '无'}</td>
-      <td>${attachmentConfig.bulletType || '全局'}</td>
-      <td>${attachmentConfig.hitRate || ''}</td>
-      <td><button class="remove-clone-btn" data-clone="${cloneIndex}" title="删除副本">-</button></td>
-    `;
-    tbody.appendChild(tr);
-    
-    const removeBtn = tr.querySelector('.remove-clone-btn');
-    removeBtn.addEventListener('click', () => this.handleRemoveClone(cloneIndex));
-  }
-
-  /**
-   * 删除副本行
-   * @param {number} cloneIndex - 副本索引
-   */
-  removeCloneRow(cloneIndex) {
-    const cloneRows = document.querySelectorAll('.clone-row');
-    if (cloneRows[cloneIndex]) {
-      cloneRows[cloneIndex].remove();
+    const weaponId = row.id;
+    const weapons = this.dataManager.data.weapons;
+    const index = weapons.findIndex(w => w.id === weaponId);
+    if (index !== -1 && weapons[index].isClone) {
+      weapons.splice(index, 1);
     }
-    this.renumberCloneRows();
+
+    this.scheduleRefresh('weapon');
   }
 
-  /**
-   * 重新编号副本行
-   */
-  renumberCloneRows() {
-    const cloneRows = document.querySelectorAll('.clone-row');
-    cloneRows.forEach((row, index) => {
-      const cells = row.querySelectorAll('[data-clone]');
-      cells.forEach(cell => {
-        cell.setAttribute('data-clone', index);
-      });
-      
-      const removeBtn = row.querySelector('.remove-clone-btn');
-      if (removeBtn) {
-        removeBtn.setAttribute('data-clone', index);
-        removeBtn.onclick = () => this.handleRemoveClone(index);
-      }
-    });
-  }
+  // ============================================================
+  // 5. 价格表格
+  // ============================================================
 
   /**
-   * 格式化射程显示
+   * 初始化价格表格
    */
-  formatRanges(ranges) {
-    return ranges.map(r => r === Infinity ? '∞' : Math.round(r)).join(', ');
-  }
-
-  /**
-   * 更新武器统计数据（当附件选择变化时调用）
-   */
-  updateWeaponStats() {
-    if (this.isUpdating) {
-      console.log('⏳ 正在更新中，跳过重复调用');
+  initPriceTable() {
+    const container = document.getElementById('tab-price');
+    if (!container) {
+      console.warn('价格表格容器 #tab-price 不存在');
       return;
     }
-    
-    this.isUpdating = true;
-    
-    try {
-      const bulletTypes = this.readWeaponBullets();
-      const { barrelValues, muzzleValues, hitRateValues } = this.collectAttachmentData();
+
+    // 🔥 获取价格行数据并构建行数据
+    const priceRows = this.dataManager.getPriceRows();
+    const rowData = this.buildPriceRows(priceRows);
+
+    // 🔥 定义 getBarrelOptions 函数
+    const getBarrelOptions = (row) => {
+      const weaponId = row._weaponId;
+      const weapon = this.dataManager.getWeaponById(weaponId);
+      if (!weapon) {
+        return ['无'];
+      }
       
-      const params = this.readPageParams();
+      if (!Array.isArray(weapon.barrels) || weapon.barrels.length === 0) {
+        return ['无'];
+      }
       
-      // 构建附件配置
-      const attachmentConfigs = this.weaponManager.readAttachmentsWithBullet(
-        barrelValues, 
-        muzzleValues, 
-        hitRateValues, 
-        bulletTypes
-      );
-      
-      // 从 WeaponManager 获取最新数据（已包含用户编辑的值）
-      const updatedWeapons = this.weaponManager.applyAttachments(attachmentConfigs, params);
-      
-      // 更新UI
-      this.viewRenderer.updateWeaponStats(updatedWeapons);
-      
-    } catch (error) {
-      console.error('更新武器统计失败:', error);
-    } finally {
-      this.isUpdating = false;
-    }
+      const options = weapon.barrels.map(b => b.name || '无');
+      return ['无', ...options];
+    };
+
+    // 🔥 定义 getBulletOptions 函数
+    const getBulletOptions = (row) => {
+      const weapon = this.dataManager.getWeaponById(row._weaponId);
+      if (!weapon) return [];
+      const bullets = this.dataManager.getBulletsByCaliber(weapon.allowedBullet);
+      return bullets.map(b => `${b.caliber} Lv.${b.level}`);
+    };
+
+    this.priceTableInstance = PriceTable.render({
+      data: rowData,
+      muzzleOptions: this.muzzleOptions,
+      getBarrelOptions: getBarrelOptions,
+      getBulletOptions: getBulletOptions,
+      onCellChange: (rowIndex, key, value, row) => {
+        this.handlePriceCellChange(rowIndex, key, value, row);
+      },
+      onAddRow: (rowIndex, rowData) => {
+        this.handlePriceAddRow(rowIndex, rowData);
+      },
+      onDeleteRow: (rowIndex, weaponId, configId, isCancelled) => {
+        this.handlePriceDeleteRow(rowIndex, weaponId, configId, isCancelled);
+      }
+    });
+
+    container.innerHTML = this.priceTableInstance.getHTML();
+    this.priceTableInstance.bindEdit();
+
+    console.log(`✅ 价格表格初始化完成，${rowData.length} 条配置`);
   }
 
   /**
-   * 显示错误信息
-   * @param {string} message - 错误信息
+   * 🔥 构建价格行数据（自动修复 barrelId 和 barrel 名称的同步）
+   * @param {Array} priceRows - DataManager.getPriceRows() 返回的数据
+   * @returns {Array} 行数据
    */
-  showError(message) {
-    alert(message);
-  }
-
-  /**
-   * 获取图表上下文
-   * @param {string} chartId - 图表ID
-   * @returns {CanvasRenderingContext2D} 图表上下文
-   */
-  getChartContext(chartId) {
-    return document.getElementById(chartId).getContext('2d');
-  }
-
-  /**
-   * 获取全局枪管类型设置
-   * @returns {string} 'none' 或 'longest'
-   */
-  getGlobalBarrelType() {
-    return document.getElementById('globalBarrelType').value;
-  }
-
-  /**
-   * 根据全局设置更新所有武器的枪管选择
-   */
-  updateGlobalBarrelSelections() {
-    const globalBarrelType = this.getGlobalBarrelType();
-    const barrelSelects = document.querySelectorAll('.barrelSel');
-    
-    barrelSelects.forEach((select, index) => {
-      const weapon = this.weaponManager.getWeapons()[index];
-      if (!weapon) return;
+  buildPriceRows(priceRows) {
+    return priceRows.map(row => {
+      // 🔥 确保 barrelId 和 barrel 名称同步
+      let barrelId = row.barrelId;
+      let barrel = row.barrel;
       
-      if (globalBarrelType === 'none') {
-        select.value = '无|-1';
-      } else if (globalBarrelType === 'longest') {
-        if (weapon.barrels && weapon.barrels.length > 0) {
-          const getScore = (w, barrel) => {
-            if (!barrel) return -Infinity;
-            const hasAdd = typeof barrel.rangeAdd === 'number';
-            const barrelMult = hasAdd ? 1.0 : (typeof barrel.rangeMult === 'number' ? barrel.rangeMult : 1.0);
-            const ranges = w.ranges.map(r => r === Infinity ? Infinity : (r * barrelMult));
-            const adjusted = hasAdd ? ranges.map(r => r === Infinity ? Infinity : (r + barrel.rangeAdd)) : ranges;
-            const finite = adjusted.filter(Number.isFinite);
-            return finite.length ? Math.max(...finite) : -Infinity;
-          };
-          const longestBarrelIndex = weapon.barrels.reduce((best, cur, curIdx) => {
-            const sb = getScore(weapon, weapon.barrels[best]);
-            const sc = getScore(weapon, cur);
-            return sc > sb ? curIdx : best;
-          }, 0);
-          select.value = `${weapon.barrels[longestBarrelIndex].name}|${longestBarrelIndex + 1}`;
-        } else {
-          select.value = '无|-1';
+      // 如果 barrelId 无效（-1 或 undefined），尝试从名称查找
+      if (barrelId === -1 || barrelId === undefined || barrelId === null) {
+        if (barrel && barrel !== '无') {
+          // 尝试从武器数据中查找名称对应的 ID
+          const foundIndex = this.dataManager.findBarrelIdByName(row._weaponId, barrel);
+          if (foundIndex >= 0) {
+            barrelId = foundIndex;
+            console.log(`🔧 buildPriceRows: ${row.weaponName} 从名称 "${barrel}" 修复 barrelId = ${barrelId}`);
+          }
         }
       }
       
-      select.dispatchEvent(new Event('change'));
+      // 如果还是无效，自动使用最佳枪管
+      if (barrelId === -1 || barrelId === undefined || barrelId === null) {
+        const bestIndex = this.dataManager.findBestBarrelIndex(row._weaponId);
+        if (bestIndex >= 0) {
+          barrelId = bestIndex;
+          const weapon = this.dataManager.getWeaponById(row._weaponId);
+          if (weapon && weapon.barrels && weapon.barrels[bestIndex]) {
+            barrel = weapon.barrels[bestIndex].name || '无';
+            console.log(`🔧 buildPriceRows: ${row.weaponName} 自动使用最佳枪管: ${barrel} (索引: ${bestIndex})`);
+          }
+        } else {
+          barrel = '无';
+        }
+      }
+      
+      // 如果 barrelId 有效但 barrel 名称不匹配，从武器数据中获取名称
+      if (barrelId >= 0 && (!barrel || barrel === '无')) {
+        const weapon = this.dataManager.getWeaponById(row._weaponId);
+        if (weapon && weapon.barrels && weapon.barrels[barrelId]) {
+          barrel = weapon.barrels[barrelId].name || '无';
+        }
+      }
+      
+      const data = PriceTable.buildRowData({
+        ...row,
+        barrelId: barrelId,
+        barrel: barrel
+      });
+      
+      // 🔥 修复：根据 muzzleId 获取显示名称
+      if (row.muzzleId !== undefined && row.muzzleId >= 0 && this.muzzleOptions[row.muzzleId]) {
+        data.muzzle = this.muzzleOptions[row.muzzleId];
+      }
+      // 🔥 如果 row 中有 muzzle 字段，优先使用
+      if (row.muzzle && row.muzzle !== '无') {
+        data.muzzle = row.muzzle;
+      }
+      return data;
     });
   }
 
   /**
-   * 重置武器数据为默认值
-   * 这个方法现在由 main.js 的 resetToDefault 调用
-   * @param {Array} defaultData - 默认武器数据
+   * 刷新价格表格
    */
-  resetWeaponsToDefault(defaultData) {
-    if (!defaultData || defaultData.length === 0) {
-      console.warn('默认武器数据为空，无法重置');
+  refreshPriceTable() {
+    if (this.isRefreshing) return;
+    this.isRefreshing = true;
+
+    try {
+      const container = document.getElementById('tab-price');
+      if (!container) {
+        console.warn('价格表格容器 #tab-price 不存在');
+        return;
+      }
+
+      const priceRows = this.dataManager.getPriceRows();
+      const rowData = this.buildPriceRows(priceRows);
+
+      // 🔥 定义 getBarrelOptions 函数
+      const getBarrelOptions = (row) => {
+        const weaponId = row._weaponId;
+        const weapon = this.dataManager.getWeaponById(weaponId);
+        if (!weapon) {
+          return ['无'];
+        }
+        
+        if (!Array.isArray(weapon.barrels) || weapon.barrels.length === 0) {
+          return ['无'];
+        }
+        
+        const options = weapon.barrels.map(b => b.name || '无');
+        return ['无', ...options];
+      };
+
+      const getBulletOptions = (row) => {
+        const weapon = this.dataManager.getWeaponById(row._weaponId);
+        if (!weapon) return [];
+        const bullets = this.dataManager.getBulletsByCaliber(weapon.allowedBullet);
+        return bullets.map(b => `${b.caliber} Lv.${b.level}`);
+      };
+
+      // 🔥 调用 PriceTable.update 更新 DOM，并接收处理后的数据
+      const processedData = PriceTable.update(container, rowData, {
+        muzzleOptions: this.muzzleOptions,
+        getBarrelOptions: getBarrelOptions,
+        getBulletOptions: getBulletOptions,
+        onCellChange: (rowIndex, key, value, row) => {
+          this.handlePriceCellChange(rowIndex, key, value, row);
+        },
+        onAddRow: (rowIndex, rowData) => {
+          this.handlePriceAddRow(rowIndex, rowData);
+        },
+        onDeleteRow: (rowIndex, weaponId, configId, isCancelled) => {
+          this.handlePriceDeleteRow(rowIndex, weaponId, configId, isCancelled);
+        }
+      });
+
+      // 🔥 使用 PriceTable.update 返回的处理后数据更新实例缓存
+      if (this.priceTableInstance && processedData) {
+        // 直接更新内部数据，不触发重新渲染
+        this.priceTableInstance._data = processedData;
+        // 同时更新当前数据引用
+        this.priceTableInstance._currentData = processedData;
+      }
+
+    } catch (error) {
+      console.error('刷新价格表格失败:', error);
+    } finally {
+      this.isRefreshing = false;
+    }
+  }
+
+  /**
+   * 处理价格单元格变更
+   */
+  handlePriceCellChange(rowIndex, key, value, row) {
+    console.log(`🔍 [价格表格] handlePriceCellChange: 行 ${rowIndex}, key: ${key}, value: "${value}"`);
+    console.log(`  - 武器: ${row.weaponName}, _weaponId: ${row._weaponId}, _configId: ${row._configId}`);
+    
+    const weaponId = row._weaponId;
+    const configId = row._configId;
+
+    if (key === 'barrel') {
+      // 🔥 查找枪管 ID
+      const barrelId = this.dataManager.findBarrelIdByName(weaponId, value);
+      console.log(`  - findBarrelIdByName(${weaponId}, "${value}") = ${barrelId}`);
+      
+      if (barrelId >= 0) {
+        const result = this.dataManager.updatePriceConfig(weaponId, configId, { barrelId });
+        console.log(`  - updatePriceConfig 结果: ${result ? '✅ 成功' : '❌ 失败'}`);
+        if (result) {
+          console.log(`  - ✅ 枪管已更新: ${value} (barrelId: ${barrelId})`);
+        }
+      } else {
+        console.log(`  - ⚠️ 未找到枪管 "${value}"，尝试直接保存名称`);
+        // 如果找不到 barrelId，尝试通过名称匹配
+        const weapon = this.dataManager.getWeaponById(weaponId);
+        if (weapon && weapon.barrels) {
+          const idx = weapon.barrels.findIndex(b => b.name === value);
+          if (idx >= 0) {
+            const result = this.dataManager.updatePriceConfig(weaponId, configId, { barrelId: idx });
+            console.log(`  - 通过名称匹配找到索引 ${idx}, 更新结果: ${result ? '✅ 成功' : '❌ 失败'}`);
+          } else {
+            console.log(`  - ❌ 武器 ${weapon?.name} 中没有名为 "${value}" 的枪管`);
+          }
+        }
+      }
+    } else if (key === 'muzzle') {
+      // 🔥 修复：查找枪口 ID
+      const muzzleId = this.muzzleOptions.indexOf(value);
+      console.log(`  - muzzleId: ${muzzleId}`);
+      
+      if (muzzleId >= 0) {
+        // 🔥 同时更新 muzzleId 和 muzzle 显示名称
+        const result = this.dataManager.updatePriceConfig(weaponId, configId, { 
+          muzzleId: muzzleId,
+          muzzle: value  // 🔥 直接保存显示名称，方便读取
+        });
+        console.log(`  - updatePriceConfig 结果: ${result ? '✅ 成功' : '❌ 失败'}`);
+        if (result) {
+          console.log(`  - ✅ 枪口已更新: ${value} (muzzleId: ${muzzleId})`);
+        }
+      } else {
+        console.log(`  - ⚠️ 未找到枪口 "${value}"`);
+      }
+    } else if (key === 'buildCode') {
+      this.dataManager.updatePriceConfig(weaponId, configId, { buildCode: value });
+    } else if (key === 'price') {
+      this.dataManager.updatePriceConfig(weaponId, configId, { price: parseFloat(value) || 0 });
+    } else if (key === 'hitRateRaw') {
+      const parsed = PriceTable.parseHitRateRaw(value);
+      this.dataManager.updatePriceConfig(weaponId, configId, {
+        distance: parsed.distance,
+        hitRate: parsed.hitRate
+      });
+    } else if (key === 'bulletDisplay') {
+      const bulletId = this.dataManager.findBulletIdByDisplay(value);
+      if (bulletId) {
+        this.dataManager.updatePriceConfig(weaponId, configId, { bullet: bulletId });
+      }
+    }
+
+    this.scheduleRefresh('price');
+  }
+
+  /**
+   * 处理价格新增行
+   */
+  handlePriceAddRow(rowIndex, rowData) {
+    const weaponId = rowData._weaponId;
+    const nextConfigId = this.dataManager.getNextConfigId(weaponId);
+
+    // 🔥 新增配置时自动使用最佳枪管
+    const bestBarrelIndex = this.dataManager.findBestBarrelIndex(weaponId);
+    const weapon = this.dataManager.getWeaponById(weaponId);
+    const bestBarrelName = (weapon && weapon.barrels && weapon.barrels[bestBarrelIndex]) 
+      ? weapon.barrels[bestBarrelIndex].name 
+      : '无';
+
+    const newConfig = {
+      id: nextConfigId,
+      barrelId: bestBarrelIndex >= 0 ? bestBarrelIndex : -1,
+      muzzleId: 0,
+      muzzle: '无',
+      buildCode: '',
+      price: 0,
+      distance: [],
+      hitRate: [],
+      bullet: ''
+    };
+
+    console.log(`🔧 新增价格配置 ${weapon?.name || '未知武器'} 使用最佳枪管: ${bestBarrelName} (索引: ${bestBarrelIndex})`);
+
+    this.dataManager.addPriceConfig(weaponId, newConfig);
+    this.scheduleRefresh('price');
+  }
+
+  /**
+   * 处理价格删除行
+   */
+  handlePriceDeleteRow(rowIndex, weaponId, configId, isCancelled) {
+    if (isCancelled) {
+      this.scheduleRefresh('price');
       return;
     }
+
+    if (weaponId && configId) {
+      this.dataManager.removePriceConfig(weaponId, configId);
+      this.scheduleRefresh('price');
+    }
+  }
+
+  // ============================================================
+  // 6. 子弹表格
+  // ============================================================
+
+  /**
+   * 初始化子弹表格
+   */
+  initBulletTable() {
+    const container = document.getElementById('tab-bullet');
+    if (!container) {
+      console.warn('子弹表格容器 #tab-bullet 不存在');
+      return;
+    }
+
+    const bullets = this.dataManager.getBullets();
+    const rowData = bullets.map(b => BulletTable.buildRowData(b));
+
+    this.bulletTableInstance = BulletTable.render({
+      data: rowData,
+      caliberOptions: this.getCaliberOptions(),
+      levelOptions: ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT'],
+      onCellChange: (rowIndex, key, value, row) => {
+        this.handleBulletCellChange(rowIndex, key, value, row);
+      },
+      onAddRow: (rowIndex, rowData) => {
+        this.handleBulletAddRow(rowIndex, rowData);
+      },
+      onDeleteRow: (rowIndex, bulletId, isCancelled) => {
+        this.handleBulletDeleteRow(rowIndex, bulletId, isCancelled);
+      }
+    });
+
+    container.innerHTML = this.bulletTableInstance.getHTML();
+    this.bulletTableInstance.bindEdit();
+
+    console.log(`✅ 子弹表格初始化完成，${rowData.length} 种子弹`);
+  }
+
+  /**
+   * 刷新子弹表格
+   */
+  refreshBulletTable() {
+    if (this.isRefreshing) return;
+    this.isRefreshing = true;
+
+    try {
+      const container = document.getElementById('tab-bullet');
+      if (!container) return;
+
+      const bullets = this.dataManager.getBullets();
+      const rowData = bullets.map(b => BulletTable.buildRowData(b));
+
+      BulletTable.update(container, rowData, {
+        caliberOptions: this.getCaliberOptions(),
+        levelOptions: ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT'],
+        onCellChange: (rowIndex, key, value, row) => {
+          this.handleBulletCellChange(rowIndex, key, value, row);
+        },
+        onAddRow: (rowIndex, rowData) => {
+          this.handleBulletAddRow(rowIndex, rowData);
+        },
+        onDeleteRow: (rowIndex, bulletId, isCancelled) => {
+          this.handleBulletDeleteRow(rowIndex, bulletId, isCancelled);
+        }
+      });
+
+      if (this.bulletTableInstance) {
+        this.bulletTableInstance.setData(rowData);
+      }
+
+    } catch (error) {
+      console.error('刷新子弹表格失败:', error);
+    } finally {
+      this.isRefreshing = false;
+    }
+  }
+
+  /**
+   * 处理子弹单元格变更
+   */
+  handleBulletCellChange(rowIndex, key, value, row) {
+    const bulletId = row._bulletId;
     
-    this.weaponManager.loadWeapons(defaultData);
-    this.renderAttachmentTable();
-    this.updateGlobalBarrelSelections();
-    console.log('✅ 已重置为默认武器数据');
+    if (key === 'base' || key === 'armorMult' || key === 'pen' || key === 'price') {
+      this.dataManager.updateBullet(bulletId, { [key]: parseFloat(value) || 0 });
+    }
+
+    this.scheduleRefresh('bullet');
+  }
+
+  /**
+   * 处理子弹新增行
+   */
+  handleBulletAddRow(rowIndex, rowData) {
+    const caliber = rowData.caliber || '';
+    const level = rowData.level || '1';
+    const bulletId = `${caliber}_${level}`;
+
+    const armorData = {};
+    for (let i = 1; i <= 6; i++) {
+      armorData[i] = {
+        armorMult: rowData.armorMult || 1.0,
+        pen: rowData.pen || 0.5
+      };
+    }
+
+    const newBullet = {
+      id: bulletId,
+      caliber: caliber,
+      level: level,
+      base: rowData.base || 1.0,
+      armorMult: rowData.armorMult || 1.0,
+      pen: rowData.pen || 0.5,
+      price: rowData.price || 0,
+      armorData: armorData
+    };
+
+    this.dataManager.addBullet(newBullet);
+    this.scheduleRefresh('bullet');
+  }
+
+  /**
+   * 处理子弹删除行
+   */
+  handleBulletDeleteRow(rowIndex, bulletId, isCancelled) {
+    if (isCancelled) {
+      this.scheduleRefresh('bullet');
+      return;
+    }
+
+    if (bulletId) {
+      this.dataManager.removeBullet(bulletId);
+      this.scheduleRefresh('bullet');
+    }
+  }
+
+  /**
+   * 获取口径选项列表
+   */
+  getCaliberOptions() {
+    const calibers = new Set();
+    this.dataManager.getBullets().forEach(b => {
+      if (b.caliber) calibers.add(b.caliber);
+    });
+    return Array.from(calibers).sort();
+  }
+
+  // ============================================================
+  // 7. 延迟刷新
+  // ============================================================
+
+  /**
+   * 延迟刷新表格（防抖）
+   * @param {string} tab - 要刷新的 tab
+   */
+  scheduleRefresh(tab) {
+    if (this._refreshTimer) {
+      clearTimeout(this._refreshTimer);
+    }
+    this._refreshTimer = setTimeout(() => {
+      if (tab === 'weapon') {
+        this.refreshWeaponTable();
+      } else if (tab === 'price') {
+        this.refreshPriceTable();
+      } else if (tab === 'bullet') {
+        this.refreshBulletTable();
+      }
+      this._refreshTimer = null;
+    }, 50);
+  }
+
+  // ============================================================
+  // 8. 控制按钮事件
+  // ============================================================
+
+  /**
+   * 绑定控制按钮事件（计算 TTK、距离折线图）
+   */
+  bindControlEvents() {
+    const calcBtn = document.getElementById('calcBtn');
+    const distChartBtn = document.getElementById('distChartBtn');
+
+    if (calcBtn) {
+      calcBtn.addEventListener('click', () => {
+        const event = new CustomEvent('calculate-ttk', {
+          detail: { dataManager: this.dataManager }
+        });
+        document.dispatchEvent(event);
+      });
+    }
+
+    if (distChartBtn) {
+      distChartBtn.addEventListener('click', () => {
+        const event = new CustomEvent('calculate-distance', {
+          detail: { dataManager: this.dataManager }
+        });
+        document.dispatchEvent(event);
+      });
+    }
+  }
+
+  // ============================================================
+  // 9. 导入/导出事件
+  // ============================================================
+
+  /**
+   * 绑定导入/导出事件
+   */
+  bindImportExportEvents() {
+    const exportBtn = document.getElementById('exportDataBtn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        this.exportData();
+      });
+    }
+
+    const importBtn = document.getElementById('importDataBtn');
+    if (importBtn) {
+      importBtn.addEventListener('click', () => {
+        this.importData();
+      });
+    }
+
+    const resetBtn = document.getElementById('resetDataBtn');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        this.resetData();
+      });
+    }
+  }
+
+  /**
+   * 导出数据
+   */
+  exportData() {
+    try {
+      this.dataManager.exportToFile();
+    } catch (error) {
+      console.error('导出失败:', error);
+      alert('导出失败: ' + error.message);
+    }
+  }
+
+  /**
+   * 导入数据
+   */
+  importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        await this.dataManager.importFromFile(file);
+        // 🔥 重置附件配置
+        this.weaponAttachments = {};
+        this.weaponPrecisions = {};
+        // 🔥 重新加载枪口选项
+        this.muzzleOptions = this.dataManager.getMuzzleNames();
+        // 🔥 重新初始化武器附件（使用最佳枪管）
+        const weapons = this.dataManager.getWeapons();
+        this.initWeaponAttachments(weapons);
+        this.refreshWeaponTable();
+        this.refreshPriceTable();
+        this.refreshBulletTable();
+        alert('✅ 数据导入成功！');
+      } catch (error) {
+        console.error('导入失败:', error);
+        alert('❌ 导入失败: ' + error.message);
+      }
+    };
+    input.click();
+  }
+
+  /**
+   * 重置数据
+   */
+  resetData() {
+    if (!confirm('⚠️ 确定要重置所有数据为默认值吗？\n（当前修改将丢失！）')) {
+      return;
+    }
+
+    try {
+      this.dataManager.resetToOriginal();
+      this.weaponAttachments = {};
+      this.weaponPrecisions = {};
+      // 🔥 重新加载枪口选项
+      this.muzzleOptions = this.dataManager.getMuzzleNames();
+      // 🔥 重新初始化武器附件（使用最佳枪管）
+      const weapons = this.dataManager.getWeapons();
+      this.initWeaponAttachments(weapons);
+      this.refreshWeaponTable();
+      this.refreshPriceTable();
+      this.refreshBulletTable();
+      alert('✅ 数据已重置为默认值！');
+    } catch (error) {
+      console.error('重置失败:', error);
+      alert('❌ 重置失败: ' + error.message);
+    }
+  }
+
+  // ============================================================
+  // 10. 公共方法
+  // ============================================================
+
+  /**
+   * 获取当前 Tab
+   * @returns {string} 当前 Tab 名称
+   */
+  getCurrentTab() {
+    return this.currentTab;
+  }
+
+  /**
+   * 获取武器附件配置
+   * @param {number} weaponId - 武器 ID
+   * @returns {Object} 附件配置
+   */
+  getWeaponAttachment(weaponId) {
+    return this.weaponAttachments[weaponId] || { barrelId: -1, muzzleId: 0, precision: 0.09 };
+  }
+
+  /**
+   * 获取武器精校值
+   * @param {number} weaponId - 武器 ID
+   * @returns {number} 精校值
+   */
+  getWeaponPrecision(weaponId) {
+    return this.weaponPrecisions[weaponId] || 0.09;
+  }
+
+  /**
+   * 刷新所有表格
+   */
+  refreshAll() {
+    this.refreshWeaponTable();
+    this.refreshPriceTable();
+    this.refreshBulletTable();
+  }
+
+  /**
+   * 销毁控制器
+   */
+  destroy() {
+    if (this._refreshTimer) {
+      clearTimeout(this._refreshTimer);
+      this._refreshTimer = null;
+    }
+    this.weaponTableInstance = null;
+    this.priceTableInstance = null;
+    this.bulletTableInstance = null;
+    console.log('DOMController 已销毁');
   }
 }

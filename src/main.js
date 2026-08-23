@@ -1,376 +1,528 @@
-import { SimulationEngine } from './core/SimulationEngine.js';
-import { WeaponManager } from './core/WeaponManager.js';
-import { BulletStrategyFactory } from './core/BulletStrategy.js';
-import { ChartManager } from './ui/ChartManager.js';
-import { DOMController } from './ui/DOMController.js';
-import { EventHandler } from './ui/EventHandler.js';
-import { validateHitProb, validateWeaponHitRates, validatePageParams } from './utils/validators.js';
-import { resetSeed } from './utils/rng.js';
-
 /**
- * 应用主控制器
- * 负责协调各个模块，处理用户交互和业务逻辑
+ * 应用主入口
+ * 
+ * 职责：
+ * 1. 等待 DOM 和第三方库加载完成
+ * 2. 初始化 DataManager 并加载数据
+ * 3. 初始化 DOMController（表格渲染）
+ * 4. 初始化 EventHandler（事件绑定）
+ * 5. 初始化 ChartManager（图表）
+ * 6. 初始化 BarrelEditor（枪管编辑器）
+ * 7. 设置 SimulationEngine 的 DataManager 依赖
+ * 8. 协调 TTK 计算和距离图表计算
  */
-class AppController {
+import { getDataManager } from './core/DataManager.js';
+import { SimulationEngine } from './core/SimulationEngine.js';
+import DOMController from './ui/DOMController.js';
+import EventHandler from './ui/EventHandler.js';
+import BarrelEditor from './ui/BarrelEditor.js';
+import { ChartManager } from './ui/ChartManager.js';
+import WeaponTable from './ui/WeaponTable.js';
+import { resetSeed } from './utils/rng.js';
+import { validateHitProb, validateWeaponHitRates, validatePageParams } from './utils/validators.js';
+
+class App {
   constructor() {
-    // 等待 DOM 完全加载后再初始化
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.waitForLibraries());
-    } else {
-      this.waitForLibraries();
-    }
-  }
-
-  waitForLibraries() {
-    // 检查必要的库是否已加载
-    if (typeof Chart === 'undefined') {
-      console.log('等待 Chart.js 加载...');
-      setTimeout(() => this.waitForLibraries(), 100);
-      return;
-    }
-    
-    if (typeof ChartDataLabels === 'undefined') {
-      console.log('等待 ChartDataLabels 插件加载...');
-      setTimeout(() => this.waitForLibraries(), 100);
-      return;
-    }
-    
-    console.log('所有库已加载完成，开始初始化应用');
-    this.initialize();
+    this.dataManager = null;
+    this.domController = null;
+    this.eventHandler = null;
+    this.chartManager = null;
+    this.barrelEditor = null;
+    this.isInitialized = false;
+    this._refreshTimer = null;
   }
 
   /**
-   * 初始化应用
+   * 启动应用
    */
-  async initialize() {
+  async start() {
     try {
-      console.log('开始初始化应用...');
-      
-      // 1. 创建 WeaponManager
-      this.weaponManager = new WeaponManager();
-      
-      // 2. 先加载武器数据（await 确保数据加载完成）
-      await this.loadWeaponsFromJSON();
-      
-      // 3. 再创建 DOMController（此时 WeaponManager 中已有数据）
-      this.domController = new DOMController(this.weaponManager);
-      
-      // 4. 创建 ChartManager 和 EventHandler
-      this.chartManager = new ChartManager();
-      this.eventHandler = new EventHandler();
+      console.log('🚀 应用启动中...');
 
-      // 5. 初始化 UI（使用已加载的数据）
-      this.domController.renderAttachmentTable();
-      
-      // 6. 应用全局枪管类型设置
-      this.domController.updateGlobalBarrelSelections();
-      
-      // 7. 绑定事件处理器
-      this.eventHandler.bindEventHandlers(
-        () => this.handleCalculate(),
-        () => this.handleDistanceChart(),
-        () => this.domController.updateGlobalBarrelSelections()
-      );
+      // 1. 等待 DOM 就绪
+      await this.waitForDOM();
 
-      // 8. 添加控制按钮（重置、导出、导入）
-      this.addControlButtons();
+      // 2. 等待第三方库加载
+      await this.waitForLibraries();
 
-      console.log('应用初始化完成');
+      // 3. 初始化 DataManager 并加载数据
+      await this.initDataManager();
+
+      // 4. 设置 SimulationEngine 的 DataManager 依赖
+      this.setupSimulationEngine();
+
+      // 5. 初始化图表管理器
+      this.initChartManager();
+
+      // 6. 初始化 DOM 控制器
+      this.initDOMController();
+
+      // 7. 初始化枪管编辑器
+      this.initBarrelEditor();
+
+      // 8. 初始化事件处理器
+      this.initEventHandler();
+
+      // 9. 应用启动完成
+      this.isInitialized = true;
+      console.log('✅ 应用启动完成');
+      console.log('📊 数据状态:', this.dataManager.getStats());
+
     } catch (error) {
-      console.error('应用初始化失败:', error);
-      // 注意：此时 domController 可能还未创建，需要单独处理错误
-      if (this.domController) {
-        this.domController.showError('应用初始化失败: ' + error.message);
+      console.error('❌ 应用启动失败:', error);
+      this.showError('应用启动失败: ' + error.message);
+    }
+  }
+
+  // ============================================================
+  // 1. 等待就绪
+  // ============================================================
+
+  /**
+   * 等待 DOM 就绪
+   * @returns {Promise}
+   */
+  waitForDOM() {
+    return new Promise((resolve) => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', resolve);
       } else {
-        alert('应用初始化失败: ' + error.message);
+        resolve();
       }
-    }
-  }
-
-  /**
-   * 直接从 weapons.json 加载数据
-   * 如果加载失败，页面显示错误，不再使用备用数据
-   */
-  async loadWeaponsFromJSON() {
-    try {
-      console.log('正在从 weapons.json 加载武器数据...');
-      
-      const response = await fetch('./weapons.json');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!Array.isArray(data) || data.length === 0) {
-        throw new Error('数据格式无效或为空');
-      }
-      
-      // 加载数据到 WeaponManager
-      this.weaponManager.loadWeapons(data);
-      
-      console.log(`✅ 从 weapons.json 加载了 ${data.length} 把武器数据`);
-      
-    } catch (error) {
-      console.error(`❌ 加载 weapons.json 失败: ${error.message}`);
-      // 显示错误信息给用户
-      const errorMsg = `无法加载武器数据: ${error.message}\n请确保 weapons.json 文件存在且格式正确。`;
-      alert(errorMsg);
-      throw new Error(errorMsg);
-    }
-  }
-
-  /**
-   * 添加控制按钮（重置、导出、导入）
-   */
-  addControlButtons() {
-    const buttonsContainer = document.querySelector('.buttons-container');
-    if (!buttonsContainer) return;
-    
-    // 添加分隔符
-    const separator = document.createElement('span');
-    separator.style.margin = '0 8px';
-    separator.textContent = '|';
-    buttonsContainer.appendChild(separator);
-    
-    // 添加重置按钮（重置为 weapons.json 的默认数据）
-    const resetBtn = document.createElement('button');
-    resetBtn.id = 'resetDataBtn';
-    resetBtn.textContent = '🔄 重置为默认';
-    resetBtn.style.backgroundColor = '#ff9800';
-    resetBtn.style.color = '#fff';
-    resetBtn.addEventListener('click', () => {
-      this.resetToDefault();
     });
-    buttonsContainer.appendChild(resetBtn);
-    
-    // 添加导出按钮
-    const exportBtn = document.createElement('button');
-    exportBtn.id = 'exportDataBtn';
-    exportBtn.textContent = '📤 导出数据';
-    exportBtn.style.backgroundColor = '#9c27b0';
-    exportBtn.style.color = '#fff';
-    exportBtn.addEventListener('click', () => {
-      this.exportWeaponData();
-    });
-    buttonsContainer.appendChild(exportBtn);
-    
-    // 添加导入按钮
-    const importBtn = document.createElement('button');
-    importBtn.id = 'importDataBtn';
-    importBtn.textContent = '📥 导入数据';
-    importBtn.style.backgroundColor = '#607d8b';
-    importBtn.style.color = '#fff';
-    importBtn.addEventListener('click', () => {
-      this.importWeaponData();
-    });
-    buttonsContainer.appendChild(importBtn);
   }
 
   /**
-   * 重置为 weapons.json 的默认数据
+   * 等待第三方库加载
+   * @returns {Promise}
    */
-  async resetToDefault() {
-    if (!confirm('⚠️ 确定要重置所有武器数据为默认值吗？\n（当前修改将丢失！）')) {
-      return;
-    }
-    
-    try {
-      // 重新从 weapons.json 加载
-      const response = await fetch('./weapons.json');
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!Array.isArray(data) || data.length === 0) {
-        throw new Error('数据格式无效或为空');
-      }
-      
-      // 加载数据到 WeaponManager
-      this.weaponManager.loadWeapons(data);
-      
-      // 重新渲染表格
-      this.domController.renderAttachmentTable();
-      
-      // 重新应用全局枪管设置
-      this.domController.updateGlobalBarrelSelections();
-      
-      console.log('✅ 已重置为 weapons.json 的默认数据');
-      alert('✅ 已重置为默认数据！');
-      
-    } catch (error) {
-      console.error('重置失败:', error);
-      alert(`❌ 重置失败: ${error.message}\n请检查 weapons.json 文件是否存在且格式正确。`);
-    }
-  }
-
-  /**
-   * 导出武器数据为JSON文件
-   */
-  exportWeaponData() {
-    try {
-      const weapons = this.weaponManager.getWeapons();
-      const jsonStr = JSON.stringify(weapons, (key, value) => {
-        // 处理 Infinity
-        if (value === Infinity) return 'Infinity';
-        return value;
-      }, 2);
-      
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ttk_weapons_backup_${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      
-      alert('✅ 武器数据已导出！');
-    } catch (error) {
-      console.error('导出失败:', error);
-      alert('❌ 导出失败: ' + error.message);
-    }
-  }
-
-  /**
-   * 导入武器数据
-   */
-  importWeaponData() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const importedData = JSON.parse(event.target.result);
-          if (!Array.isArray(importedData) || importedData.length === 0) {
-            throw new Error('无效的数据格式');
-          }
-          
-          // 处理 Infinity
-          const processedData = importedData.map(w => {
-            if (w.ranges) {
-              w.ranges = w.ranges.map(r => r === 'Infinity' ? Infinity : r);
-            }
-            return w;
-          });
-          
-          if (confirm(`⚠️ 确定要导入 ${processedData.length} 把武器的数据吗？\n这将覆盖当前所有武器数据！`)) {
-            // 加载数据到 WeaponManager
-            this.weaponManager.loadWeapons(processedData);
-            
-            // 重新渲染表格
-            this.domController.renderAttachmentTable();
-            
-            // 重新应用全局枪管设置
-            this.domController.updateGlobalBarrelSelections();
-            
-            alert(`✅ 成功导入 ${processedData.length} 把武器的数据！`);
-          }
-        } catch (error) {
-          console.error('导入失败:', error);
-          alert('❌ 导入失败: ' + error.message);
+  waitForLibraries() {
+    return new Promise((resolve) => {
+      const checkLibraries = () => {
+        if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+          resolve();
+        } else {
+          setTimeout(checkLibraries, 100);
         }
       };
-      reader.readAsText(file);
-    };
-    input.click();
+      checkLibraries();
+    });
+  }
+
+  // ============================================================
+  // 2. 初始化 DataManager
+  // ============================================================
+
+  /**
+   * 初始化 DataManager 并加载数据
+   */
+  async initDataManager() {
+    this.dataManager = getDataManager();
+    await this.dataManager.loadFromJSON('./data.json');
+    console.log('📊 DataManager 加载完成');
   }
 
   /**
-   * 处理计算按钮点击
+   * 设置 SimulationEngine 的 DataManager 依赖
+   */
+  setupSimulationEngine() {
+    SimulationEngine.setDataManager(this.dataManager);
+    console.log('🔧 SimulationEngine 依赖已注入');
+  }
+
+  // ============================================================
+  // 3. 初始化 ChartManager
+  // ============================================================
+
+  /**
+   * 初始化图表管理器
+   */
+  initChartManager() {
+    this.chartManager = new ChartManager();
+    console.log('📈 ChartManager 初始化完成');
+  }
+
+  // ============================================================
+  // 4. 初始化 DOMController
+  // ============================================================
+
+  /**
+   * 初始化 DOM 控制器
+   */
+  initDOMController() {
+    this.domController = new DOMController();
+    this.domController.initialize({
+      onBarrelEdit: (weaponId) => {
+        if (this.barrelEditor) {
+          this.barrelEditor.openEditor(weaponId);
+        }
+      }
+    });
+    console.log('🎮 DOMController 初始化完成');
+  }
+
+  // ============================================================
+  // 5. 初始化 BarrelEditor
+  // ============================================================
+
+  /**
+   * 初始化枪管编辑器
+   */
+  initBarrelEditor() {
+    this.barrelEditor = new BarrelEditor(
+      this.dataManager,
+      this.domController,
+      () => {
+        // 枪管数据变更后刷新武器表格
+        this.domController.refreshWeaponTable();
+        // 刷新价格表格（枪管列表可能变化）
+        this.domController.refreshPriceTable();
+      }
+    );
+    console.log('🔧 BarrelEditor 初始化完成');
+  }
+
+  // ============================================================
+  // 6. 初始化 EventHandler
+  // ============================================================
+
+  /**
+   * 初始化事件处理器
+   */
+  initEventHandler() {
+    this.eventHandler = new EventHandler(this.domController, this.dataManager);
+    this.eventHandler.initialize({
+      onCalculate: () => {
+        this.handleCalculate();
+      },
+      onDistanceChart: () => {
+        this.handleDistanceChart();
+      }
+    });
+
+    // 监听自定义事件（作为备用）
+    document.addEventListener('calculate-ttk', () => {
+      this.handleCalculate();
+    });
+
+    document.addEventListener('calculate-distance', () => {
+      this.handleDistanceChart();
+    });
+
+    document.addEventListener('export-distance-json', () => {
+      this.handleExportDistanceJSON();
+    });
+
+    console.log('🎯 EventHandler 初始化完成');
+  }
+
+  // ============================================================
+  // 7. 核心功能 - TTK 计算
+  // ============================================================
+
+  /**
+   * 处理 TTK 计算
    */
   handleCalculate() {
     try {
       const { params, armed, attachments } = this.prepareWeaponData();
+      
+      if (!armed || armed.length === 0) {
+        alert('没有可用的武器数据，请检查 data.json');
+        return;
+      }
+
       resetSeed();
-      const results = SimulationEngine.calculateWeaponsTTK(armed, attachments, params);
+      const results = SimulationEngine.calculateWeaponsTTK(
+        armed, 
+        attachments, 
+        params, 
+        this.dataManager
+      );
+      
       this.chartManager.updateTtkChart(results, params);
+      
+      console.log(`📊 TTK 计算完成，${results.length} 把武器`);
     } catch (error) {
-      this.handleError('计算失败', error);
+      console.error('TTK 计算失败:', error);
+      alert('TTK 计算失败: ' + error.message);
     }
   }
 
   /**
-   * 处理距离图表按钮点击
+   * 处理距离图表
    */
   handleDistanceChart() {
     try {
       const { params, armed, attachments } = this.prepareWeaponData();
+      
+      if (!armed || armed.length === 0) {
+        alert('没有可用的武器数据，请检查 data.json');
+        return;
+      }
+
       this.chartManager.updateDistanceChart(armed, attachments, params);
+      
+      console.log(`📈 距离图表生成完成，${armed.length} 把武器`);
     } catch (error) {
-      this.handleError('距离图表生成失败', error);
+      console.error('距离图表生成失败:', error);
+      alert('距离图表生成失败: ' + error.message);
     }
   }
 
   /**
-   * 准备武器数据的公共方法
+   * 处理距离图表 JSON 导出
+   */
+  handleExportDistanceJSON() {
+    try {
+      if (this.chartManager && this.chartManager.distanceChart) {
+        this.chartManager.distanceChart.exportAsJSON();
+      } else {
+        alert('⚠️ 请先生成折线图！');
+      }
+    } catch (error) {
+      console.error('JSON 导出失败:', error);
+      alert('❌ JSON 导出失败: ' + error.message);
+    }
+  }
+
+  // ============================================================
+  // 8. 数据准备
+  // ============================================================
+
+  /**
+   * 准备武器数据（从 DataManager 和 DOMController 获取）
    * @returns {Object} { params, armed, attachments }
    */
   prepareWeaponData() {
-    // 1. 读取和验证参数
+    // 1. 读取参数
     const params = this.domController.readPageParams();
+    
+    // 2. 验证参数
     validatePageParams(params);
     validateHitProb(params);
 
-    // 2. 读取武器配置
-    const bulletTypes = this.domController.readWeaponBullets();
-    const { barrelValues, muzzleValues, hitRateValues } = this.domController.collectAttachmentData();
-    
-    // 3. 应用附件
-    const attachmentConfigs = this.weaponManager.readAttachmentsWithBullet(
-      barrelValues, 
-      muzzleValues, 
-      hitRateValues, 
-      bulletTypes
-    );
-    
-    // 验证命中率
-    const weapons = this.weaponManager.getWeapons();
-    validateWeaponHitRates(attachmentConfigs, weapons);
-    
-    const armed = this.weaponManager.applyAttachments(attachmentConfigs, params);
-    const allAttachments = this.buildCompleteAttachments(armed, attachmentConfigs);
+    // 3. 获取武器数据
+    const weapons = this.dataManager.getWeapons();
+    if (!weapons || weapons.length === 0) {
+      throw new Error('没有武器数据');
+    }
 
-    return { params, armed, attachments: allAttachments };
+    // 4. 构建附件配置（从 DOM 读取）
+    const attachments = this.buildAttachments(weapons, params);
+
+    // 5. 应用附件计算当前值
+    const armed = this.applyAttachments(weapons, attachments);
+
+    // 6. 验证命中率
+    validateWeaponHitRates(attachments, weapons);
+
+    return { params, armed, attachments };
   }
 
   /**
-   * 构建完整的附件配置数组（包含副本武器）
-   * @param {Array} allWeapons - 所有武器数组
-   * @param {Array} originalAttachments - 原始武器附件配置
-   * @returns {Array} 完整的附件配置数组
+   * 构建附件配置
+   * @param {Array} weapons - 武器数据
+   * @param {Object} params - 页面参数
+   * @returns {Array} 附件配置数组
    */
-  buildCompleteAttachments(allWeapons, originalAttachments) {
-    const allAttachments = [...originalAttachments];
-    
-    allWeapons.slice(originalAttachments.length).forEach((clone) => {
-      allAttachments.push(clone.attachmentConfig);
+  buildAttachments(weapons, params) {
+    return weapons.map((weapon, index) => {
+      // 从 DOMController 获取附件配置
+      const attachment = this.domController.getWeaponAttachment(weapon.id) || {
+        barrelId: -1,
+        muzzleId: 0,
+        precision: 0.09
+      };
+
+      // 获取子弹类型
+      const bulletType = this.domController.getWeaponBulletType 
+        ? this.domController.getWeaponBulletType(index) 
+        : null;
+
+      // 🔥 获取命中率（从价格配置获取，传入全局命中率映射作为后备）
+      const hitRate = this.getHitRateForWeapon(weapon.id, params.distance, params.hitRateMap);
+
+      // 获取配置 ID（用于价格配置中的命中率查找）
+      const priceConfig = this.dataManager.getPriceByWeaponId(weapon.id);
+      const configId = priceConfig?.configs?.[0]?.id || 'cfg-1';
+
+      // 🔥 barrelIndex 是下拉选项中的索引（0-based，包含"无"）
+      // barrelId 是武器 barrels 数组中的索引（-1 表示无）
+      // 转换：barrelIndex = barrelId + 1
+      const barrelIndex = attachment.barrelId !== undefined && attachment.barrelId >= 0 
+        ? attachment.barrelId + 1 
+        : 0;
+
+      return {
+        barrelIndex: barrelIndex,
+        muzzleIndex: attachment.muzzleId !== undefined ? attachment.muzzleId : 0,
+        hitRate: hitRate,
+        bulletType: bulletType,
+        velocityPrecision: attachment.precision || 0.09,
+        configId: configId,
+        weaponId: weapon.id
+      };
     });
-    
-    return allAttachments;
   }
 
   /**
-   * 统一错误处理方法
-   * @param {string} operation - 操作名称
-   * @param {Error} error - 错误对象
+   * 应用附件到武器
+   * @param {Array} weapons - 武器数据
+   * @param {Array} attachments - 附件配置
+   * @returns {Array} 应用附件后的武器数据
    */
-  handleError(operation, error) {
-    this.domController.showError(error.message);
-    console.error(`${operation}:`, error);
+  applyAttachments(weapons, attachments) {
+    return weapons.map((weapon, index) => {
+      const att = attachments[index] || {};
+      
+      // 🔥 从 barrelIndex 转换为 barrelId
+      // barrelIndex: 下拉选项中的索引（0 = '无', 1 = 第一个枪管, ...）
+      // barrelId: weapons.barrels 数组索引（-1 = 无, 0 = 第一个枪管, ...）
+      const barrelId = att.barrelIndex !== undefined && att.barrelIndex > 0 
+        ? att.barrelIndex - 1 
+        : -1;
+      
+      const barrel = (barrelId >= 0 && weapon.barrels && weapon.barrels[barrelId])
+        ? weapon.barrels[barrelId]
+        : null;
+
+      // 🔥 获取枪口 ID
+      const muzzleId = att.muzzleIndex || 0;
+
+      // 🔥 获取枪口对象
+      const muzzle = this.dataManager.getMuzzleById(muzzleId);
+
+      // 🔥 AKM 调试日志
+      if (weapon.id === 2) {
+        console.log('🔍 [applyAttachments] AKM 数据:');
+        console.log(`  att.barrelIndex: ${att.barrelIndex}`);
+        console.log(`  barrelId: ${barrelId}`);
+        console.log(`  barrel: ${barrel?.name || '无'}`);
+        console.log(`  muzzleId: ${muzzleId}`);
+        console.log(`  muzzle: ${muzzle?.name || '无'}`);
+        console.log(`  velocityPrecision: ${att.velocityPrecision}`);
+      }
+
+      // 使用 WeaponTable 的计算方法，传入 muzzleId
+      const current = WeaponTable.calculateCurrentValues(
+        weapon,
+        barrel,
+        muzzleId,
+        att.velocityPrecision || 0.09
+      );
+
+      // 合并原始值和当前值
+      return {
+        ...weapon,
+        ...current,
+        _original: { ...weapon },
+        _current: { ...current },
+        _attachments: {
+          ...att,
+          barrel: barrel,      // 🔥 存储 barrel 对象
+          muzzle: muzzle,      // 🔥 存储 muzzle 对象
+          barrelId: barrelId,  // 🔥 存储 barrelId
+          muzzleId: muzzleId   // 🔥 存储 muzzleId
+        },
+        // 确保命中率使用配置值
+        hitRate: att.hitRate !== undefined ? att.hitRate : weapon.hitRate
+      };
+    });
+  }
+
+  /**
+   * 🔥 获取武器的命中率（支持全局命中率映射）
+   * @param {number} weaponId - 武器 ID
+   * @param {number} distance - 距离
+   * @param {Array} hitRateMap - 全局命中率映射 [{ distance, rate }, ...]
+   * @returns {number} 命中率
+   */
+  getHitRateForWeapon(weaponId, distance, hitRateMap) {
+    // 从 DataManager 获取命中率
+    // 使用第一个配置（cfg-1）作为默认
+    // 传入全局命中率映射作为后备
+    const hitRate = this.dataManager.getHitRateForDistance(
+      weaponId,
+      'cfg-1',
+      distance,
+      hitRateMap || [{ distance: 30, rate: 0.85 }, { distance: 50, rate: 0.8 }, { distance: 100, rate: 0.7 }]
+    );
+    return hitRate;
+  }
+
+  // ============================================================
+  // 9. 错误处理
+  // ============================================================
+
+  /**
+   * 显示错误信息
+   * @param {string} message - 错误信息
+   */
+  showError(message) {
+    alert('❌ ' + message);
+  }
+
+  // ============================================================
+  // 10. 工具方法
+  // ============================================================
+
+  /**
+   * 获取应用状态
+   * @returns {Object} 状态信息
+   */
+  getStatus() {
+    return {
+      initialized: this.isInitialized,
+      dataLoaded: this.dataManager?.isLoaded || false,
+      weaponCount: this.dataManager?.getWeapons()?.length || 0,
+      bulletCount: this.dataManager?.getBullets()?.length || 0,
+      priceCount: this.dataManager?.getPrices()?.length || 0
+    };
+  }
+
+  /**
+   * 重新加载数据
+   */
+  async reloadData() {
+    try {
+      await this.dataManager.loadFromJSON('./data.json');
+      this.domController.refreshAll();
+      console.log('✅ 数据重新加载完成');
+    } catch (error) {
+      console.error('重新加载失败:', error);
+      alert('重新加载失败: ' + error.message);
+    }
+  }
+
+  /**
+   * 销毁应用
+   */
+  destroy() {
+    if (this.eventHandler) {
+      this.eventHandler.unbindAll();
+    }
+    if (this.chartManager) {
+      this.chartManager.destroy();
+    }
+    if (this._refreshTimer) {
+      clearTimeout(this._refreshTimer);
+      this._refreshTimer = null;
+    }
+    this.isInitialized = false;
+    console.log('🛑 应用已销毁');
   }
 }
 
+// ============================================================
 // 启动应用
-const app = new AppController();
+// ============================================================
+
+const app = new App();
+app.start();
 
 // 导出应用实例（用于调试）
-window.app = app;
+window.__app__ = app;
+
+// 导出默认
+export default app;
