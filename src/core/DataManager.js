@@ -19,7 +19,7 @@ export class DataManager {
     this.originalData = null;
     this.isLoaded = false;
     
-    // 🔥 枪口数据 - 从 WeaponManager 迁移
+    // 枪口数据
     this.muzzles = [
       { id: 0, name: '无', mult: 0 },
       { id: 1, name: '死寂', mult: 0.24 },
@@ -47,21 +47,16 @@ export class DataManager {
       
       const rawData = await response.json();
       
-      // 验证数据结构
       if (!this.validateData(rawData)) {
         throw new Error('数据格式无效，请检查 data.json 文件');
       }
       
-      // 规范化数据（处理 Infinity 等）
       this.data = this.normalizeData(rawData);
-      // 保存原始数据副本（用于重置）
       this.originalData = JSON.parse(JSON.stringify(this.data));
-      // 🔥 保存枪口数据副本
       this.originalMuzzles = JSON.parse(JSON.stringify(this.muzzles));
       this.isLoaded = true;
       
       console.log(`✅ DataManager: 加载了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹, ${this.data.prices.length} 条价格配置`);
-      console.log(`✅ DataManager: 加载了 ${this.muzzles.length} 个枪口配置`);
       return this.data;
       
     } catch (error) {
@@ -72,8 +67,6 @@ export class DataManager {
 
   /**
    * 验证数据格式
-   * @param {Object} data - 待验证的数据
-   * @returns {boolean} 是否有效
    */
   validateData(data) {
     if (!data || typeof data !== 'object') return false;
@@ -81,7 +74,6 @@ export class DataManager {
     if (!Array.isArray(data.bullets) || data.bullets.length === 0) return false;
     if (!Array.isArray(data.prices)) return false;
     
-    // 验证每把武器是否有 id 和 allowedBullet
     for (const weapon of data.weapons) {
       if (!weapon.id || !weapon.name || !weapon.allowedBullet) {
         console.warn('⚠️ 武器数据缺失必要字段:', weapon);
@@ -93,14 +85,11 @@ export class DataManager {
   }
 
   /**
-   * 规范化数据（处理 Infinity、字符串转换等）
-   * @param {Object} data - 原始数据
-   * @returns {Object} 规范化后的数据
+   * 规范化数据
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
     
-    // 处理 weapons 中的 ranges
     if (Array.isArray(normalized.weapons)) {
       normalized.weapons.forEach(weapon => {
         if (Array.isArray(weapon.ranges)) {
@@ -108,7 +97,6 @@ export class DataManager {
             r === 'Infinity' || r === '∞' ? Infinity : Number(r)
           );
         }
-        // 处理 barrels 中的 ranges
         if (Array.isArray(weapon.barrels)) {
           weapon.barrels.forEach((barrel) => {
             if (Array.isArray(barrel.ranges)) {
@@ -128,21 +116,11 @@ export class DataManager {
   // 2. 数据获取 - 武器
   // ============================================================
 
-  /**
-   * 获取所有武器
-   * @returns {Array} 武器数组
-   */
   getWeapons() {
     return this.data.weapons || [];
   }
 
-  /**
-   * 根据 ID 获取武器
-   * @param {number} id - 武器 ID
-   * @returns {Object|null} 武器对象
-   */
   getWeaponById(id) {
-    // 处理 id 可能是字符串的情况
     const targetId = typeof id === 'string' ? parseInt(id) : id;
     return this.data.weapons.find(w => w.id === targetId) || null;
   }
@@ -151,48 +129,24 @@ export class DataManager {
   // 3. 数据获取 - 子弹
   // ============================================================
 
-  /**
-   * 获取所有子弹
-   * @returns {Array} 子弹数组
-   */
   getBullets() {
     return this.data.bullets || [];
   }
 
-  /**
-   * 根据 ID 获取子弹
-   * @param {string} id - 子弹 ID
-   * @returns {Object|null} 子弹对象
-   */
   getBulletById(id) {
     return this.data.bullets.find(b => b.id === id) || null;
   }
 
-  /**
-   * 根据口径和等级获取子弹
-   * @param {string} caliber - 子弹口径
-   * @param {string|number} level - 子弹等级
-   * @returns {Object|null} 子弹对象
-   */
   getBulletByCaliberAndLevel(caliber, level) {
     return this.data.bullets.find(b => 
       b.caliber === caliber && b.level === level
     ) || null;
   }
 
-  /**
-   * 获取武器的可用子弹列表（根据口径）
-   * @param {string} caliber - 武器口径
-   * @returns {Array} 子弹数组
-   */
   getBulletsByCaliber(caliber) {
     return this.data.bullets.filter(b => b.caliber === caliber);
   }
 
-  /**
-   * 获取子弹的表格数据（用于子弹 Tab 展示）
-   * @returns {Array} 子弹行数据数组
-   */
   getBulletRows() {
     return this.data.bullets.map(bullet => ({
       caliber: bullet.caliber || '-',
@@ -209,45 +163,26 @@ export class DataManager {
   // 4. 数据获取 - 枪口
   // ============================================================
 
-  /**
-   * 获取所有枪口
-   * @returns {Array} 枪口数组
-   */
   getMuzzles() {
     return this.muzzles || [];
   }
 
-  /**
-   * 根据 ID 获取枪口
-   * @param {number} id - 枪口 ID
-   * @returns {Object|null} 枪口对象
-   */
   getMuzzleById(id) {
     const targetId = typeof id === 'string' ? parseInt(id) : id;
     return this.muzzles.find(m => m.id === targetId) || null;
   }
 
-  /**
-   * 获取枪口的属性加成
-   * @param {number} muzzleId - 枪口 ID
-   * @returns {Object} 枪口加成 { rangeMult, velocityMult }
-   */
   getMuzzleBonuses(muzzleId) {
     const muzzle = this.getMuzzleById(muzzleId);
     if (!muzzle) {
       return { rangeMult: 0, velocityMult: 1.0 };
     }
-    // mult 是射程倍率加成（百分比），例如 0.24 表示 +24%
     return {
       rangeMult: muzzle.mult || 0,
-      velocityMult: 1.0 + (muzzle.mult || 0)  // 初速倍率 = 1 + 射程加成
+      velocityMult: 1.0 + (muzzle.mult || 0)
     };
   }
 
-  /**
-   * 获取枪口显示名称列表（用于下拉选择）
-   * @returns {Array} 枪口名称数组
-   */
   getMuzzleNames() {
     return this.muzzles.map(m => m.name);
   }
@@ -256,29 +191,14 @@ export class DataManager {
   // 5. 数据获取 - 价格
   // ============================================================
 
-  /**
-   * 获取所有价格配置
-   * @returns {Array} 价格配置数组
-   */
   getPrices() {
     return this.data.prices || [];
   }
 
-  /**
-   * 根据武器 ID 获取价格配置
-   * @param {number} weaponId - 武器 ID
-   * @returns {Object|null} 价格配置对象
-   */
   getPriceByWeaponId(weaponId) {
     return this.data.prices.find(p => p.weaponId === weaponId) || null;
   }
 
-  /**
-   * 🔥 根据武器ID和枪管名称查找 barrelId
-   * @param {number} weaponId - 武器 ID
-   * @param {string} barrelName - 枪管名称
-   * @returns {number} barrelId，未找到返回 -1
-   */
   findBarrelIdByName(weaponId, barrelName) {
     if (weaponId === undefined || weaponId === null) {
       return -1;
@@ -289,16 +209,9 @@ export class DataManager {
       return -1;
     }
     
-    const index = weapon.barrels.findIndex(b => b.name === barrelName);
-    return index;
+    return weapon.barrels.findIndex(b => b.name === barrelName);
   }
 
-  /**
-   * 🔥 获取武器的价格信息（用于价格 Tab 展示）
-   * 修复：如果 config.barrelId 无效，从 config.barrel 名称反向查找
-   * @param {number} weaponId - 武器 ID
-   * @returns {Array} 价格配置列表（展开后的行数据）
-   */
   getPriceRowsForWeapon(weaponId) {
     const weapon = this.getWeaponById(weaponId);
     const price = this.getPriceByWeaponId(weaponId);
@@ -306,13 +219,10 @@ export class DataManager {
     if (!weapon || !price) return [];
     
     return price.configs.map(config => {
-      // 🔥 修复：获取枪管 ID
       let barrelId = config.barrelId !== undefined ? config.barrelId : -1;
       let barrelName = '无';
       
-      // 如果 barrelId 无效（-1 或 undefined），尝试从 barrel 名称反向查找
       if (barrelId === -1 || barrelId === undefined) {
-        // 如果 config 中有 barrel 名称，尝试查找
         if (config.barrel && config.barrel !== '无') {
           const foundIndex = this.findBarrelIdByName(weaponId, config.barrel);
           if (foundIndex >= 0) {
@@ -321,28 +231,23 @@ export class DataManager {
           }
         }
       } else if (barrelId >= 0 && weapon.barrels && weapon.barrels[barrelId]) {
-        // barrelId 有效，从武器中获取名称
         barrelName = weapon.barrels[barrelId].name || '无';
       }
       
-      // 如果还是无效，使用空枪管
       if (barrelId === -1 || barrelId === undefined) {
         barrelName = '无';
       }
       
-      // 🔥 获取枪口显示名称
       let muzzleName = '无';
       const muzzleId = config.muzzleId !== undefined ? config.muzzleId : 0;
       const muzzle = this.getMuzzleById(muzzleId);
       if (muzzle) {
         muzzleName = muzzle.name;
       }
-      // 如果 config 中直接保存了 muzzle 名称，优先使用
       if (config.muzzle && config.muzzle !== '无') {
         muzzleName = config.muzzle;
       }
       
-      // 获取子弹显示名称
       let bulletDisplay = '-';
       if (config.bullet) {
         const bullet = this.getBulletById(config.bullet);
@@ -370,10 +275,6 @@ export class DataManager {
     });
   }
 
-  /**
-   * 构建价格的完整数据（用于价格 Tab 展示）
-   * @returns {Array} 价格行数据数组
-   */
   getPriceRows() {
     const rows = [];
     const prices = this.getPrices();
@@ -386,14 +287,6 @@ export class DataManager {
     return rows;
   }
 
-  /**
-   * 获取武器在指定距离的命中率
-   * @param {number} weaponId - 武器 ID
-   * @param {string} configId - 配置 ID (cfg-1, cfg-2, ...)
-   * @param {number} distance - 距离 (米)
-   * @param {Array|number} fallback - 后备命中率映射或单个值
-   * @returns {number} 命中率
-   */
   getHitRateForDistance(weaponId, configId, distance, fallback = 0.85) {
     const priceConfig = this.getPriceByWeaponId(weaponId);
     if (!priceConfig) {
@@ -411,7 +304,6 @@ export class DataManager {
       return typeof fallback === 'number' ? fallback : 0.85;
     }
     
-    // 检查是否有 distance 和 hitRate 配置
     if (!config.distance || !config.hitRate || 
         !Array.isArray(config.distance) || !Array.isArray(config.hitRate) ||
         config.distance.length === 0 || config.hitRate.length === 0) {
@@ -421,46 +313,102 @@ export class DataManager {
       return typeof fallback === 'number' ? fallback : 0.85;
     }
     
-    // 根据距离查找对应的命中率
-    for (let i = 0; i < config.distance.length; i++) {
-      if (distance <= config.distance[i]) {
-        return config.hitRate[i];
-      }
-    }
+    const points = config.distance.map((d, i) => ({
+      distance: d,
+      rate: config.hitRate[i]
+    }));
     
-    // 超出最大距离，使用最后一个
-    return config.hitRate[config.hitRate.length - 1];
+    return this.getHitRateFromMap(points, distance, 0.85);
   }
 
   /**
-   * 🔥 从命中率映射中获取指定距离的命中率
-   * @param {Array} hitRateMap - [{ distance, rate }, ...]
-   * @param {number} distance - 当前距离
-   * @param {number} fallback - 默认值
-   * @returns {number} 命中率
+   * 从命中率映射中获取指定距离的命中率（支持插值和外推）
+   * 10米处强制100%命中率，映射点之间线性插值，超出后线性外推
    */
   getHitRateFromMap(hitRateMap, distance, fallback = 0.85) {
-    if (!hitRateMap || hitRateMap.length === 0) return fallback;
-    
-    // 按距离排序
+    if (!hitRateMap || hitRateMap.length === 0) {
+      return typeof fallback === 'number' ? fallback : 0.85;
+    }
+
     const sorted = [...hitRateMap].sort((a, b) => a.distance - b.distance);
     
-    // 查找第一个 distance >= 当前距离 的条目
-    for (const entry of sorted) {
-      if (distance <= entry.distance) {
-        return entry.rate;
+    const validPoints = sorted.filter(p => 
+      p.distance >= 0 && 
+      p.rate !== undefined && 
+      p.rate !== null &&
+      !isNaN(p.rate) &&
+      p.rate >= 0 && 
+      p.rate <= 1
+    );
+    
+    if (validPoints.length === 0) {
+      return typeof fallback === 'number' ? fallback : 0.85;
+    }
+
+    // 强制在10米处确保100%命中率
+    const hasNearPoint = validPoints.some(p => p.distance <= 10);
+    let points = [...validPoints];
+    if (!hasNearPoint) {
+      if (points[0].distance > 10) {
+        points.unshift({ distance: 10, rate: 1.0 });
+      } else {
+        const nearPoint = points.find(p => p.distance <= 10);
+        if (nearPoint && nearPoint.rate < 0.95) {
+          nearPoint.rate = 1.0;
+        }
+      }
+    } else {
+      const nearPoint = points.find(p => p.distance <= 10);
+      if (nearPoint && nearPoint.rate < 0.95) {
+        nearPoint.rate = 1.0;
       }
     }
-    
-    // 如果超出最大距离，使用最后一个
-    return sorted[sorted.length - 1]?.rate || fallback;
+
+    points.sort((a, b) => a.distance - b.distance);
+
+    // 距离小于最近的点
+    if (distance <= points[0].distance) {
+      if (distance <= 0) {
+        return Math.min(1.0, points[0].rate);
+      }
+      const startRate = 1.0;
+      const endRate = points[0].rate;
+      const t = distance / points[0].distance;
+      const rate = startRate + t * (endRate - startRate);
+      return Math.max(0, Math.min(1, rate));
+    }
+
+    // 距离大于最远的点
+    if (distance >= points[points.length - 1].distance) {
+      const last = points[points.length - 1];
+      const prev = points[points.length - 2] || last;
+      const distDiff = last.distance - prev.distance;
+      if (distDiff <= 0) {
+        return Math.max(0, Math.min(1, last.rate));
+      }
+      const slope = (last.rate - prev.rate) / distDiff;
+      const extrapolated = last.rate + slope * (distance - last.distance);
+      return Math.max(0, Math.min(1, extrapolated));
+    }
+
+    // 线性插值
+    for (let i = 0; i < points.length - 1; i++) {
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      if (distance >= p1.distance && distance < p2.distance) {
+        const distDiff = p2.distance - p1.distance;
+        if (distDiff <= 0) {
+          return Math.max(0, Math.min(1, p1.rate));
+        }
+        const t = (distance - p1.distance) / distDiff;
+        const rate = p1.rate + t * (p2.rate - p1.rate);
+        return Math.max(0, Math.min(1, rate));
+      }
+    }
+
+    return Math.max(0, Math.min(1, points[points.length - 1].rate));
   }
 
-  /**
-   * 获取下一个可用的配置 ID
-   * @param {number} weaponId - 武器 ID
-   * @returns {string} 下一个配置 ID
-   */
   getNextConfigId(weaponId) {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price || !price.configs || price.configs.length === 0) {
@@ -478,26 +426,13 @@ export class DataManager {
   // 6. 工具方法 - 枪管
   // ============================================================
 
-  /**
-   * 🔥 查找射程最长的枪管索引（只对 AKM 打印日志）
-   * @param {number} weaponId - 武器 ID
-   * @returns {number} 最佳枪管索引，如果没有枪管则返回 -1
-   */
   findBestBarrelIndex(weaponId) {
     const weapon = this.getWeaponById(weaponId);
     if (!weapon) {
-      // 🔥 只在武器是 AKM (ID: 2) 时打印警告
-      if (weaponId === 2) {
-        console.warn(`⚠️ findBestBarrelIndex: 未找到武器 ID ${weaponId}`);
-      }
       return -1;
     }
     
     if (!Array.isArray(weapon.barrels) || weapon.barrels.length === 0) {
-      // 🔥 只在武器是 AKM (ID: 2) 时打印日志
-      if (weaponId === 2) {
-        console.log(`ℹ️ findBestBarrelIndex: 武器 ${weapon.name} 没有枪管`);
-      }
       return -1;
     }
     
@@ -505,30 +440,25 @@ export class DataManager {
     let bestScore = -Infinity;
     
     weapon.barrels.forEach((barrel, index) => {
-      // 计算射程评分
       let score = 0;
       
-      // 1. 如果有自定义 ranges，使用 ranges 的第一个值作为评分
       if (Array.isArray(barrel.ranges) && barrel.ranges.length > 0) {
         const firstRange = barrel.ranges[0];
         if (firstRange === Infinity) {
-          score = 10000; // Infinity 视为最大
+          score = 10000;
         } else if (typeof firstRange === 'number') {
           score = firstRange;
         }
       }
       
-      // 2. 如果有 rangeMult，乘以 100 作为基础分
       if (barrel.rangeMult !== undefined && barrel.rangeMult !== null) {
         score = Math.max(score, (barrel.rangeMult || 1.0) * 100);
       }
       
-      // 3. 如果有 rangeAdd，额外加分（作为辅助）
       if (barrel.rangeAdd !== undefined && barrel.rangeAdd !== null) {
         score += (barrel.rangeAdd || 0) * 0.5;
       }
       
-      // 4. 如果枪管有名称包含"长"或"超长"，额外加分（备用）
       if (barrel.name) {
         if (barrel.name.includes('超长') || barrel.name.includes('长枪管')) {
           score += 5;
@@ -544,22 +474,9 @@ export class DataManager {
       }
     });
     
-    // 🔥 只在武器是 AKM (ID: 2) 时打印日志
-    if (weaponId === 2) {
-      console.log(`🔍 findBestBarrelIndex: 武器 ${weapon.name} (ID: ${weaponId}) 最佳枪管索引 = ${bestIndex}, 评分 = ${bestScore}`);
-      if (bestIndex >= 0 && weapon.barrels[bestIndex]) {
-        console.log(`  枪管名称: ${weapon.barrels[bestIndex].name}`);
-      }
-    }
-    
     return bestIndex;
   }
 
-  /**
-   * 🔥 查找射程最长的枪管名称（只对 AKM 打印日志）
-   * @param {number} weaponId - 武器 ID
-   * @returns {string} 最佳枪管名称，如果没有枪管则返回 '无'
-   */
   findBestBarrelName(weaponId) {
     const index = this.findBestBarrelIndex(weaponId);
     if (index === -1) return '无';
@@ -576,12 +493,6 @@ export class DataManager {
   // 7. 数据更新 - 武器
   // ============================================================
 
-  /**
-   * 更新武器数据
-   * @param {number} weaponId - 武器 ID
-   * @param {Object} updates - 更新的字段
-   * @returns {boolean} 是否更新成功
-   */
   updateWeapon(weaponId, updates) {
     const weapon = this.getWeaponById(weaponId);
     if (!weapon) return false;
@@ -590,13 +501,6 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * 更新武器枪管数据
-   * @param {number} weaponId - 武器 ID
-   * @param {number} barrelIndex - 枪管索引
-   * @param {Object} updates - 更新的字段
-   * @returns {boolean} 是否更新成功
-   */
   updateWeaponBarrel(weaponId, barrelIndex, updates) {
     const weapon = this.getWeaponById(weaponId);
     if (!weapon || !Array.isArray(weapon.barrels)) return false;
@@ -606,12 +510,6 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * 添加新枪管到武器
-   * @param {number} weaponId - 武器 ID
-   * @param {Object} barrelData - 枪管数据
-   * @returns {number} 新枪管的索引
-   */
   addWeaponBarrel(weaponId, barrelData) {
     const weapon = this.getWeaponById(weaponId);
     if (!weapon) return -1;
@@ -622,25 +520,18 @@ export class DataManager {
     return weapon.barrels.length - 1;
   }
 
-  /**
-   * 删除武器枪管
-   * @param {number} weaponId - 武器 ID
-   * @param {number} barrelIndex - 枪管索引
-   * @returns {boolean} 是否删除成功
-   */
   removeWeaponBarrel(weaponId, barrelIndex) {
     const weapon = this.getWeaponById(weaponId);
     if (!weapon || !Array.isArray(weapon.barrels)) return false;
     if (barrelIndex < 0 || barrelIndex >= weapon.barrels.length) return false;
     
-    // 同时更新 prices 中引用该枪管的配置
     const price = this.getPriceByWeaponId(weaponId);
     if (price && Array.isArray(price.configs)) {
       price.configs.forEach(config => {
         if (config.barrelId === barrelIndex) {
-          config.barrelId = -1; // 设为无
+          config.barrelId = -1;
         } else if (config.barrelId > barrelIndex) {
-          config.barrelId--; // 索引前移
+          config.barrelId--;
         }
       });
     }
@@ -653,17 +544,10 @@ export class DataManager {
   // 8. 数据更新 - 子弹
   // ============================================================
 
-  /**
-   * 更新子弹数据
-   * @param {string} bulletId - 子弹 ID
-   * @param {Object} updates - 更新的字段
-   * @returns {boolean} 是否更新成功
-   */
   updateBullet(bulletId, updates) {
     const bullet = this.getBulletById(bulletId);
     if (!bullet) return false;
     
-    // 如果更新了 armorMult 或 pen，同步更新 armorData
     if (updates.armorMult !== undefined || updates.pen !== undefined) {
       const newArmorMult = updates.armorMult ?? bullet.armorMult;
       const newPen = updates.pen ?? bullet.pen;
@@ -685,13 +569,7 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * 添加子弹
-   * @param {Object} bulletData - 子弹数据
-   * @returns {boolean} 是否添加成功
-   */
   addBullet(bulletData) {
-    // 检查是否已存在
     const existing = this.getBulletById(bulletData.id);
     if (existing) {
       console.warn(`子弹 ${bulletData.id} 已存在`);
@@ -702,16 +580,10 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * 删除子弹
-   * @param {string} bulletId - 子弹 ID
-   * @returns {boolean} 是否删除成功
-   */
   removeBullet(bulletId) {
     const index = this.data.bullets.findIndex(b => b.id === bulletId);
     if (index === -1) return false;
     
-    // 检查是否有价格配置引用了该子弹
     const inUse = this.data.prices.some(p => 
       p.configs.some(c => c.bullet === bulletId)
     );
@@ -728,44 +600,27 @@ export class DataManager {
   // 9. 数据更新 - 价格
   // ============================================================
 
-  /**
-   * 更新价格配置
-   * @param {number} weaponId - 武器 ID
-   * @param {string} configId - 配置 ID
-   * @param {Object} updates - 更新的字段
-   * @returns {boolean} 是否更新成功
-   */
   updatePriceConfig(weaponId, configId, updates) {
-    console.log(`📝 DataManager.updatePriceConfig: weaponId=${weaponId}, configId=${configId}`, updates);
-    
     const price = this.getPriceByWeaponId(weaponId);
     if (!price) {
-      console.warn(`⚠️ DataManager.updatePriceConfig: 未找到 weaponId ${weaponId} 的价格配置`);
+      console.warn(`⚠️ 未找到武器 ${weaponId} 的价格配置`);
       return false;
     }
     
     const config = price.configs.find(c => c.id === configId);
     if (!config) {
-      console.warn(`⚠️ DataManager.updatePriceConfig: 未找到 configId ${configId}`);
+      console.warn(`⚠️ 未找到配置 ${configId}`);
       return false;
     }
     
     Object.assign(config, updates);
-    console.log(`✅ DataManager.updatePriceConfig: 更新成功`, config);
     return true;
   }
 
-  /**
-   * 添加价格配置
-   * @param {number} weaponId - 武器 ID
-   * @param {Object} configData - 配置数据
-   * @returns {boolean} 是否添加成功
-   */
   addPriceConfig(weaponId, configData) {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price) return false;
     
-    // 检查是否已存在同 ID 的配置
     const existing = price.configs.find(c => c.id === configData.id);
     if (existing) {
       console.warn(`配置 ${configData.id} 已存在`);
@@ -776,12 +631,6 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * 删除价格配置
-   * @param {number} weaponId - 武器 ID
-   * @param {string} configId - 配置 ID
-   * @returns {boolean} 是否删除成功
-   */
   removePriceConfig(weaponId, configId) {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price) return false;
@@ -789,7 +638,6 @@ export class DataManager {
     const index = price.configs.findIndex(c => c.id === configId);
     if (index === -1) return false;
     
-    // 如果只剩一个配置，不允许删除
     if (price.configs.length <= 1) {
       console.warn('每个武器至少保留一个价格配置');
       return false;
@@ -803,13 +651,8 @@ export class DataManager {
   // 10. 数据导出/导入
   // ============================================================
 
-  /**
-   * 导出数据为 JSON 字符串
-   * @returns {string} JSON 字符串
-   */
   exportToJSON() {
     try {
-      // 序列化时处理 Infinity
       const serialized = this.serializeData(this.data);
       return JSON.stringify(serialized, null, 2);
     } catch (error) {
@@ -818,15 +661,9 @@ export class DataManager {
     }
   }
 
-  /**
-   * 序列化数据（处理 Infinity 等特殊值）
-   * @param {Object} data - 数据对象
-   * @returns {Object} 序列化后的数据
-   */
   serializeData(data) {
     const serialized = JSON.parse(JSON.stringify(data));
     
-    // 处理 weapons 中的 ranges
     if (Array.isArray(serialized.weapons)) {
       serialized.weapons.forEach(weapon => {
         if (Array.isArray(weapon.ranges)) {
@@ -849,11 +686,6 @@ export class DataManager {
     return serialized;
   }
 
-  /**
-   * 从 JSON 字符串导入数据
-   * @param {string} jsonStr - JSON 字符串
-   * @returns {Object} 导入的数据对象
-   */
   importFromJSON(jsonStr) {
     try {
       const parsed = JSON.parse(jsonStr);
@@ -875,10 +707,6 @@ export class DataManager {
     }
   }
 
-  /**
-   * 导出数据为 JSON 文件（下载）
-   * @param {string} filename - 文件名
-   */
   exportToFile(filename = null) {
     const jsonStr = this.exportToJSON();
     const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
@@ -895,11 +723,6 @@ export class DataManager {
     console.log(`✅ 数据已导出到: ${a.download}`);
   }
 
-  /**
-   * 从文件导入数据（上传）
-   * @param {File} file - 文件对象
-   * @returns {Promise<Object>} 导入的数据
-   */
   importFromFile(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -922,10 +745,6 @@ export class DataManager {
   // 11. 数据重置
   // ============================================================
 
-  /**
-   * 重置为原始数据（从 data.json 加载的初始状态）
-   * @returns {Object} 重置后的数据
-   */
   resetToOriginal() {
     if (!this.originalData) {
       console.warn('没有原始数据可重置');
@@ -933,7 +752,6 @@ export class DataManager {
     }
     
     this.data = JSON.parse(JSON.stringify(this.originalData));
-    // 🔥 重置枪口数据
     if (this.originalMuzzles) {
       this.muzzles = JSON.parse(JSON.stringify(this.originalMuzzles));
     }
@@ -941,10 +759,6 @@ export class DataManager {
     return this.data;
   }
 
-  /**
-   * 检查是否有未保存的修改
-   * @returns {boolean} 是否有修改
-   */
   hasUnsavedChanges() {
     if (!this.originalData) return false;
     
@@ -957,10 +771,6 @@ export class DataManager {
   // 12. 工具方法
   // ============================================================
 
-  /**
-   * 获取数据状态信息
-   * @returns {Object} 状态信息
-   */
   getStats() {
     return {
       weaponCount: this.data.weapons.length,
@@ -972,15 +782,9 @@ export class DataManager {
     };
   }
 
-  /**
-   * 根据子弹显示名称查找 bulletId
-   * @param {string} bulletDisplay - 子弹显示名称（如 "5.45x39mm Lv.4"）
-   * @returns {string|null} bulletId，未找到返回 null
-   */
   findBulletIdByDisplay(bulletDisplay) {
     if (!bulletDisplay || bulletDisplay === '-') return null;
     
-    // 解析显示名称
     const match = bulletDisplay.match(/^(.+?)\s+Lv\.(.+)$/);
     if (!match) return null;
     
@@ -995,10 +799,6 @@ export class DataManager {
 // 导出单例
 let dataManagerInstance = null;
 
-/**
- * 获取 DataManager 单例
- * @returns {DataManager} DataManager 实例
- */
 export function getDataManager() {
   if (!dataManagerInstance) {
     dataManagerInstance = new DataManager();
@@ -1006,5 +806,4 @@ export function getDataManager() {
   return dataManagerInstance;
 }
 
-// 导出默认
 export default DataManager;

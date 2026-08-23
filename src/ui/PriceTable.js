@@ -7,7 +7,7 @@
  * 
  * 列：
  * - 武器（只读）
- * - 序号（只读，cfg-1, cfg-2, cfg-3）
+ * - 序号（只读，显示 #1, #2, #3）
  * - 枪管（下拉选择，从武器.barrels 读取）
  * - 枪口（下拉选择，从全局枪口列表读取）
  * - 改枪码（文本编辑）
@@ -15,6 +15,7 @@
  * - 命中率（文本编辑，格式：30:0.9,50:0.8,100:0.6）
  * - 子弹（下拉选择，从武器口径对应的子弹列表读取）
  * - 操作（新增行 / 删除行）
+ * - 启用（复选框）
  */
 import TableRenderer from './TableRenderer.js';
 
@@ -28,6 +29,7 @@ export class PriceTable {
    * @param {Function} options.getBarrelOptions - 获取枪管选项函数
    * @param {Function} options.getBulletOptions - 获取子弹选项函数
    * @param {Array} options.muzzleOptions - 全局枪口选项
+   * @param {Function} options.onEnabledChange - 启用状态变更回调 (rowIndex, enabled, row)
    * @returns {Array} 列配置数组
    */
   static getColumns(options = {}) {
@@ -37,7 +39,8 @@ export class PriceTable {
       onDeleteRow = null,
       getBarrelOptions = null,
       getBulletOptions = null,
-      muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器']
+      muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器'],
+      onEnabledChange = null
     } = options;
 
     return [
@@ -52,12 +55,12 @@ export class PriceTable {
         }
       },
 
-      // ==================== 序号（只读） ====================
+      // ==================== 序号（只读，显示 #1, #2, #3） ====================
       {
         key: 'configId',
         label: '序号',
         editable: false,
-        headerAttrs: { style: 'min-width:60px;' },
+        headerAttrs: { style: 'min-width:50px;' },
         render: (row) => {
           return TableRenderer.escapeHtml(row.configId || '-');
         }
@@ -73,7 +76,6 @@ export class PriceTable {
         render: (row) => {
           return TableRenderer.escapeHtml(row.barrel || '无');
         },
-        // 🔥 动态获取选项
         getOptions: (row) => {
           if (row._barrelOptions && row._barrelOptions.length > 0) {
             return row._barrelOptions;
@@ -190,13 +192,39 @@ export class PriceTable {
             html += `<button class="confirm-add-price-btn" data-row="${row._rowIndex || 0}" title="确认添加">✅</button>`;
             html += `<button class="cancel-add-price-btn" data-row="${row._rowIndex || 0}" title="取消">❌</button>`;
           } else {
-            html += `<button class="delete-price-btn" data-row="${row._rowIndex || 0}" data-weapon-id="${row._weaponId || ''}" data-config-id="${row.configId || ''}" title="删除行">🗑️</button>`;
+            html += `<button class="delete-price-btn" data-row="${row._rowIndex || 0}" data-weapon-id="${row._weaponId || ''}" data-config-id="${row._rawConfigId || row._configId || ''}" title="删除行">🗑️</button>`;
           }
           
           return html;
         }
+      },
+
+      // ==================== 启用（复选框） ====================
+      {
+        key: 'enabled',
+        label: '启用',
+        editable: false,
+        headerAttrs: { style: 'min-width:50px;' },
+        render: (row) => {
+          const checked = row.enabled !== false ? 'checked' : '';
+          return `<input type="checkbox" class="price-enabled-checkbox" data-row="${row._rowIndex || 0}" ${checked} />`;
+        }
       }
     ];
+  }
+
+  /**
+   * 更新启用计数显示
+   * @param {HTMLElement} container - 表格容器
+   * @param {Array} data - 数据数组
+   */
+  static updateEnabledCount(container, data) {
+    const countEl = container?.querySelector('.enabled-count');
+    if (!countEl) return;
+    
+    const total = data ? data.length : 0;
+    const enabled = data ? data.filter(row => row.enabled !== false).length : 0;
+    countEl.textContent = `已选: ${enabled}/${total}`;
   }
 
   /**
@@ -204,8 +232,9 @@ export class PriceTable {
    * @param {Object} config - 表格配置
    * @param {Array} config.data - 价格数据数组
    * @param {Function} config.onCellChange - 单元格变更回调 (rowIndex, key, value, row)
-   * @param {Function} config.onAddRow - 新增行回调 (weaponId, configId)
-   * @param {Function} config.onDeleteRow - 删除行回调 (rowIndex, weaponId, configId)
+   * @param {Function} config.onAddRow - 新增行回调 (rowIndex, rowData)
+   * @param {Function} config.onDeleteRow - 删除行回调 (rowIndex, weaponId, configId, isCancelled)
+   * @param {Function} config.onEnabledChange - 启用状态变更回调 (rowIndex, enabled, row)
    * @param {Function} config.getBarrelOptions - 获取枪管选项函数
    * @param {Function} config.getBulletOptions - 获取子弹选项函数
    * @param {Array} config.muzzleOptions - 枪口选项
@@ -218,15 +247,14 @@ export class PriceTable {
       onCellChange = null,
       onAddRow = null,
       onDeleteRow = null,
+      onEnabledChange = null,
       getBarrelOptions = null,
       getBulletOptions = null,
       muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器'],
       emptyText = '暂无价格数据'
     } = config;
 
-    // 🔥 为数据添加 _rowIndex 并预计算枪管和枪口选项
     const indexedData = data.map((row, index) => {
-      // 🔥 关键：从 getBarrelOptions 获取枪管选项
       let barrelOptions = ['无'];
       if (typeof getBarrelOptions === 'function') {
         const opts = getBarrelOptions(row);
@@ -235,13 +263,11 @@ export class PriceTable {
         }
       }
       
-      // 确保 barrelOptions 包含 "无" 且去重
       if (!barrelOptions.includes('无')) {
         barrelOptions = ['无', ...barrelOptions];
       }
       barrelOptions = [...new Set(barrelOptions)];
       
-      // 获取枪口选项
       let muzzleOpts = muzzleOptions;
       if (row._muzzleOptions && row._muzzleOptions.length > 0) {
         muzzleOpts = row._muzzleOptions;
@@ -252,94 +278,203 @@ export class PriceTable {
         _rowIndex: index,
         _barrelOptions: barrelOptions,
         _muzzleOptions: muzzleOpts,
-        _isNewRow: row._isNewRow || false
+        _isNewRow: row._isNewRow || false,
+        enabled: row.enabled !== false
       };
     });
 
-    // 构建列配置
     const columns = this.getColumns({
       onCellChange,
       onAddRow,
       onDeleteRow,
+      onEnabledChange,
       getBarrelOptions,
       getBulletOptions,
       muzzleOptions
     });
 
-    // 渲染表格
-    const table = TableRenderer.render({
-      id: 'priceTable',
-      columns: columns,
-      data: indexedData,
-      emptyText: emptyText,
-      showRowIndex: false,
-      rowClass: (row) => {
-        return row._isNewRow ? 'new-price-row' : '';
-      },
-      onCellChange: (rowIndex, key, value, row) => {
-        if (key === 'price') {
-          const numValue = parseFloat(value);
-          if (!isNaN(numValue) && numValue >= 0) {
-            if (onCellChange) {
-              onCellChange(rowIndex, key, numValue, row);
-            }
-          }
-          return;
-        }
-        
-        if (key === 'hitRateRaw') {
-          if (onCellChange) {
-            onCellChange(rowIndex, key, value, row);
-          }
-          return;
-        }
-        
-        if (key === 'barrel' || key === 'muzzle' || key === 'bulletDisplay') {
-          if (onCellChange) {
-            onCellChange(rowIndex, key, value, row);
-          }
-          return;
-        }
-        
-        if (onCellChange) {
-          onCellChange(rowIndex, key, value, row);
-        }
-      }
-    });
+    // 计算启用数量
+    const totalCount = indexedData.length;
+    const enabledCount = indexedData.filter(row => row.enabled !== false).length;
 
-    // 绑定自定义事件
-    this.bindCustomEvents(table, {
+    // 构建完整 HTML（包含控制栏）
+    const tableId = 'priceTable';
+    const attrsStr = '';
+    const dataAttr = `data-table-id="${tableId}"`;
+
+    const html = `
+      <div class="price-table-controls">
+        <span class="control-label">☑ 启用配置：</span>
+        <button class="select-all-btn" data-table="${tableId}">全选</button>
+        <button class="select-none-btn" data-table="${tableId}">全不选</button>
+        <span class="control-hint">（取消勾选的配置将不参与 TTK 计算）</span>
+        <span class="enabled-count">已选: ${enabledCount}/${totalCount}</span>
+      </div>
+      <div class="table-scroll">
+        <table id="${tableId}" ${attrsStr} ${dataAttr}>
+          <thead>${this.renderHeader(columns)}</thead>
+          <tbody>${this.renderBody(columns, indexedData)}</tbody>
+        </table>
+      </div>
+    `;
+
+    // 创建表格实例
+    const table = TableRenderer.createInstance(
+      {
+        id: tableId,
+        columns,
+        data: indexedData,
+        rowClass: (row) => row._isNewRow ? 'new-price-row' : '',
+        onCellChange: (rowIndex, key, value, row) => {
+          if (key === 'price') {
+            const numValue = parseFloat(value);
+            if (!isNaN(numValue) && numValue >= 0) {
+              if (onCellChange) onCellChange(rowIndex, key, numValue, row);
+            }
+            return;
+          }
+          if (key === 'hitRateRaw') {
+            if (onCellChange) onCellChange(rowIndex, key, value, row);
+            return;
+          }
+          if (key === 'barrel' || key === 'muzzle' || key === 'bulletDisplay') {
+            if (onCellChange) onCellChange(rowIndex, key, value, row);
+            return;
+          }
+          if (onCellChange) onCellChange(rowIndex, key, value, row);
+        }
+      },
+      html
+    );
+
+    // 存储配置到表格实例
+    table._config = {
+      onEnabledChange,
       onCellChange,
       onAddRow,
-      onDeleteRow,
-      getBarrelOptions,
-      getBulletOptions,
-      muzzleOptions
-    });
+      onDeleteRow
+    };
+
+    // 绑定事件（传入容器元素）
+    const container = document.getElementById('tab-price');
+    if (container) {
+      this.bindCustomEvents(container, table, {
+        onCellChange,
+        onAddRow,
+        onDeleteRow,
+        onEnabledChange,
+        getBarrelOptions,
+        getBulletOptions,
+        muzzleOptions
+      });
+    }
 
     return table;
   }
 
   /**
+   * 渲染表头（内部使用）
+   */
+  static renderHeader(columns) {
+    let html = '<tr>';
+    html += columns.map(col => {
+      const attrs = col.headerAttrs || {};
+      const attrsStr = Object.entries(attrs)
+        .map(([k, v]) => `${k}="${v}"`)
+        .join(' ');
+      return `<th ${attrsStr}>${TableRenderer.escapeHtml(col.label || col.key || '')}</th>`;
+    }).join('');
+    html += '</tr>';
+    return html;
+  }
+
+  /**
+   * 渲染表体（内部使用）
+   */
+  static renderBody(columns, data) {
+    if (!data || data.length === 0) {
+      const colCount = columns.length;
+      return `<tr><td colspan="${colCount}" class="empty-cell">暂无数据</td></tr>`;
+    }
+    
+    return data.map((row, index) => {
+      let html = `<tr data-index="${index}">`;
+      html += columns.map(col => {
+        let cellValue;
+        if (typeof col.render === 'function') {
+          cellValue = col.render(row, index);
+        } else {
+          const val = row[col.key];
+          cellValue = val !== undefined && val !== null ? TableRenderer.escapeHtml(String(val)) : '-';
+        }
+        const colKey = col.key;
+        const isEditable = col.editable !== false;
+        
+        const attrs = {
+          'data-col': colKey,
+          'data-row': index
+        };
+        
+        if (isEditable) {
+          attrs['data-editable'] = 'true';
+          if (col.inputType) attrs['data-input-type'] = col.inputType;
+          if (col.inputStep) attrs['data-input-step'] = col.inputStep;
+          if (col.inputMin !== undefined) attrs['data-input-min'] = col.inputMin;
+          if (col.inputMax !== undefined) attrs['data-input-max'] = col.inputMax;
+          if (col.inputPlaceholder) attrs['data-input-placeholder'] = col.inputPlaceholder;
+        }
+        
+        // 传递选项数据
+        if (colKey === 'barrel' && row._barrelOptions) {
+          attrs['data-barrel-options'] = JSON.stringify(row._barrelOptions);
+        }
+        if (colKey === 'muzzle' && row._muzzleOptions) {
+          attrs['data-muzzle-options'] = JSON.stringify(row._muzzleOptions);
+        }
+        
+        const attrsStr = Object.entries(attrs)
+          .map(([k, v]) => `${k}="${v}"`)
+          .join(' ');
+        
+        return `<td ${attrsStr}>${cellValue}</td>`;
+      }).join('');
+      html += '</tr>';
+      return html;
+    }).join('');
+  }
+
+  /**
    * 绑定自定义事件
+   * @param {HTMLElement} container - 容器元素（#tab-price）
    * @param {Object} table - 表格实例
    * @param {Object} handlers - 事件处理器
    */
-  static bindCustomEvents(table, handlers) {
+  static bindCustomEvents(container, table, handlers) {
     const {
       onCellChange,
       onAddRow,
       onDeleteRow,
+      onEnabledChange,
       getBarrelOptions,
       getBulletOptions,
       muzzleOptions
     } = handlers;
 
-    const el = table.getElement();
-    if (!el) return;
+    if (!container) return;
+    
+    // 移除旧的事件监听器（避免重复绑定）
+    if (container._priceTableBound) {
+      // 如果已经绑定，先移除所有监听器（通过克隆替换）
+      const newContainer = container.cloneNode(true);
+      container.parentNode?.replaceChild(newContainer, container);
+      // 重新获取引用
+      container = document.getElementById('tab-price');
+      if (!container) return;
+    }
+    container._priceTableBound = true;
 
     // ===== 枪管选择变更 =====
-    el.addEventListener('change', (e) => {
+    container.addEventListener('change', (e) => {
       const select = e.target.closest('select[data-price-barrel="true"]');
       if (!select) return;
       
@@ -352,13 +487,8 @@ export class PriceTable {
       
       const value = select.value;
       
-      // 🔥 获取武器名称
-      const rowData = table.getData()[rowIndex];
-      const weaponName = rowData?.weaponName || '未知武器';
-      
-      console.log(`🔄 [价格表格] 枪管变更: 行 ${rowIndex}, 武器: ${weaponName}, 值: ${value}`);
-      
       if (onCellChange) {
+        const rowData = table.getData()[rowIndex];
         if (rowData) {
           onCellChange(rowIndex, 'barrel', value, rowData);
         }
@@ -366,7 +496,7 @@ export class PriceTable {
     });
 
     // ===== 枪口选择变更 =====
-    el.addEventListener('change', (e) => {
+    container.addEventListener('change', (e) => {
       const select = e.target.closest('select[data-price-muzzle="true"]');
       if (!select) return;
       
@@ -379,13 +509,8 @@ export class PriceTable {
       
       const value = select.value;
       
-      // 🔥 获取武器名称
-      const rowData = table.getData()[rowIndex];
-      const weaponName = rowData?.weaponName || '未知武器';
-      
-      console.log(`🔄 [价格表格] 枪口变更: 行 ${rowIndex}, 武器: ${weaponName}, 值: ${value}`);
-      
       if (onCellChange) {
+        const rowData = table.getData()[rowIndex];
         if (rowData) {
           onCellChange(rowIndex, 'muzzle', value, rowData);
         }
@@ -393,7 +518,7 @@ export class PriceTable {
     });
 
     // ===== 子弹选择变更 =====
-    el.addEventListener('change', (e) => {
+    container.addEventListener('change', (e) => {
       const select = e.target.closest('select[data-price-bullet="true"]');
       if (!select) return;
       
@@ -415,7 +540,7 @@ export class PriceTable {
     });
 
     // ===== 操作按钮 =====
-    el.addEventListener('click', (e) => {
+    container.addEventListener('click', (e) => {
       const confirmBtn = e.target.closest('.confirm-add-price-btn');
       if (confirmBtn) {
         const row = confirmBtn.closest('tr');
@@ -451,6 +576,74 @@ export class PriceTable {
         return;
       }
     });
+
+    // ===== 全选/取消全选按钮 =====
+    container.addEventListener('click', (e) => {
+      const target = e.target;
+      
+      if (target.classList.contains('select-all-btn') || target.classList.contains('select-none-btn')) {
+        const isAll = target.classList.contains('select-all-btn');
+        const checkboxes = container.querySelectorAll('.price-enabled-checkbox');
+        const tableData = table.getData();
+        
+        checkboxes.forEach((cb, index) => {
+          cb.checked = isAll;
+          if (tableData && tableData[index]) {
+            tableData[index].enabled = isAll;
+          }
+          // 触发 change 事件
+          cb.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        
+        // 更新计数
+        this.updateEnabledCount(container, tableData);
+        
+        // 触发全选变更事件
+        const event = new CustomEvent('price-enabled-batch-change', {
+          detail: { enabled: isAll }
+        });
+        document.dispatchEvent(event);
+        
+        // 调用每个行的启用变更回调
+        if (onEnabledChange && tableData) {
+          tableData.forEach((row, index) => {
+            onEnabledChange(index, isAll, row);
+          });
+        }
+        
+        e.preventDefault();
+      }
+    });
+
+    // ===== 复选框变更（更新计数） =====
+    container.addEventListener('change', (e) => {
+      const cb = e.target.closest('.price-enabled-checkbox');
+      if (!cb) return;
+      
+      const row = cb.closest('tr');
+      const rowIndex = parseInt(row?.dataset.index);
+      if (isNaN(rowIndex)) return;
+      
+      const rowData = table.getData()[rowIndex];
+      if (rowData) {
+        rowData.enabled = cb.checked;
+      }
+      
+      // 更新计数
+      const tableData = table.getData();
+      this.updateEnabledCount(container, tableData);
+      
+      // 触发自定义事件
+      const event = new CustomEvent('price-enabled-change', {
+        detail: { rowIndex, enabled: cb.checked, rowData }
+      });
+      document.dispatchEvent(event);
+      
+      // 调用回调
+      if (onEnabledChange && rowData) {
+        onEnabledChange(rowIndex, cb.checked, rowData);
+      }
+    });
   }
 
   /**
@@ -458,7 +651,7 @@ export class PriceTable {
    * @param {string|HTMLElement} container - 容器元素或选择器
    * @param {Array} data - 新的价格数据
    * @param {Object} config - 额外配置
-   * @returns {Array} 处理后的数据（包含 _barrelOptions）
+   * @returns {Array} 处理后的数据
    */
   static update(container, data, config = {}) {
     const target = typeof container === 'string' 
@@ -474,14 +667,13 @@ export class PriceTable {
       onCellChange,
       onAddRow,
       onDeleteRow,
+      onEnabledChange,
       getBarrelOptions,
       getBulletOptions,
       muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器']
     } = config;
 
-    // 🔥 为数据添加 _rowIndex 并预计算枪管和枪口选项
     const indexedData = data.map((row, index) => {
-      // 🔥 关键：从 getBarrelOptions 获取枪管选项
       let barrelOptions = ['无'];
       if (typeof getBarrelOptions === 'function') {
         const opts = getBarrelOptions(row);
@@ -490,13 +682,11 @@ export class PriceTable {
         }
       }
       
-      // 确保 barrelOptions 包含 "无" 且去重
       if (!barrelOptions.includes('无')) {
         barrelOptions = ['无', ...barrelOptions];
       }
       barrelOptions = [...new Set(barrelOptions)];
       
-      // 获取枪口选项
       let muzzleOpts = muzzleOptions;
       if (row._muzzleOptions && row._muzzleOptions.length > 0) {
         muzzleOpts = row._muzzleOptions;
@@ -507,7 +697,8 @@ export class PriceTable {
         _rowIndex: index,
         _barrelOptions: barrelOptions,
         _muzzleOptions: muzzleOpts,
-        _isNewRow: row._isNewRow || false
+        _isNewRow: row._isNewRow || false,
+        enabled: row.enabled !== false
       };
     });
 
@@ -515,35 +706,66 @@ export class PriceTable {
       onCellChange,
       onAddRow,
       onDeleteRow,
+      onEnabledChange,
       getBarrelOptions,
       getBulletOptions,
       muzzleOptions
     });
 
-    TableRenderer.updateTable('priceTable', columns, indexedData, {
-      rowClass: (row) => row._isNewRow ? 'new-price-row' : '',
-      onCellChange: (rowIndex, key, value, row) => {
-        if (key === 'price') {
-          const numValue = parseFloat(value);
-          if (!isNaN(numValue) && numValue >= 0) {
-            if (onCellChange) onCellChange(rowIndex, key, numValue, row);
-          }
-          return;
-        }
-        if (key === 'hitRateRaw') {
-          if (onCellChange) onCellChange(rowIndex, key, value, row);
-          return;
-        }
-        if (key === 'barrel' || key === 'muzzle' || key === 'bulletDisplay') {
-          if (onCellChange) onCellChange(rowIndex, key, value, row);
-          return;
-        }
-        if (onCellChange) onCellChange(rowIndex, key, value, row);
+    // 更新控制栏计数
+    this.updateEnabledCount(target, indexedData);
+
+    // 获取现有的表格元素
+    const tableEl = target.querySelector('#priceTable');
+    if (tableEl) {
+      // 只更新 tbody
+      const tbody = tableEl.querySelector('tbody');
+      if (tbody) {
+        tbody.innerHTML = this.renderBody(columns, indexedData);
       }
-    });
+    } else {
+      // 如果表格不存在，重新渲染整个内容
+      const totalCount = indexedData.length;
+      const enabledCount = indexedData.filter(row => row.enabled !== false).length;
+      
+      target.innerHTML = `
+        <div class="price-table-controls">
+          <span class="control-label">☑ 启用配置：</span>
+          <button class="select-all-btn" data-table="priceTable">全选</button>
+          <button class="select-none-btn" data-table="priceTable">全不选</button>
+          <span class="control-hint">（取消勾选的配置将不参与 TTK 计算）</span>
+          <span class="enabled-count">已选: ${enabledCount}/${totalCount}</span>
+        </div>
+        <div class="table-scroll">
+          <table id="priceTable">
+            <thead>${this.renderHeader(columns)}</thead>
+            <tbody>${this.renderBody(columns, indexedData)}</tbody>
+          </table>
+        </div>
+      `;
+    }
     
-    // 🔥 返回处理后的数据，供调用方更新缓存
     return indexedData;
+  }
+
+  /**
+   * 获取所有启用的价格行索引
+   * @param {Array} data - 价格数据
+   * @returns {Array} 启用的行索引数组
+   */
+  static getEnabledRows(data) {
+    return data
+      .map((row, index) => row.enabled !== false ? index : -1)
+      .filter(index => index >= 0);
+  }
+
+  /**
+   * 获取所有启用的价格行数据
+   * @param {Array} data - 价格数据
+   * @returns {Array} 启用的行数据数组
+   */
+  static getEnabledData(data) {
+    return data.filter(row => row.enabled !== false);
   }
 
   /**
@@ -553,7 +775,6 @@ export class PriceTable {
    * @returns {Object} 完整的行数据
    */
   static buildRowData(rowData, extra = {}) {
-    // 从 rowData 中提取命中率原始格式
     let hitRateRaw = '';
     if (rowData.distance && rowData.hitRate && 
         Array.isArray(rowData.distance) && Array.isArray(rowData.hitRate) &&
@@ -566,12 +787,16 @@ export class PriceTable {
       hitRateRaw = parts.join(',');
     }
 
-    // 🔥 修复：确保 _weaponId 正确传递
     const weaponId = rowData._weaponId !== undefined ? rowData._weaponId : rowData.weaponId;
+    
+    // 将 cfg-1 转换为 #1, cfg-2 转换为 #2
+    const rawConfigId = rowData.configId || 'cfg-1';
+    const displayConfigId = rawConfigId.replace('cfg-', '#');
     
     const result = {
       weaponName: rowData.weaponName || '-',
-      configId: rowData.configId || '-',
+      configId: displayConfigId,
+      _rawConfigId: rawConfigId,
       barrel: rowData.barrel || '无',
       muzzle: rowData.muzzle || '无',
       buildCode: rowData.buildCode || '',
@@ -579,7 +804,6 @@ export class PriceTable {
       hitRateRaw: hitRateRaw,
       bulletDisplay: rowData.bulletDisplay || '-',
       
-      // 🔥 确保 _weaponId 被正确设置
       _weaponId: weaponId,
       _configId: rowData.configId,
       _distance: rowData.distance || [],
@@ -587,6 +811,7 @@ export class PriceTable {
       _bulletId: rowData.bulletId || '',
       _rawConfig: rowData._rawConfig || {},
       _isNewRow: false,
+      enabled: true,
       
       ...extra
     };
@@ -603,9 +828,13 @@ export class PriceTable {
    * @returns {Object} 新增行数据
    */
   static createNewRow(weaponId, weaponName, nextConfigId, defaults = {}) {
+    const rawId = nextConfigId || 'cfg-new';
+    const displayId = rawId.replace('cfg-', '#');
+    
     return {
       weaponName: weaponName || '-',
-      configId: nextConfigId || 'cfg-new',
+      configId: displayId,
+      _rawConfigId: rawId,
       barrel: defaults.barrel || '无',
       muzzle: defaults.muzzle || '无',
       buildCode: defaults.buildCode || '',
@@ -618,7 +847,8 @@ export class PriceTable {
       _hitRate: [],
       _bulletId: '',
       _rawConfig: {},
-      _isNewRow: true
+      _isNewRow: true,
+      enabled: true
     };
   }
 
@@ -680,5 +910,4 @@ export class PriceTable {
   }
 }
 
-// 导出默认
 export default PriceTable;

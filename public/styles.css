@@ -491,6 +491,66 @@ table tbody tr:hover {
 }
 
 /* ============================================================
+   价格表格控制栏样式
+   ============================================================ */
+.price-table-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  border: 1px solid #e8e8e8;
+}
+
+.price-table-controls .control-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #555;
+}
+
+.price-table-controls .select-all-btn,
+.price-table-controls .select-none-btn {
+  padding: 2px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  background: #fff;
+  transition: all 0.2s;
+  height: 24px;
+}
+
+.price-table-controls .select-all-btn:hover {
+  background: #e3f0ff;
+  border-color: #4a6cf7;
+  color: #4a6cf7;
+}
+
+.price-table-controls .select-none-btn:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.price-table-controls .control-hint {
+  font-size: 11px;
+  color: #999;
+  margin-left: 4px;
+}
+
+.price-table-controls .enabled-count {
+  font-size: 11px;
+  color: #666;
+  margin-left: auto;
+  background: #e8e8e8;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+/* ============================================================
    枪械数据表格 (Tab 1) 专属样式
    ============================================================ */
 #weaponTable thead tr.sub-header th {
@@ -725,6 +785,14 @@ table tbody tr:hover {
 #priceTable .new-price-row td {
   background: #fff8e1;
   border-top: 2px solid #ff9800;
+}
+
+/* 启用复选框 */
+.price-enabled-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #4a6cf7;
 }
 
 /* ============================================================
@@ -1140,6 +1208,27 @@ td.editing .table-editor-select {
   .table-section {
     min-height: 200px;
   }
+
+  .price-table-controls {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .price-table-controls .select-all-btn,
+  .price-table-controls .select-none-btn {
+    padding: 1px 8px;
+    font-size: 10px;
+    height: 20px;
+  }
+
+  .price-table-controls .control-hint {
+    font-size: 10px;
+  }
+
+  .price-table-controls .enabled-count {
+    font-size: 10px;
+    padding: 0 6px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1235,6 +1324,20 @@ td.editing .table-editor-select {
   
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .price-table-controls {
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+
+  .price-table-controls .control-hint {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .price-table-controls .enabled-count {
+    margin-left: 0;
   }
 }
 

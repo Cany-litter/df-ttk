@@ -29,9 +29,9 @@
 
     <!-- ========== 主内容 ========== -->
     <main class="app-main">
-      <!-- 🔥 顶部：参数面板（水平布局） -->
+      <!-- 顶部：参数面板（水平布局） -->
       <div class="params-panel">
-        <!-- 🔥 第1行：核心战斗参数 -->
+        <!-- 第1行：核心战斗参数 -->
         <div class="params-row">
           <!-- 子弹等级 -->
           <div class="param-group compact">
@@ -90,7 +90,7 @@
           </div>
         </div>
 
-        <!-- 🔥 第2行：命中相关参数 -->
+        <!-- 第2行：命中相关参数 -->
         <div class="params-row">
           <!-- 距离 -->
           <div class="param-group compact">
@@ -98,10 +98,10 @@
             <input type="number" id="distance" value="30" min="0" max="300" />
           </div>
 
-          <!-- 全局命中率 -->
+          <!-- 全局命中率 - 默认值 10:1.0 开头 -->
           <div class="param-group compact">
             <label for="hitRate">全局命中率</label>
-            <input type="text" id="hitRate" value="30:0.85,50:0.8,100:0.7,150:0.6" placeholder="30:0.85,50:0.8,100:0.7" />
+            <input type="text" id="hitRate" value="10:1.0,30:0.9,50:0.8,100:0.7,150:0.6" placeholder="10:1.0,30:0.9,50:0.8,100:0.7" />
             <span class="hint-text">格式: 距离:命中率,距离:命中率</span>
           </div>
 
@@ -135,7 +135,7 @@
           </div>
         </div>
 
-        <!-- 🔥 第3行：操作按钮 -->
+        <!-- 第3行：操作按钮 -->
         <div class="params-row">
           <div class="buttons-group">
             <button id="calcBtn" class="btn-primary">📊 计算 TTK</button>

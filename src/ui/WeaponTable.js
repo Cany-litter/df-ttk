@@ -260,13 +260,10 @@ export class WeaponTable {
           const barrelName = row.barrelName || '无';
           return TableRenderer.escapeHtml(barrelName);
         },
-        // 动态获取选项
         getOptions: (row) => {
-          // 优先使用行数据中预计算的选项
           if (row._barrelOptions && row._barrelOptions.length > 0) {
             return row._barrelOptions;
           }
-          // 否则使用传入的 getBarrelOptions
           if (typeof getBarrelOptions === 'function') {
             return getBarrelOptions(row);
           }
@@ -409,11 +406,10 @@ export class WeaponTable {
         return row.isClone ? 'clone-row' : '';
       },
       onCellChange: (rowIndex, key, value, row) => {
-        // 🔥 处理枪管选择
+        // 处理枪管选择
         if (key === 'barrel') {
           let barrelIndex = -1;
           
-          // 如果选择的是 "无"，直接返回 -1
           if (value === '无') {
             if (onAttachmentChange) {
               onAttachmentChange(rowIndex, 'barrel', -1);
@@ -421,17 +417,12 @@ export class WeaponTable {
             return;
           }
           
-          // 🔥 优先从 row._barrelOptions 查找
-          // 注意：row._barrelOptions 是 ['无', '枪管1', '枪管2', ...]
-          // 找到的索引需要减1才是 barrelId
           const options = row._barrelOptions || ['无'];
           const optionIndex = options.indexOf(value);
           if (optionIndex > 0) {
-            // 索引0是 "无"，索引1对应 barrelId 0
             barrelIndex = optionIndex - 1;
           }
           
-          // 🔥 如果找不到，再从 DataManager 查找
           if (barrelIndex === -1) {
             const dm = typeof getDataManager === 'function' ? getDataManager() : null;
             if (dm) {
@@ -448,7 +439,7 @@ export class WeaponTable {
           return;
         }
         
-        // 🔥 处理枪口选择
+        // 处理枪口选择
         if (key === 'muzzle') {
           const options = row._muzzleOptions || ['无'];
           const muzzleIndex = options.indexOf(value);
@@ -515,24 +506,19 @@ export class WeaponTable {
       
       const value = select.value;
       const rowData = table.getData()[rowIndex];
-      const weaponName = rowData?.name || '未知武器';
       
       // 枪管选择
       if (colKey === 'barrel') {
         let barrelIndex = -1;
         
         if (value !== '无') {
-          // 🔥 优先从 rowData._barrelOptions 查找
-          // 注意：rowData._barrelOptions 是 ['无', '枪管1', '枪管2', ...]
           if (rowData?._barrelOptions) {
             const optionIndex = rowData._barrelOptions.indexOf(value);
             if (optionIndex > 0) {
-              // 索引0是 "无"，索引1对应 barrelId 0
               barrelIndex = optionIndex - 1;
             }
           }
           
-          // 🔥 如果找不到，从武器数据中实时查找
           if (barrelIndex === -1) {
             const dm = typeof getDataManager === 'function' ? getDataManager() : null;
             if (dm) {
@@ -544,8 +530,6 @@ export class WeaponTable {
           }
         }
         
-        console.log(`🔧 [武器表格] 武器 ${weaponName} 枪管变更为: ${value} (索引: ${barrelIndex})`);
-        
         if (onAttachmentChange) {
           onAttachmentChange(rowIndex, 'barrel', barrelIndex);
         }
@@ -556,7 +540,6 @@ export class WeaponTable {
       if (colKey === 'muzzle') {
         const options = muzzleOptions;
         const muzzleIndex = options.indexOf(value);
-        console.log(`🔧 [武器表格] 武器 ${weaponName} 枪口变更为: ${value} (索引: ${muzzleIndex})`);
         if (onAttachmentChange) {
           onAttachmentChange(rowIndex, 'muzzle', muzzleIndex >= 0 ? muzzleIndex : 0);
         }
@@ -650,12 +633,9 @@ export class WeaponTable {
       getDataManager = null
     } = config;
 
-    // 🔥 为数据添加 _rowIndex 并预计算枪管选项
     const indexedData = data.map((row, index) => {
-      // 🔥 优先使用行数据中已有的 _barrelOptions
       let barrelOptions = row._barrelOptions || ['无'];
       
-      // 🔥 如果 _barrelOptions 只有 "无"，尝试从 getBarrelOptions 获取
       if (barrelOptions.length === 1 && barrelOptions[0] === '无' && typeof getBarrelOptions === 'function') {
         const opts = getBarrelOptions(row);
         if (opts && opts.length > 0) {
@@ -663,7 +643,6 @@ export class WeaponTable {
         }
       }
       
-      // 🔥 如果仍然没有选项，从 DataManager 直接获取
       if (barrelOptions.length === 1 && barrelOptions[0] === '无') {
         const dm = typeof getDataManager === 'function' ? getDataManager() : null;
         if (dm) {
@@ -677,11 +656,9 @@ export class WeaponTable {
         }
       }
       
-      // 🔥 确保 barrelOptions 包含 "无" 且去重
       if (!barrelOptions.includes('无')) {
         barrelOptions = ['无', ...barrelOptions];
       }
-      // 去重
       barrelOptions = [...new Set(barrelOptions)];
       
       return {
@@ -716,15 +693,12 @@ export class WeaponTable {
             return;
           }
           
-          // 🔥 优先从 row._barrelOptions 查找
           const options = row._barrelOptions || ['无'];
           const optionIndex = options.indexOf(value);
           if (optionIndex > 0) {
-            // 索引0是 "无"，索引1对应 barrelId 0
             barrelIndex = optionIndex - 1;
           }
           
-          // 🔥 如果找不到，再从 DataManager 查找
           if (barrelIndex === -1) {
             const dm = typeof getDataManager === 'function' ? getDataManager() : null;
             if (dm) {
@@ -763,7 +737,6 @@ export class WeaponTable {
    * @returns {Object} 完整的行数据
    */
   static buildRowData(weapon, attachment = {}, muzzleOptions = []) {
-    // 🔥 确保 barrelId 是数字
     let barrelId = attachment.barrelId !== undefined ? attachment.barrelId : -1;
     if (typeof barrelId === 'string') {
       barrelId = parseInt(barrelId);
@@ -779,7 +752,6 @@ export class WeaponTable {
       ? parseFloat(attachment.precision)
       : (attachment.precision || 0.09);
 
-    // 获取枪管数据
     let barrel = null;
     let barrelName = '无';
     if (barrelId >= 0 && weapon.barrels && weapon.barrels[barrelId]) {
@@ -787,11 +759,6 @@ export class WeaponTable {
       barrelName = barrel.name || '无';
     }
 
-    // 🔥 修复：构建枪管选项列表
-    // 下拉选项格式：['无', '枪管1', '枪管2', ...]
-    // 选择 '无' 时 barrelId = -1
-    // 选择 '枪管1' 时 barrelId = 0
-    // 选择 '枪管2' 时 barrelId = 1
     const barrelOptions = ['无'];
     if (weapon.barrels && Array.isArray(weapon.barrels) && weapon.barrels.length > 0) {
       weapon.barrels.forEach(b => {
@@ -801,18 +768,15 @@ export class WeaponTable {
       });
     }
 
-    // 获取枪口数据
     let muzzleName = '无';
     const muzzleOptionsList = Array.isArray(muzzleOptions) ? muzzleOptions : ['无'];
     if (muzzleId > 0 && muzzleOptionsList[muzzleId]) {
       muzzleName = muzzleOptionsList[muzzleId];
     }
 
-    // 🔥 计算当前值（应用枪管和枪口加成）
     const current = this.calculateCurrentValues(weapon, barrel, muzzleId, precision);
 
     return {
-      // 原始值
       id: weapon.id,
       name: weapon.name,
       type: weapon.type,
@@ -823,7 +787,6 @@ export class WeaponTable {
       armor: weapon.armor,
       mult: weapon.mult || { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 },
       
-      // 当前值
       rofCurrent: current.rof,
       velocityCurrent: current.velocity,
       rangesCurrent: current.ranges,
@@ -831,24 +794,20 @@ export class WeaponTable {
       armorCurrent: current.armor,
       multCurrent: current.mult,
       
-      // 附件信息
       barrelId: barrelId,
       barrelName: barrelName,
       muzzleId: muzzleId,
       muzzleName: muzzleName,
       precision: precision,
       
-      // 🔥 预计算选项列表
       _barrelOptions: barrelOptions,
       _muzzleOptions: muzzleOptionsList,
       
-      // 元数据
       barrels: weapon.barrels || [],
       allowedBullet: weapon.allowedBullet,
       isClone: weapon.isClone || false,
       originalIndex: weapon.originalIndex,
       
-      // 用于编辑的原始对象引用
       _weapon: weapon,
       _barrel: barrel
     };
@@ -863,49 +822,36 @@ export class WeaponTable {
    * @returns {Object} 计算后的当前值
    */
   static calculateCurrentValues(weapon, barrel, muzzleId, precision) {
-    // 🔥 获取枪口加成
     let muzzleRangeMult = 0;
     let muzzleVelocityMult = 1.0;
     
-    // 如果传入了 DataManager，从 DataManager 获取枪口数据
-    // 否则使用默认值（兼容旧代码）
     const dm = window.__app__?.dataManager || null;
     if (dm && typeof dm.getMuzzleBonuses === 'function') {
       const bonuses = dm.getMuzzleBonuses(muzzleId);
       muzzleRangeMult = bonuses.rangeMult || 0;
       muzzleVelocityMult = bonuses.velocityMult || 1.0;
     } else {
-      // 备用：硬编码枪口数据（与 DataManager 保持一致）
       const muzzleMap = {
-        0: { rangeMult: 0, velocityMult: 1.0 },      // 无
-        1: { rangeMult: 0.24, velocityMult: 1.24 },  // 死寂
-        2: { rangeMult: 0.18, velocityMult: 1.18 },  // 先进/轻语/勇火
-        3: { rangeMult: 0.30, velocityMult: 1.30 }   // 冲锋枪回声消音器
+        0: { rangeMult: 0, velocityMult: 1.0 },
+        1: { rangeMult: 0.24, velocityMult: 1.24 },
+        2: { rangeMult: 0.18, velocityMult: 1.18 },
+        3: { rangeMult: 0.30, velocityMult: 1.30 }
       };
       const muzzleBonuses = muzzleMap[muzzleId] || muzzleMap[0];
       muzzleRangeMult = muzzleBonuses.rangeMult;
       muzzleVelocityMult = muzzleBonuses.velocityMult;
     }
 
-    // 计算射程倍率
     let rangeMult = 1.0;
     const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
     const barrelRange = hasRangeAdd ? 1.0 : (barrel ? barrel.rangeMult : 1.0);
-    // 🔥 枪口射程加成：barrelRange + muzzleRangeMult
     rangeMult *= (barrelRange + muzzleRangeMult);
 
-    // 计算初速倍率
-    // 🔥 初速倍率 = 射程倍率 × 枪口初速倍率 × (1 + 精校值)
     let velocityMult = rangeMult * muzzleVelocityMult * (1 + precision);
-
-    // 计算射速倍率
     let rofMult = barrel ? barrel.rofMult : 1.0;
-
-    // 计算伤害加成
     let damageBonus = barrel && barrel.damageBonus !== undefined ? barrel.damageBonus : 0;
     let armorDamageBonus = barrel && barrel.armorDamageBonus !== undefined ? barrel.armorDamageBonus : 0;
 
-    // 计算部位倍率
     const partAdd = barrel && barrel.partMultAdd ? barrel.partMultAdd : null;
     const newMult = { ...weapon.mult };
     if (partAdd) {
@@ -914,7 +860,6 @@ export class WeaponTable {
       }
     }
 
-    // 计算射程
     let newRanges;
     if (barrel && Array.isArray(barrel.ranges) && barrel.ranges.length > 0) {
       newRanges = barrel.ranges;
@@ -928,7 +873,6 @@ export class WeaponTable {
           });
     }
 
-    // 计算初速
     const hasVelocityAdd = barrel && typeof barrel.velocityAdd === 'number';
     const newVelocity = hasVelocityAdd
       ? Math.round((weapon.velocity + barrel.velocityAdd) * velocityMult)
@@ -945,5 +889,4 @@ export class WeaponTable {
   }
 }
 
-// 导出默认
 export default WeaponTable;

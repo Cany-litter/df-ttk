@@ -10,7 +10,7 @@ export class ChartManager {
     this.ttkChart = new TTKChart();
     this.distanceChart = new DistanceChart();
     
-    // 🔥 监听显示全部武器事件
+    // 绑定事件
     this.bindEvents();
   }
 
@@ -21,11 +21,9 @@ export class ChartManager {
     // 监听显示全部武器复选框变化
     document.addEventListener('toggle-show-all', (e) => {
       const checked = e.detail?.checked;
-      console.log(`📊 ChartManager: 切换显示全部武器 -> ${checked}`);
       if (this.distanceChart) {
         this.distanceChart.setShowAllWeapons(checked);
         // 通过自定义事件重新触发距离图表计算
-        // 这样 main.js 中的 handleDistanceChart 会被调用
         document.dispatchEvent(new CustomEvent('calculate-distance'));
       }
     });
@@ -55,6 +53,5 @@ export class ChartManager {
     if (this.distanceChart) {
       this.distanceChart.destroy();
     }
-    console.log('📊 ChartManager 已销毁');
   }
 }

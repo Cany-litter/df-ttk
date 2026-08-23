@@ -65,7 +65,6 @@ export class TTKChart {
             intersect: false, 
             callbacks: this.getTooltipCallbacks()
           },
-          // 🔥 修复：添加 legend 配置（老版本中有此配置）
           legend: { 
             position: 'bottom', 
             labels: { 
@@ -122,7 +121,7 @@ export class TTKChart {
   calculateDelays(stats, params) {
     const { weapon, avgTime, avgShots, avgMisses, avgBurstInterval } = stats;
     
-    // 🔥 修复：优先从 _current 读取 triggerDelay，兼容旧数据
+    // 优先从 _current 读取 triggerDelay，兼容旧数据
     const velocity = weapon.velocity || weapon._current?.velocity || 1;
     const triggerDelayValue = weapon._current?.triggerDelay ?? weapon.triggerDelay ?? 0;
     
@@ -190,7 +189,6 @@ export class TTKChart {
    * @private
    */
   _calculateBurstModeDelays(weapon, avgShots, avgMisses, allIntervalTime) {
-    // 🔥 修复：添加空值保护
     const burstCount = weapon.burstCount || 1;
     
     // 计算连发间隔数量
@@ -203,7 +201,6 @@ export class TTKChart {
     }
     
     // 按空枪比例分配间隔时间
-    // 限制missRatio在[0, 1]范围内，防止avgMisses超过totalIntervalCount时产生负值
     const missRatio = Math.min(1, Math.max(0, avgMisses / totalIntervalCount));
     const emptyDelay = allIntervalTime * missRatio;
     const noMissFireDelay = allIntervalTime * (1 - missRatio);
@@ -223,7 +220,6 @@ export class TTKChart {
     }
     
     // 按空枪比例分配间隔时间
-    // 限制missRatio在[0, 1]范围内，防止avgMisses超过totalIntervalCount时产生负值
     const missRatio = Math.min(1, Math.max(0, avgMisses / totalIntervalCount));
     const emptyDelay = allIntervalTime * missRatio;
     const noMissFireDelay = allIntervalTime * (1 - missRatio);
@@ -246,7 +242,6 @@ export class TTKChart {
 
   updateChartData(newResults) {
     this.chart.data.labels = newResults.map(r => r.name);
-    // 修复：keys顺序要与数据集顺序匹配
     const keys = ['noMissFireDelay', 'burstInterval', 'emptyDelay', 'flight', 'triggerDelay'];
     this.chart.data.datasets.forEach((ds, i) => {
       ds.data = newResults.map(r => r[keys[i]]);
@@ -318,7 +313,6 @@ export class TTKChart {
         const currentRank = idx + 1;
         const totalWeapons = this.lastResults.length;
         
-        // 判断是否为半自动武器（连发模式）- 添加空值保护
         const isSemiAuto = r.weapon && 
                            r.weapon.fireMode === 'burst' && 
                            r.weapon.burstCount && 
@@ -333,7 +327,6 @@ export class TTKChart {
           `平均致死枪数: ${(r.avgShots || 0).toFixed(2)}`
         ];
         
-        // 半自动武器时显示连发间隔和内部射速
         if (isSemiAuto) {
           const burstInterval = r.weapon.burstInterval || 0;
           const burstInternalROF = r.weapon.burstInternalROF || 0;

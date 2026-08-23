@@ -31,7 +31,6 @@ export class EventHandler {
    */
   initialize(options = {}) {
     if (this._initialized) {
-      console.warn('EventHandler 已初始化，跳过重复绑定');
       return;
     }
 
@@ -43,11 +42,10 @@ export class EventHandler {
     // 2. 绑定数据操作事件（导入/导出/重置）
     this.bindDataOperationEvents();
 
-    // 3. 绑定按钮事件（已废弃的全局枪管类型等）
+    // 3. 绑定其他事件
     this.bindMiscEvents();
 
     this._initialized = true;
-    console.log('✅ EventHandler 初始化完成');
   }
 
   // ============================================================
@@ -68,10 +66,8 @@ export class EventHandler {
     if (calcBtn) {
       const handler = () => {
         if (typeof onCalculate === 'function') {
-          // 直接调用回调（由 main.js 注入）
           onCalculate();
         } else {
-          // 或触发自定义事件，由 main.js 监听
           this.triggerCustomEvent('calculate-ttk');
         }
       };
@@ -153,7 +149,6 @@ export class EventHandler {
     const exportJSONBtn = document.getElementById('exportJSONBtn');
     if (exportJSONBtn) {
       const handler = () => {
-        // 触发自定义事件，由 DistanceChart 处理
         this.triggerCustomEvent('export-distance-json');
       };
       exportJSONBtn.addEventListener('click', handler);
@@ -173,7 +168,6 @@ export class EventHandler {
     const showAllCheckbox = document.getElementById('showAllWeapons');
     if (showAllCheckbox) {
       const handler = (e) => {
-        // 触发自定义事件，由 DistanceChart 处理
         this.triggerCustomEvent('toggle-show-all', {
           checked: e.target.checked
         });
@@ -185,7 +179,6 @@ export class EventHandler {
     // ===== 全局枪管类型（已废弃） =====
     const globalBarrelSelect = document.getElementById('globalBarrelType');
     if (globalBarrelSelect) {
-      // 禁用并显示提示
       globalBarrelSelect.disabled = true;
       globalBarrelSelect.title = '已废弃，请在价格表格中配置枪管';
       globalBarrelSelect.style.opacity = '0.6';
@@ -196,7 +189,6 @@ export class EventHandler {
     const triggerDelayCheckbox = document.getElementById('triggerDelayEnable');
     if (triggerDelayCheckbox) {
       const handler = (e) => {
-        // 触发自定义事件，由 TTK 计算使用
         this.triggerCustomEvent('trigger-delay-toggle', {
           enabled: e.target.checked
         });
@@ -207,7 +199,6 @@ export class EventHandler {
 
     // ===== 键盘快捷键 =====
     document.addEventListener('keydown', (e) => {
-      // Ctrl+Enter 或 Cmd+Enter → 触发计算
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
         this.triggerCustomEvent('calculate-ttk');
@@ -230,7 +221,6 @@ export class EventHandler {
     });
     this._boundEvents = [];
     this._initialized = false;
-    console.log('✅ EventHandler 已解绑所有事件');
   }
 
   /**
@@ -253,5 +243,4 @@ export class EventHandler {
   }
 }
 
-// 导出默认
 export default EventHandler;

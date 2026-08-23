@@ -8,10 +8,6 @@ export class RIPBulletStrategy {
     const hitPart = 'limbs'; // RIP子弹固定命中四肢
     const pureDamage = BaseDamageCalculator.calculate(weapon, bulletData, hitPart, decay);
     
-    if (debug) {
-      console.log(`    [RIP子弹] 部位: 四肢, 纯伤害: ${pureDamage.toFixed(2)}`);
-    }
-    
     return { damage: pureDamage, newArmorState: { ...armorState }, hitPart };
   }
 }
@@ -32,7 +28,6 @@ export class DoubleBulletStrategy {
     const mult = weapon.mult[hitPart] || 1;
     const pureDamage = fixedFleshDamage * mult * decay;
     
-    // 添加空值检查
     const armorData = bulletData?.armorData || {};
     const armorLevelStr = String(armorLevel);
     const helmetLevelStr = String(helmetLevel);
@@ -46,35 +41,27 @@ export class DoubleBulletStrategy {
     let finalDamage;
     let newArmorState = { ...armorState };
     
-    if (debug) {
-      console.log(`    [双头弹] 部位: ${hitPart}, 纯伤害: ${pureDamage.toFixed(2)}, 穿透率: ${pen}, 穿透伤害: ${penDamage.toFixed(2)}`);
-    }
-    
     if (hitPart === 'limbs') {
       finalDamage = pureDamage;
     } else if (hitPart === 'head') {
       if (helmetVal <= 0) {
         finalDamage = pureDamage;
-        if (debug) console.log(`    [双头弹] 头盔已损坏，全额伤害: ${finalDamage.toFixed(2)}`);
       } else {
         const aMultHelmet = armorMult || 1;
         const helmetD = fixedArmorDamage * aMultHelmet;
-        const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, helmetD, helmetVal, debug);
+        const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, helmetD, helmetVal, false);
         finalDamage = result.finalDamage;
         newArmorState.helmetVal = result.remainingArmor;
-        if (debug) console.log(`    [双头弹] 头盔减伤后伤害: ${finalDamage.toFixed(2)}, 头盔剩余: ${newArmorState.helmetVal}`);
       }
     } else {
       if (armorVal <= 0) {
         finalDamage = pureDamage;
-        if (debug) console.log(`    [双头弹] 护甲已损坏，全额伤害: ${finalDamage.toFixed(2)}`);
       } else {
         const aMultArmor = armorMult || 1;
         const armorD = fixedArmorDamage * aMultArmor;
-        const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, armorD, armorVal, debug);
+        const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, armorD, armorVal, false);
         finalDamage = result.finalDamage;
         newArmorState.armorVal = result.remainingArmor;
-        if (debug) console.log(`    [双头弹] 护甲减伤后伤害: ${finalDamage.toFixed(2)}, 护甲剩余: ${newArmorState.armorVal}`);
       }
     }
     
@@ -93,79 +80,41 @@ export class StandardBulletStrategy {
     const hitPart = HitPartSelector.select(hitProb);
     const pureDamage = BaseDamageCalculator.calculate(weapon, bulletData, hitPart, decay);
     
-    // 🔥 记录基础伤害（用于调试）
-    const baseFlesh = weapon.flesh;
-    const bulletBase = bulletData?.base || 1.0;
-    const mult = weapon.mult[hitPart] || 1;
-    const rawDamage = baseFlesh * bulletBase * mult * decay;
-    
-    // 添加空值检查
     const armorData = bulletData?.armorData || {};
     const armorLevelStr = String(armorLevel);
     const helmetLevelStr = String(helmetLevel);
     const armorLevelData = armorData[armorLevelStr] || { pen: 0 };
     const helmetLevelData = armorData[helmetLevelStr] || { pen: 0 };
     
-    // 🔥 获取护甲穿透和护甲伤害倍率
     const pen = hitPart === 'head' ? helmetLevelData.pen : armorLevelData.pen;
     const armorMult = hitPart === 'head' ? helmetLevelData.armorMult : armorLevelData.armorMult;
-    
-    // 🔥 计算穿透伤害
     const penDamage = pureDamage * pen;
     
-    // 🔥 调试日志：打印关键数据
-    if (debug) {
-      console.log(`    [调试] armorLevel: ${armorLevel}, armorLevelStr: ${armorLevelStr}`);
-      console.log(`    [调试] armorLevelData:`, armorLevelData);
-      console.log(`    [调试] armorLevelData.pen:`, armorLevelData?.pen);
-      console.log(`    [调试] hitPart: ${hitPart}, pen: ${pen}`);
-    }
-    
-    // 🔥 计算护甲伤害
     let finalDamage;
     let newArmorState = { ...armorState };
-    
-    if (debug) {
-      console.log(`    [伤害计算] 部位: ${hitPart}, 基础伤害: ${rawDamage.toFixed(2)}, 纯伤害: ${pureDamage.toFixed(2)}, 穿透率: ${pen}, 穿透伤害: ${penDamage.toFixed(2)}`);
-    }
     
     if (hitPart === 'limbs') {
       // 四肢：无护甲减伤
       finalDamage = pureDamage;
-      if (debug) {
-        console.log(`    [护甲] 四肢无护甲，最终伤害: ${finalDamage.toFixed(2)}`);
-      }
     } else if (hitPart === 'head') {
       if (helmetVal <= 0) {
         finalDamage = pureDamage;
-        if (debug) console.log(`    [护甲] 头盔已损坏，全额伤害: ${finalDamage.toFixed(2)}`);
       } else {
         const helmetD = weapon.armor * (armorMult || 1);
-        const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, helmetD, helmetVal, debug);
+        const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, helmetD, helmetVal, false);
         finalDamage = result.finalDamage;
         newArmorState.helmetVal = result.remainingArmor;
-        if (debug) {
-          console.log(`    [护甲] 头盔减伤后伤害: ${finalDamage.toFixed(2)}, 头盔剩余: ${newArmorState.helmetVal}`);
-        }
       }
     } else {
       // 胸部或腹部
       if (armorVal <= 0) {
         finalDamage = pureDamage;
-        if (debug) console.log(`    [护甲] 护甲已损坏，全额伤害: ${finalDamage.toFixed(2)}`);
       } else {
         const armorD = weapon.armor * (armorMult || 1);
-        const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, armorD, armorVal, debug);
+        const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, armorD, armorVal, false);
         finalDamage = result.finalDamage;
         newArmorState.armorVal = result.remainingArmor;
-        if (debug) {
-          console.log(`    [护甲] 护甲减伤后伤害: ${finalDamage.toFixed(2)}, 护甲剩余: ${newArmorState.armorVal}`);
-        }
       }
-    }
-    
-    if (debug) {
-      console.log(`    [最终] 命中 ${hitPart}, 伤害: ${finalDamage.toFixed(2)}`);
     }
     
     return { damage: finalDamage, newArmorState, hitPart };

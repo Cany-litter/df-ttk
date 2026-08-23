@@ -31,19 +31,19 @@ export class CacheManager {
       // 战斗参数
       bulletLevel: 4,
       armorLevel: 4,
-      armorValue: 80,
+      armorValue: 110,
       helmetLevel: 4,
-      helmetValue: 35,
+      helmetValue: 48,
       distance: 30,
       healthValue: 100,
-      hitRate: 0.85,
+      hitRate: 0.9,
       triggerDelayEnable: true,
       
       // 命中概率
       hitProb: {
-        head: 0.18,
+        head: 0.1,
         chest: 0.3,
-        stomach: 0.22,
+        stomach: 0.3,
         limbs: 0.3
       },
       

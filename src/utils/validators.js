@@ -15,8 +15,12 @@ export function validateHitProb(params) {
 }
 
 /**
- * 🔥 验证距离-命中率映射字符串格式
- * @param {string} hitRateRaw - 格式 "30:0.85,50:0.8,100:0.7"
+ * 验证距离-命中率映射字符串格式
+ * 
+ * 允许命中率为 1.0（100%），用于近距离场景
+ * 支持 10m 处 100% 命中率
+ * 
+ * @param {string} hitRateRaw - 格式 "10:1.0,30:0.9,50:0.8,100:0.7,150:0.6"
  * @returns {boolean} 验证是否通过
  * @throws {Error} 当格式无效时抛出错误
  */
@@ -43,9 +47,35 @@ export function validateHitRateMap(hitRateRaw) {
       throw new Error(`距离必须为正数: "${dist}"`);
     }
     
+    // 允许命中率为 1.0（100%），用于近距离场景
     if (isNaN(hitRate) || hitRate < 0 || hitRate > 1) {
       throw new Error(`命中率必须在 0 到 1 之间: "${rate}"`);
     }
+  }
+  
+  // 校验距离是否递增
+  const sortedParts = parts
+    .map(p => {
+      const [dist, rate] = p.split(':');
+      return { distance: parseFloat(dist), rate: parseFloat(rate) };
+    })
+    .sort((a, b) => a.distance - b.distance);
+  
+  // 检查是否有重复距离
+  const distances = sortedParts.map(p => p.distance);
+  const uniqueDistances = new Set(distances);
+  if (distances.length !== uniqueDistances.size) {
+    throw new Error('距离不能重复，请确保每个距离值唯一');
+  }
+  
+  // 如果第一个距离 > 10，给出建议
+  if (sortedParts.length > 0 && sortedParts[0].distance > 10) {
+    console.warn('⚠️ 命中率映射中第一个距离为 ' + sortedParts[0].distance + 'm，建议添加 10m 点以获得更准确的近战命中率');
+  }
+  
+  // 如果最近距离的命中率低于 0.9，给出建议
+  if (sortedParts.length > 0 && sortedParts[0].rate < 0.9) {
+    console.warn('⚠️ 最近距离 (' + sortedParts[0].distance + 'm) 的命中率为 ' + (sortedParts[0].rate * 100) + '%，建议设置更高的近距离命中率');
   }
   
   return true;
@@ -90,7 +120,7 @@ export function validatePageParams(params) {
     throw new Error('头盔值必须在 0 到 100 之间');
   }
 
-  // 🔥 验证全局命中率映射（如果存在）
+  // 验证全局命中率映射（如果存在）
   if (params.hitRateMap !== undefined) {
     if (!Array.isArray(params.hitRateMap) || params.hitRateMap.length === 0) {
       throw new Error('全局命中率映射不能为空，请配置至少一个距离-命中率对');
@@ -99,9 +129,18 @@ export function validatePageParams(params) {
       if (entry.distance < 0) {
         throw new Error(`距离 ${entry.distance} 不能为负数`);
       }
+      // 允许命中率为 1.0（100%）
       if (entry.rate < 0 || entry.rate > 1) {
         throw new Error(`命中率 ${entry.rate} 必须在 0 到 1 之间`);
       }
+    }
+    
+    // 检查距离是否递增
+    const sorted = [...params.hitRateMap].sort((a, b) => a.distance - b.distance);
+    const distances = sorted.map(p => p.distance);
+    const uniqueDistances = new Set(distances);
+    if (distances.length !== uniqueDistances.size) {
+      throw new Error('命中率映射中的距离不能重复');
     }
   }
 

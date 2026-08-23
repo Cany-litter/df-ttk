@@ -111,7 +111,7 @@ export class TableRenderer {
     let currentOnRowClick = onRowClick || null;
     let currentRowClass = rowClass || '';
 
-    // 🔥 注册到全局，供 exitEditMode 使用
+    // 注册到全局，供 exitEditMode 使用
     if (!window._tableInstances) {
       window._tableInstances = {};
     }
@@ -296,7 +296,7 @@ export class TableRenderer {
           }
         }
         
-        // 🔥 关键：如果行数据中有预计算的选项，存储在 cell 的 dataset 中
+        // 如果行数据中有预计算的选项，存储在 cell 的 dataset 中
         if (colKey === 'barrel' && row._barrelOptions && row._barrelOptions.length > 0) {
           cellAttrs['data-barrel-options'] = JSON.stringify(row._barrelOptions);
         }
@@ -305,7 +305,7 @@ export class TableRenderer {
           cellAttrs['data-muzzle-options'] = JSON.stringify(row._muzzleOptions);
         }
         
-        // 🔥 也支持从列配置的 getOptions 获取选项（备用）
+        // 也支持从列配置的 getOptions 获取选项（备用）
         if (isEditable && col.inputType === 'select' && typeof col.getOptions === 'function') {
           try {
             const opts = col.getOptions(row);
@@ -427,21 +427,6 @@ export class TableRenderer {
       const columns = this._getColumnsForTable(el);
       const col = columns.find(c => c.key === colKey);
       
-      // 🔥 获取表格ID和行数据，用于显示当前操作位置
-      const tableId = el.id || 'unknown';
-      const rowIndex = parseInt(cell.dataset.row);
-      const rowData = this._getTableData(el)?.[rowIndex] || {};
-      const weaponName = rowData.weaponName || rowData.name || '未知武器';
-      
-      const tabName = tableId === 'weaponTable' ? '武器表格' : 
-                      tableId === 'priceTable' ? '价格表格' : 
-                      tableId === 'bulletTable' ? '子弹表格' : tableId;
-      
-      const colLabel = colKey === 'barrel' ? '枪管' : 
-                       colKey === 'muzzle' ? '枪口' : colKey;
-      
-      console.log(`🖱️ [${tabName}] 点击编辑${colLabel}, 行 ${rowIndex}, 武器: ${weaponName}`);
-      
       this.enterEditMode(cell, onCellChange, col, options);
     });
 
@@ -493,20 +478,17 @@ export class TableRenderer {
     let editorHtml;
     if (inputType === 'select') {
       let optionList = [];
-      let optionSource = '';
       
-      // 🔥 从 cell dataset 中读取预计算的选项
+      // 从 cell dataset 中读取预计算的选项
       if (colKey === 'barrel' && cell.dataset.barrelOptions) {
         try {
           optionList = JSON.parse(cell.dataset.barrelOptions);
-          optionSource = 'dataset.barrelOptions';
         } catch (e) {
           optionList = [];
         }
       } else if (colKey === 'muzzle' && cell.dataset.muzzleOptions) {
         try {
           optionList = JSON.parse(cell.dataset.muzzleOptions);
-          optionSource = 'dataset.muzzleOptions';
         } catch (e) {
           optionList = [];
         }
@@ -519,7 +501,6 @@ export class TableRenderer {
           try {
             const parsed = JSON.parse(optionsData);
             optionList = Array.isArray(parsed) ? parsed : Object.keys(parsed);
-            optionSource = 'dataset.inputOptions';
           } catch (e) {
             optionList = [];
           }
@@ -528,27 +509,12 @@ export class TableRenderer {
       
       if (!optionList || optionList.length === 0) {
         optionList = ['无'];
-        optionSource = 'default';
       }
       
       // 确保当前值在选项列表中
       if (!optionList.includes(currentValue) && currentValue !== '') {
         optionList.push(currentValue);
       }
-      
-      // 🔥 打印下拉选项列表
-      const table = cell.closest('table');
-      const tableId = table?.id || 'unknown';
-      const tabName = tableId === 'weaponTable' ? '武器表格' : 
-                      tableId === 'priceTable' ? '价格表格' : 
-                      tableId === 'bulletTable' ? '子弹表格' : tableId;
-      
-      const rowData = this._getTableData(table)?.[rowIndex] || {};
-      const weaponName = rowData.weaponName || rowData.name || '未知武器';
-      const colLabel = colKey === 'barrel' ? '枪管' : 
-                       colKey === 'muzzle' ? '枪口' : colKey;
-      
-      console.log(`📋 [${tabName}] ${colLabel}选项 (${optionSource}), 行 ${rowIndex}, 武器: ${weaponName}:`, optionList);
       
       editorHtml = this.createSelectEditorWithOptions(currentValue, optionList);
     } else {
@@ -649,14 +615,11 @@ export class TableRenderer {
     
     cell.classList.remove('editing');
     
-    // 🔥 获取表格信息用于日志
+    // 获取表格信息用于日志
     const table = cell.closest('table');
     const tableId = table?.id || 'unknown';
-    const tabName = tableId === 'weaponTable' ? '武器表格' : 
-                    tableId === 'priceTable' ? '价格表格' : 
-                    tableId === 'bulletTable' ? '子弹表格' : tableId;
     
-    // 🔥 修复：使用 table.getData() 获取原始数据，而不是从 DOM 重新提取
+    // 使用 table.getData() 获取原始数据
     let rowData = {};
     if (tableId && window._tableInstances && window._tableInstances[tableId]) {
       const instance = window._tableInstances[tableId];
@@ -672,29 +635,15 @@ export class TableRenderer {
       rowData = allData?.[rowIndex] || {};
     }
     
-    const weaponName = rowData.weaponName || rowData.name || '未知武器';
-    const colLabel = colKey === 'barrel' ? '枪管' : 
-                     colKey === 'muzzle' ? '枪口' : colKey;
-    
     if (save && newValue !== originalValue) {
-      console.log(`✅ [${tabName}] 用户选择: ${newValue}, 行 ${rowIndex}, 武器: ${weaponName}, ${colLabel}`);
-      console.log(`  - rowData:`, { weaponName, _weaponId: rowData._weaponId, _configId: rowData._configId });
-      
       if (typeof onCellChange === 'function') {
         onCellChange(rowIndex, colKey, newValue, rowData);
       }
-    } else if (!save) {
-      console.log(`↩️ [${tabName}] 取消编辑, 行 ${rowIndex}, 武器: ${weaponName}, ${colLabel}`);
     }
     
     cell.textContent = save ? newValue : originalValue;
     if (cell.textContent === '' || cell.textContent === null) {
       cell.textContent = '-';
-    }
-    
-    // 🔥 打印当前显示的值
-    if (save && newValue !== originalValue) {
-      console.log(`📊 [${tabName}] 当前显示: ${cell.textContent}, 行 ${rowIndex}, 武器: ${weaponName}`);
     }
   }
 
@@ -713,7 +662,6 @@ export class TableRenderer {
       const rowData = {};
       const cells = row.querySelectorAll('td');
       
-      // 🔥 从 tr 中读取 data-index
       const rowIndex = parseInt(row.dataset.index);
       if (!isNaN(rowIndex)) {
         rowData._rowIndex = rowIndex;
@@ -723,7 +671,6 @@ export class TableRenderer {
         const colKey = cell.dataset.col || `col_${index}`;
         let value = cell.textContent.trim();
         
-        // 如果是 select，获取选中的值
         const select = cell.querySelector('select');
         if (select) {
           value = select.value;
@@ -732,7 +679,7 @@ export class TableRenderer {
         rowData[colKey] = value === '-' || value === '' ? null : value;
       });
       
-      // 🔥 尝试从单元格的 dataset 中恢复 _barrelOptions 和 _muzzleOptions
+      // 尝试从单元格的 dataset 中恢复 _barrelOptions 和 _muzzleOptions
       const barrelCell = row.querySelector('td[data-col="barrel"]');
       if (barrelCell && barrelCell.dataset.barrelOptions) {
         try {
@@ -806,7 +753,7 @@ export class TableRenderer {
       showRowIndex
     );
     
-    // 🔥 更新全局实例中的数据
+    // 更新全局实例中的数据
     if (window._tableInstances && window._tableInstances[tableId]) {
       window._tableInstances[tableId]._data = data;
     }
@@ -870,5 +817,4 @@ export class TableRenderer {
   }
 }
 
-// 导出默认
 export default TableRenderer;

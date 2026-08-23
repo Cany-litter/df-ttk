@@ -151,11 +151,9 @@ export class BulletTable {
           let html = '';
           
           if (isNewRow) {
-            // 新增行：显示确认和取消按钮
             html += `<button class="confirm-add-bullet-btn" data-row="${row._rowIndex || 0}" title="确认添加">✅</button>`;
             html += `<button class="cancel-add-bullet-btn" data-row="${row._rowIndex || 0}" title="取消">❌</button>`;
           } else {
-            // 现有行：显示删除按钮
             html += `<button class="delete-bullet-btn" data-row="${row._rowIndex || 0}" data-bullet-id="${row._bulletId || ''}" title="删除行">🗑️</button>`;
           }
           
@@ -188,14 +186,12 @@ export class BulletTable {
       emptyText = '暂无子弹数据'
     } = config;
 
-    // 为数据添加 _rowIndex
     const indexedData = data.map((row, index) => ({
       ...row,
       _rowIndex: index,
       _isNewRow: row._isNewRow || false
     }));
 
-    // 构建列配置
     const columns = this.getColumns({
       onCellChange,
       onAddRow,
@@ -204,7 +200,6 @@ export class BulletTable {
       levelOptions
     });
 
-    // 渲染表格
     const table = TableRenderer.render({
       id: 'bulletTable',
       columns: columns,
@@ -259,7 +254,6 @@ export class BulletTable {
       }
     });
 
-    // 绑定自定义事件
     this.bindCustomEvents(table, {
       onCellChange,
       onAddRow,
@@ -288,7 +282,6 @@ export class BulletTable {
     const el = table.getElement();
     if (!el) return;
 
-    // ===== 操作按钮 =====
     el.addEventListener('click', (e) => {
       // 确认新增
       const confirmBtn = e.target.closest('.confirm-add-bullet-btn');
@@ -308,7 +301,6 @@ export class BulletTable {
         const row = cancelBtn.closest('tr');
         const rowIndex = parseInt(row?.dataset.index);
         if (!isNaN(rowIndex) && onDeleteRow) {
-          // 取消新增 = 删除新增行
           onDeleteRow(rowIndex, null, true);
         }
         return;
@@ -405,7 +397,6 @@ export class BulletTable {
    * @returns {Object} 完整的行数据
    */
   static buildRowData(bullet, extra = {}) {
-    // 从 armorData 中提取 1-6 级的 armorMult 和 pen
     const armorData = bullet.armorData || {};
     const armorMultValues = [];
     const penValues = [];
@@ -417,22 +408,18 @@ export class BulletTable {
     }
     
     return {
-      // 显示字段
       caliber: bullet.caliber || '-',
       level: bullet.level ?? '-',
       base: bullet.base ?? 1.0,
       price: bullet.price ?? 0,
       
-      // 护甲数据（用于显示和编辑）
       _armorData: armorData,
       _armorMultValues: armorMultValues,
       _penValues: penValues,
       
-      // 原始数据引用
       _bulletId: bullet.id || '',
       _isNewRow: false,
       
-      // 额外字段
       ...extra
     };
   }
@@ -443,7 +430,6 @@ export class BulletTable {
    * @returns {Object} 新增行数据
    */
   static createNewRow(defaults = {}) {
-    // 默认 armorData 1-6级
     const defaultArmorData = {};
     for (let i = 1; i <= 6; i++) {
       defaultArmorData[i] = {
@@ -464,5 +450,4 @@ export class BulletTable {
   }
 }
 
-// 导出默认
 export default BulletTable;

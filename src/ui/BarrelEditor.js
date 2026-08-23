@@ -220,8 +220,6 @@ export class BarrelEditor {
     if (this.viewRenderer && typeof this.viewRenderer.updateWeaponStats === 'function') {
       this.viewRenderer.updateWeaponStats();
     }
-
-    console.log(`✅ 已保存 ${newBarrels.length} 个枪管数据`);
   }
 
   /**
