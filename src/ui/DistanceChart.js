@@ -75,6 +75,40 @@ export class DistanceChart {
   }
 
   /**
+   * 获取射程边界点两侧的关键距离
+   * 在衰减边界前1m和边界本身都添加模拟点，以准确捕捉衰减跳跃
+   * 
+   * @param {Array} ranges - 武器射程数组，如 [40, 70, Infinity, Infinity]
+   * @param {number} maxDistance - 最大距离
+   * @returns {Array} 关键距离点数组
+   */
+  getKeyDistances(ranges, maxDistance) {
+    const validRanges = ranges.filter(r => r !== Infinity && r <= maxDistance);
+    
+    const keyDistances = [0];
+    
+    for (const range of validRanges) {
+      // 边界前 1m（还在上一段衰减）
+      const before = Math.max(0, range - 1);
+      if (before > 0 && !keyDistances.includes(before)) {
+        keyDistances.push(before);
+      }
+      // 边界本身（进入下一段衰减）
+      if (!keyDistances.includes(range)) {
+        keyDistances.push(range);
+      }
+    }
+    
+    // 添加结束点
+    if (!keyDistances.includes(maxDistance)) {
+      keyDistances.push(maxDistance);
+    }
+    
+    // 去重排序
+    return [...new Set(keyDistances)].sort((a, b) => a - b);
+  }
+
+  /**
    * 计算距离统计数据
    */
   calculateDistanceStats(armed, attachments, params, distances) {
@@ -105,13 +139,24 @@ export class DistanceChart {
       
       const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
       
-      const validRanges = w.ranges.filter(r => r !== Infinity && r <= CHART_CONFIG.MAX_DISTANCE);
-      const keyDistances = [0, ...validRanges];
+      // ============================================================
+      // ✅ 修改点1：在衰减边界两侧都添加模拟点
+      // ============================================================
+      const keyDistances = this.getKeyDistances(
+        w.ranges || [40, 70, Infinity, Infinity],
+        CHART_CONFIG.MAX_DISTANCE
+      );
+      
+      // 调试日志：输出关键距离点（仅第一次）
+      if (!this._keyDistancesLogged) {
+        console.log(`📊 [折线图] ${w.name} 关键模拟点:`, keyDistances);
+        this._keyDistancesLogged = true;
+      }
       
       const simulationCache = new Map();
       
       // ============================================================
-      // ✅ 修改点1：每个关键距离点独立计算命中率
+      // ✅ 修改点2：每个关键距离点独立计算命中率和TTK
       // ============================================================
       keyDistances.forEach(distance => {
         const hitRateAtDistance = this.getHitRateForDistance(
@@ -143,7 +188,7 @@ export class DistanceChart {
       });
       
       // ============================================================
-      // ✅ 修改点2：插值时使用动态命中率（通过 params.hitRateMap 传递）
+      // ✅ 修改点3：插值时使用动态命中率
       // ============================================================
       const times = distances.map(d => {
         if (simulationCache.has(d)) {
@@ -287,7 +332,6 @@ export class DistanceChart {
 
   /**
    * 控制台日志输出 - 只输出一次，显示关键距离点的命中率
-   * 在 getHitRateForDistance 被调用时，只记录第一个武器的命中率映射
    * 
    * @param {Array} hitRateMap - 距离-命中率映射
    * @param {number} distance - 当前查询距离
@@ -318,7 +362,7 @@ export class DistanceChart {
   }
 
   /**
-   * 使用公式计算TTK（支持两个关键点之间插值）
+   * 使用公式计算TTK（在模拟点之间线性插值）
    * 
    * @param {Object} weapon - 武器对象
    * @param {number} distance - 目标距离
@@ -329,6 +373,7 @@ export class DistanceChart {
    * @returns {number} TTK 时间（秒）
    */
   calculateTTKByFormula(weapon, distance, params, strategy, simulationCache, hitRateMap) {
+    // 查找最近的模拟点（距离 <= 当前距离）
     const keys = Array.from(simulationCache.keys()).filter(k => k <= distance);
     const startDistance = keys.length ? Math.max(...keys) : 0;
     const startTTK = simulationCache.get(startDistance);
@@ -341,23 +386,23 @@ export class DistanceChart {
       return startTTK;
     }
     
-    // ✅ 查找下一个关键点
+    // 查找下一个模拟点（距离 > 当前距离）
     const nextKeys = Array.from(simulationCache.keys())
       .filter(k => k > distance)
       .sort((a, b) => a - b);
     
-    // 如果存在下一个关键点，在两个关键点之间插值
+    // 如果存在下一个模拟点，在两个模拟点之间线性插值
     if (nextKeys.length > 0) {
       const nextDistance = nextKeys[0];
       const nextTTK = simulationCache.get(nextDistance);
       
-      if (nextTTK !== undefined) {
+      if (nextTTK !== undefined && nextTTK !== null) {
         const t = (distance - startDistance) / (nextDistance - startDistance);
         return startTTK + t * (nextTTK - startTTK);
       }
     }
     
-    // 没有下一个关键点：用飞行时间推算
+    // 没有下一个模拟点：用飞行时间推算
     const velocity = weapon._current?.velocity ?? weapon.velocity ?? 575;
     const flightTimeDiff = (distance - startDistance) / velocity;
     return startTTK + flightTimeDiff;
