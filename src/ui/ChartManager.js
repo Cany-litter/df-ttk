@@ -1,6 +1,6 @@
 // ChartManager.js
 import TTKChart from './TTKChart.js';
-import DistanceChart from './DistanceChart.js';  // ← 默认导入，没有花括号
+import DistanceChart from './DistanceChart.js';
 
 /**
  * 图表管理器
@@ -11,23 +11,8 @@ export class ChartManager {
     this.ttkChart = new TTKChart();
     this.distanceChart = new DistanceChart();
     
-    // 绑定事件
-    this.bindEvents();
-  }
-
-  /**
-   * 绑定事件
-   */
-  bindEvents() {
-    // 监听显示全部武器复选框变化
-    document.addEventListener('toggle-show-all', (e) => {
-      const checked = e.detail?.checked;
-      if (this.distanceChart) {
-        this.distanceChart.setShowAllWeapons(checked);
-        // 通过自定义事件重新触发距离图表计算
-        document.dispatchEvent(new CustomEvent('calculate-distance'));
-      }
-    });
+    // ⭐ 不再绑定 toggle-show-all 事件
+    // 显示全部状态由 DistanceChart.update() 从 DOM 直接读取
   }
 
   /**

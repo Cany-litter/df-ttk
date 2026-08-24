@@ -211,7 +211,7 @@ export class EventHandler {
   /**
    * 绑定真实模拟开关事件
    * - 切换时更新状态显示
-   * - ⭐ 不再自动触发折线图计算 - 用户需点击"距离折线图"按钮手动刷新
+   * - ⭐ 不再自动触发折线图计算 - 用户需点击"生成折线图"按钮手动刷新
    */
   bindRealSimEvents() {
     const toggle = document.getElementById('realSimulationToggle');
@@ -270,16 +270,9 @@ export class EventHandler {
         }
       }
 
-      // ⭐ 不再自动触发折线图 - 用户需点击"距离折线图"按钮手动刷新
-      // 仅在用户手动切换时触发重新计算，初始化时不触发
-      // 注释掉以下代码，避免切换模式时自动计算
-      // if (e._isUserAction !== false) {
-      //   this.triggerCustomEvent('calculate-distance');
-      // }
-      
-      // 添加提示，告知用户需要手动刷新
+      // ⭐ 不再自动触发折线图 - 用户需点击"生成折线图"按钮手动刷新
       if (e._isUserAction !== false) {
-        console.log(`🔄 已切换至 ${isReal ? '真实模拟' : '快速模式'} 模式，请点击"距离折线图"按钮刷新图表`);
+        console.log(`🔄 已切换至 ${isReal ? '真实模拟' : '快速模式'} 模式，请点击"生成折线图"按钮刷新图表`);
       }
     };
 
@@ -288,7 +281,6 @@ export class EventHandler {
 
     // 初始化状态：仅设置 UI 状态，不触发计算
     setTimeout(() => {
-      // 创建一个模拟事件，标记为非用户操作
       const initEvent = { target: toggle, _isUserAction: false };
       handler(initEvent);
     }, 100);
@@ -302,16 +294,12 @@ export class EventHandler {
    * 绑定其他杂项事件
    */
   bindMiscEvents() {
-    // ===== 显示全部武器复选框（距离图表） =====
+    // ===== ⭐ 显示全部武器复选框（仅作为UI状态，不触发计算） =====
+    // 点击"生成折线图"时由 DistanceChart 读取该状态
     const showAllCheckbox = document.getElementById('showAllWeapons');
     if (showAllCheckbox) {
-      const handler = (e) => {
-        this.triggerCustomEvent('toggle-show-all', {
-          checked: e.target.checked
-        });
-      };
-      showAllCheckbox.addEventListener('change', handler);
-      this._boundEvents.push({ element: showAllCheckbox, event: 'change', handler });
+      // 不绑定任何事件，仅保留DOM元素供读取
+      // 状态由 DistanceChart.update() 读取
     }
 
     // ===== 全局枪管类型（已废弃） =====
