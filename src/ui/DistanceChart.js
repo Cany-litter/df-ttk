@@ -36,6 +36,55 @@ const verticalLinePlugin = {
 };
 
 /**
+ * 自定义 JSON 序列化
+ * 数组保持在一行，对象使用 2 空格缩进
+ */
+function stringifyWithInlineArrays(obj, indent = 2) {
+  const space = ' '.repeat(indent);
+  
+  function stringify(value, depth) {
+    const currentIndent = space.repeat(depth);
+    const nextIndent = space.repeat(depth + 1);
+    
+    if (value === null) return 'null';
+    if (value === undefined) return 'null';
+    
+    if (typeof value !== 'object') {
+      return JSON.stringify(value);
+    }
+    
+    // 数组 → 保持在一行
+    if (Array.isArray(value)) {
+      if (value.length === 0) return '[]';
+      const items = value.map(v => {
+        if (typeof v === 'number') return String(v);
+        if (typeof v === 'string') return JSON.stringify(v);
+        if (typeof v === 'boolean') return String(v);
+        if (v === null) return 'null';
+        return stringify(v, depth);
+      });
+      return '[' + items.join(', ') + ']';
+    }
+    
+    // 对象
+    const keys = Object.keys(value);
+    if (keys.length === 0) return '{}';
+    
+    const lines = keys.map(key => {
+      const val = value[key];
+      if (val === undefined) return null;
+      const keyStr = JSON.stringify(key);
+      const valStr = stringify(val, depth + 1);
+      return `${nextIndent}${keyStr}: ${valStr}`;
+    }).filter(Boolean);
+    
+    return `{\n${lines.join(',\n')}\n${currentIndent}}`;
+  }
+  
+  return stringify(obj, 0);
+}
+
+/**
  * 距离折线图专用类
  */
 export class DistanceChart {
@@ -144,7 +193,7 @@ export class DistanceChart {
 
   /**
    * 快速模式：在衰减边界两侧模拟，中间点插值
-   * ⭐ 修复：返回毫秒值
+   * 修复：返回毫秒值
    */
   calculateFastMode(armed, attachments, params, distances) {
     const dm = window.__app__?.dataManager;
@@ -238,7 +287,7 @@ export class DistanceChart {
       // 获取显示名称（优先使用 _displayName）
       const displayName = w._displayName || w.name;
       
-      // ⭐ 关键修复：将秒转换为毫秒
+      // 关键修复：将秒转换为毫秒
       const timesMs = times.map(t => t * TIME_UNITS.SECONDS_TO_MS);
       const avg35Ms = avg35 * TIME_UNITS.SECONDS_TO_MS;
       
@@ -460,7 +509,7 @@ export class DistanceChart {
 
   /**
    * 计算单把武器的快速模式数据（用于对比）
-   * ⭐ 修复：返回毫秒值
+   * 修复：返回毫秒值
    */
   calculateFastModeForSingleWeapon(weapon, params, distances, realBulletKey, bulletData, strategy) {
     // 关键点：在衰减边界两侧都添加模拟点
@@ -517,7 +566,7 @@ export class DistanceChart {
       }
     });
     
-    // ⭐ 关键修复：将秒转换为毫秒
+    // 关键修复：将秒转换为毫秒
     const timesMs = times.map(t => t * TIME_UNITS.SECONDS_TO_MS);
     return timesMs;
   }
@@ -835,20 +884,17 @@ export class DistanceChart {
 
   /**
    * 渲染距离图表
-   * 修复：Y轴和tooltip传入 isMs: true，因为数据已经是毫秒
+   * 修复：快速模式各条线使用不同颜色
    */
   renderChart(distances, stats) {
     // 真实模拟模式下，显示两条曲线（真实模拟 + 快速模式对比）
     let displayStats = stats;
     
-    // 如果是真实模拟模式，但 stats 中可能包含多个武器，我们只取与当前选中武器相关的
     if (this.isRealMode) {
-      // 过滤出与当前选中武器相关的数据（真实模拟和快速模式）
       const weaponId = this.lastArmed?.[this.selectedWeaponIndex]?.id;
       if (weaponId) {
         displayStats = stats.filter(s => s.weapon.id === weaponId);
       }
-      // 如果过滤后为空，使用全部
       if (displayStats.length === 0) {
         displayStats = stats;
       }
@@ -857,9 +903,20 @@ export class DistanceChart {
     const maxDisplay = this.showAllWeapons ? displayStats.length : CHART_CONFIG.TOP_WEAPONS_COUNT;
     const displayCount = Math.min(maxDisplay, displayStats.length);
 
+    // 颜色调色板（用于快速模式的各条折线）
+    const colorPalette = [
+      '#e74c3c', '#2ecc71', '#3498db', '#f39c12', '#9b59b6',
+      '#1abc9c', '#e67e22', '#2c3e50', '#27ae60', '#8e44ad',
+      '#16a085', '#d35400', '#7f8c8d', '#2980b9', '#c0392b',
+      '#f1c40f', '#34495e', '#1abc9c', '#e74c3c', '#3498db',
+    ];
+
     // 构建数据集
     const datasets = displayStats.map((s, i) => {
       const isRealSim = s.isRealSim === true;
+      const colorIndex = i % colorPalette.length;
+      // 真实模拟固定红色，快速模式使用调色板颜色
+      const color = isRealSim ? '#f44336' : colorPalette[colorIndex];
       
       return {
         label: s.displayName || s.weapon.name,
@@ -869,13 +926,11 @@ export class DistanceChart {
         hidden: i >= displayCount,
         pointRadius: 0,
         pointHoverRadius: 3,
-        // 真实模拟：红色粗实线；快速模式：蓝色虚线
-        borderColor: isRealSim ? '#f44336' : '#2196f3',
-        borderWidth: isRealSim ? 3 : 2,
-        borderDash: isRealSim ? [] : [8, 4],
-        // 图例标记样式
+        borderColor: color,
+        borderWidth: isRealSim ? 3 : 1.5,
+        borderDash: isRealSim ? [] : [6, 3],  // 快速模式虚线
         pointStyle: isRealSim ? 'circle' : 'rectRot',
-        pointBackgroundColor: isRealSim ? '#f44336' : '#2196f3',
+        pointBackgroundColor: color,
       };
     });
 
@@ -896,7 +951,6 @@ export class DistanceChart {
             beginAtZero: true, 
             title: { display: true, text: '平均 TTK (ms)' }, 
             ticks: { 
-              // 传入 isMs: true，因为数据已经是毫秒
               callback: v => formatTime(v, 'ms_raw', true) 
             } 
           }
@@ -911,9 +965,7 @@ export class DistanceChart {
               title: items => `${items[0].label}m`,
               label: i => {
                 const label = i.dataset.label || '武器';
-                // 传入 isMs: true，因为数据已经是毫秒
                 const value = formatTime(i.raw, 'ms', true);
-                // 真实模拟模式添加标记
                 const isReal = i.dataset.borderColor === '#f44336' || i.dataset.label?.includes('真实模拟');
                 const marker = isReal ? ' 🎯' : ' 📊';
                 return `${label}${marker}: ${value}`;
@@ -941,7 +993,6 @@ export class DistanceChart {
       plugins: [ChartDataLabels, verticalLinePlugin]
     });
     
-    // 更新缓存统计
     this.updateCacheStats();
   }
 
@@ -970,124 +1021,15 @@ export class DistanceChart {
   }
 
   // ============================================================
-  // 8. 导出功能
+  // 8. 导出功能（完整版）
   // ============================================================
 
-  getWeaponsTableData(armed, attachments, muzzles) {
-    return armed.map((w, idx) => {
-      const attach = attachments[idx] || {};
-      
-      const current = w._current || w;
-      const original = w._original || w;
-      
-      const rangesStr = (current.ranges || []).map(r => 
-        r === Infinity ? '∞' : Math.round(r)
-      ).join(',');
-      
-      const mult = current.mult || { head: 1, chest: 1, stomach: 1, limbs: 1 };
-      const partDamage = [
-        (current.flesh * (mult.head || 1)).toFixed(1),
-        (current.flesh * (mult.chest || 1)).toFixed(1),
-        (current.flesh * (mult.stomach || 1)).toFixed(1),
-        (current.flesh * (mult.limbs || 1)).toFixed(1)
-      ].join(',');
-      
-      let barrelName = '无';
-      const barrelIndex = attach.barrelIndex || 0;
-      if (barrelIndex > 0 && w.barrels && w.barrels[barrelIndex - 1]) {
-        barrelName = w.barrels[barrelIndex - 1].name || '无';
-      }
-      
-      let muzzleName = '无';
-      const muzzleIndex = attach.muzzleIndex || 0;
-      if (muzzleIndex > 0 && muzzles && muzzles[muzzleIndex]) {
-        muzzleName = muzzles[muzzleIndex].name || '无';
-      }
-      
-      const hitRate = attach.hitRate !== undefined && attach.hitRate !== null 
-        ? attach.hitRate 
-        : (original.hitRate !== undefined && original.hitRate !== null ? original.hitRate : '');
-      
-      let velocityPrecision = '0%';
-      const precisionSlider = document.querySelector(`.velocity-precision-slider[data-weapon="${idx}"]`);
-      if (precisionSlider) {
-        const val = parseFloat(precisionSlider.value) || 0;
-        velocityPrecision = `${Math.round(val * 100)}%`;
-      }
-      
-      return {
-        name: w._displayName || w.name || '未知',
-        type: w.type || '未知',
-        rof: Math.round(current.rof || 0),
-        ranges: rangesStr,
-        flesh: Math.round(current.flesh || 0),
-        armor: Math.round(current.armor || 0),
-        partDamage: partDamage,
-        barrel: barrelName,
-        muzzle: muzzleName,
-        bulletType: attach.bulletType || '全局',
-        hitRate: hitRate,
-        velocityPrecision: velocityPrecision
-      };
-    });
-  }
-
   /**
-   * 获取距离数据并计算排名
-   * 修复：times 已经是毫秒，不再乘以 1000
+   * 导出为 JSON（完整版）
+   * ⭐ config 格式: "枪管 | 枪口 | 子弹"
+   * ⭐ 包含 price、hitRateMap、hitRates、ttk
+   * ⭐ 数组保持在一行，2 空格缩进
    */
-  getDistanceDataWithRanks(stats, distances, step = 5) {
-    const filteredDistances = distances.filter((d, i) => i % step === 0);
-    
-    const weaponsData = stats.map((s) => {
-      const ttkValues = filteredDistances.map(d => {
-        const idx = distances.indexOf(d);
-        const value = s.times[idx];
-        // 移除 * 1000，因为 times 已经是毫秒
-        return value !== undefined ? parseFloat(value.toFixed(2)) : null;
-      });
-      
-      const ranks = filteredDistances.map((d, distIdx) => {
-        const currentTtk = ttkValues[distIdx];
-        if (currentTtk === null || currentTtk === undefined) return null;
-        
-        const allTtks = stats.map((other) => {
-          const idx = distances.indexOf(d);
-          const val = other.times[idx];
-          // 移除 * 1000，因为 times 已经是毫秒
-          return val !== undefined ? parseFloat(val.toFixed(2)) : Infinity;
-        });
-        
-        const sorted = [...allTtks].sort((a, b) => a - b);
-        let rankIndex = sorted.findIndex(v => v === currentTtk);
-        if (rankIndex === -1) {
-          rankIndex = sorted.findIndex(v => Math.abs(v - currentTtk) < 0.01);
-        }
-        if (rankIndex === -1) {
-          rankIndex = sorted.indexOf(currentTtk);
-        }
-        const rank = rankIndex + 1;
-        
-        return rank;
-      });
-      
-      return {
-        name: s.displayName || s.weapon.name,
-        ttk: ttkValues,
-        ranks: ranks
-      };
-    });
-    
-    const orderedWeaponsData = stats.map(s => 
-      weaponsData.find(w => w.name === (s.displayName || s.weapon.name))
-    ).filter(Boolean);
-    
-    return {
-      distances: filteredDistances,
-      weapons: orderedWeaponsData
-    };
-  }
-
   exportAsJSON() {
     if (!this.lastStats || !this.lastDistances) {
       alert('⚠️ 请先生成折线图再导出数据！');
@@ -1100,19 +1042,81 @@ export class DistanceChart {
     const armed = this.lastArmed || [];
     const attachments = this.lastAttachments || [];
 
-    let muzzles = [];
-    if (window.__app__?.dataManager) {
-      muzzles = window.__app__.dataManager.getMuzzles() || [];
-    }
+    // 距离点（步长5m，共21个点）
+    const distancePoints = distances.filter((d, i) => i % 5 === 0);
 
-    const weaponsTableData = this.getWeaponsTableData(armed, attachments, muzzles);
-    const distanceData = this.getDistanceDataWithRanks(stats, distances, 5);
+    // 构建武器数据
+    const weapons = armed.map((w, idx) => {
+      const attach = attachments[idx] || {};
+      const stat = stats.find(s => s.weapon === w || s.weapon.id === w.id);
+      
+      const barrelName = attach.barrelName || '无';
+      const muzzleName = attach.muzzleName || '无';
+      
+      // ⭐ 子弹信息
+      let bulletInfo = '全局';
+      // 优先使用配置中指定的具体子弹
+      if (attach.bulletType && attach.bulletType !== '全局' && attach.bulletType !== 'Lv.4') {
+        bulletInfo = attach.bulletType;
+      } else if (w._bulletId) {
+        bulletInfo = w._bulletId;
+      } else if (params.bulletLevel) {
+        bulletInfo = `Lv.${params.bulletLevel}`;
+      }
+      
+      // ⭐ 价格
+      const price = attach.price || w._price || 0;
+      
+      // ⭐ 命中率映射（原始配置）
+      const hitRateMap = attach.hitRateMap || [];
+      const hitRateMapDisplay = hitRateMap.length > 0 
+        ? hitRateMap.map(p => `${p.distance}m:${Math.round(p.rate * 100)}%`).join(', ')
+        : '未配置';
+      
+      // ⭐ 计算 TTK 和每个距离点的命中率
+      let ttkValues = null;
+      let hitRateValues = null;
+      if (stat) {
+        const dm = window.__app__?.dataManager;
+        ttkValues = distancePoints.map(d => {
+          const idx = distances.indexOf(d);
+          const value = stat.times[idx];
+          return value !== undefined ? Math.round(value) : null;
+        });
+        
+        // 计算每个距离点的命中率
+        if (hitRateMap.length > 0 && dm) {
+          hitRateValues = distancePoints.map(d => {
+            const rate = dm.getHitRateFromMap(hitRateMap, d, 0.85);
+            return rate !== undefined ? Math.round(rate * 100) : null;
+          });
+        }
+      }
+      
+      // 构建配置字符串：枪管 | 枪口 | 子弹
+      const configStr = `${barrelName} | ${muzzleName} | ${bulletInfo}`;
+      
+      const weaponData = {
+        name: w._displayName || w.name || '未知',
+        config: configStr,      // 包含枪管 | 枪口 | 子弹
+        price: price,           // 整枪价格
+        hitRateMap: hitRateMapDisplay  // 原始命中率映射
+      };
+      
+      // ⭐ 添加每个距离点的命中率
+      if (hitRateValues && hitRateValues.some(v => v !== null)) {
+        weaponData.hitRates = hitRateValues;
+      }
+      
+      weaponData.ttk = ttkValues;
+      return weaponData;
+    });
 
     const data = {
       meta: {
         exportedAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
-        description: 'TTK计算器 - 折线图数据导出',
         mode: this.isRealMode ? 'real_simulation_with_comparison' : 'fast',
+        distances: distancePoints,
         params: {
           bulletLevel: params.bulletLevel,
           armorLevel: params.armorLevel,
@@ -1124,18 +1128,24 @@ export class DistanceChart {
           triggerDelayEnable: params.triggerDelayEnable,
           distance: params.distance
         },
-        note: 'TTK值单位: 毫秒(ms)，数据点间隔5米。真实模拟模式同时显示真实模拟(红色实线)和快速模式(蓝色虚线)对比数据。'
+        note: [
+          'config格式: "枪管 | 枪口 | 子弹"',
+          '  - 子弹ID (如 "7.62x39_4"): 价格配置中指定的具体子弹',
+          '  - "Lv.4": 使用UI选择的全局子弹等级',
+          '  - "全局": 未指定子弹，使用默认配置',
+          'price: 整枪价格 (来自价格配置)',
+          'hitRateMap: 原始距离-命中率映射 (如 "30m:90%, 50m:80%, 100m:60%")',
+          'hitRates: 每个距离点对应的命中率(%)，与distances一一对应',
+          'TTK单位: 毫秒(ms)，ttk数组与distances一一对应'
+        ].join('\n')
       },
-      weapons: weaponsTableData,
-      distanceData: {
-        distances: distanceData.distances,
-        weapons: distanceData.weapons
-      }
+      weapons: weapons
     };
 
-    const jsonStr = JSON.stringify(data, null, 2);
+    // 使用自定义序列化：数组保持在一行
+    const jsonStr = stringifyWithInlineArrays(data, 2);
     const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
-    this.downloadBlob(blob, `ttk_distance_data_${new Date().toISOString().slice(0, 10)}.json`);
+    this.downloadBlob(blob, `ttk_data_${new Date().toISOString().slice(0, 10)}.json`);
   }
 
   downloadBlob(blob, filename) {
