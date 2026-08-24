@@ -11,22 +11,26 @@ export function formatRanges(ranges) {
 
 /**
  * 格式化时间显示
- * @param {number} seconds - 秒数
- * @param {string} unit - 单位 ('ms', 's', 'min')
+ * @param {number} value - 时间值
+ * @param {string} unit - 单位 ('ms', 's', 'min', 'ms_raw')
+ * @param {boolean} isMs - 传入的值是否已经是毫秒（默认 false，即传入的是秒）
  * @returns {string} 格式化后的时间字符串
  */
-export function formatTime(seconds, unit = 'ms') {
+export function formatTime(value, unit = 'ms', isMs = false) {
+  // 如果传入的已经是毫秒，直接使用，否则转换
+  const msValue = isMs ? value : value * TIME_UNITS.SECONDS_TO_MS;
+  
   switch (unit) {
     case 'ms':
-      return `${Math.round(seconds * TIME_UNITS.SECONDS_TO_MS)}ms`;
+      return `${Math.round(msValue)}ms`;
     case 'ms_raw':
-      return Math.round(seconds * TIME_UNITS.SECONDS_TO_MS);
+      return Math.round(msValue);
     case 's':
-      return `${seconds.toFixed(3)}s`;
+      return `${(msValue / TIME_UNITS.SECONDS_TO_MS).toFixed(3)}s`;
     case 'min':
-      return `${(seconds / 60).toFixed(3)}min`;
+      return `${(msValue / (TIME_UNITS.SECONDS_TO_MS * TIME_UNITS.MINUTES_TO_SECONDS)).toFixed(3)}min`;
     default:
-      return `${Math.round(seconds * TIME_UNITS.SECONDS_TO_MS)}ms`;
+      return `${Math.round(msValue)}ms`;
   }
 }
 

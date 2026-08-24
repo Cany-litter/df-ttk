@@ -1,5 +1,6 @@
-import { TTKChart } from './TTKChart.js';
-import { DistanceChart } from './DistanceChart.js';
+// ChartManager.js
+import TTKChart from './TTKChart.js';
+import DistanceChart from './DistanceChart.js';  // ← 默认导入，没有花括号
 
 /**
  * 图表管理器

@@ -10,6 +10,7 @@
  * 4. 数据变更时同步到 DataManager 并刷新表格
  * 5. 导入/导出功能
  * 6. 操作按钮（添加副本、编辑枪管、新增/删除行）
+ * 7. 获取价格表格中启用的配置（供柱状图使用）
  */
 import { getDataManager } from '../core/DataManager.js';
 import WeaponTable from './WeaponTable.js';
@@ -436,9 +437,15 @@ export default class DOMController {
     const rowData = this.buildPriceRows(priceRows);
 
     const getBarrelOptions = (row) => {
-      const weaponId = row._weaponId;
+      const weaponId = row._weaponId ?? row.weaponId;
+      if (!weaponId) {
+        console.warn('getBarrelOptions: 缺少 weaponId', row);
+        return ['无'];
+      }
+      
       const weapon = this.dataManager.getWeaponById(weaponId);
       if (!weapon) {
+        console.warn(`getBarrelOptions: 未找到武器 ${weaponId}`);
         return ['无'];
       }
       
@@ -446,8 +453,17 @@ export default class DOMController {
         return ['无'];
       }
       
-      const options = weapon.barrels.map(b => b.name || '无');
-      return ['无', ...options];
+      const options = weapon.barrels
+        .map(b => b.name?.trim())
+        .filter(name => name && name.length > 0);
+      
+      const uniqueOptions = [...new Set(options)];
+      
+      if (uniqueOptions.length > 0) {
+        console.log(`🔫 [${weapon.name}] 价格表格枪管选项:`, uniqueOptions);
+      }
+      
+      return uniqueOptions.length > 0 ? ['无', ...uniqueOptions] : ['无'];
     };
 
     const getBulletOptions = (row) => {
@@ -470,6 +486,37 @@ export default class DOMController {
       },
       onDeleteRow: (rowIndex, weaponId, configId, isCancelled) => {
         this.handlePriceDeleteRow(rowIndex, weaponId, configId, isCancelled);
+      },
+      onEnabledChange: (rowIndex, enabled, row) => {
+        // ⭐ 不再刷新整个表格，只更新计数
+        if (this.priceTableInstance) {
+          const tableData = this.priceTableInstance.getData();
+          if (tableData && tableData[rowIndex]) {
+            tableData[rowIndex].enabled = enabled;
+          }
+          // ⭐ 同时更新 _currentData
+          if (this.priceTableInstance._currentData && this.priceTableInstance._currentData[rowIndex]) {
+            this.priceTableInstance._currentData[rowIndex].enabled = enabled;
+          }
+          // ⭐ 同时更新 _data
+          if (this.priceTableInstance._data && this.priceTableInstance._data[rowIndex]) {
+            this.priceTableInstance._data[rowIndex].enabled = enabled;
+          }
+          const container = document.getElementById('tab-price');
+          if (container) {
+            PriceTable.updateEnabledCount(container, tableData);
+          }
+        }
+        
+        // ⭐ 保存到 DataManager（持久化到 data.json）
+        const weaponId = row._weaponId;
+        const configId = row._configId;
+        if (weaponId && configId) {
+          this.dataManager.updatePriceConfig(weaponId, configId, { enabled: enabled });
+        }
+        
+        // 不触发折线图
+        // document.dispatchEvent(new CustomEvent('calculate-distance'));
       }
     });
 
@@ -480,13 +527,19 @@ export default class DOMController {
   }
 
   buildPriceRows(priceRows) {
-    return priceRows.map(row => {
+    return priceRows.map((row, index) => {
+      const weaponId = row._weaponId ?? row.weaponId;
+      if (!weaponId) {
+        console.warn(`buildPriceRows: 第 ${index} 行缺少 weaponId`, row);
+        return null;
+      }
+      
       let barrelId = row.barrelId;
       let barrel = row.barrel;
       
       if (barrelId === -1 || barrelId === undefined || barrelId === null) {
         if (barrel && barrel !== '无') {
-          const foundIndex = this.dataManager.findBarrelIdByName(row._weaponId, barrel);
+          const foundIndex = this.dataManager.findBarrelIdByName(weaponId, barrel);
           if (foundIndex >= 0) {
             barrelId = foundIndex;
           }
@@ -494,10 +547,10 @@ export default class DOMController {
       }
       
       if (barrelId === -1 || barrelId === undefined || barrelId === null) {
-        const bestIndex = this.dataManager.findBestBarrelIndex(row._weaponId);
+        const bestIndex = this.dataManager.findBestBarrelIndex(weaponId);
         if (bestIndex >= 0) {
           barrelId = bestIndex;
-          const weapon = this.dataManager.getWeaponById(row._weaponId);
+          const weapon = this.dataManager.getWeaponById(weaponId);
           if (weapon && weapon.barrels && weapon.barrels[bestIndex]) {
             barrel = weapon.barrels[bestIndex].name || '无';
           }
@@ -507,16 +560,21 @@ export default class DOMController {
       }
       
       if (barrelId >= 0 && (!barrel || barrel === '无')) {
-        const weapon = this.dataManager.getWeaponById(row._weaponId);
+        const weapon = this.dataManager.getWeaponById(weaponId);
         if (weapon && weapon.barrels && weapon.barrels[barrelId]) {
           barrel = weapon.barrels[barrelId].name || '无';
         }
       }
       
+      // 直接使用 configId（data.json 中已经是 #1, #2, #3 格式）
+      const configId = row.configId || '#1';
+      
       const data = PriceTable.buildRowData({
         ...row,
+        configId: configId,
         barrelId: barrelId,
-        barrel: barrel
+        barrel: barrel,
+        _weaponId: weaponId
       });
       
       if (row.muzzleId !== undefined && row.muzzleId >= 0 && this.muzzleOptions[row.muzzleId]) {
@@ -525,8 +583,14 @@ export default class DOMController {
       if (row.muzzle && row.muzzle !== '无') {
         data.muzzle = row.muzzle;
       }
+      
+      // ⭐ 保留 enabled 状态（从 DataManager 读取的）
+      if (row.enabled !== undefined) {
+        data.enabled = row.enabled;
+      }
+      
       return data;
-    });
+    }).filter(row => row !== null);
   }
 
   refreshPriceTable() {
@@ -544,7 +608,11 @@ export default class DOMController {
       const rowData = this.buildPriceRows(priceRows);
 
       const getBarrelOptions = (row) => {
-        const weaponId = row._weaponId;
+        const weaponId = row._weaponId ?? row.weaponId;
+        if (!weaponId) {
+          return ['无'];
+        }
+        
         const weapon = this.dataManager.getWeaponById(weaponId);
         if (!weapon) {
           return ['无'];
@@ -554,8 +622,13 @@ export default class DOMController {
           return ['无'];
         }
         
-        const options = weapon.barrels.map(b => b.name || '无');
-        return ['无', ...options];
+        const options = weapon.barrels
+          .map(b => b.name?.trim())
+          .filter(name => name && name.length > 0);
+        
+        const uniqueOptions = [...new Set(options)];
+        
+        return uniqueOptions.length > 0 ? ['无', ...uniqueOptions] : ['无'];
       };
 
       const getBulletOptions = (row) => {
@@ -577,6 +650,37 @@ export default class DOMController {
         },
         onDeleteRow: (rowIndex, weaponId, configId, isCancelled) => {
           this.handlePriceDeleteRow(rowIndex, weaponId, configId, isCancelled);
+        },
+        onEnabledChange: (rowIndex, enabled, row) => {
+          // ⭐ 不再刷新整个表格，只更新计数
+          if (this.priceTableInstance) {
+            const tableData = this.priceTableInstance.getData();
+            if (tableData && tableData[rowIndex]) {
+              tableData[rowIndex].enabled = enabled;
+            }
+            // ⭐ 同时更新 _currentData
+            if (this.priceTableInstance._currentData && this.priceTableInstance._currentData[rowIndex]) {
+              this.priceTableInstance._currentData[rowIndex].enabled = enabled;
+            }
+            // ⭐ 同时更新 _data
+            if (this.priceTableInstance._data && this.priceTableInstance._data[rowIndex]) {
+              this.priceTableInstance._data[rowIndex].enabled = enabled;
+            }
+            const container = document.getElementById('tab-price');
+            if (container) {
+              PriceTable.updateEnabledCount(container, tableData);
+            }
+          }
+          
+          // ⭐ 保存到 DataManager（持久化到 data.json）
+          const weaponId = row._weaponId;
+          const configId = row._configId;
+          if (weaponId && configId) {
+            this.dataManager.updatePriceConfig(weaponId, configId, { enabled: enabled });
+          }
+          
+          // 不触发折线图
+          // document.dispatchEvent(new CustomEvent('calculate-distance'));
         }
       });
 
@@ -652,7 +756,8 @@ export default class DOMController {
       price: 0,
       distance: [],
       hitRate: [],
-      bullet: ''
+      bullet: '',
+      enabled: true  // ⭐ 新增配置默认启用
     };
 
     this.dataManager.addPriceConfig(weaponId, newConfig);
@@ -801,7 +906,136 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 7. 延迟刷新
+  // 7. 价格配置读取（供柱状图使用）
+  // ============================================================
+
+  /**
+   * 获取所有启用的价格配置（展开为独立条目）
+   * 供柱状图按价格配置维度计算 TTK
+   * 
+   * @param {Array} weapons - 武器数据数组（可选，不传则从 DataManager 获取）
+   * @param {Object} params - 页面参数（包含 distance 等）
+   * @returns {Array} 启用的价格配置列表
+   */
+  getEnabledPriceConfigs(weapons, params) {
+    // 优先从 priceTableInstance 获取最新数据
+    let priceRows = [];
+    if (this.priceTableInstance && this.priceTableInstance._data) {
+      priceRows = this.priceTableInstance._data;
+    } else if (this.priceTableInstance && this.priceTableInstance._currentData) {
+      priceRows = this.priceTableInstance._currentData;
+    } else {
+      // 降级：从 DataManager 获取
+      priceRows = this.dataManager.getPriceRows();
+    }
+    
+    // 使用 PriceTable.getEnabledData() 过滤启用的配置
+    const enabledRows = PriceTable.getEnabledData(priceRows);
+    
+    if (!enabledRows || enabledRows.length === 0) {
+      console.log('📋 没有启用的价格配置');
+      return [];
+    }
+    
+    // 如果没有传入 weapons，从 DataManager 获取
+    const weaponList = weapons || this.dataManager.getWeapons();
+    const muzzleOptions = this.muzzleOptions;
+    
+    const configs = [];
+    
+    for (const row of enabledRows) {
+      const weaponId = row._weaponId;
+      const weapon = this.dataManager.getWeaponById(weaponId);
+      
+      if (!weapon) {
+        console.warn(`⚠️ 未找到武器 ID: ${weaponId}，跳过该配置`);
+        continue;
+      }
+      
+      // ---- 1. 查找枪管 ----
+      let barrel = null;
+      let barrelIndex = -1;
+      
+      if (row.barrel && row.barrel !== '无') {
+        const idx = weapon.barrels?.findIndex(b => b.name === row.barrel);
+        if (idx !== undefined && idx >= 0) {
+          barrel = weapon.barrels[idx];
+          barrelIndex = idx;
+        } else {
+          const id = row.barrelId;
+          if (id !== undefined && id >= 0 && id < weapon.barrels?.length) {
+            barrel = weapon.barrels[id];
+            barrelIndex = id;
+          }
+        }
+      }
+      
+      if (!barrel) {
+        const bestIndex = this.dataManager.findBestBarrelIndex(weaponId);
+        if (bestIndex >= 0 && weapon.barrels && weapon.barrels[bestIndex]) {
+          barrel = weapon.barrels[bestIndex];
+          barrelIndex = bestIndex;
+        }
+      }
+      
+      // ---- 2. 查找枪口 ----
+      let muzzleId = 0;
+      if (row.muzzle && row.muzzle !== '无') {
+        const idx = muzzleOptions.indexOf(row.muzzle);
+        if (idx >= 0) muzzleId = idx;
+      }
+      
+      // ---- 3. 构建命中率映射 ----
+      const hitRateMap = (row._distance || []).map((d, i) => ({
+        distance: d,
+        rate: row._hitRate[i] !== undefined ? row._hitRate[i] : 0.85
+      }));
+      
+      // ---- 4. 计算当前距离的命中率 ----
+      let hitRate = params?.hitRate || 0.85;
+      if (hitRateMap.length > 0) {
+        hitRate = this.dataManager.getHitRateFromMap(
+          hitRateMap, 
+          params?.distance || 30, 
+          0.85
+        );
+      }
+      
+      // ---- 5. 生成显示名称：武器名 + 序号（直接使用 configId） ----
+      const displayName = `${weapon.name} ${row.configId || ''}`;
+      
+      // ---- 6. 组装配置对象 ----
+      configs.push({
+        weapon: weapon,
+        weaponId: weaponId,
+        configId: row._rawConfigId || row._configId || '#1',
+        displayName: displayName.trim(),
+        configIndex: row._rowIndex,
+        barrel: barrel,
+        barrelIndex: barrelIndex,
+        barrelName: row.barrel || '无',
+        muzzleId: muzzleId,
+        muzzleName: row.muzzle || '无',
+        bulletId: row._bulletId || null,
+        bulletDisplay: row.bulletDisplay || '-',
+        hitRateMap: hitRateMap,
+        hitRate: hitRate,
+        buildCode: row.buildCode || '-',
+        price: row.price || 0,
+        _rawRow: row
+      });
+    }
+    
+    console.log(`📋 启用的价格配置: ${configs.length} 个`);
+    if (configs.length > 0) {
+      console.log('  配置列表:', configs.map(c => c.displayName).join(', '));
+    }
+    
+    return configs;
+  }
+
+  // ============================================================
+  // 8. 延迟刷新
   // ============================================================
 
   scheduleRefresh(tab) {
@@ -821,7 +1055,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 8. 控制按钮事件
+  // 9. 控制按钮事件
   // ============================================================
 
   bindControlEvents() {
@@ -848,7 +1082,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 9. 导入/导出事件
+  // 10. 导入/导出事件
   // ============================================================
 
   bindImportExportEvents() {
@@ -933,7 +1167,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 10. 公共方法
+  // 11. 公共方法
   // ============================================================
 
   getCurrentTab() {

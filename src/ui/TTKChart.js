@@ -82,7 +82,18 @@ export class TTKChart {
         },
         responsive: true,
         scales: {
-          x: { stacked: true },
+          x: { 
+            stacked: true,
+            ticks: {
+              // ⭐ 当武器数量多时，旋转标签避免重叠
+              maxRotation: 45,
+              minRotation: 0,
+              font: (ctx) => {
+                const stats = this.lastResults;
+                return stats.length > 30 ? { size: 9 } : stats.length > 20 ? { size: 10 } : { size: 11 };
+              }
+            }
+          },
           y: { 
             stacked: true, 
             beginAtZero: true, 
@@ -121,6 +132,9 @@ export class TTKChart {
   calculateDelays(stats, params) {
     const { weapon, avgTime, avgShots, avgMisses, avgBurstInterval } = stats;
     
+    // ⭐ 优先使用 _displayName，如果没有则使用 weapon.name
+    const displayName = weapon._displayName || weapon.name;
+    
     // 优先从 _current 读取 triggerDelay，兼容旧数据
     const velocity = weapon.velocity || weapon._current?.velocity || 1;
     const triggerDelayValue = weapon._current?.triggerDelay ?? weapon.triggerDelay ?? 0;
@@ -141,7 +155,7 @@ export class TTKChart {
     );
     
     return { 
-      name: weapon.name, 
+      name: displayName,  // ⭐ 使用显示名称
       weapon, 
       noMissFireDelay, 
       flight, 
@@ -348,3 +362,5 @@ export class TTKChart {
     }
   }
 }
+
+export default TTKChart;

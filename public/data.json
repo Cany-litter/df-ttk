@@ -1,9 +1,9 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-08-21",
+  "updatedAt": "2026-08-24",
   "meta": {
     "description": "Delta Force TTK 计算器 - 统一数据源",
-    "note": "包含武器、子弹、价格三类数据，所有数据以 JSON 格式存储"
+    "note": "包含武器、子弹、价格三类数据，所有数据以 JSON 格式存储。enabled 字段控制该配置是否参与 TTK 计算。"
   },
   "weapons": [
     {
@@ -707,6 +707,7 @@
       "barrels": [
         {
           "name": "MCX LT焰魂枪管",
+          "rangeMult": 1,
           "damageBonus": 2,
           "armorDamageBonus": 0,
           "rofMult": 1
@@ -2719,14 +2720,15 @@
       "weaponName": "AK-12",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "精英脚架长枪管",
           "muzzle": "无",
           "buildCode": "AK12-CFG1",
           "price": 200000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.45x39_4"
+          "bullet": "5.45x39_4",
+          "enabled": true
         }
       ]
     },
@@ -2735,34 +2737,48 @@
       "weaponName": "AKM",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "性能枪管组合",
           "muzzle": "无",
           "buildCode": "AKM-CFG1",
           "price": 200000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "7.62x39_4"
+          "bullet": "7.62x39_4",
+          "enabled": true
         },
         {
-          "id": "cfg-2",
+          "id": "#2",
           "barrel": "超然长枪管组合",
           "muzzle": "无",
           "buildCode": "AKM-CFG2",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "7.62x39_4"
+          "bullet": "7.62x39_4",
+          "enabled": true
         },
         {
-          "id": "cfg-3",
+          "id": "#3",
           "barrel": "海狸长枪管组合",
           "muzzle": "无",
           "buildCode": "AKM-CFG3",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "7.62x39_4"
+          "bullet": "7.62x39_4",
+          "enabled": true
+        },
+        {
+          "id": "#4",
+          "barrel": "实用长枪管组合",
+          "muzzle": "无",
+          "buildCode": "AKM-CFG4",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "7.62x39_4",
+          "enabled": true
         }
       ]
     },
@@ -2771,14 +2787,15 @@
       "weaponName": "AKS-74U",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "无",
           "muzzle": "无",
           "buildCode": "AKS74U-CFG1",
           "price": 20000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.45x39_4"
+          "bullet": "5.45x39_4",
+          "enabled": true
         }
       ]
     },
@@ -2787,14 +2804,26 @@
       "weaponName": "AR57",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "夜莺一体消音组合",
           "muzzle": "无",
           "buildCode": "AR57-CFG1",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.7x28_4"
+          "bullet": "5.7x28_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "AR57激流超长枪管",
+          "muzzle": "无",
+          "buildCode": "AR57-CFG2",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.7x28_4",
+          "enabled": true
         }
       ]
     },
@@ -2803,14 +2832,26 @@
       "weaponName": "AS Val",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "VSS海啸长枪管组合",
           "muzzle": "无",
           "buildCode": "ASVAL-CFG1",
           "price": 700000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "9x39_4"
+          "bullet": "9x39_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "刺客高级枪管",
+          "muzzle": "无",
+          "buildCode": "ASVAL-CFG2",
+          "price": 800000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "9x39_4",
+          "enabled": true
         }
       ]
     },
@@ -2819,14 +2860,26 @@
       "weaponName": "ASh-12",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "歼灭高精长枪管",
           "muzzle": "无",
           "buildCode": "ASH12-CFG1",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "12.7x55_4"
+          "bullet": "12.7x55_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "战斧重型枪管",
+          "muzzle": "无",
+          "buildCode": "ASH12-CFG2",
+          "price": 500000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "12.7x55_4",
+          "enabled": true
         }
       ]
     },
@@ -2835,14 +2888,37 @@
       "weaponName": "AUG",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "实用集成三倍镜枪管",
           "muzzle": "无",
           "buildCode": "AUG-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.56x45_4"
+          "bullet": "5.56x45_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "晨零一体消音管",
+          "muzzle": "无",
+          "buildCode": "AUG-CFG2",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.56x45_4",
+          "enabled": true
+        },
+        {
+          "id": "#3",
+          "barrel": "精英脚架长枪管",
+          "muzzle": "无",
+          "buildCode": "AUG-CFG3",
+          "price": 400000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.56x45_4",
+          "enabled": true
         }
       ]
     },
@@ -2851,14 +2927,48 @@
       "weaponName": "CAR-15",
       "configs": [
         {
-          "id": "cfg-1",
-          "barrel": "AR战壕标准枪管组合",
+          "id": "#1",
+          "barrel": "AR特勤一体消音组合",
           "muzzle": "无",
           "buildCode": "CAR15-CFG1",
+          "price": 250000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.56x45_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "AR战壕标准枪管组合",
+          "muzzle": "无",
+          "buildCode": "CAR15-CFG2",
           "price": 20000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.56x45_4"
+          "bullet": "5.56x45_4",
+          "enabled": true
+        },
+        {
+          "id": "#3",
+          "barrel": "AR碳纤维枪管组合",
+          "muzzle": "无",
+          "buildCode": "CAR15-CFG3",
+          "price": 280000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.56x45_4",
+          "enabled": true
+        },
+        {
+          "id": "#4",
+          "barrel": "AR加百列长枪管组合",
+          "muzzle": "无",
+          "buildCode": "CAR15-CFG4",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.56x45_4",
+          "enabled": true
         }
       ]
     },
@@ -2867,14 +2977,37 @@
       "weaponName": "G3",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "G3守卫标准枪管组合",
           "muzzle": "无",
           "buildCode": "G3-CFG1",
           "price": 200000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "7.62x51_4"
+          "bullet": "7.62x51_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "G3加强长枪管组合",
+          "muzzle": "无",
+          "buildCode": "G3-CFG2",
+          "price": 300000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "7.62x51_4",
+          "enabled": true
+        },
+        {
+          "id": "#3",
+          "barrel": "G3平台神射枪管组合",
+          "muzzle": "无",
+          "buildCode": "G3-CFG3",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "7.62x51_4",
+          "enabled": true
         }
       ]
     },
@@ -2883,14 +3016,15 @@
       "weaponName": "G18",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "冲击长枪管",
           "muzzle": "无",
           "buildCode": "G18-CFG1",
           "price": 100000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "9x19_4"
+          "bullet": "9x19_4",
+          "enabled": true
         }
       ]
     },
@@ -2899,14 +3033,37 @@
       "weaponName": "K416",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "精英重枪管组合",
           "muzzle": "无",
           "buildCode": "K416-CFG1",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.56x45_4"
+          "bullet": "5.56x45_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "A8枪管组合",
+          "muzzle": "无",
+          "buildCode": "K416-CFG2",
+          "price": 300000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.56x45_4",
+          "enabled": true
+        },
+        {
+          "id": "#3",
+          "barrel": "A8长枪管组合",
+          "muzzle": "无",
+          "buildCode": "K416-CFG3",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.56x45_4",
+          "enabled": true
         }
       ]
     },
@@ -2915,14 +3072,26 @@
       "weaponName": "K437",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "特攻一体消音枪管",
           "muzzle": "无",
           "buildCode": "K437-CFG1",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": ".300BLK_4"
+          "bullet": ".300BLK_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "长矛手长枪管组合",
+          "muzzle": "无",
+          "buildCode": "K437-CFG2",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": ".300BLK_4",
+          "enabled": true
         }
       ]
     },
@@ -2931,14 +3100,26 @@
       "weaponName": "KC17",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "影舞者消音",
           "muzzle": "无",
           "buildCode": "KC17-CFG1",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.45x39_4"
+          "bullet": "5.45x39_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "长剑枪管",
+          "muzzle": "无",
+          "buildCode": "KC17-CFG2",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.45x39_4",
+          "enabled": true
         }
       ]
     },
@@ -2947,14 +3128,26 @@
       "weaponName": "M14",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "漫游标准枪管",
           "muzzle": "无",
           "buildCode": "M14-CFG1",
           "price": 700000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "7.62x51_4"
+          "bullet": "7.62x51_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "洞察超长枪管",
+          "muzzle": "无",
+          "buildCode": "M14-CFG2",
+          "price": 800000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "7.62x51_4",
+          "enabled": true
         }
       ]
     },
@@ -2963,14 +3156,15 @@
       "weaponName": "M249",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "犀牛长枪管",
           "muzzle": "无",
           "buildCode": "M249-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.56x45_4"
+          "bullet": "5.56x45_4",
+          "enabled": true
         }
       ]
     },
@@ -2979,14 +3173,15 @@
       "weaponName": "M250",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "钛金长枪管",
           "muzzle": "无",
           "buildCode": "M250-CFG1",
           "price": 700000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "6.8x51_4"
+          "bullet": "6.8x51_4",
+          "enabled": true
         }
       ]
     },
@@ -2995,34 +3190,48 @@
       "weaponName": "M4A1",
       "configs": [
         {
-          "id": "cfg-1",
-          "barrel": "AR战壕标准枪管组合",
-          "muzzle": "无",
-          "buildCode": "M4A1-CFG1",
-          "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.56x45_4"
-        },
-        {
-          "id": "cfg-2",
+          "id": "#1",
           "barrel": "AR特勤一体消音组合",
           "muzzle": "无",
-          "buildCode": "M4A1-CFG2",
+          "buildCode": "M4A1-CFG1",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.56x45_4"
+          "bullet": "5.56x45_4",
+          "enabled": true
         },
         {
-          "id": "cfg-3",
-          "barrel": "AR加百列长枪管组合",
+          "id": "#2",
+          "barrel": "AR战壕标准枪管组合",
+          "muzzle": "无",
+          "buildCode": "M4A1-CFG2",
+          "price": 300000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.56x45_4",
+          "enabled": true
+        },
+        {
+          "id": "#3",
+          "barrel": "AR碳纤维枪管组合",
           "muzzle": "无",
           "buildCode": "M4A1-CFG3",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.56x45_4",
+          "enabled": true
+        },
+        {
+          "id": "#4",
+          "barrel": "AR加百列长枪管组合",
+          "muzzle": "无",
+          "buildCode": "M4A1-CFG4",
           "price": 500000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.56x45_4"
+          "bullet": "5.56x45_4",
+          "enabled": true
         }
       ]
     },
@@ -3031,14 +3240,37 @@
       "weaponName": "M7",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "实用长枪管组合",
           "muzzle": "无",
           "buildCode": "M7-CFG1",
           "price": 800000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "6.8x51_4"
+          "bullet": "6.8x51_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "堤风超长枪管组合",
+          "muzzle": "无",
+          "buildCode": "M7-CFG2",
+          "price": 900000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "6.8x51_4",
+          "enabled": true
+        },
+        {
+          "id": "#3",
+          "barrel": "灵蜥短枪管",
+          "muzzle": "无",
+          "buildCode": "M7-CFG3",
+          "price": 600000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "6.8x51_4",
+          "enabled": true
         }
       ]
     },
@@ -3047,14 +3279,26 @@
       "weaponName": "MCX LT",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "MCX LT焰魂枪管",
           "muzzle": "无",
           "buildCode": "MCXLT-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": ".300BLK_4"
+          "bullet": ".300BLK_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "MCX LT猎手枪管",
+          "muzzle": "无",
+          "buildCode": "MCXLT-CFG2",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": ".300BLK_4",
+          "enabled": true
         }
       ]
     },
@@ -3063,14 +3307,26 @@
       "weaponName": "MK4",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "深空镀铬枪管",
           "muzzle": "无",
           "buildCode": "MK4-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.56x45_4"
+          "bullet": "5.56x45_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "击剑手枪管",
+          "muzzle": "无",
+          "buildCode": "MK4-CFG2",
+          "price": 280000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.56x45_4",
+          "enabled": true
         }
       ]
     },
@@ -3079,14 +3335,26 @@
       "weaponName": "MK47",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "鏖战枪管",
           "muzzle": "无",
           "buildCode": "MK47-CFG1",
           "price": 800000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "7.62x39_4"
+          "bullet": "7.62x39_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "余烬枪管",
+          "muzzle": "无",
+          "buildCode": "MK47-CFG2",
+          "price": 750000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "7.62x39_4",
+          "enabled": true
         }
       ]
     },
@@ -3095,14 +3363,48 @@
       "weaponName": "MP5",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "战术枪管组合",
           "muzzle": "无",
           "buildCode": "MP5-CFG1",
           "price": 200000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "9x19_4"
+          "bullet": "9x19_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "性能枪管组合",
+          "muzzle": "无",
+          "buildCode": "MP5-CFG2",
+          "price": 180000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "9x19_4",
+          "enabled": true
+        },
+        {
+          "id": "#3",
+          "barrel": "斥候长枪管组合",
+          "muzzle": "无",
+          "buildCode": "MP5-CFG3",
+          "price": 250000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "9x19_4",
+          "enabled": true
+        },
+        {
+          "id": "#4",
+          "barrel": "特勤一体消音枪管",
+          "muzzle": "无",
+          "buildCode": "MP5-CFG4",
+          "price": 300000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "9x19_4",
+          "enabled": true
         }
       ]
     },
@@ -3111,14 +3413,37 @@
       "weaponName": "MP7",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "增强枪管组合",
           "muzzle": "无",
           "buildCode": "MP7-CFG1",
           "price": 500000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "4.6x30_4"
+          "bullet": "4.6x30_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "蜂刺长枪管组合",
+          "muzzle": "无",
+          "buildCode": "MP7-CFG2",
+          "price": 550000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "4.6x30_4",
+          "enabled": true
+        },
+        {
+          "id": "#3",
+          "barrel": "月影镀铬枪管",
+          "muzzle": "无",
+          "buildCode": "MP7-CFG3",
+          "price": 520000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "4.6x30_4",
+          "enabled": true
         }
       ]
     },
@@ -3127,14 +3452,15 @@
       "weaponName": "P90",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "重攻长枪管",
           "muzzle": "无",
           "buildCode": "P90-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.7x28_4"
+          "bullet": "5.7x28_4",
+          "enabled": true
         }
       ]
     },
@@ -3143,14 +3469,15 @@
       "weaponName": "PKM",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "地平线重枪管",
           "muzzle": "无",
           "buildCode": "PKM-CFG1",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "7.62x54R_4"
+          "bullet": "7.62x54R_4",
+          "enabled": true
         }
       ]
     },
@@ -3159,14 +3486,37 @@
       "weaponName": "PTR-32",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "G3守卫标准枪管组合",
           "muzzle": "无",
           "buildCode": "PTR32-CFG1",
           "price": 200000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "7.62x39_4"
+          "bullet": "7.62x39_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "G3加强长枪管组合",
+          "muzzle": "无",
+          "buildCode": "PTR32-CFG2",
+          "price": 300000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "7.62x39_4",
+          "enabled": true
+        },
+        {
+          "id": "#3",
+          "barrel": "G3平台神射枪管组合",
+          "muzzle": "无",
+          "buildCode": "PTR32-CFG3",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "7.62x39_4",
+          "enabled": true
         }
       ]
     },
@@ -3175,14 +3525,26 @@
       "weaponName": "QBZ95-1",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "战术枪管",
           "muzzle": "无",
           "buildCode": "QBZ95-CFG1",
           "price": 200000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.8x42_4"
+          "bullet": "5.8x42_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "长弓枪管组合",
+          "muzzle": "无",
+          "buildCode": "QBZ95-CFG2",
+          "price": 300000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.8x42_4",
+          "enabled": true
         }
       ]
     },
@@ -3191,14 +3553,26 @@
       "weaponName": "QJB201",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "新式重锤战术枪管",
           "muzzle": "无",
           "buildCode": "QJB201-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.8x42_4"
+          "bullet": "5.8x42_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "新式獠牙短枪管",
+          "muzzle": "无",
+          "buildCode": "QJB201-CFG2",
+          "price": 250000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.8x42_4",
+          "enabled": true
         }
       ]
     },
@@ -3207,14 +3581,26 @@
       "weaponName": "QJB201高导",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "新式重锤战术枪管",
           "muzzle": "无",
           "buildCode": "QJB201G-CFG1",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.8x42_4"
+          "bullet": "5.8x42_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "新式獠牙短枪管",
+          "muzzle": "无",
+          "buildCode": "QJB201G-CFG2",
+          "price": 350000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.8x42_4",
+          "enabled": true
         }
       ]
     },
@@ -3223,14 +3609,26 @@
       "weaponName": "QJB201稳固",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "新式重锤战术枪管",
           "muzzle": "无",
           "buildCode": "QJB201W-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.8x42_4"
+          "bullet": "5.8x42_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "新式獠牙短枪管",
+          "muzzle": "无",
+          "buildCode": "QJB201W-CFG2",
+          "price": 250000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "5.8x42_4",
+          "enabled": true
         }
       ]
     },
@@ -3239,14 +3637,26 @@
       "weaponName": "QCQ171",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "新式渗透一体消音枪管",
           "muzzle": "无",
           "buildCode": "QCQ171-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "9x19_4"
+          "bullet": "9x19_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "新式红缨战术长枪管",
+          "muzzle": "无",
+          "buildCode": "QCQ171-CFG2",
+          "price": 280000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "9x19_4",
+          "enabled": true
         }
       ]
     },
@@ -3255,14 +3665,26 @@
       "weaponName": "QCQ171高导",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "新式渗透一体消音枪管",
           "muzzle": "无",
           "buildCode": "QCQ171G-CFG1",
           "price": 500000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "9x19_4"
+          "bullet": "9x19_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "新式红缨战术长枪管",
+          "muzzle": "无",
+          "buildCode": "QCQ171G-CFG2",
+          "price": 480000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "9x19_4",
+          "enabled": true
         }
       ]
     },
@@ -3271,14 +3693,26 @@
       "weaponName": "QCQ171稳固",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "新式渗透一体消音枪管",
           "muzzle": "无",
           "buildCode": "QCQ171W-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "9x19_4"
+          "bullet": "9x19_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "新式红缨战术长枪管",
+          "muzzle": "无",
+          "buildCode": "QCQ171W-CFG2",
+          "price": 280000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "9x19_4",
+          "enabled": true
         }
       ]
     },
@@ -3287,14 +3721,26 @@
       "weaponName": "RM277",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "RM277鲸鲨枪管组合",
           "muzzle": "无",
           "buildCode": "RM277-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "6.8x51_4"
+          "bullet": "6.8x51_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "RM277重型一体枪管",
+          "muzzle": "无",
+          "buildCode": "RM277-CFG2",
+          "price": 320000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "6.8x51_4",
+          "enabled": true
         }
       ]
     },
@@ -3303,14 +3749,26 @@
       "weaponName": "SCAR-H",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "实用标准枪管",
           "muzzle": "无",
           "buildCode": "SCARH-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "7.62x51_4"
+          "bullet": "7.62x51_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "海狸长枪管",
+          "muzzle": "无",
+          "buildCode": "SCARH-CFG2",
+          "price": 400000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "7.62x51_4",
+          "enabled": true
         }
       ]
     },
@@ -3319,14 +3777,15 @@
       "weaponName": "SG552",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "骑士重枪管",
           "muzzle": "无",
           "buildCode": "SG552-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.56x45_4"
+          "bullet": "5.56x45_4",
+          "enabled": true
         }
       ]
     },
@@ -3335,14 +3794,37 @@
       "weaponName": "SMG-45",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "实用重枪管",
           "muzzle": "无",
           "buildCode": "SMG45-CFG1",
           "price": 200000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": ".45ACP_4"
+          "bullet": ".45ACP_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "裂变长枪管",
+          "muzzle": "无",
+          "buildCode": "SMG45-CFG2",
+          "price": 250000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": ".45ACP_4",
+          "enabled": true
+        },
+        {
+          "id": "#3",
+          "barrel": "长弩超长枪管",
+          "muzzle": "无",
+          "buildCode": "SMG45-CFG3",
+          "price": 300000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": ".45ACP_4",
+          "enabled": true
         }
       ]
     },
@@ -3351,14 +3833,15 @@
       "weaponName": "SR-3M",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "SR-3M铸钢战术枪管",
           "muzzle": "无",
           "buildCode": "SR3M-CFG1",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "9x39_4"
+          "bullet": "9x39_4",
+          "enabled": true
         }
       ]
     },
@@ -3367,14 +3850,26 @@
       "weaponName": "UZI",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "军需长枪管",
           "muzzle": "无",
           "buildCode": "UZI-CFG1",
           "price": 20000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "9x19_4"
+          "bullet": "9x19_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "竞赛性能长枪管",
+          "muzzle": "无",
+          "buildCode": "UZI-CFG2",
+          "price": 30000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": "9x19_4",
+          "enabled": true
         }
       ]
     },
@@ -3383,14 +3878,26 @@
       "weaponName": "Vector",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "导轨枪管组合",
           "muzzle": "无",
           "buildCode": "VECTOR-CFG1",
           "price": 400000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": ".45ACP_4"
+          "bullet": ".45ACP_4",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrel": "长剑超长枪管组合",
+          "muzzle": "无",
+          "buildCode": "VECTOR-CFG2",
+          "price": 450000,
+          "distance": [30, 50, 100],
+          "hitRate": [0.9, 0.8, 0.6],
+          "bullet": ".45ACP_4",
+          "enabled": true
         }
       ]
     },
@@ -3399,14 +3906,15 @@
       "weaponName": "腾龙",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "新式蛟龙战术长枪管",
           "muzzle": "无",
           "buildCode": "TL-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.8x42_4"
+          "bullet": "5.8x42_4",
+          "enabled": true
         }
       ]
     },
@@ -3415,14 +3923,15 @@
       "weaponName": "腾龙高导",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "新式蛟龙战术长枪管",
           "muzzle": "无",
           "buildCode": "TLG-CFG1",
           "price": 40000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.8x42_4"
+          "bullet": "5.8x42_4",
+          "enabled": true
         }
       ]
     },
@@ -3431,14 +3940,15 @@
       "weaponName": "腾龙稳固",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "新式蛟龙战术长枪管",
           "muzzle": "无",
           "buildCode": "TLW-CFG1",
           "price": 300000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "5.8x42_4"
+          "bullet": "5.8x42_4",
+          "enabled": true
         }
       ]
     },
@@ -3447,14 +3957,15 @@
       "weaponName": "勇士",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "勇士海狸枪管",
           "muzzle": "无",
           "buildCode": "YONG-CFG1",
           "price": 200000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "9x19_4"
+          "bullet": "9x19_4",
+          "enabled": true
         }
       ]
     },
@@ -3463,14 +3974,15 @@
       "weaponName": "野牛",
       "configs": [
         {
-          "id": "cfg-1",
+          "id": "#1",
           "barrel": "野牛刀锋超长枪管",
           "muzzle": "无",
           "buildCode": "YENIU-CFG1",
           "price": 20000,
           "distance": [30, 50, 100],
           "hitRate": [0.9, 0.8, 0.6],
-          "bullet": "9x19_4"
+          "bullet": "9x19_4",
+          "enabled": true
         }
       ]
     }

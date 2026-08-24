@@ -42,7 +42,13 @@ export class EventHandler {
     // 2. 绑定数据操作事件（导入/导出/重置）
     this.bindDataOperationEvents();
 
-    // 3. 绑定其他事件
+    // 3. 绑定缓存相关事件（新增）
+    this.bindCacheEvents();
+
+    // 4. 绑定真实模拟开关事件（新增）
+    this.bindRealSimEvents();
+
+    // 5. 绑定其他事件
     this.bindMiscEvents();
 
     this._initialized = true;
@@ -157,7 +163,139 @@ export class EventHandler {
   }
 
   // ============================================================
-  // 3. 其他事件
+  // 3. 缓存相关事件（新增）
+  // ============================================================
+
+  /**
+   * 绑定缓存操作事件
+   * - 导出缓存 → 触发自定义事件
+   * - 导入缓存 → 触发自定义事件
+   * - 清除缓存 → 触发自定义事件
+   */
+  bindCacheEvents() {
+    // ===== 导出缓存按钮 =====
+    const exportCacheBtn = document.getElementById('exportCacheBtn');
+    if (exportCacheBtn) {
+      const handler = () => {
+        this.triggerCustomEvent('export-cache');
+      };
+      exportCacheBtn.addEventListener('click', handler);
+      this._boundEvents.push({ element: exportCacheBtn, event: 'click', handler });
+    }
+
+    // ===== 导入缓存按钮 =====
+    const importCacheBtn = document.getElementById('importCacheBtn');
+    if (importCacheBtn) {
+      const handler = () => {
+        this.triggerCustomEvent('import-cache');
+      };
+      importCacheBtn.addEventListener('click', handler);
+      this._boundEvents.push({ element: importCacheBtn, event: 'click', handler });
+    }
+
+    // ===== 清除缓存按钮 =====
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    if (clearCacheBtn) {
+      const handler = () => {
+        this.triggerCustomEvent('clear-cache');
+      };
+      clearCacheBtn.addEventListener('click', handler);
+      this._boundEvents.push({ element: clearCacheBtn, event: 'click', handler });
+    }
+  }
+
+  // ============================================================
+  // 4. 真实模拟开关事件（新增）
+  // ============================================================
+
+  /**
+   * 绑定真实模拟开关事件
+   * - 切换时更新状态显示
+   * - ⭐ 不再自动触发折线图计算 - 用户需点击"距离折线图"按钮手动刷新
+   */
+  bindRealSimEvents() {
+    const toggle = document.getElementById('realSimulationToggle');
+    if (!toggle) return;
+
+    const handler = (e) => {
+      const isReal = e.target.checked;
+      
+      // 更新状态提示
+      const statusEl = document.getElementById('simStatus');
+      if (statusEl) {
+        if (isReal) {
+          statusEl.textContent = '(真实模拟)';
+          statusEl.className = 'hint-text mode-real';
+        } else {
+          statusEl.textContent = '(快速模式)';
+          statusEl.className = 'hint-text mode-fast';
+        }
+      }
+
+      // 显示/隐藏真实模拟信息栏
+      const infoEl = document.getElementById('realSimInfo');
+      if (infoEl) {
+        if (isReal) {
+          infoEl.style.display = 'flex';
+          // 尝试获取当前选中的武器名称
+          const nameEl = document.getElementById('simWeaponName');
+          if (nameEl) {
+            // 从价格表格获取第一个启用的配置
+            const priceTable = document.getElementById('priceTable');
+            if (priceTable) {
+              const rows = priceTable.querySelectorAll('tbody tr');
+              let found = false;
+              for (const row of rows) {
+                const checkbox = row.querySelector('.price-enabled-checkbox');
+                if (checkbox && checkbox.checked) {
+                  const nameCell = row.querySelector('td:first-child');
+                  if (nameCell) {
+                    nameEl.textContent = nameCell.textContent.trim() || '未知武器';
+                    found = true;
+                    break;
+                  }
+                }
+              }
+              if (!found) {
+                nameEl.textContent = '⚠️ 请启用至少一个配置';
+              }
+            }
+          }
+          const progressEl = document.getElementById('simProgress');
+          if (progressEl) {
+            progressEl.textContent = '就绪';
+          }
+        } else {
+          infoEl.style.display = 'none';
+        }
+      }
+
+      // ⭐ 不再自动触发折线图 - 用户需点击"距离折线图"按钮手动刷新
+      // 仅在用户手动切换时触发重新计算，初始化时不触发
+      // 注释掉以下代码，避免切换模式时自动计算
+      // if (e._isUserAction !== false) {
+      //   this.triggerCustomEvent('calculate-distance');
+      // }
+      
+      // 添加提示，告知用户需要手动刷新
+      if (e._isUserAction !== false) {
+        console.log(`🔄 已切换至 ${isReal ? '真实模拟' : '快速模式'} 模式，请点击"距离折线图"按钮刷新图表`);
+      }
+    };
+
+    toggle.addEventListener('change', handler);
+    this._boundEvents.push({ element: toggle, event: 'change', handler });
+
+    // 初始化状态：仅设置 UI 状态，不触发计算
+    setTimeout(() => {
+      // 创建一个模拟事件，标记为非用户操作
+      const initEvent = { target: toggle, _isUserAction: false };
+      handler(initEvent);
+    }, 100);
+  }
+
+  // ============================================================
+  // 5. 其他事件
   // ============================================================
 
   /**
@@ -207,7 +345,7 @@ export class EventHandler {
   }
 
   // ============================================================
-  // 4. 工具方法
+  // 6. 工具方法
   // ============================================================
 
   /**

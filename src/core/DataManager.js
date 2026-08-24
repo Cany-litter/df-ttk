@@ -212,6 +212,10 @@ export class DataManager {
     return weapon.barrels.findIndex(b => b.name === barrelName);
   }
 
+  /**
+   * 获取指定武器的价格行数据
+   * ⭐ 包含 enabled 字段
+   */
   getPriceRowsForWeapon(weaponId) {
     const weapon = this.getWeaponById(weaponId);
     const price = this.getPriceByWeaponId(weaponId);
@@ -269,6 +273,8 @@ export class DataManager {
         hitRate: config.hitRate || [],
         bulletDisplay: bulletDisplay,
         bulletId: config.bullet || '',
+        // ⭐ 读取 enabled 状态，默认为 true
+        enabled: config.enabled !== undefined ? config.enabled : true,
         _weaponId: weaponId,
         _rawConfig: config
       };
@@ -409,17 +415,23 @@ export class DataManager {
     return Math.max(0, Math.min(1, points[points.length - 1].rate));
   }
 
+  /**
+   * 获取下一个配置 ID（使用 #1, #2, #3 格式）
+   * @param {number} weaponId - 武器 ID
+   * @returns {string} 下一个配置 ID
+   */
   getNextConfigId(weaponId) {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price || !price.configs || price.configs.length === 0) {
-      return 'cfg-1';
+      return '#1';
     }
     const ids = price.configs.map(c => {
-      const num = parseInt(c.id.replace('cfg-', ''));
+      // 支持 #1, #2, #3 格式
+      const num = parseInt(c.id.replace('#', ''));
       return isNaN(num) ? 0 : num;
     });
     const maxId = Math.max(...ids);
-    return `cfg-${maxId + 1}`;
+    return `#${maxId + 1}`;
   }
 
   // ============================================================
@@ -600,6 +612,14 @@ export class DataManager {
   // 9. 数据更新 - 价格
   // ============================================================
 
+  /**
+   * 更新价格配置
+   * ⭐ 支持更新 enabled 字段
+   * @param {number} weaponId - 武器 ID
+   * @param {string} configId - 配置 ID
+   * @param {Object} updates - 更新字段
+   * @returns {boolean} 是否更新成功
+   */
   updatePriceConfig(weaponId, configId, updates) {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price) {
@@ -613,6 +633,7 @@ export class DataManager {
       return false;
     }
     
+    // ⭐ 支持更新 enabled 字段
     Object.assign(config, updates);
     return true;
   }
@@ -620,6 +641,11 @@ export class DataManager {
   addPriceConfig(weaponId, configData) {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price) return false;
+    
+    // 确保新配置有 enabled 字段
+    if (configData.enabled === undefined) {
+      configData.enabled = true;
+    }
     
     const existing = price.configs.find(c => c.id === configData.id);
     if (existing) {

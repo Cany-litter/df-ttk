@@ -55,7 +55,7 @@ export class PriceTable {
         }
       },
 
-      // ==================== 序号（只读，显示 #1, #2, #3） ====================
+      // ==================== 序号（只读，直接显示 #1, #2, #3） ====================
       {
         key: 'configId',
         label: '序号',
@@ -255,22 +255,41 @@ export class PriceTable {
     } = config;
 
     const indexedData = data.map((row, index) => {
+      // 重新计算枪管选项，确保显示所有可用枪管
       let barrelOptions = ['无'];
       if (typeof getBarrelOptions === 'function') {
-        const opts = getBarrelOptions(row);
-        if (opts && opts.length > 0) {
-          barrelOptions = opts;
+        try {
+          const opts = getBarrelOptions(row);
+          if (opts && opts.length > 0) {
+            barrelOptions = opts;
+          }
+        } catch (e) {
+          console.warn('计算枪管选项失败:', e);
         }
       }
       
-      if (!barrelOptions.includes('无')) {
-        barrelOptions = ['无', ...barrelOptions];
+      // 确保 barrelOptions 包含当前选中的枪管（如果不在列表中则添加）
+      const currentBarrel = row.barrel || '无';
+      if (!barrelOptions.includes(currentBarrel) && currentBarrel !== '无') {
+        barrelOptions.push(currentBarrel);
       }
-      barrelOptions = [...new Set(barrelOptions)];
       
       let muzzleOpts = muzzleOptions;
       if (row._muzzleOptions && row._muzzleOptions.length > 0) {
         muzzleOpts = row._muzzleOptions;
+      }
+      
+      // 子弹选项（由 getBulletOptions 动态生成）
+      let bulletOptions = ['-'];
+      if (typeof getBulletOptions === 'function') {
+        try {
+          const opts = getBulletOptions(row);
+          if (opts && opts.length > 0) {
+            bulletOptions = opts;
+          }
+        } catch (e) {
+          // 忽略
+        }
       }
       
       return {
@@ -278,6 +297,7 @@ export class PriceTable {
         _rowIndex: index,
         _barrelOptions: barrelOptions,
         _muzzleOptions: muzzleOpts,
+        _bulletOptions: bulletOptions,
         _isNewRow: row._isNewRow || false,
         enabled: row.enabled !== false
       };
@@ -352,7 +372,10 @@ export class PriceTable {
       onEnabledChange,
       onCellChange,
       onAddRow,
-      onDeleteRow
+      onDeleteRow,
+      getBarrelOptions,
+      getBulletOptions,
+      muzzleOptions
     };
 
     // 绑定事件（传入容器元素）
@@ -424,12 +447,15 @@ export class PriceTable {
           if (col.inputPlaceholder) attrs['data-input-placeholder'] = col.inputPlaceholder;
         }
         
-        // 传递选项数据
+        // 传递选项数据到 dataset，供 TableRenderer 使用
         if (colKey === 'barrel' && row._barrelOptions) {
           attrs['data-barrel-options'] = JSON.stringify(row._barrelOptions);
         }
         if (colKey === 'muzzle' && row._muzzleOptions) {
           attrs['data-muzzle-options'] = JSON.stringify(row._muzzleOptions);
+        }
+        if (colKey === 'bulletDisplay' && row._bulletOptions) {
+          attrs['data-bullet-options'] = JSON.stringify(row._bulletOptions);
         }
         
         const attrsStr = Object.entries(attrs)
@@ -615,7 +641,7 @@ export class PriceTable {
       }
     });
 
-    // ===== 复选框变更（更新计数） =====
+    // ===== 复选框变更（更新计数并触发回调） =====
     container.addEventListener('change', (e) => {
       const cb = e.target.closest('.price-enabled-checkbox');
       if (!cb) return;
@@ -639,7 +665,7 @@ export class PriceTable {
       });
       document.dispatchEvent(event);
       
-      // 调用回调
+      // ⭐ 调用回调（由 DOMController 处理持久化）
       if (onEnabledChange && rowData) {
         onEnabledChange(rowIndex, cb.checked, rowData);
       }
@@ -673,23 +699,43 @@ export class PriceTable {
       muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器']
     } = config;
 
+    // 重新计算每一行的数据，确保枪管选项完整
     const indexedData = data.map((row, index) => {
+      // 重新计算枪管选项
       let barrelOptions = ['无'];
       if (typeof getBarrelOptions === 'function') {
-        const opts = getBarrelOptions(row);
-        if (opts && opts.length > 0) {
-          barrelOptions = opts;
+        try {
+          const opts = getBarrelOptions(row);
+          if (opts && opts.length > 0) {
+            barrelOptions = opts;
+          }
+        } catch (e) {
+          console.warn('计算枪管选项失败:', e);
         }
       }
       
-      if (!barrelOptions.includes('无')) {
-        barrelOptions = ['无', ...barrelOptions];
+      // 确保当前选中的枪管在列表中
+      const currentBarrel = row.barrel || '无';
+      if (!barrelOptions.includes(currentBarrel) && currentBarrel !== '无') {
+        barrelOptions.push(currentBarrel);
       }
-      barrelOptions = [...new Set(barrelOptions)];
       
       let muzzleOpts = muzzleOptions;
       if (row._muzzleOptions && row._muzzleOptions.length > 0) {
         muzzleOpts = row._muzzleOptions;
+      }
+      
+      // 子弹选项
+      let bulletOptions = ['-'];
+      if (typeof getBulletOptions === 'function') {
+        try {
+          const opts = getBulletOptions(row);
+          if (opts && opts.length > 0) {
+            bulletOptions = opts;
+          }
+        } catch (e) {
+          // 忽略
+        }
       }
       
       return {
@@ -697,6 +743,7 @@ export class PriceTable {
         _rowIndex: index,
         _barrelOptions: barrelOptions,
         _muzzleOptions: muzzleOpts,
+        _bulletOptions: bulletOptions,
         _isNewRow: row._isNewRow || false,
         enabled: row.enabled !== false
       };
@@ -770,6 +817,8 @@ export class PriceTable {
 
   /**
    * 构建价格行数据（从 DataManager 的原始数据转换）
+   * 直接使用 configId 的原始值（#1, #2, #3），不再进行转换
+   * ⭐ 包含 enabled 字段
    * @param {Object} rowData - DataManager.getPriceRows() 返回的行数据
    * @param {Object} extra - 额外字段
    * @returns {Object} 完整的行数据
@@ -789,14 +838,13 @@ export class PriceTable {
 
     const weaponId = rowData._weaponId !== undefined ? rowData._weaponId : rowData.weaponId;
     
-    // 将 cfg-1 转换为 #1, cfg-2 转换为 #2
-    const rawConfigId = rowData.configId || 'cfg-1';
-    const displayConfigId = rawConfigId.replace('cfg-', '#');
+    // 直接使用 configId，不再进行转换（data.json 中已经是 #1, #2, #3 格式）
+    const configId = rowData.configId || '#1';
     
     const result = {
       weaponName: rowData.weaponName || '-',
-      configId: displayConfigId,
-      _rawConfigId: rawConfigId,
+      configId: configId,
+      _rawConfigId: configId,
       barrel: rowData.barrel || '无',
       muzzle: rowData.muzzle || '无',
       buildCode: rowData.buildCode || '',
@@ -811,7 +859,8 @@ export class PriceTable {
       _bulletId: rowData.bulletId || '',
       _rawConfig: rowData._rawConfig || {},
       _isNewRow: false,
-      enabled: true,
+      // ⭐ 从 rowData 读取 enabled，默认为 true
+      enabled: rowData.enabled !== undefined ? rowData.enabled : true,
       
       ...extra
     };
@@ -823,13 +872,14 @@ export class PriceTable {
    * 创建新增行数据
    * @param {number} weaponId - 武器 ID
    * @param {string} weaponName - 武器名称
-   * @param {string} nextConfigId - 下一个配置 ID
+   * @param {string} nextConfigId - 下一个配置 ID（格式：#1, #2, #3）
    * @param {Object} defaults - 默认值
    * @returns {Object} 新增行数据
    */
   static createNewRow(weaponId, weaponName, nextConfigId, defaults = {}) {
-    const rawId = nextConfigId || 'cfg-new';
-    const displayId = rawId.replace('cfg-', '#');
+    // 直接使用传入的 nextConfigId（格式：#1, #2, #3）
+    const rawId = nextConfigId || '#new';
+    const displayId = rawId;
     
     return {
       weaponName: weaponName || '-',
@@ -848,6 +898,7 @@ export class PriceTable {
       _bulletId: '',
       _rawConfig: {},
       _isNewRow: true,
+      // ⭐ 新增配置默认启用
       enabled: true
     };
   }

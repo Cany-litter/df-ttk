@@ -29,6 +29,10 @@ export class SimulationEngine {
     return this._dataManager;
   }
 
+  // ============================================================
+  // 1. 单次模拟（核心）
+  // ============================================================
+
   /**
    * 模拟一次击杀过程
    * 
@@ -62,6 +66,10 @@ export class SimulationEngine {
     const shotInterval = this._calculateShotInterval(weapon, isBurstMode);
     const decay = DistanceDecayCalculator.calculate(distance, weapon);
     
+    // ⭐ 优先使用 _current.velocity（应用枪管加成后的值）
+    const velocity = weapon._current?.velocity ?? weapon.velocity ?? 575;
+    const flightTime = distance / velocity;
+    
     // 统计变量
     let shots = 0;  // 总射击次数
     let hits = 0;   // 命中次数
@@ -94,7 +102,6 @@ export class SimulationEngine {
     }
     
     // 计算总时间
-    const flightTime = distance / weapon.velocity;
     const totalTime = this._calculateTotalTime(
       flightTime, 
       shotInterval, 
@@ -121,7 +128,9 @@ export class SimulationEngine {
       return 60 / weapon.burstInternalROF;
     } else {
       // 全自动模式：使用平均射速
-      return 60 / weapon.rof;
+      // ⭐ 优先使用 _current.rof（应用枪管加成后的值）
+      const rof = weapon._current?.rof ?? weapon.rof ?? 600;
+      return 60 / rof;
     }
   }
 
@@ -162,7 +171,11 @@ export class SimulationEngine {
     
     return flightTime + shootingIntervalTime + burstStats.totalTime;
   }
-  
+
+  // ============================================================
+  // 2. 批量模拟（多次求平均）
+  // ============================================================
+
   /**
    * 计算平均TTK统计
    * 
@@ -220,6 +233,48 @@ export class SimulationEngine {
   }
 
   /**
+   * ✅ 新增：计算单个距离点的 TTK（用于真实模拟）
+   * 
+   * 与 calculateAvgStats 的区别：
+   * - 返回格式更简洁，只包含 avgTime
+   * - 用于折线图的逐点计算
+   * 
+   * @param {Object} weapon - 武器对象
+   * @param {Object} params - 游戏参数
+   * @param {number} times - 模拟次数
+   * @param {Object} bulletStrategy - 子弹策略
+   * @param {Object} bulletData - 子弹数据
+   * @returns {number} 平均 TTK 时间（秒）
+   */
+  static calculateSinglePoint(weapon, params, times = SIMULATION_CONFIG.DEFAULT_SIM_COUNT, bulletStrategy, bulletData) {
+    let totalTime = 0;
+    let totalShots = 0;
+    let totalMisses = 0;
+    let totalBurstInterval = 0;
+    
+    for (let i = 0; i < times; i++) {
+      const result = this.simulateOneTTK(
+        weapon, 
+        params, 
+        bulletStrategy, 
+        bulletData, 
+        false
+      );
+      
+      totalTime += result.time;
+      totalShots += result.shots;
+      totalMisses += (result.shots - result.hits);
+      totalBurstInterval += (result.burstIntervalTime || 0);
+    }
+    
+    return totalTime / times;
+  }
+
+  // ============================================================
+  // 3. 批量计算（多武器）
+  // ============================================================
+
+  /**
    * 批量计算多个武器的TTK
    * @param {Array} weapons - 武器数组（已应用附件）
    * @param {Array} attachments - 附件配置数组
@@ -257,7 +312,7 @@ export class SimulationEngine {
         if (weapon.id && attachment.configId) {
           const priceHitRate = dm.getHitRateForDistance(
             weapon.id,
-            attachment.configId || 'cfg-1',
+            attachment.configId || '#1',
             params.distance,
             params.hitRate
           );
@@ -277,6 +332,10 @@ export class SimulationEngine {
     
     return results;
   }
+
+  // ============================================================
+  // 4. 工具方法
+  // ============================================================
 
   /**
    * 获取真实子弹类型

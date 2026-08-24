@@ -1,847 +1,946 @@
-// 枪口数据 - 直接定义在文件中，不再依赖 weapons.js
-const defaultMuzzles = [
-  { name: '无', mult: 0 },
-  { name: '死寂', mult: 0.24 },
-  { name: '先进/轻语/勇火', mult: 0.18 },
-  { name: '冲锋枪回声消音器', mult: 0.30 }
-];
-
 /**
- * 武器管理器
- * 负责武器的附件应用、属性计算和状态管理
+ * 武器表格组件
+ * 
+ * 显示武器数据表格，支持双列显示（原始值可编辑 + 当前值只读）
+ * 当前值根据原始值 + 枪管/枪口附件自动计算
+ * 
+ * 数据流向：
+ * 1. 用户编辑"原始值"列 → 触发 onCellChange → 更新 DataManager
+ * 2. 用户选择"枪管/枪口" → 触发 onAttachmentChange → 重新计算"当前值"
+ * 3. 用户调整"精校滑块" → 触发 onPrecisionChange → 重新计算"初速当前值"
  */
-export class WeaponManager {
-  constructor() {
-    this.weapons = [];
-    this.muzzles = defaultMuzzles;
-    this.clonedWeapons = [];
-    this.maxClones = 5;
-    this.originalWeapons = [];
-  }
+import TableRenderer from './TableRenderer.js';
 
+export class WeaponTable {
   /**
-   * 从外部加载武器数据
-   * @param {Array} data - 武器数据数组
+   * 获取武器表格列配置
+   * @param {Object} options - 配置选项
+   * @param {Function} options.onCellChange - 单元格变更回调
+   * @param {Function} options.onAttachmentChange - 附件变更回调
+   * @param {Function} options.onPrecisionChange - 精校变更回调
+   * @param {Function} options.onAddClone - 添加副本回调
+   * @param {Function} options.onEditBarrel - 编辑枪管回调
+   * @param {Array} options.muzzleOptions - 全局枪口选项
+   * @param {Function} options.getBarrelOptions - 获取武器枪管选项的函数
+   * @param {Function} options.getDataManager - 获取 DataManager 的函数
+   * @returns {Array} 列配置数组
    */
-  loadWeapons(data) {
-    if (!Array.isArray(data) || data.length === 0) {
-      console.warn('加载的武器数据为空或格式不正确');
-      return;
-    }
-    
-    // 处理数据中的 Infinity（JSON 中使用 null 或字符串 "Infinity" 表示）
-    const processedData = data.map(w => this.processWeaponData(w));
-    
-    this.weapons = processedData;
-    this.originalWeapons = JSON.parse(JSON.stringify(processedData));
-    this.clonedWeapons = [];
-    
-    console.log(`✅ 已加载 ${this.weapons.length} 把武器数据`);
-  }
+  static getColumns(options = {}) {
+    const {
+      onCellChange = null,
+      onAttachmentChange = null,
+      onPrecisionChange = null,
+      onAddClone = null,
+      onEditBarrel = null,
+      muzzleOptions = [],
+      getBarrelOptions = null,
+      getDataManager = null
+    } = options;
 
-  /**
-   * 处理单个武器数据，将 null/undefined/'Infinity' 字符串转换为 Infinity
-   * @param {Object} weapon - 武器数据
-   * @returns {Object} 处理后的武器数据
-   */
-  processWeaponData(weapon) {
-    const processed = { ...weapon };
-    
-    // 处理 ranges 中的 null/undefined/'Infinity' 字符串 -> Infinity
-    if (Array.isArray(processed.ranges)) {
-      processed.ranges = processed.ranges.map(r => {
-        if (r === null || r === undefined) return Infinity;
-        if (typeof r === 'string') {
-          const trimmed = r.trim();
-          if (trimmed === 'Infinity' || trimmed === '∞' || trimmed === '') {
-            return Infinity;
+    return [
+      // ==================== 基本信息 ====================
+      {
+        key: 'name',
+        label: '武器',
+        editable: true,
+        inputType: 'text',
+        inputPlaceholder: '输入武器名称',
+        headerAttrs: { style: 'min-width:80px;' },
+        render: (row) => {
+          if (row.isClone) {
+            return `<span class="clone-name">${TableRenderer.escapeHtml(row.name)}</span>`;
           }
-          const num = parseFloat(trimmed);
-          return isNaN(num) ? Infinity : num;
+          return TableRenderer.escapeHtml(row.name);
         }
-        return r;
-      });
-    }
-    
-    // 处理 barrels 中的 ranges（如果有）
-    if (Array.isArray(processed.barrels)) {
-      processed.barrels = processed.barrels.map(barrel => {
-        const b = { ...barrel };
-        if (Array.isArray(b.ranges)) {
-          b.ranges = b.ranges.map(r => {
-            if (r === null || r === undefined) return Infinity;
-            if (typeof r === 'string') {
-              const trimmed = r.trim();
-              if (trimmed === 'Infinity' || trimmed === '∞' || trimmed === '') {
-                return Infinity;
-              }
-              const num = parseFloat(trimmed);
-              return isNaN(num) ? Infinity : num;
-            }
-            return r;
+      },
+      {
+        key: 'type',
+        label: '类型',
+        editable: true,
+        inputType: 'select',
+        inputOptions: ['步枪', '冲锋枪', '轻机枪', '精确射手步枪', '手枪'],
+        headerAttrs: { style: 'min-width:60px;' },
+        render: (row) => {
+          if (row.isClone) {
+            return `<span class="clone-type">${TableRenderer.escapeHtml(row.type)}</span>`;
+          }
+          return TableRenderer.escapeHtml(row.type);
+        }
+      },
+
+      // ==================== 射速（原始 + 当前） ====================
+      {
+        key: 'rof',
+        label: '射速',
+        editable: true,
+        inputType: 'number',
+        inputStep: 1,
+        inputMin: 0,
+        headerAttrs: { style: 'min-width:50px;' },
+        render: (row) => {
+          const val = row.rof;
+          return val !== undefined && val !== null ? String(val) : '-';
+        }
+      },
+      {
+        key: 'rofCurrent',
+        label: '当前射速',
+        editable: false,
+        headerAttrs: { style: 'min-width:50px;background:#f0f4ff;' },
+        render: (row) => {
+          const val = row.rofCurrent !== undefined ? row.rofCurrent : row.rof;
+          return `<span class="current-value rof-current">${Math.round(val)}</span>`;
+        }
+      },
+
+      // ==================== 初速（原始 + 当前） ====================
+      {
+        key: 'velocity',
+        label: '初速',
+        editable: true,
+        inputType: 'number',
+        inputStep: 1,
+        inputMin: 0,
+        headerAttrs: { style: 'min-width:50px;' },
+        render: (row) => {
+          const val = row.velocity;
+          return val !== undefined && val !== null ? String(val) : '-';
+        }
+      },
+      {
+        key: 'velocityCurrent',
+        label: '当前初速',
+        editable: false,
+        headerAttrs: { style: 'min-width:50px;background:#f0f4ff;' },
+        render: (row) => {
+          const val = row.velocityCurrent !== undefined ? row.velocityCurrent : row.velocity;
+          return `<span class="current-value velocity-current">${Math.round(val)}</span>`;
+        }
+      },
+
+      // ==================== 射程（原始 + 当前） ====================
+      {
+        key: 'ranges',
+        label: '射程',
+        editable: true,
+        inputType: 'text',
+        inputPlaceholder: '40,70,∞,∞',
+        headerAttrs: { style: 'min-width:80px;' },
+        render: (row) => {
+          const ranges = row.ranges;
+          if (!Array.isArray(ranges)) return '-';
+          return ranges.map(r => r === Infinity ? '∞' : r).join(',');
+        }
+      },
+      {
+        key: 'rangesCurrent',
+        label: '当前射程',
+        editable: false,
+        headerAttrs: { style: 'min-width:80px;background:#f0f4ff;' },
+        render: (row) => {
+          const ranges = row.rangesCurrent || row.ranges;
+          if (!Array.isArray(ranges)) return '-';
+          return `<span class="current-value ranges-current">${ranges.map(r => r === Infinity ? '∞' : Math.round(r)).join(',')}</span>`;
+        }
+      },
+
+      // ==================== 肉伤（原始 + 当前） ====================
+      {
+        key: 'flesh',
+        label: '肉伤',
+        editable: true,
+        inputType: 'number',
+        inputStep: 0.1,
+        inputMin: 0,
+        headerAttrs: { style: 'min-width:40px;' },
+        render: (row) => {
+          const val = row.flesh;
+          return val !== undefined && val !== null ? String(val) : '-';
+        }
+      },
+      {
+        key: 'fleshCurrent',
+        label: '当前肉伤',
+        editable: false,
+        headerAttrs: { style: 'min-width:40px;background:#f0f4ff;' },
+        render: (row) => {
+          const val = row.fleshCurrent !== undefined ? row.fleshCurrent : row.flesh;
+          return `<span class="current-value damage-current">${Math.round(val)}</span>`;
+        }
+      },
+
+      // ==================== 甲伤（原始 + 当前） ====================
+      {
+        key: 'armor',
+        label: '甲伤',
+        editable: true,
+        inputType: 'number',
+        inputStep: 0.1,
+        inputMin: 0,
+        headerAttrs: { style: 'min-width:40px;' },
+        render: (row) => {
+          const val = row.armor;
+          return val !== undefined && val !== null ? String(val) : '-';
+        }
+      },
+      {
+        key: 'armorCurrent',
+        label: '当前甲伤',
+        editable: false,
+        headerAttrs: { style: 'min-width:40px;background:#f0f4ff;' },
+        render: (row) => {
+          const val = row.armorCurrent !== undefined ? row.armorCurrent : row.armor;
+          return `<span class="current-value armor-current">${Math.round(val)}</span>`;
+        }
+      },
+
+      // ==================== 部位倍率（原始 + 当前） ====================
+      {
+        key: 'mult',
+        label: '部位倍率',
+        editable: true,
+        inputType: 'text',
+        inputPlaceholder: '1.9,1,0.9,0.4',
+        headerAttrs: { style: 'min-width:80px;' },
+        render: (row) => {
+          const mult = row.mult;
+          if (!mult || typeof mult !== 'object') return '-';
+          const round = (v) => {
+            if (typeof v !== 'number') return v;
+            return Math.round((v + Number.EPSILON) * 100) / 100;
+          };
+          return `${round(mult.head)},${round(mult.chest)},${round(mult.stomach)},${round(mult.limbs)}`;
+        }
+      },
+      {
+        key: 'multCurrent',
+        label: '当前倍率',
+        editable: false,
+        headerAttrs: { style: 'min-width:80px;background:#f0f4ff;' },
+        render: (row) => {
+          const mult = row.multCurrent || row.mult;
+          if (!mult || typeof mult !== 'object') return '-';
+          const round = (v) => {
+            if (typeof v !== 'number') return v;
+            return Math.round((v + Number.EPSILON) * 100) / 100;
+          };
+          return `<span class="current-value mult-current">${round(mult.head)},${round(mult.chest)},${round(mult.stomach)},${round(mult.limbs)}</span>`;
+        }
+      },
+
+      // ==================== 部位伤害（只读） ====================
+      {
+        key: 'partDamage',
+        label: '部位伤害',
+        editable: false,
+        headerAttrs: { style: 'min-width:80px;' },
+        render: (row) => {
+          const flesh = row.fleshCurrent !== undefined ? row.fleshCurrent : row.flesh;
+          const mult = row.multCurrent || row.mult;
+          if (!mult || typeof mult !== 'object') return '-';
+          
+          const parts = ['head', 'chest', 'stomach', 'limbs'];
+          const values = parts.map(part => {
+            const multiplier = mult[part] ?? 1;
+            const damage = flesh * multiplier;
+            return damage.toFixed(1);
           });
+          return `<span class="part-damage-cell">${values.join(',')}</span>`;
         }
-        return b;
-      });
-    }
-    
-    return processed;
-  }
+      },
 
-  /**
-   * 重置为默认武器数据
-   * @param {Array} defaultData - 默认武器数据
-   */
-  resetToDefaults(defaultData) {
-    if (!Array.isArray(defaultData) || defaultData.length === 0) {
-      console.warn('默认武器数据为空，无法重置');
-      return;
-    }
-    
-    const processedData = defaultData.map(w => this.processWeaponData(w));
-    this.weapons = JSON.parse(JSON.stringify(processedData));
-    this.originalWeapons = JSON.parse(JSON.stringify(processedData));
-    this.clonedWeapons = [];
-    
-    console.log(`✅ 已重置为默认武器数据 (${this.weapons.length} 把武器)`);
-  }
-
-  /**
-   * 获取原始武器数据（深度副本）- 用于"重置为默认"功能
-   * @returns {Array} 原始武器数据数组
-   */
-  getOriginalWeapons() {
-    return JSON.parse(JSON.stringify(this.originalWeapons));
-  }
-
-  /**
-   * 获取指定武器的原始数据
-   * @param {number} index - 武器索引
-   * @returns {Object|null} 原始武器数据
-   */
-  getOriginalWeapon(index) {
-    if (index >= 0 && index < this.originalWeapons.length) {
-      return JSON.parse(JSON.stringify(this.originalWeapons[index]));
-    }
-    return null;
-  }
-
-  /**
-   * 更新单个武器属性
-   * @param {number} index - 武器索引
-   * @param {string} property - 属性名
-   * @param {*} value - 新值
-   * @returns {boolean} 是否更新成功
-   */
-  updateWeaponProperty(index, property, value) {
-    if (index < 0 || index >= this.weapons.length) {
-      console.warn(`武器索引 ${index} 超出范围`);
-      return false;
-    }
-    
-    const weapon = this.weapons[index];
-    
-    switch (property) {
-      case 'name':
-      case 'type':
-        weapon[property] = String(value);
-        break;
-      case 'rof':
-      case 'velocity':
-      case 'flesh':
-      case 'armor':
-      case 'triggerDelay':
-        const numValue = parseFloat(value);
-        if (!isNaN(numValue) && numValue >= 0) {
-          weapon[property] = numValue;
-        } else {
-          console.warn(`无效的 ${property} 值: ${value}`);
-          return false;
+      // ==================== 枪管选择（动态选项） ====================
+      {
+        key: 'barrel',
+        label: '枪管',
+        editable: true,
+        inputType: 'select',
+        headerAttrs: { style: 'min-width:80px;' },
+        render: (row) => {
+          const barrelName = row.barrelName || '无';
+          return TableRenderer.escapeHtml(barrelName);
+        },
+        getOptions: (row) => {
+          if (row._barrelOptions && row._barrelOptions.length > 0) {
+            return row._barrelOptions;
+          }
+          if (typeof getBarrelOptions === 'function') {
+            return getBarrelOptions(row);
+          }
+          return ['无'];
         }
-        break;
-      case 'ranges':
-        if (typeof value === 'string') {
-          weapon.ranges = this.parseRangesString(value);
-        } else if (Array.isArray(value)) {
-          weapon.ranges = value.map(r => {
-            if (r === null || r === undefined || r === 'Infinity' || r === '∞') {
-              return Infinity;
-            }
-            return Number(r);
-          });
-        } else {
-          console.warn(`无效的 ranges 值: ${value}`);
-          return false;
+      },
+
+      // ==================== 枪口选择（动态选项） ====================
+      {
+        key: 'muzzle',
+        label: '枪口',
+        editable: true,
+        inputType: 'select',
+        headerAttrs: { style: 'min-width:60px;' },
+        render: (row) => {
+          return TableRenderer.escapeHtml(row.muzzleName || '无');
+        },
+        getOptions: (row) => {
+          if (row._muzzleOptions && row._muzzleOptions.length > 0) {
+            return row._muzzleOptions;
+          }
+          return muzzleOptions.length > 0 ? muzzleOptions : ['无'];
         }
-        break;
-      case 'mult':
-        if (typeof value === 'string') {
-          weapon.mult = this.parseMultString(value);
-        } else if (typeof value === 'object' && value !== null) {
-          weapon.mult = { ...value };
-        } else {
-          console.warn(`无效的 mult 值: ${value}`);
-          return false;
+      },
+
+      // ==================== 精校滑块 ====================
+      {
+        key: 'precision',
+        label: '精校',
+        editable: false,
+        headerAttrs: { style: 'min-width:80px;' },
+        render: (row) => {
+          const val = row.precision !== undefined ? row.precision : 0.09;
+          const percentage = Math.round(val * 100);
+          return `
+            <div class="velocity-precision-container" data-weapon-row="${row._rowIndex || 0}">
+              <input type="range" 
+                     class="velocity-precision-slider" 
+                     data-weapon-id="${row.id || ''}"
+                     data-row="${row._rowIndex || 0}"
+                     min="-0.09" 
+                     max="0.09" 
+                     step="0.01" 
+                     value="${val}" />
+              <span class="velocity-precision-value">${percentage}%</span>
+            </div>
+          `;
         }
-        break;
-      case '_hitRate':
-        if (value === '' || value === null || value === undefined) {
-          delete weapon.hitRate;
-        } else {
-          const hitRateNum = parseFloat(value);
-          if (!isNaN(hitRateNum) && hitRateNum >= 0 && hitRateNum <= 1) {
-            weapon.hitRate = hitRateNum;
+      },
+
+      // ==================== 操作按钮 ====================
+      {
+        key: 'actions',
+        label: '操作',
+        editable: false,
+        headerAttrs: { style: 'min-width:60px;' },
+        render: (row) => {
+          const isClone = row.isClone || false;
+          let html = '';
+          
+          if (isClone) {
+            html += `<button class="remove-clone-btn" data-weapon-id="${row.id || ''}" data-row="${row._rowIndex || 0}" title="删除副本">−</button>`;
           } else {
-            console.warn(`无效的命中率值: ${value}，必须在 0-1 之间`);
-            return false;
+            html += `<button class="add-clone-btn" data-weapon-id="${row.id || ''}" data-row="${row._rowIndex || 0}" title="添加副本">+</button>`;
+            html += `<button class="edit-barrel-btn" data-weapon-id="${row.id || ''}" data-row="${row._rowIndex || 0}" title="编辑枪管">🔧</button>`;
+          }
+          
+          return html;
+        }
+      }
+    ];
+  }
+
+  /**
+   * 渲染武器表格
+   * @param {Object} config - 表格配置
+   * @param {Array} config.data - 武器数据数组（已包含原始值和当前值）
+   * @param {Function} config.onCellChange - 单元格变更回调 (rowIndex, key, value, row)
+   * @param {Function} config.onAttachmentChange - 附件变更回调 (rowIndex, type, value)
+   * @param {Function} config.onPrecisionChange - 精校变更回调 (rowIndex, value)
+   * @param {Function} config.onAddClone - 添加副本回调 (rowIndex)
+   * @param {Function} config.onEditBarrel - 编辑枪管回调 (rowIndex)
+   * @param {Array} config.muzzleOptions - 枪口选项
+   * @param {Function} config.getBarrelOptions - 获取枪管选项的函数
+   * @param {Function} config.getDataManager - 获取 DataManager 的函数
+   * @param {string} config.emptyText - 空数据提示
+   * @returns {Object} 表格实例
+   */
+  static render(config) {
+    const {
+      data,
+      onCellChange = null,
+      onAttachmentChange = null,
+      onPrecisionChange = null,
+      onAddClone = null,
+      onEditBarrel = null,
+      muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器'],
+      getBarrelOptions = null,
+      getDataManager = null,
+      emptyText = '暂无武器数据'
+    } = config;
+
+    // 为数据添加 _rowIndex 并预计算枪管选项
+    const indexedData = data.map((row, index) => {
+      let barrelOptions = ['无'];
+      if (typeof getBarrelOptions === 'function') {
+        const opts = getBarrelOptions(row);
+        if (opts && opts.length > 0) {
+          barrelOptions = opts;
+        }
+      }
+      return {
+        ...row,
+        _rowIndex: index,
+        _barrelOptions: barrelOptions,
+        _muzzleOptions: muzzleOptions
+      };
+    });
+
+    // 构建列配置
+    const columns = this.getColumns({
+      onCellChange,
+      onAttachmentChange,
+      onPrecisionChange,
+      onAddClone,
+      onEditBarrel,
+      muzzleOptions,
+      getBarrelOptions,
+      getDataManager
+    });
+
+    // 渲染表格
+    const table = TableRenderer.render({
+      id: 'weaponTable',
+      columns: columns,
+      data: indexedData,
+      emptyText: emptyText,
+      showRowIndex: false,
+      rowClass: (row) => {
+        return row.isClone ? 'clone-row' : '';
+      },
+      onCellChange: (rowIndex, key, value, row) => {
+        // 处理枪管选择
+        if (key === 'barrel') {
+          let barrelIndex = -1;
+          
+          if (value === '无') {
+            if (onAttachmentChange) {
+              onAttachmentChange(rowIndex, 'barrel', -1);
+            }
+            return;
+          }
+          
+          const options = row._barrelOptions || ['无'];
+          const optionIndex = options.indexOf(value);
+          if (optionIndex > 0) {
+            barrelIndex = optionIndex - 1;
+          }
+          
+          if (barrelIndex === -1) {
+            const dm = typeof getDataManager === 'function' ? getDataManager() : null;
+            if (dm) {
+              const weapon = dm.getWeaponById(row.id);
+              if (weapon && weapon.barrels) {
+                barrelIndex = weapon.barrels.findIndex(b => b.name === value);
+              }
+            }
+          }
+          
+          if (onAttachmentChange) {
+            onAttachmentChange(rowIndex, 'barrel', barrelIndex);
+          }
+          return;
+        }
+        
+        // 处理枪口选择
+        if (key === 'muzzle') {
+          const options = row._muzzleOptions || ['无'];
+          const muzzleIndex = options.indexOf(value);
+          if (onAttachmentChange) {
+            onAttachmentChange(rowIndex, 'muzzle', muzzleIndex >= 0 ? muzzleIndex : 0);
+          }
+          return;
+        }
+        
+        // 普通单元格变更
+        if (onCellChange) {
+          onCellChange(rowIndex, key, value, row);
+        }
+      }
+    });
+
+    // 绑定自定义事件
+    this.bindCustomEvents(table, {
+      onAttachmentChange,
+      onPrecisionChange,
+      onAddClone,
+      onEditBarrel,
+      muzzleOptions,
+      getDataManager
+    });
+
+    return table;
+  }
+
+  /**
+   * 绑定自定义事件（附件变更、精校变更、操作按钮）
+   * @param {Object} table - 表格实例
+   * @param {Object} handlers - 事件处理器
+   */
+  static bindCustomEvents(table, handlers) {
+    const {
+      onAttachmentChange,
+      onPrecisionChange,
+      onAddClone,
+      onEditBarrel,
+      muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器'],
+      getDataManager = null
+    } = handlers;
+
+    const el = table.getElement();
+    if (!el) return;
+
+    // ===== 枪管/枪口选择变更（直接监听 select 的 change 事件） =====
+    el.addEventListener('change', (e) => {
+      const select = e.target.closest('select');
+      if (!select) return;
+      
+      const td = select.closest('td');
+      if (!td) return;
+      
+      const colKey = td.dataset.col;
+      if (!colKey) return;
+      
+      const row = td.closest('tr');
+      if (!row) return;
+      
+      const rowIndex = parseInt(row.dataset.index);
+      if (isNaN(rowIndex)) return;
+      
+      const value = select.value;
+      const rowData = table.getData()[rowIndex];
+      
+      // 枪管选择
+      if (colKey === 'barrel') {
+        let barrelIndex = -1;
+        
+        if (value !== '无') {
+          if (rowData?._barrelOptions) {
+            const optionIndex = rowData._barrelOptions.indexOf(value);
+            if (optionIndex > 0) {
+              barrelIndex = optionIndex - 1;
+            }
+          }
+          
+          if (barrelIndex === -1) {
+            const dm = typeof getDataManager === 'function' ? getDataManager() : null;
+            if (dm) {
+              const weapon = dm.getWeaponById(rowData?.id);
+              if (weapon && weapon.barrels) {
+                barrelIndex = weapon.barrels.findIndex(b => b.name === value);
+              }
+            }
           }
         }
-        break;
-      default:
-        weapon[property] = value;
-    }
-    
-    return true;
-  }
-
-  /**
-   * 解析射程字符串
-   * @param {string} str - 射程字符串，如 "40,70,∞,∞"
-   * @returns {Array} 射程数组
-   */
-  parseRangesString(str) {
-    if (!str) return [40, 70, Infinity, Infinity];
-    return str.split(',').map(v => {
-      const trimmed = v.trim();
-      if (trimmed === '∞' || trimmed === 'Infinity' || trimmed === 'null' || trimmed === '') {
-        return Infinity;
+        
+        if (onAttachmentChange) {
+          onAttachmentChange(rowIndex, 'barrel', barrelIndex);
+        }
+        return;
       }
-      const num = parseFloat(trimmed);
-      return isNaN(num) ? 40 : num;
+      
+      // 枪口选择
+      if (colKey === 'muzzle') {
+        const options = muzzleOptions;
+        const muzzleIndex = options.indexOf(value);
+        if (onAttachmentChange) {
+          onAttachmentChange(rowIndex, 'muzzle', muzzleIndex >= 0 ? muzzleIndex : 0);
+        }
+        return;
+      }
+    });
+
+    // ===== 精校滑块变更 =====
+    el.addEventListener('input', (e) => {
+      const slider = e.target.closest('.velocity-precision-slider');
+      if (!slider) return;
+      
+      const row = slider.closest('tr');
+      if (!row) return;
+      
+      const rowIndex = parseInt(row.dataset.index);
+      if (isNaN(rowIndex)) return;
+      
+      const value = parseFloat(slider.value);
+      const valueSpan = slider.parentElement.querySelector('.velocity-precision-value');
+      if (valueSpan) {
+        valueSpan.textContent = `${Math.round(value * 100)}%`;
+      }
+      
+      if (onPrecisionChange) {
+        onPrecisionChange(rowIndex, value);
+      }
+    });
+
+    // ===== 操作按钮 =====
+    el.addEventListener('click', (e) => {
+      // 添加副本
+      const addBtn = e.target.closest('.add-clone-btn');
+      if (addBtn) {
+        const row = addBtn.closest('tr');
+        const rowIndex = parseInt(row?.dataset.index);
+        if (!isNaN(rowIndex) && onAddClone) {
+          onAddClone(rowIndex);
+        }
+        return;
+      }
+      
+      // 删除副本
+      const removeBtn = e.target.closest('.remove-clone-btn');
+      if (removeBtn) {
+        const row = removeBtn.closest('tr');
+        const rowIndex = parseInt(row?.dataset.index);
+        if (!isNaN(rowIndex) && onAddClone) {
+          onAddClone(rowIndex, true);
+        }
+        return;
+      }
+      
+      // 编辑枪管
+      const editBtn = e.target.closest('.edit-barrel-btn');
+      if (editBtn) {
+        const row = editBtn.closest('tr');
+        const rowIndex = parseInt(row?.dataset.index);
+        if (!isNaN(rowIndex) && onEditBarrel) {
+          onEditBarrel(rowIndex);
+        }
+        return;
+      }
     });
   }
 
   /**
-   * 解析倍率字符串
-   * @param {string} str - 倍率字符串，如 "1.9,1,0.9,0.4"
-   * @returns {Object} 倍率对象
+   * 更新武器表格数据
+   * @param {string|HTMLElement} container - 容器元素或选择器
+   * @param {Array} data - 新的武器数据
+   * @param {Object} config - 额外配置
    */
-  parseMultString(str) {
-    if (!str) return { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 };
-    const parts = str.split(',').map(v => parseFloat(v.trim()) || 1);
-    return {
-      head: parts[0] || 1.9,
-      chest: parts[1] || 1,
-      stomach: parts[2] || 0.9,
-      limbs: parts[3] || 0.4
-    };
-  }
+  static update(container, data, config = {}) {
+    const target = typeof container === 'string' 
+      ? document.querySelector(container) 
+      : container;
+    
+    if (!target) {
+      console.warn('WeaponTable: 容器不存在');
+      return;
+    }
 
-  /**
-   * 添加新武器到武器列表
-   * @param {Object} weaponData - 新武器数据
-   * @returns {number} 新武器的索引
-   */
-  addWeapon(weaponData) {
-    if (!weaponData.name || !weaponData.type) {
-      throw new Error('武器名称和类型是必填字段');
-    }
-    
-    const newWeapon = {
-      ranges: [40, 70, Infinity, Infinity],
-      decays: [1.0, 0.85, 0.7, 0.7, 0.7],
-      velocity: 575,
-      flesh: 30,
-      armor: 35,
-      rof: 600,
-      triggerDelay: 0,
-      barrels: [],
-      mult: { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 },
-      allowedBullets: [1, 2, 3, 4, 5],
-      hitRate: null,
-      ...weaponData
-    };
-    
-    if (!Array.isArray(newWeapon.ranges) || newWeapon.ranges.length !== 4) {
-      newWeapon.ranges = [40, 70, Infinity, Infinity];
-    }
-    
-    if (!Array.isArray(newWeapon.decays) || newWeapon.decays.length !== 5) {
-      newWeapon.decays = [1.0, 0.85, 0.7, 0.7, 0.7];
-    }
-    
-    if (!newWeapon.mult.head) newWeapon.mult.head = 1.9;
-    if (!newWeapon.mult.chest) newWeapon.mult.chest = 1;
-    if (!newWeapon.mult.stomach) newWeapon.mult.stomach = 0.9;
-    if (!newWeapon.mult.limbs) newWeapon.mult.limbs = 0.4;
-    
-    this.weapons.push(newWeapon);
-    this.originalWeapons.push(JSON.parse(JSON.stringify(newWeapon)));
-    
-    return this.weapons.length - 1;
-  }
+    const {
+      onCellChange,
+      onAttachmentChange,
+      onPrecisionChange,
+      onAddClone,
+      onEditBarrel,
+      muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器'],
+      getBarrelOptions = null,
+      getDataManager = null
+    } = config;
 
-  /**
-   * 删除武器
-   * @param {number} index - 武器索引
-   * @returns {boolean} 是否删除成功
-   */
-  removeWeapon(index) {
-    if (index >= 0 && index < this.weapons.length) {
-      if (this.weapons.length <= 1) {
-        throw new Error('至少保留一把武器');
+    const indexedData = data.map((row, index) => {
+      let barrelOptions = row._barrelOptions || ['无'];
+      
+      if (barrelOptions.length === 1 && barrelOptions[0] === '无' && typeof getBarrelOptions === 'function') {
+        const opts = getBarrelOptions(row);
+        if (opts && opts.length > 0) {
+          barrelOptions = opts;
+        }
       }
-      this.weapons.splice(index, 1);
-      this.originalWeapons.splice(index, 1);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * 添加武器副本
-   * @param {number} originalIndex - 原始武器索引
-   * @param {Object} attachmentConfig - 当前附件配置
-   * @param {Object} currentState - 当前武器状态（已应用附件）
-   * @returns {boolean} 是否添加成功
-   */
-  addClone(originalIndex, attachmentConfig, currentState) {
-    if (this.clonedWeapons.length >= this.maxClones) {
-      return false;
-    }
-
-    const originalWeapon = this.weapons[originalIndex];
-    const cloneNumber = this.getNextCloneNumber(originalIndex);
-    
-    const slider = document.querySelector(`.velocity-precision-slider[data-weapon="${originalIndex}"]`);
-    const currentPrecision = slider ? parseFloat(slider.value) : 0;
-    
-    const clonedWeapon = {
-      ...originalWeapon,
-      name: `${originalWeapon.name} [副本${cloneNumber}]`,
-      isClone: true,
-      originalIndex: originalIndex,
-      cloneNumber: cloneNumber,
-      attachmentConfig: { 
-        ...attachmentConfig,
-        velocityPrecision: currentPrecision
+      
+      if (barrelOptions.length === 1 && barrelOptions[0] === '无') {
+        const dm = typeof getDataManager === 'function' ? getDataManager() : null;
+        if (dm) {
+          const weapon = dm.getWeaponById(row.id);
+          if (weapon && weapon.barrels && Array.isArray(weapon.barrels) && weapon.barrels.length > 0) {
+            const opts = weapon.barrels.map(b => b.name || '无');
+            if (opts.length > 0) {
+              barrelOptions = ['无', ...opts];
+            }
+          }
+        }
       }
-    };
-
-    this.clonedWeapons.push(clonedWeapon);
-    return true;
-  }
-
-  /**
-   * 删除武器副本
-   * @param {number} cloneIndex - 副本在clonedWeapons数组中的索引
-   */
-  removeClone(cloneIndex) {
-    if (cloneIndex >= 0 && cloneIndex < this.clonedWeapons.length) {
-      this.clonedWeapons.splice(cloneIndex, 1);
-      this.renumberClones();
-    }
-  }
-
-  /**
-   * 获取下一个副本编号
-   * @param {number} originalIndex - 原始武器索引
-   * @returns {number} 下一个副本编号
-   */
-  getNextCloneNumber(originalIndex) {
-    const existingClones = this.clonedWeapons.filter(
-      clone => clone.originalIndex === originalIndex
-    );
-    return existingClones.length + 1;
-  }
-
-  /**
-   * 重新编号副本
-   */
-  renumberClones() {
-    const cloneGroups = {};
-    this.clonedWeapons.forEach(clone => {
-      if (!cloneGroups[clone.originalIndex]) {
-        cloneGroups[clone.originalIndex] = [];
+      
+      if (!barrelOptions.includes('无')) {
+        barrelOptions = ['无', ...barrelOptions];
       }
-      cloneGroups[clone.originalIndex].push(clone);
+      barrelOptions = [...new Set(barrelOptions)];
+      
+      return {
+        ...row,
+        _rowIndex: index,
+        _barrelOptions: barrelOptions,
+        _muzzleOptions: row._muzzleOptions || muzzleOptions
+      };
     });
 
-    Object.values(cloneGroups).forEach(clones => {
-      clones.forEach((clone, index) => {
-        clone.cloneNumber = index + 1;
-        clone.name = `${this.weapons[clone.originalIndex].name} [副本${clone.cloneNumber}]`;
+    const columns = this.getColumns({
+      onCellChange,
+      onAttachmentChange,
+      onPrecisionChange,
+      onAddClone,
+      onEditBarrel,
+      muzzleOptions,
+      getBarrelOptions,
+      getDataManager
+    });
+
+    TableRenderer.updateTable('weaponTable', columns, indexedData, {
+      rowClass: (row) => row.isClone ? 'clone-row' : '',
+      onCellChange: (rowIndex, key, value, row) => {
+        if (key === 'barrel') {
+          let barrelIndex = -1;
+          
+          if (value === '无') {
+            if (onAttachmentChange) {
+              onAttachmentChange(rowIndex, 'barrel', -1);
+            }
+            return;
+          }
+          
+          const options = row._barrelOptions || ['无'];
+          const optionIndex = options.indexOf(value);
+          if (optionIndex > 0) {
+            barrelIndex = optionIndex - 1;
+          }
+          
+          if (barrelIndex === -1) {
+            const dm = typeof getDataManager === 'function' ? getDataManager() : null;
+            if (dm) {
+              const weapon = dm.getWeaponById(row.id);
+              if (weapon && weapon.barrels) {
+                barrelIndex = weapon.barrels.findIndex(b => b.name === value);
+              }
+            }
+          }
+          
+          if (onAttachmentChange) {
+            onAttachmentChange(rowIndex, 'barrel', barrelIndex);
+          }
+          return;
+        }
+        if (key === 'muzzle') {
+          const options = row._muzzleOptions || ['无'];
+          const muzzleIndex = options.indexOf(value);
+          if (onAttachmentChange) {
+            onAttachmentChange(rowIndex, 'muzzle', muzzleIndex >= 0 ? muzzleIndex : 0);
+          }
+          return;
+        }
+        if (onCellChange) {
+          onCellChange(rowIndex, key, value, row);
+        }
+      }
+    });
+  }
+
+  /**
+   * 构建武器行数据（原始值 + 计算后的当前值）
+   * @param {Object} weapon - 原始武器数据
+   * @param {Object} attachment - 附件配置 { barrelId, muzzleId, precision }
+   * @param {Array} muzzleOptions - 枪口选项
+   * @returns {Object} 完整的行数据
+   */
+  static buildRowData(weapon, attachment = {}, muzzleOptions = []) {
+    let barrelId = attachment.barrelId !== undefined ? attachment.barrelId : -1;
+    if (typeof barrelId === 'string') {
+      barrelId = parseInt(barrelId);
+    }
+    if (isNaN(barrelId)) {
+      barrelId = -1;
+    }
+    
+    const muzzleId = typeof attachment.muzzleId === 'string' 
+      ? parseInt(attachment.muzzleId) 
+      : (attachment.muzzleId || 0);
+    const precision = typeof attachment.precision === 'string'
+      ? parseFloat(attachment.precision)
+      : (attachment.precision || 0.09);
+
+    let barrel = null;
+    let barrelName = '无';
+    if (barrelId >= 0 && weapon.barrels && weapon.barrels[barrelId]) {
+      barrel = weapon.barrels[barrelId];
+      barrelName = barrel.name || '无';
+    }
+
+    const barrelOptions = ['无'];
+    if (weapon.barrels && Array.isArray(weapon.barrels) && weapon.barrels.length > 0) {
+      weapon.barrels.forEach(b => {
+        if (b.name) {
+          barrelOptions.push(b.name);
+        }
       });
-    });
+    }
+
+    let muzzleName = '无';
+    const muzzleOptionsList = Array.isArray(muzzleOptions) ? muzzleOptions : ['无'];
+    if (muzzleId > 0 && muzzleOptionsList[muzzleId]) {
+      muzzleName = muzzleOptionsList[muzzleId];
+    }
+
+    const current = this.calculateCurrentValues(weapon, barrel, muzzleId, precision);
+
+    return {
+      id: weapon.id,
+      name: weapon.name,
+      type: weapon.type,
+      rof: weapon.rof,
+      velocity: weapon.velocity,
+      ranges: weapon.ranges || [40, 70, Infinity, Infinity],
+      flesh: weapon.flesh,
+      armor: weapon.armor,
+      mult: weapon.mult || { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 },
+      
+      rofCurrent: current.rof,
+      velocityCurrent: current.velocity,
+      rangesCurrent: current.ranges,
+      fleshCurrent: current.flesh,
+      armorCurrent: current.armor,
+      multCurrent: current.mult,
+      
+      barrelId: barrelId,
+      barrelName: barrelName,
+      muzzleId: muzzleId,
+      muzzleName: muzzleName,
+      precision: precision,
+      
+      _barrelOptions: barrelOptions,
+      _muzzleOptions: muzzleOptionsList,
+      
+      barrels: weapon.barrels || [],
+      allowedBullet: weapon.allowedBullet,
+      isClone: weapon.isClone || false,
+      originalIndex: weapon.originalIndex,
+      
+      _weapon: weapon,
+      _barrel: barrel
+    };
   }
 
   /**
-   * 获取所有武器（原始+副本）
-   * @returns {Array} 所有武器数组
+   * 计算当前值（应用附件加成）
+   * ⭐ 修复：处理枪管缺少 rangeMult 等属性时导致的 NaN 问题
+   * 
+   * @param {Object} weapon - 原始武器数据
+   * @param {Object} barrel - 枪管数据
+   * @param {number} muzzleId - 枪口 ID
+   * @param {number} precision - 精校值
+   * @returns {Object} 计算后的当前值
    */
-  getAllWeapons() {
-    return [...this.weapons, ...this.clonedWeapons];
-  }
-
-  /**
-   * 获取武器的枪口初速精校值
-   * @param {number} weaponIndex - 武器索引
-   * @param {boolean} isClone - 是否为副本
-   * @param {Object} params - 游戏参数
-   * @returns {number} 精校值（-0.09到0.09）
-   */
-  getWeaponVelocityPrecision(weaponIndex, isClone, params) {
-    if (isClone) {
-      const clone = this.clonedWeapons[weaponIndex];
-      if (clone && clone.attachmentConfig && clone.attachmentConfig.velocityPrecision !== undefined) {
-        return clone.attachmentConfig.velocityPrecision;
-      }
+  static calculateCurrentValues(weapon, barrel, muzzleId, precision) {
+    let muzzleRangeMult = 0;
+    let muzzleVelocityMult = 1.0;
+    
+    const dm = window.__app__?.dataManager || null;
+    if (dm && typeof dm.getMuzzleBonuses === 'function') {
+      const bonuses = dm.getMuzzleBonuses(muzzleId);
+      muzzleRangeMult = bonuses.rangeMult || 0;
+      muzzleVelocityMult = bonuses.velocityMult || 1.0;
     } else {
-      const slider = document.querySelector(`.velocity-precision-slider[data-weapon="${weaponIndex}"]`);
-      if (slider) {
-        return parseFloat(slider.value);
-      }
-    }
-    return 0;
-  }
-
-  /**
-   * 获取副本武器
-   * @returns {Array} 副本武器数组
-   */
-  getClonedWeapons() {
-    return this.clonedWeapons;
-  }
-
-  /**
-   * 检查是否可以添加更多副本
-   * @returns {boolean} 是否可以添加
-   */
-  canAddClone() {
-    return this.clonedWeapons.length < this.maxClones;
-  }
-
-  /**
-   * 读取附件配置（包含子弹类型）
-   * @param {Array} barrelValues - 枪管选择值数组
-   * @param {Array} muzzleValues - 枪口选择值数组
-   * @param {Array} hitRateValues - 命中率数组
-   * @param {Array} bulletTypes - 子弹类型数组
-   * @returns {Array} 附件配置数组
-   */
-  readAttachmentsWithBullet(barrelValues, muzzleValues, hitRateValues, bulletTypes) {
-    return this.weapons.map((w, i) => {
-      const barrelValue = barrelValues[i] || '';
-      const muzzleValue = muzzleValues[i] || '';
-      
-      const [, barrelIndex] = barrelValue.split('|').map(Number);
-      const [, muzzleIndex] = muzzleValue.split('|').map(Number);
-      const hitRate = hitRateValues[i] === '' ? null : Number(hitRateValues[i]);
-      const bulletType = bulletTypes ? bulletTypes[i] : null;
-      
-      const normalizedBarrelIndex = barrelIndex === -1 ? 0 : barrelIndex;
-      const normalizedMuzzleIndex = muzzleIndex === -1 ? 0 : muzzleIndex;
-      
-      return { barrelIndex: normalizedBarrelIndex, muzzleIndex: normalizedMuzzleIndex, hitRate, bulletType };
-    });
-  }
-
-  /**
-   * 应用附件到武器，返回计算后的完整武器数据
-   * 
-   * 数据流向说明：
-   * - this.weapons: 用户当前编辑的数据（原始值），是唯一数据源
-   * - this.originalWeapons: 初始备份数据，仅用于"重置为默认"功能
-   * 
-   * 返回结构：
-   * - _original: 用户当前编辑的原始值（来自 this.weapons），显示在"原始"列
-   * - _current: 应用附件后的计算值，显示在"当前"列
-   * 
-   * @param {Array} attachments - 附件配置数组
-   * @param {Object} params - 游戏参数
-   * @returns {Array} 包含原始值和计算值的武器数据数组
-   */
-  applyAttachments(attachments, params) {
-    // 使用 this.weapons 作为数据源（包含用户编辑的值）
-    const baseWeapons = this.weapons;
-    
-    // 处理原始武器
-    const armedOriginalWeapons = baseWeapons.map((w, idx) => {
-      const { barrelIndex, muzzleIndex, hitRate } = attachments[idx] || {};
-      
-      const barrel = barrelIndex > 0 ? w.barrels[barrelIndex - 1] : null;
-      const muzzle = muzzleIndex > 0 ? this.muzzles[muzzleIndex] : null;
-      
-      let rangeMult = 1.0;
-      {
-        const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
-        const barrelRange = hasRangeAdd ? 1.0 : (barrel ? barrel.rangeMult : 1.0);
-        const muzzleAdd = muzzle ? muzzle.mult : 0.0;
-        rangeMult *= (barrelRange + muzzleAdd);
-      }
-      
-      let velocityMult = rangeMult;
-      const precisionValue = this.getWeaponVelocityPrecision(idx, false, params);
-      velocityMult *= (1 + precisionValue);
-      
-      let rofMult = barrel ? barrel.rofMult : 1.0;
-      let damageBonus = barrel && barrel.damageBonus !== undefined ? barrel.damageBonus : 0;
-      let armorDamageBonus = barrel && barrel.armorDamageBonus !== undefined ? barrel.armorDamageBonus : 0;
-      
-      const partAdd = barrel && barrel.partMultAdd ? barrel.partMultAdd : null;
-      const newMult = { ...w.mult };
-      if (partAdd) {
-        for (const k in partAdd) newMult[k] = (newMult[k] ?? 1) + partAdd[k];
-      }
-      const baseTrigger = w.triggerDelay || 0;
-      const delayDelta = barrel && typeof barrel.triggerDelayDelta === 'number' ? barrel.triggerDelayDelta : 0;
-      const newTriggerDelay = Math.max(0, Math.round(baseTrigger + delayDelta));
-      
-      let newRanges;
-      if (barrel && Array.isArray(barrel.ranges) && barrel.ranges.length > 0) {
-        newRanges = barrel.ranges;
-      } else {
-        const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
-        newRanges = hasRangeAdd
-          ? w.ranges.map(r => (r === Infinity ? Infinity : Math.round(r * rangeMult + barrel.rangeAdd)))
-          : w.ranges.map(r => {
-              if (r === Infinity) return Infinity;
-              return Math.round(r * rangeMult);
-            });
-      }
-      
-      const newDecays = (barrel && Array.isArray(barrel.decays) && barrel.decays.length > 0)
-        ? barrel.decays
-        : w.decays;
-      
-      const hasVelocityAdd = barrel && typeof barrel.velocityAdd === 'number';
-      const newVelocity = hasVelocityAdd
-        ? Math.round((w.velocity + barrel.velocityAdd) * velocityMult)
-        : Math.round(w.velocity * velocityMult);
-
-      let fireMode = w.fireMode || null;
-      if (barrel && barrel.fireMode !== undefined) {
-        fireMode = barrel.fireMode;
-      }
-      
-      let burstCount = (barrel && barrel.burstCount !== undefined) ? barrel.burstCount : w.burstCount;
-      let burstInternalROF = (barrel && barrel.burstInternalROF !== undefined) ? barrel.burstInternalROF : w.burstInternalROF;
-      let burstInterval = (barrel && barrel.burstInterval !== undefined) ? barrel.burstInterval : w.burstInterval;
-      
-      if (fireMode === 'auto') {
-        burstCount = undefined;
-        burstInternalROF = undefined;
-        burstInterval = undefined;
-      }
-
-      return {
-        _original: {
-          name: w.name,
-          type: w.type,
-          rof: w.rof,
-          velocity: w.velocity,
-          ranges: w.ranges,
-          flesh: w.flesh,
-          armor: w.armor,
-          mult: w.mult,
-          triggerDelay: w.triggerDelay,
-          barrels: w.barrels,
-          allowedBullets: w.allowedBullets,
-          decays: w.decays,
-          fireMode: w.fireMode,
-          burstCount: w.burstCount,
-          burstInternalROF: w.burstInternalROF,
-          burstInterval: w.burstInterval,
-          hitRate: w.hitRate
-        },
-        _current: {
-          rof: Math.round(w.rof * rofMult * 100) / 100,
-          velocity: newVelocity,
-          ranges: newRanges,
-          flesh: w.flesh + damageBonus,
-          armor: w.armor + armorDamageBonus,
-          mult: newMult,
-          triggerDelay: newTriggerDelay,
-          decays: newDecays,
-          fireMode: fireMode,
-          burstCount: burstCount,
-          burstInternalROF: burstInternalROF,
-          burstInterval: burstInterval
-        },
-        _attachments: {
-          barrel: barrel,
-          muzzle: muzzle,
-          hitRate: hitRate,
-          rangeMult: rangeMult,
-          velocityMult: velocityMult,
-          rofMult: rofMult,
-          damageBonus: damageBonus,
-          armorDamageBonus: armorDamageBonus
-        },
-        isClone: false,
-        originalIndex: idx,
-        name: w.name,
-        type: w.type,
-        rof: Math.round(w.rof * rofMult * 100) / 100,
-        velocity: newVelocity,
-        ranges: newRanges,
-        flesh: w.flesh + damageBonus,
-        armor: w.armor + armorDamageBonus,
-        mult: newMult,
-        triggerDelay: newTriggerDelay,
-        decays: newDecays,
-        fireMode: fireMode,
-        burstCount: burstCount,
-        burstInternalROF: burstInternalROF,
-        burstInterval: burstInterval,
-        hitRate: hitRate != null ? hitRate : w.hitRate,
-        barrels: w.barrels,
-        allowedBullets: w.allowedBullets
+      const muzzleMap = {
+        0: { rangeMult: 0, velocityMult: 1.0 },
+        1: { rangeMult: 0.24, velocityMult: 1.24 },
+        2: { rangeMult: 0.18, velocityMult: 1.18 },
+        3: { rangeMult: 0.30, velocityMult: 1.30 }
       };
-    });
-
-    // 处理副本武器（副本基于 clone 自身数据，逻辑不变）
-    const armedClonedWeapons = this.clonedWeapons.map((clone, cloneIdx) => {   
-      const { barrelIndex, muzzleIndex, hitRate } = clone.attachmentConfig;
-      
-      const barrel = barrelIndex > 0 ? clone.barrels[barrelIndex - 1] : null;
-      const muzzle = muzzleIndex > 0 ? this.muzzles[muzzleIndex] : null;
-      
-      let rangeMult = 1.0;
-      {
-        const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
-        const barrelRange = hasRangeAdd ? 1.0 : (barrel ? barrel.rangeMult : 1.0);
-        const muzzleAdd = muzzle ? muzzle.mult : 0.0;
-        rangeMult *= (barrelRange + muzzleAdd);
-      }
-      
-      let velocityMult = rangeMult;
-      const precisionValue = this.getWeaponVelocityPrecision(cloneIdx, true, params);
-      velocityMult *= (1 + precisionValue);
-      
-      let rofMult = barrel ? barrel.rofMult : 1.0;
-      let damageBonus = barrel && barrel.damageBonus !== undefined ? barrel.damageBonus : 0;
-      let armorDamageBonus = barrel && barrel.armorDamageBonus !== undefined ? barrel.armorDamageBonus : 0;
-      
-      const partAdd = barrel && barrel.partMultAdd ? barrel.partMultAdd : null;
-      const newMult = { ...clone.mult };
-      if (partAdd) {
-        for (const k in partAdd) newMult[k] = (newMult[k] ?? 1) + partAdd[k];
-      }
-      const baseTrigger = clone.triggerDelay || 0;
-      const delayDelta = barrel && typeof barrel.triggerDelayDelta === 'number' ? barrel.triggerDelayDelta : 0;
-      const newTriggerDelay = Math.max(0, Math.round(baseTrigger + delayDelta));
-      
-      let newRanges;
-      if (barrel && Array.isArray(barrel.ranges) && barrel.ranges.length > 0) {
-        newRanges = barrel.ranges;
-      } else {
-        const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
-        newRanges = hasRangeAdd
-          ? clone.ranges.map(r => (r === Infinity ? Infinity : Math.round(r * rangeMult + barrel.rangeAdd)))
-          : clone.ranges.map(r => {
-              if (r === Infinity) return Infinity;
-              return Math.round(r * rangeMult);
-            });
-      }
-      
-      const newDecays = (barrel && Array.isArray(barrel.decays) && barrel.decays.length > 0)
-        ? barrel.decays
-        : clone.decays;
-      
-      const hasVelocityAdd = barrel && typeof barrel.velocityAdd === 'number';
-      const newVelocity = hasVelocityAdd
-        ? Math.round((clone.velocity + barrel.velocityAdd) * velocityMult)
-        : Math.round(clone.velocity * velocityMult);
-
-      let fireMode = clone.fireMode || null;
-      if (barrel && barrel.fireMode !== undefined) {
-        fireMode = barrel.fireMode;
-      }
-      
-      let burstCount = (barrel && barrel.burstCount !== undefined) ? barrel.burstCount : clone.burstCount;
-      let burstInternalROF = (barrel && barrel.burstInternalROF !== undefined) ? barrel.burstInternalROF : clone.burstInternalROF;
-      let burstInterval = (barrel && barrel.burstInterval !== undefined) ? barrel.burstInterval : clone.burstInterval;
-      
-      if (fireMode === 'auto') {
-        burstCount = undefined;
-        burstInternalROF = undefined;
-        burstInterval = undefined;
-      }
-
-      return {
-        _original: {
-          name: clone.name,
-          type: clone.type,
-          rof: clone.rof,
-          velocity: clone.velocity,
-          ranges: clone.ranges,
-          flesh: clone.flesh,
-          armor: clone.armor,
-          mult: clone.mult,
-          triggerDelay: clone.triggerDelay,
-          barrels: clone.barrels,
-          allowedBullets: clone.allowedBullets,
-          decays: clone.decays,
-          fireMode: clone.fireMode,
-          burstCount: clone.burstCount,
-          burstInternalROF: clone.burstInternalROF,
-          burstInterval: clone.burstInterval,
-          hitRate: clone.hitRate
-        },
-        _current: {
-          rof: Math.round(clone.rof * rofMult * 100) / 100,
-          velocity: newVelocity,
-          ranges: newRanges,
-          flesh: clone.flesh + damageBonus,
-          armor: clone.armor + armorDamageBonus,
-          mult: newMult,
-          triggerDelay: newTriggerDelay,
-          decays: newDecays,
-          fireMode: fireMode,
-          burstCount: burstCount,
-          burstInternalROF: burstInternalROF,
-          burstInterval: burstInterval
-        },
-        _attachments: {
-          barrel: barrel,
-          muzzle: muzzle,
-          hitRate: hitRate,
-          rangeMult: rangeMult,
-          velocityMult: velocityMult,
-          rofMult: rofMult,
-          damageBonus: damageBonus,
-          armorDamageBonus: armorDamageBonus
-        },
-        isClone: true,
-        originalIndex: clone.originalIndex,
-        cloneIndex: cloneIdx,
-        cloneNumber: clone.cloneNumber,
-        attachmentConfig: clone.attachmentConfig,
-        name: clone.name,
-        type: clone.type,
-        rof: Math.round(clone.rof * rofMult * 100) / 100,
-        velocity: newVelocity,
-        ranges: newRanges,
-        flesh: clone.flesh + damageBonus,
-        armor: clone.armor + armorDamageBonus,
-        mult: newMult,
-        triggerDelay: newTriggerDelay,
-        decays: newDecays,
-        fireMode: fireMode,
-        burstCount: burstCount,
-        burstInternalROF: burstInternalROF,
-        burstInterval: burstInterval,
-        hitRate: hitRate != null ? hitRate : clone.hitRate,
-        barrels: clone.barrels,
-        allowedBullets: clone.allowedBullets
-      };
-    });
-
-    return [...armedOriginalWeapons, ...armedClonedWeapons];
-  }
-
-  /**
-   * 获取武器数据
-   * @returns {Array} 武器数据数组
-   */
-  getWeapons() {
-    return this.weapons;
-  }
-
-  /**
-   * 获取枪口数据
-   * @returns {Array} 枪口数据数组
-   */
-  getMuzzles() {
-    return this.muzzles;
-  }
-
-  /**
-   * 验证武器命中率是否在有效范围内
-   * @param {Array} attachments - 武器附件配置数组
-   * @returns {boolean} 验证是否通过
-   * @throws {Error} 当命中率超出范围时抛出错误
-   */
-  validateWeaponHitRates(attachments) {
-    for (let i = 0; i < attachments.length; i++) {
-      const { hitRate } = attachments[i];
-      if (hitRate != null && (hitRate < 0 || hitRate > 1)) {
-        throw new Error(`武器 ${i + 1} 的命中率必须在 0 到 1 之间`);
-      }
+      const muzzleBonuses = muzzleMap[muzzleId] || muzzleMap[0];
+      muzzleRangeMult = muzzleBonuses.rangeMult;
+      muzzleVelocityMult = muzzleBonuses.velocityMult;
     }
-    return true;
-  }
 
-  /**
-   * 计算副本武器的显示数据
-   * @param {Object} clone - 副本武器对象
-   * @param {Object} params - 游戏参数
-   * @returns {Object} 计算后的显示数据
-   */
-  calculateCloneDisplayData(clone, params = {}) {
-    const { barrelIndex, muzzleIndex, hitRate } = clone.attachmentConfig;
-    
-    const barrel = barrelIndex > 0 ? clone.barrels[barrelIndex - 1] : null;
-    const muzzle = muzzleIndex > 0 ? this.muzzles[muzzleIndex] : null;
-    
+    // ============================================================
+    // ⭐ 核心修复：处理枪管缺少 rangeMult/rangeAdd 属性时的 NaN 问题
+    // ============================================================
     let rangeMult = 1.0;
-    {
-      const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
-      const barrelRange = hasRangeAdd ? 1.0 : (barrel ? barrel.rangeMult : 1.0);
-      const muzzleAdd = muzzle ? muzzle.mult : 0.0;
-      rangeMult *= (barrelRange + muzzleAdd);
+    const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
+    
+    // 如果 barrel 存在，但 rangeMult 不存在，默认为 1.0
+    // 使用 ?? 运算符处理 undefined 和 null
+    const barrelRange = hasRangeAdd ? 1.0 : (barrel ? (barrel.rangeMult ?? 1.0) : 1.0);
+    rangeMult *= (barrelRange + muzzleRangeMult);
+
+    // 确保 rangeMult 是有效数字
+    if (!isFinite(rangeMult) || isNaN(rangeMult)) {
+      console.warn(
+        `⚠️ calculateCurrentValues: rangeMult 无效 (${rangeMult})，重置为 1.0`,
+        `武器: ${weapon?.name || '未知'}, 枪管: ${barrel?.name || '无'}`
+      );
+      rangeMult = 1.0;
     }
+
+    let velocityMult = rangeMult * muzzleVelocityMult * (1 + precision);
     
-    let velocityMult = rangeMult;
-    const precisionValue = this.getWeaponVelocityPrecision(clone.cloneIndex || 0, true, params);
-    velocityMult *= (1 + precisionValue);
-    
-    let rofMult = barrel ? barrel.rofMult : 1.0;
+    // 确保 velocityMult 是有效数字
+    if (!isFinite(velocityMult) || isNaN(velocityMult)) {
+      console.warn(
+        `⚠️ calculateCurrentValues: velocityMult 无效 (${velocityMult})，重置为 1.0`,
+        `武器: ${weapon?.name || '未知'}`
+      );
+      velocityMult = 1.0;
+    }
+
+    let rofMult = barrel ? (barrel.rofMult ?? 1.0) : 1.0;
     let damageBonus = barrel && barrel.damageBonus !== undefined ? barrel.damageBonus : 0;
     let armorDamageBonus = barrel && barrel.armorDamageBonus !== undefined ? barrel.armorDamageBonus : 0;
-    
-    const partAdd = barrel && barrel.partMultAdd ? barrel.partMultAdd : null;
-    const displayMult = { ...clone.mult };
-    if (partAdd) {
-      for (const k in partAdd) displayMult[k] = (displayMult[k] ?? 1) + partAdd[k];
-    }
-    const baseTrigger = clone.triggerDelay || 0;
-    const delayDelta = barrel && typeof barrel.triggerDelayDelta === 'number' ? barrel.triggerDelayDelta : 0;
-    const displayTriggerDelay = Math.max(0, Math.round(baseTrigger + delayDelta));
 
-    let displayRanges;
+    const partAdd = barrel && barrel.partMultAdd ? barrel.partMultAdd : null;
+    const newMult = { ...weapon.mult };
+    if (partAdd) {
+      for (const k in partAdd) {
+        newMult[k] = (newMult[k] ?? 1) + partAdd[k];
+      }
+    }
+
+    let newRanges;
     if (barrel && Array.isArray(barrel.ranges) && barrel.ranges.length > 0) {
-      displayRanges = barrel.ranges;
+      newRanges = barrel.ranges;
     } else {
       const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
-      displayRanges = hasRangeAdd
-        ? clone.ranges.map(r => (r === Infinity ? Infinity : Math.round(r * rangeMult + barrel.rangeAdd)))
-        : clone.ranges.map(r => {
+      newRanges = hasRangeAdd
+        ? weapon.ranges.map(r => (r === Infinity ? Infinity : Math.round(r * rangeMult + barrel.rangeAdd)))
+        : weapon.ranges.map(r => {
             if (r === Infinity) return Infinity;
             return Math.round(r * rangeMult);
           });
     }
-    
-    const displayDecays = (barrel && Array.isArray(barrel.decays) && barrel.decays.length > 0)
-      ? barrel.decays
-      : clone.decays;
-    
+
     const hasVelocityAdd = barrel && typeof barrel.velocityAdd === 'number';
-    const displayVelocity = hasVelocityAdd
-      ? Math.round((clone.velocity + barrel.velocityAdd) * velocityMult)
-      : Math.round(clone.velocity * velocityMult);
+    let newVelocity = hasVelocityAdd
+      ? Math.round((weapon.velocity + barrel.velocityAdd) * velocityMult)
+      : Math.round(weapon.velocity * velocityMult);
+
+    // 确保 newVelocity 是有效数字
+    if (!isFinite(newVelocity) || isNaN(newVelocity) || newVelocity <= 0) {
+      console.warn(
+        `⚠️ calculateCurrentValues: velocity 无效 (${newVelocity})，使用原始值 ${weapon.velocity || 500}`,
+        `武器: ${weapon?.name || '未知'}`
+      );
+      newVelocity = weapon.velocity || 500;
+    }
+
+    // 确保 rof 是有效数字
+    let rof = Math.round(weapon.rof * rofMult * 100) / 100;
+    if (!isFinite(rof) || isNaN(rof) || rof <= 0) {
+      rof = weapon.rof || 600;
+    }
+
+    // 确保 flesh 是有效数字
+    let flesh = Math.round((weapon.flesh + damageBonus) * 10) / 10;
+    if (!isFinite(flesh) || isNaN(flesh)) {
+      flesh = weapon.flesh || 30;
+    }
+
+    // 确保 armor 是有效数字
+    let armor = Math.round((weapon.armor + armorDamageBonus) * 10) / 10;
+    if (!isFinite(armor) || isNaN(armor)) {
+      armor = weapon.armor || 35;
+    }
 
     return {
-      velocity: displayVelocity,
-      ranges: displayRanges,
-      decays: displayDecays,
-      rof: Math.round(clone.rof * rofMult * 100) / 100, 
-      flesh: Math.round(clone.flesh + damageBonus),
-      armor: Math.round(clone.armor + armorDamageBonus),
-      hitRate: hitRate != null ? hitRate : clone.hitRate,
-      mult: displayMult,
-      triggerDelay: displayTriggerDelay
+      rof: rof,
+      velocity: newVelocity,
+      ranges: newRanges,
+      flesh: flesh,
+      armor: armor,
+      mult: newMult
     };
   }
 }
+
+export default WeaponTable;

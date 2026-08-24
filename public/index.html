@@ -135,8 +135,9 @@
           </div>
         </div>
 
-        <!-- 第3行：操作按钮 -->
+        <!-- 第3行：操作按钮 + 真实模拟 + 缓存操作 -->
         <div class="params-row">
+          <!-- 计算按钮 -->
           <div class="buttons-group">
             <button id="calcBtn" class="btn-primary">📊 计算 TTK</button>
             <button id="distChartBtn" class="btn-secondary">📈 距离折线图</button>
@@ -144,6 +145,35 @@
             <button id="exportDataBtn" class="btn-secondary" style="background:#9c27b0;color:#fff;">📤 导出</button>
             <button id="importDataBtn" class="btn-secondary" style="background:#607d8b;color:#fff;">📥 导入</button>
           </div>
+
+          <!-- 真实模拟开关 -->
+          <div class="param-group compact checkbox-group real-sim-toggle">
+            <label>
+              <input type="checkbox" id="realSimulationToggle" />
+              🎯 真实模拟
+            </label>
+            <span class="hint-text" id="simStatus">(快速模式)</span>
+          </div>
+
+          <!-- 缓存操作按钮 -->
+          <div class="buttons-group cache-buttons">
+            <button id="exportCacheBtn" class="btn-secondary" style="background:#4caf50;color:#fff;font-size:11px;padding:2px 8px;height:22px;">
+              💾 导出缓存
+            </button>
+            <button id="importCacheBtn" class="btn-secondary" style="background:#2196f3;color:#fff;font-size:11px;padding:2px 8px;height:22px;">
+              📥 导入缓存
+            </button>
+            <button id="clearCacheBtn" class="btn-secondary" style="background:#f44336;color:#fff;font-size:11px;padding:2px 8px;height:22px;">
+              🗑️ 清除
+            </button>
+            <span class="cache-stats" id="cacheStats">缓存: 0条</span>
+          </div>
+        </div>
+
+        <!-- 第4行：真实模拟状态信息 -->
+        <div class="params-row real-sim-info" id="realSimInfo" style="display:none;padding:4px 0;font-size:12px;color:#666;border-top:1px dashed #e0e0e0;margin-top:2px;">
+          <span>🎯 真实模拟模式：将对 <strong id="simWeaponName">-</strong> 进行 0-100m 逐点精确计算 (101点 × 20000次模拟)</span>
+          <span style="margin-left:12px;color:#999;" id="simProgress"></span>
         </div>
       </div>
 

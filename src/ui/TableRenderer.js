@@ -7,6 +7,7 @@
  * 新增功能：
  * - 支持动态 select 选项：从行数据的 _barrelOptions / _muzzleOptions 读取
  * - 支持列配置中的 getOptions 函数
+ * - 支持从列配置的 getOptions 作为备用方案（当 dataset 不存在时）
  * 
  * 使用示例：
  * ```javascript
@@ -305,6 +306,10 @@ export class TableRenderer {
           cellAttrs['data-muzzle-options'] = JSON.stringify(row._muzzleOptions);
         }
         
+        if (colKey === 'bulletDisplay' && row._bulletOptions && row._bulletOptions.length > 0) {
+          cellAttrs['data-bullet-options'] = JSON.stringify(row._bulletOptions);
+        }
+        
         // 也支持从列配置的 getOptions 获取选项（备用）
         if (isEditable && col.inputType === 'select' && typeof col.getOptions === 'function') {
           try {
@@ -316,6 +321,9 @@ export class TableRenderer {
               }
               if (colKey === 'muzzle' && !cellAttrs['data-muzzle-options']) {
                 cellAttrs['data-muzzle-options'] = optionsStr;
+              }
+              if (colKey === 'bulletDisplay' && !cellAttrs['data-bullet-options']) {
+                cellAttrs['data-bullet-options'] = optionsStr;
               }
             }
           } catch(e) {
@@ -479,23 +487,32 @@ export class TableRenderer {
     if (inputType === 'select') {
       let optionList = [];
       
-      // 从 cell dataset 中读取预计算的选项
+      // 1. 从 cell dataset 中读取预计算的选项
       if (colKey === 'barrel' && cell.dataset.barrelOptions) {
         try {
           optionList = JSON.parse(cell.dataset.barrelOptions);
         } catch (e) {
+          console.warn('解析 barrelOptions 失败:', e);
           optionList = [];
         }
       } else if (colKey === 'muzzle' && cell.dataset.muzzleOptions) {
         try {
           optionList = JSON.parse(cell.dataset.muzzleOptions);
         } catch (e) {
+          console.warn('解析 muzzleOptions 失败:', e);
+          optionList = [];
+        }
+      } else if (colKey === 'bulletDisplay' && cell.dataset.bulletOptions) {
+        try {
+          optionList = JSON.parse(cell.dataset.bulletOptions);
+        } catch (e) {
+          console.warn('解析 bulletOptions 失败:', e);
           optionList = [];
         }
       }
       
-      // 从 data-input-options 读取（静态选项）
-      if ((!optionList || optionList.length === 0)) {
+      // 2. 从 data-input-options 读取（静态选项）
+      if (!optionList || optionList.length === 0) {
         const optionsData = cell.dataset.inputOptions;
         if (optionsData) {
           try {
@@ -507,6 +524,31 @@ export class TableRenderer {
         }
       }
       
+      // 3. 如果还是空，尝试从列配置的 getOptions 获取
+      if (!optionList || optionList.length === 0) {
+        const table = cell.closest('table');
+        const tableId = table?.id;
+        if (tableId && window._tableInstances && window._tableInstances[tableId]) {
+          const instance = window._tableInstances[tableId];
+          const columns = instance.getColumns();
+          const colConfig = columns.find(c => c.key === colKey);
+          if (colConfig && typeof colConfig.getOptions === 'function') {
+            const rowData = instance.getData()[parseInt(cell.dataset.row)];
+            if (rowData) {
+              try {
+                const opts = colConfig.getOptions(rowData);
+                if (opts && opts.length > 0) {
+                  optionList = opts;
+                }
+              } catch (e) {
+                // 忽略
+              }
+            }
+          }
+        }
+      }
+      
+      // 4. 最后备用
       if (!optionList || optionList.length === 0) {
         optionList = ['无'];
       }
@@ -515,6 +557,9 @@ export class TableRenderer {
       if (!optionList.includes(currentValue) && currentValue !== '') {
         optionList.push(currentValue);
       }
+      
+      // 去重
+      optionList = [...new Set(optionList)];
       
       editorHtml = this.createSelectEditorWithOptions(currentValue, optionList);
     } else {
@@ -695,6 +740,15 @@ export class TableRenderer {
           rowData._muzzleOptions = JSON.parse(muzzleCell.dataset.muzzleOptions);
         } catch (e) {
           rowData._muzzleOptions = ['无'];
+        }
+      }
+      
+      const bulletCell = row.querySelector('td[data-col="bulletDisplay"]');
+      if (bulletCell && bulletCell.dataset.bulletOptions) {
+        try {
+          rowData._bulletOptions = JSON.parse(bulletCell.dataset.bulletOptions);
+        } catch (e) {
+          rowData._bulletOptions = ['-'];
         }
       }
       
