@@ -1100,7 +1100,7 @@ td.editing .table-editor-select {
 
 .modal-large {
   width: 95vw;
-  max-width: 1200px;
+  max-width: 1400px;
 }
 
 @keyframes modalSlideIn {
@@ -1160,103 +1160,313 @@ td.editing .table-editor-select {
   flex-wrap: wrap;
 }
 
-/* ---------- 枪管编辑器弹窗 ---------- */
+/* ============================================================
+   枪管编辑器弹窗 - 专属样式 ⭐ 新增
+   ============================================================ */
 #barrelEditorContainer {
   min-height: 80px;
 }
 
-.empty-barrel-msg {
+#barrelEditorContainer .empty-barrel-msg {
   text-align: center;
-  padding: 20px 0;
+  padding: 30px 0;
   color: #999;
   font-size: 14px;
 }
 
-.empty-barrel-msg .hint {
+#barrelEditorContainer .empty-barrel-msg .hint {
   font-size: 12px;
   color: #bbb;
+  display: block;
+  margin-top: 4px;
 }
 
+/* 枪管编辑表格 - 完整版（包含开火模式和连发参数） */
 .barrel-editor-table {
   font-size: 11px;
-  min-width: 700px;
+  min-width: 1100px;
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .barrel-editor-table thead th {
   background: #f0f4f8;
   font-size: 10px;
-  padding: 3px 3px;
+  padding: 4px 4px;
+  border: 1px solid #e0e0e0;
   white-space: nowrap;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .barrel-editor-table tbody td {
-  padding: 1px 2px;
+  padding: 2px 3px;
+  border: 1px solid #e8e8e8;
+  text-align: center;
   vertical-align: middle;
 }
 
-.barrel-editor-table tbody td input {
+.barrel-editor-table tbody td input,
+.barrel-editor-table tbody td select {
   width: 100%;
   border: 1px solid #ddd;
   border-radius: 2px;
-  padding: 1px 3px;
+  padding: 2px 3px;
   font-size: 11px;
   background: #fafafa;
   box-sizing: border-box;
+  min-width: 36px;
 }
 
-.barrel-editor-table tbody td input:focus {
+.barrel-editor-table tbody td input:focus,
+.barrel-editor-table tbody td select:focus {
   border-color: #4a6cf7;
   outline: none;
   background: #fff;
 }
 
+.barrel-editor-table tbody td select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+/* 连发参数禁用状态 */
+.barrel-editor-table tbody td input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+/* 删除按钮 */
 .barrel-editor-table .barrel-delete-btn {
   background: #f44336;
   color: #fff;
   border: none;
-  border-radius: 2px;
-  padding: 0 6px;
-  font-size: 10px;
+  border-radius: 3px;
+  padding: 2px 10px;
+  font-size: 11px;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 .barrel-editor-table .barrel-delete-btn:hover {
   background: #d32f2f;
 }
 
-/* ---------- 新增枪管弹窗 ---------- */
-.form-grid {
+/* ============================================================
+   新增枪管弹窗 - 表单样式
+   ============================================================ */
+#addBarrelModal .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px 16px;
+  gap: 10px 20px;
 }
 
-.form-group {
+#addBarrelModal .form-group {
   display: flex;
   flex-direction: column;
 }
 
-.form-group label {
-  font-size: 11px;
+#addBarrelModal .form-group label {
+  font-size: 12px;
   font-weight: 500;
   color: #555;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
-.form-group input,
-.form-group select {
-  padding: 3px 6px;
+#addBarrelModal .form-group input,
+#addBarrelModal .form-group select {
+  padding: 4px 8px;
   border: 1px solid #d0d0d0;
   border-radius: 3px;
-  font-size: 12px;
+  font-size: 13px;
   background: #fafafa;
+  transition: border-color 0.2s;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+#addBarrelModal .form-group input:focus,
+#addBarrelModal .form-group select:focus {
   border-color: #4a6cf7;
   outline: none;
   background: #fff;
+}
+
+#addBarrelModal .form-hint {
+  font-size: 11px;
+  color: #999;
+  margin-top: 2px;
+}
+
+/* 新增枪管弹窗 - 连发参数内联布局 */
+#newBarrelBurstFields {
+  display: none;
+}
+
+#newBarrelBurstFields > label {
+  margin-bottom: 4px;
+}
+
+#newBarrelBurstFields .burst-input-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+#newBarrelBurstFields .burst-input-group input {
+  width: 60px;
+}
+
+#newBarrelBurstFields .burst-input-group span {
+  font-size: 12px;
+  color: #888;
+}
+
+/* ============================================================
+   ⭐ 弹窗按钮样式 - 与主界面风格统一
+   ============================================================ */
+
+/* 弹窗中的主按钮（保存、确认添加） */
+.modal-actions .btn-primary,
+#barrelEditorModal .btn-primary,
+#addBarrelModal .btn-primary {
+  background: #4a6cf7;
+  color: #fff;
+  border: none;
+  padding: 6px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.modal-actions .btn-primary:hover,
+#barrelEditorModal .btn-primary:hover,
+#addBarrelModal .btn-primary:hover {
+  background: #3a5cd7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(74, 108, 247, 0.3);
+}
+
+/* 弹窗中的次要按钮（取消、关闭） */
+.modal-actions .btn-secondary,
+#barrelEditorModal .btn-secondary,
+#addBarrelModal .btn-secondary {
+  background: #e8e8e8;
+  color: #333;
+  border: none;
+  padding: 6px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.modal-actions .btn-secondary:hover,
+#barrelEditorModal .btn-secondary:hover,
+#addBarrelModal .btn-secondary:hover {
+  background: #d5d5d5;
+  transform: translateY(-1px);
+}
+
+/* 弹窗中的新增枪管按钮（特殊样式 - 绿色） */
+#addBarrelBtn {
+  background: #4caf50;
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+#addBarrelBtn:hover {
+  background: #388e3c;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* 弹窗中的删除按钮 */
+.barrel-delete-btn {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  padding: 2px 12px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.barrel-delete-btn:hover {
+  background: #d32f2f;
+  transform: scale(1.05);
+}
+
+/* 弹窗底部按钮容器 - 确保按钮间距一致 */
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 14px;
+  border-top: 1px solid #eee;
+  margin-top: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* 弹窗标题与主界面风格统一 */
+.modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+/* 弹窗关闭按钮 */
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #999;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0 6px;
+  border-radius: 4px;
+}
+
+.modal-close:hover {
+  color: #333;
+  background: #f0f0f0;
 }
 
 /* ============================================================
@@ -1311,6 +1521,25 @@ td.editing .table-editor-select {
 
   .real-sim-toggle .hint-text {
     font-size: 9px;
+  }
+
+  /* 枪管编辑表格响应式 */
+  .barrel-editor-table {
+    min-width: 900px;
+    font-size: 10px;
+  }
+  .barrel-editor-table thead th {
+    font-size: 9px;
+    padding: 3px 3px;
+  }
+  .barrel-editor-table tbody td {
+    padding: 1px 2px;
+  }
+  .barrel-editor-table tbody td input,
+  .barrel-editor-table tbody td select {
+    font-size: 10px;
+    min-width: 30px;
+    padding: 1px 2px;
   }
 }
 
@@ -1415,6 +1644,16 @@ td.editing .table-editor-select {
   .real-sim-info #simProgress {
     margin-left: 0 !important;
   }
+
+  /* 枪管编辑弹窗响应式 */
+  .modal-large {
+    width: 98vw;
+    max-width: 98vw;
+  }
+  .barrel-editor-table {
+    min-width: 700px;
+    font-size: 10px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1508,7 +1747,7 @@ td.editing .table-editor-select {
     max-width: 98vw;
   }
 
-  .form-grid {
+  #addBarrelModal .form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1551,6 +1790,25 @@ td.editing .table-editor-select {
 
   .real-sim-info #simProgress {
     margin-left: 0 !important;
+  }
+
+  /* 枪管编辑表格移动端 */
+  .barrel-editor-table {
+    min-width: 500px;
+    font-size: 9px;
+  }
+  .barrel-editor-table thead th {
+    font-size: 8px;
+    padding: 2px 2px;
+  }
+  .barrel-editor-table tbody td {
+    padding: 1px 2px;
+  }
+  .barrel-editor-table tbody td input,
+  .barrel-editor-table tbody td select {
+    font-size: 9px;
+    min-width: 24px;
+    padding: 1px 2px;
   }
 }
 

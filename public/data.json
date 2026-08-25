@@ -1,9 +1,9 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-08-24",
+  "updatedAt": "2026-08-25",
   "meta": {
     "description": "Delta Force TTK 计算器 - 统一数据源",
-    "note": "包含武器、子弹、价格三类数据，所有数据以 JSON 格式存储。enabled 字段控制该配置是否参与 TTK 计算。"
+    "note": "包含武器、子弹、价格三类数据，所有数据以 JSON 格式存储。enabled 字段控制该配置是否参与 TTK 计算。枪管新增字段：fireMode, burstCount, burstInternalROF, burstInterval"
   },
   "weapons": [
     {
@@ -174,10 +174,10 @@
             "stomach": 0.1,
             "limbs": 0.2
           },
+          "fireMode": "burst",
           "burstCount": 4,
           "burstInternalROF": 845,
-          "burstInterval": 0.14,
-          "fireMode": "burst"
+          "burstInterval": 0.14
         }
       ],
       "mult": {

@@ -264,8 +264,14 @@
         <button id="barrelEditorClose" class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
-        <div id="barrelEditorContainer">
-          <!-- 由 BarrelEditor 动态渲染 -->
+        <div class="table-scroll">
+          <div id="barrelEditorContainer">
+            <!-- 由 BarrelEditor 动态渲染 -->
+            <div class="empty-barrel-msg">
+              <p>📭 暂无枪管数据</p>
+              <span class="hint">点击下方 "新增枪管" 添加</span>
+            </div>
+          </div>
         </div>
         <div class="modal-actions">
           <button id="addBarrelBtn" class="btn-secondary">➕ 新增枪管</button>
@@ -285,6 +291,7 @@
       </div>
       <div class="modal-body">
         <div class="form-grid">
+          <!-- 左列 -->
           <div class="form-group">
             <label>枪管名称 *</label>
             <input type="text" id="newBarrelName" placeholder="如：长枪管" />
@@ -317,6 +324,8 @@
             <label>甲伤加成</label>
             <input type="number" id="newBarrelArmorDamageBonus" step="0.1" value="0" />
           </div>
+
+          <!-- 右列 -->
           <div class="form-group">
             <label>扳机延迟 Δ</label>
             <input type="number" id="newBarrelTriggerDelayDelta" step="1" value="0" />
@@ -324,14 +333,17 @@
           <div class="form-group">
             <label>自定义射程</label>
             <input type="text" id="newBarrelRanges" placeholder="40,70,∞,∞" />
+            <span class="form-hint">用逗号分隔，∞ 表示无限</span>
           </div>
           <div class="form-group">
             <label>自定义衰减</label>
             <input type="text" id="newBarrelDecays" placeholder="1.0,0.85,0.7,0.7,0.7" />
+            <span class="form-hint">5个值，对应5个射程段</span>
           </div>
           <div class="form-group">
             <label>部位倍率加成 (JSON)</label>
             <input type="text" id="newBarrelPartMultAdd" placeholder='{"head":0.1,"chest":0.05}' />
+            <span class="form-hint">JSON 格式，如 {"head": 0.1}</span>
           </div>
           <div class="form-group">
             <label>开火模式</label>
@@ -343,13 +355,17 @@
           </div>
           <div class="form-group" id="newBarrelBurstFields" style="display:none;">
             <label>连发参数</label>
-            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
               <input type="number" id="newBarrelBurstCount" placeholder="连发数" value="3" style="width:60px;" />
+              <span style="font-size:12px;color:#888;">发</span>
               <input type="number" id="newBarrelBurstInternalROF" placeholder="内部射速" value="800" style="width:70px;" />
+              <span style="font-size:12px;color:#888;">RPM</span>
               <input type="number" id="newBarrelBurstInterval" placeholder="间隔(s)" value="0.1" step="0.01" style="width:70px;" />
+              <span style="font-size:12px;color:#888;">s</span>
             </div>
           </div>
         </div>
+
         <div class="modal-actions">
           <button id="confirmAddBarrelBtn" class="btn-primary">✅ 确认添加</button>
           <button id="cancelAddBarrelBtn" class="btn-secondary">取消</button>

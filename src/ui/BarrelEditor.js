@@ -1,6 +1,12 @@
 /**
  * 枪管编辑器
  * 负责枪管的增删改查，以及弹窗管理
+ * 
+ * 支持完整枪管属性编辑：
+ * - 基础属性：名称、射程倍率、射程增量、初速倍率、初速增量、射速倍率
+ * - 伤害属性：肉伤加成、甲伤加成、扳机延迟Δ
+ * - 自定义属性：自定义射程、自定义衰减、部位倍率加成
+ * - 开火模式：默认/全自动/连发（含连发参数）
  */
 export class BarrelEditor {
   constructor(weaponManager, viewRenderer, onDataChange) {
@@ -31,6 +37,12 @@ export class BarrelEditor {
     // 显示弹窗
     const modal = document.getElementById('barrelEditorModal');
     const nameSpan = document.getElementById('barrelEditorWeaponName');
+    if (!modal || !nameSpan) {
+      console.error('枪管编辑器弹窗 DOM 元素不存在');
+      alert('弹窗组件未加载，请刷新页面后重试');
+      return;
+    }
+
     nameSpan.textContent = weapon.name || '未命名武器';
     modal.style.display = 'flex';
 
@@ -44,6 +56,11 @@ export class BarrelEditor {
    */
   renderBarrelList(weapon) {
     const container = document.getElementById('barrelEditorContainer');
+    if (!container) {
+      console.error('barrelEditorContainer 不存在');
+      return;
+    }
+
     const barrels = weapon.barrels || [];
 
     if (barrels.length === 0) {
@@ -56,12 +73,12 @@ export class BarrelEditor {
       return;
     }
 
-    // 构建表格HTML
+    // 构建表格HTML - 完整版包含开火模式和连发参数
     let html = `
       <table class="barrel-editor-table">
         <thead>
           <tr>
-            <th style="min-width:60px;">名称</th>
+            <th style="min-width:80px;">名称</th>
             <th style="min-width:50px;">射程倍率</th>
             <th style="min-width:50px;">射程增量</th>
             <th style="min-width:50px;">初速倍率</th>
@@ -72,7 +89,11 @@ export class BarrelEditor {
             <th style="min-width:55px;">扳机延迟Δ</th>
             <th style="min-width:80px;">自定义射程</th>
             <th style="min-width:80px;">自定义衰减</th>
-            <th style="min-width:60px;">操作</th>
+            <th style="min-width:60px;">开火模式</th>
+            <th style="min-width:45px;">连发数</th>
+            <th style="min-width:50px;">内部射速</th>
+            <th style="min-width:50px;">连发间隔</th>
+            <th style="min-width:50px;">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -86,6 +107,18 @@ export class BarrelEditor {
       const decaysStr = barrel.decays && Array.isArray(barrel.decays)
         ? barrel.decays.join(',')
         : '';
+
+      // 开火模式
+      const fireMode = barrel.fireMode || '';
+      const isBurst = fireMode === 'burst';
+      
+      // 连发参数
+      const burstCount = barrel.burstCount ?? 3;
+      const burstInternalROF = barrel.burstInternalROF ?? 800;
+      const burstInterval = barrel.burstInterval ?? 0.1;
+
+      // 连发参数禁用状态（非连发模式时禁用）
+      const burstDisabled = !isBurst ? 'disabled style="opacity:0.5;"' : '';
 
       html += `
         <tr data-barrel-index="${index}">
@@ -101,6 +134,16 @@ export class BarrelEditor {
           <td><input type="text" class="barrel-edit-ranges" value="${rangesStr}" placeholder="40,70,∞,∞" /></td>
           <td><input type="text" class="barrel-edit-decays" value="${decaysStr}" placeholder="1.0,0.85,0.7,0.7,0.7" /></td>
           <td>
+            <select class="barrel-edit-fireMode" data-row="${index}">
+              <option value="" ${fireMode === '' ? 'selected' : ''}>默认</option>
+              <option value="auto" ${fireMode === 'auto' ? 'selected' : ''}>全自动</option>
+              <option value="burst" ${fireMode === 'burst' ? 'selected' : ''}>连发</option>
+            </select>
+          </td>
+          <td><input type="number" class="barrel-edit-burstCount" value="${burstCount}" ${burstDisabled} /></td>
+          <td><input type="number" class="barrel-edit-burstInternalROF" value="${burstInternalROF}" ${burstDisabled} /></td>
+          <td><input type="number" step="0.01" class="barrel-edit-burstInterval" value="${burstInterval}" ${burstDisabled} /></td>
+          <td>
             <button class="barrel-delete-btn" data-index="${index}">删除</button>
           </td>
         </tr>
@@ -114,12 +157,27 @@ export class BarrelEditor {
 
     container.innerHTML = html;
 
-    // 绑定删除事件
+    // ============================================================
+    // 绑定事件
+    // ============================================================
+
+    // 删除事件
     container.querySelectorAll('.barrel-delete-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const index = parseInt(e.target.dataset.index);
         this.deleteBarrel(index);
       });
+    });
+
+    // 开火模式切换事件：控制连发参数启用/禁用
+    container.querySelectorAll('.barrel-edit-fireMode').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const row = e.target.closest('tr');
+        this.toggleBurstFields(row, e.target.value === 'burst');
+      });
+      // 初始化状态
+      const row = select.closest('tr');
+      this.toggleBurstFields(row, select.value === 'burst');
     });
 
     // 绑定Enter键快速保存
@@ -129,6 +187,32 @@ export class BarrelEditor {
           e.target.blur();
         }
       });
+    });
+
+    // 点击表格内任意输入框自动选中内容（提升编辑体验）
+    container.querySelectorAll('input').forEach(input => {
+      input.addEventListener('focus', (e) => {
+        e.target.select();
+      });
+    });
+  }
+
+  /**
+   * 切换连发字段的启用/禁用状态
+   * @param {HTMLElement} row - 表格行
+   * @param {boolean} enabled - 是否启用
+   */
+  toggleBurstFields(row, enabled) {
+    if (!row) return;
+    const burstInputs = row.querySelectorAll('.barrel-edit-burstCount, .barrel-edit-burstInternalROF, .barrel-edit-burstInterval');
+    burstInputs.forEach(input => {
+      if (enabled) {
+        input.removeAttribute('disabled');
+        input.style.opacity = '1';
+      } else {
+        input.setAttribute('disabled', 'disabled');
+        input.style.opacity = '0.5';
+      }
     });
   }
 
@@ -178,6 +262,14 @@ export class BarrelEditor {
       const armorDamageBonus = parseFloat(row.querySelector('.barrel-edit-armorDamageBonus')?.value) || 0;
       const triggerDelayDelta = parseFloat(row.querySelector('.barrel-edit-triggerDelayDelta')?.value) || 0;
 
+      // ⭐ 新增：读取开火模式
+      const fireMode = row.querySelector('.barrel-edit-fireMode')?.value || '';
+
+      // ⭐ 新增：读取连发参数
+      const burstCount = parseInt(row.querySelector('.barrel-edit-burstCount')?.value) || 3;
+      const burstInternalROF = parseInt(row.querySelector('.barrel-edit-burstInternalROF')?.value) || 800;
+      const burstInterval = parseFloat(row.querySelector('.barrel-edit-burstInterval')?.value) || 0.1;
+
       const barrel = {
         name,
         rangeMult,
@@ -187,7 +279,12 @@ export class BarrelEditor {
         rofMult,
         damageBonus,
         armorDamageBonus,
-        triggerDelayDelta
+        triggerDelayDelta,
+        // ⭐ 新增字段
+        fireMode: fireMode || undefined,
+        burstCount: fireMode === 'burst' ? burstCount : undefined,
+        burstInternalROF: fireMode === 'burst' ? burstInternalROF : undefined,
+        burstInterval: fireMode === 'burst' ? burstInterval : undefined
       };
 
       // 自定义射程
@@ -205,6 +302,11 @@ export class BarrelEditor {
       newBarrels.push(barrel);
     });
 
+    if (newBarrels.length === 0) {
+      alert('至少保留一个有效枪管（名称不能为空）');
+      return;
+    }
+
     // 更新武器数据
     weapon.barrels = newBarrels;
 
@@ -220,6 +322,8 @@ export class BarrelEditor {
     if (this.viewRenderer && typeof this.viewRenderer.updateWeaponStats === 'function') {
       this.viewRenderer.updateWeaponStats();
     }
+
+    console.log(`✅ 枪管已保存: ${newBarrels.length} 个`);
   }
 
   /**
@@ -227,6 +331,12 @@ export class BarrelEditor {
    */
   openAddBarrelModal() {
     const modal = document.getElementById('addBarrelModal');
+    if (!modal) {
+      console.error('addBarrelModal 不存在');
+      alert('弹窗组件未加载，请刷新页面后重试');
+      return;
+    }
+
     modal.style.display = 'flex';
 
     // 重置表单
@@ -279,7 +389,9 @@ export class BarrelEditor {
       }
     }
 
-    // 构建枪管对象
+    // 构建枪管对象 - 包含开火模式和连发参数
+    const fireMode = document.getElementById('newBarrelFireMode').value;
+
     const barrel = {
       name: name,
       rangeMult: parseFloat(document.getElementById('newBarrelRangeMult').value) || 1.0,
@@ -289,8 +401,17 @@ export class BarrelEditor {
       rofMult: parseFloat(document.getElementById('newBarrelRofMult').value) || 1.0,
       damageBonus: parseFloat(document.getElementById('newBarrelDamageBonus').value) || 0,
       armorDamageBonus: parseFloat(document.getElementById('newBarrelArmorDamageBonus').value) || 0,
-      triggerDelayDelta: parseFloat(document.getElementById('newBarrelTriggerDelayDelta').value) || 0
+      triggerDelayDelta: parseFloat(document.getElementById('newBarrelTriggerDelayDelta').value) || 0,
+      // ⭐ 开火模式
+      fireMode: fireMode || undefined
     };
+
+    // ⭐ 连发参数（仅当选择连发模式时）
+    if (fireMode === 'burst') {
+      barrel.burstCount = parseInt(document.getElementById('newBarrelBurstCount').value) || 3;
+      barrel.burstInternalROF = parseInt(document.getElementById('newBarrelBurstInternalROF').value) || 800;
+      barrel.burstInterval = parseFloat(document.getElementById('newBarrelBurstInterval').value) || 0.1;
+    }
 
     // 可选字段：自定义射程
     const rangesVal = document.getElementById('newBarrelRanges').value.trim();
@@ -318,17 +439,6 @@ export class BarrelEditor {
       }
     }
 
-    // 可选字段：开火模式
-    const fireMode = document.getElementById('newBarrelFireMode').value;
-    if (fireMode) {
-      barrel.fireMode = fireMode;
-      if (fireMode === 'burst') {
-        barrel.burstCount = parseInt(document.getElementById('newBarrelBurstCount').value) || 3;
-        barrel.burstInternalROF = parseInt(document.getElementById('newBarrelBurstInternalROF').value) || 800;
-        barrel.burstInterval = parseFloat(document.getElementById('newBarrelBurstInterval').value) || 0.1;
-      }
-    }
-
     // 添加到武器
     if (!weapon.barrels) {
       weapon.barrels = [];
@@ -349,21 +459,30 @@ export class BarrelEditor {
    * 关闭编辑器
    */
   closeEditor() {
-    document.getElementById('barrelEditorModal').style.display = 'none';
+    const modal = document.getElementById('barrelEditorModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
   }
 
   /**
    * 关闭新增枪管弹窗
    */
   closeAddBarrelModal() {
-    document.getElementById('addBarrelModal').style.display = 'none';
+    const modal = document.getElementById('addBarrelModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
   }
 
   /**
    * 绑定弹窗事件
    */
   bindModalEvents() {
-    // ========== 枪管编辑弹窗 ==========
+    // ============================================================
+    // 枪管编辑弹窗
+    // ============================================================
+
     const editorModal = document.getElementById('barrelEditorModal');
 
     // 关闭按钮
@@ -404,7 +523,10 @@ export class BarrelEditor {
       }
     });
 
-    // ========== 新增枪管弹窗 ==========
+    // ============================================================
+    // 新增枪管弹窗
+    // ============================================================
+
     const addModal = document.getElementById('addBarrelModal');
 
     // 关闭按钮

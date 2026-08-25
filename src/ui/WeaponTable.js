@@ -353,6 +353,8 @@ export class WeaponTable {
    * @returns {Object} 表格实例
    */
   static render(config) {
+    console.log('🔧 WeaponTable.render 被调用了');
+
     const {
       data,
       onCellChange = null,
@@ -471,6 +473,7 @@ export class WeaponTable {
 
   /**
    * 绑定自定义事件（附件变更、精校变更、操作按钮）
+   * ⭐ 修复：使用捕获阶段绑定，确保在 TableRenderer 的监听器之前执行
    * @param {Object} table - 表格实例
    * @param {Object} handlers - 事件处理器
    */
@@ -487,7 +490,60 @@ export class WeaponTable {
     const el = table.getElement();
     if (!el) return;
 
-    // ===== 枪管/枪口选择变更（直接监听 select 的 change 事件） =====
+    // ⭐ 如果已经绑定过，避免重复绑定
+    if (el._weaponTableBound) {
+      return;
+    }
+    el._weaponTableBound = true;
+
+    // ============================================================
+    // ⭐ 核心修复：使用捕获阶段绑定按钮点击事件
+    //    确保在 TableRenderer 的冒泡阶段监听器之前执行
+    // ============================================================
+    el.addEventListener('click', function(e) {
+      // 添加副本
+      const addBtn = e.target.closest('.add-clone-btn');
+      if (addBtn) {
+        e.stopPropagation();
+        const row = addBtn.closest('tr');
+        const rowIndex = parseInt(row?.dataset.index);
+        if (!isNaN(rowIndex) && typeof onAddClone === 'function') {
+          onAddClone(rowIndex);
+        }
+        return;
+      }
+      
+      // 删除副本
+      const removeBtn = e.target.closest('.remove-clone-btn');
+      if (removeBtn) {
+        e.stopPropagation();
+        const row = removeBtn.closest('tr');
+        const rowIndex = parseInt(row?.dataset.index);
+        if (!isNaN(rowIndex) && typeof onAddClone === 'function') {
+          onAddClone(rowIndex, true);
+        }
+        return;
+      }
+      
+      // ⭐ 编辑枪管（核心修复）
+      const editBtn = e.target.closest('.edit-barrel-btn');
+      if (editBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        const row = editBtn.closest('tr');
+        const rowIndex = parseInt(row?.dataset.index);
+        if (!isNaN(rowIndex) && typeof onEditBarrel === 'function') {
+          onEditBarrel(rowIndex);
+        } else {
+          console.warn('⚠️ 编辑枪管: onEditBarrel 未定义或不是函数');
+        }
+        return;
+      }
+    }, true); // ⭐ 关键：使用捕获阶段 (true)
+
+    // ============================================================
+    // 枪管/枪口选择变更（使用 change 事件，不受 click 影响）
+    // ============================================================
     el.addEventListener('change', (e) => {
       const select = e.target.closest('select');
       if (!select) return;
@@ -530,7 +586,7 @@ export class WeaponTable {
           }
         }
         
-        if (onAttachmentChange) {
+        if (typeof onAttachmentChange === 'function') {
           onAttachmentChange(rowIndex, 'barrel', barrelIndex);
         }
         return;
@@ -540,14 +596,16 @@ export class WeaponTable {
       if (colKey === 'muzzle') {
         const options = muzzleOptions;
         const muzzleIndex = options.indexOf(value);
-        if (onAttachmentChange) {
+        if (typeof onAttachmentChange === 'function') {
           onAttachmentChange(rowIndex, 'muzzle', muzzleIndex >= 0 ? muzzleIndex : 0);
         }
         return;
       }
     });
 
-    // ===== 精校滑块变更 =====
+    // ============================================================
+    // 精校滑块变更
+    // ============================================================
     el.addEventListener('input', (e) => {
       const slider = e.target.closest('.velocity-precision-slider');
       if (!slider) return;
@@ -564,44 +622,8 @@ export class WeaponTable {
         valueSpan.textContent = `${Math.round(value * 100)}%`;
       }
       
-      if (onPrecisionChange) {
+      if (typeof onPrecisionChange === 'function') {
         onPrecisionChange(rowIndex, value);
-      }
-    });
-
-    // ===== 操作按钮 =====
-    el.addEventListener('click', (e) => {
-      // 添加副本
-      const addBtn = e.target.closest('.add-clone-btn');
-      if (addBtn) {
-        const row = addBtn.closest('tr');
-        const rowIndex = parseInt(row?.dataset.index);
-        if (!isNaN(rowIndex) && onAddClone) {
-          onAddClone(rowIndex);
-        }
-        return;
-      }
-      
-      // 删除副本
-      const removeBtn = e.target.closest('.remove-clone-btn');
-      if (removeBtn) {
-        const row = removeBtn.closest('tr');
-        const rowIndex = parseInt(row?.dataset.index);
-        if (!isNaN(rowIndex) && onAddClone) {
-          onAddClone(rowIndex, true);
-        }
-        return;
-      }
-      
-      // 编辑枪管
-      const editBtn = e.target.closest('.edit-barrel-btn');
-      if (editBtn) {
-        const row = editBtn.closest('tr');
-        const rowIndex = parseInt(row?.dataset.index);
-        if (!isNaN(rowIndex) && onEditBarrel) {
-          onEditBarrel(rowIndex);
-        }
-        return;
       }
     });
   }
@@ -815,6 +837,8 @@ export class WeaponTable {
 
   /**
    * 计算当前值（应用附件加成）
+   * ⭐ 修复：处理枪管缺少 rangeMult 等属性时导致的 NaN 问题
+   * 
    * @param {Object} weapon - 原始武器数据
    * @param {Object} barrel - 枪管数据
    * @param {number} muzzleId - 枪口 ID
@@ -842,13 +866,38 @@ export class WeaponTable {
       muzzleVelocityMult = muzzleBonuses.velocityMult;
     }
 
+    // ============================================================
+    // ⭐ 核心修复：处理枪管缺少 rangeMult/rangeAdd 属性时的 NaN 问题
+    // ============================================================
     let rangeMult = 1.0;
     const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
-    const barrelRange = hasRangeAdd ? 1.0 : (barrel ? barrel.rangeMult : 1.0);
+    
+    // 如果 barrel 存在，但 rangeMult 不存在，默认为 1.0
+    // 使用 ?? 运算符处理 undefined 和 null
+    const barrelRange = hasRangeAdd ? 1.0 : (barrel ? (barrel.rangeMult ?? 1.0) : 1.0);
     rangeMult *= (barrelRange + muzzleRangeMult);
 
+    // 确保 rangeMult 是有效数字
+    if (!isFinite(rangeMult) || isNaN(rangeMult)) {
+      console.warn(
+        `⚠️ calculateCurrentValues: rangeMult 无效 (${rangeMult})，重置为 1.0`,
+        `武器: ${weapon?.name || '未知'}, 枪管: ${barrel?.name || '无'}`
+      );
+      rangeMult = 1.0;
+    }
+
     let velocityMult = rangeMult * muzzleVelocityMult * (1 + precision);
-    let rofMult = barrel ? barrel.rofMult : 1.0;
+    
+    // 确保 velocityMult 是有效数字
+    if (!isFinite(velocityMult) || isNaN(velocityMult)) {
+      console.warn(
+        `⚠️ calculateCurrentValues: velocityMult 无效 (${velocityMult})，重置为 1.0`,
+        `武器: ${weapon?.name || '未知'}`
+      );
+      velocityMult = 1.0;
+    }
+
+    let rofMult = barrel ? (barrel.rofMult ?? 1.0) : 1.0;
     let damageBonus = barrel && barrel.damageBonus !== undefined ? barrel.damageBonus : 0;
     let armorDamageBonus = barrel && barrel.armorDamageBonus !== undefined ? barrel.armorDamageBonus : 0;
 
@@ -874,16 +923,43 @@ export class WeaponTable {
     }
 
     const hasVelocityAdd = barrel && typeof barrel.velocityAdd === 'number';
-    const newVelocity = hasVelocityAdd
+    let newVelocity = hasVelocityAdd
       ? Math.round((weapon.velocity + barrel.velocityAdd) * velocityMult)
       : Math.round(weapon.velocity * velocityMult);
 
+    // 确保 newVelocity 是有效数字
+    if (!isFinite(newVelocity) || isNaN(newVelocity) || newVelocity <= 0) {
+      console.warn(
+        `⚠️ calculateCurrentValues: velocity 无效 (${newVelocity})，使用原始值 ${weapon.velocity || 500}`,
+        `武器: ${weapon?.name || '未知'}`
+      );
+      newVelocity = weapon.velocity || 500;
+    }
+
+    // 确保 rof 是有效数字
+    let rof = Math.round(weapon.rof * rofMult * 100) / 100;
+    if (!isFinite(rof) || isNaN(rof) || rof <= 0) {
+      rof = weapon.rof || 600;
+    }
+
+    // 确保 flesh 是有效数字
+    let flesh = Math.round((weapon.flesh + damageBonus) * 10) / 10;
+    if (!isFinite(flesh) || isNaN(flesh)) {
+      flesh = weapon.flesh || 30;
+    }
+
+    // 确保 armor 是有效数字
+    let armor = Math.round((weapon.armor + armorDamageBonus) * 10) / 10;
+    if (!isFinite(armor) || isNaN(armor)) {
+      armor = weapon.armor || 35;
+    }
+
     return {
-      rof: Math.round(weapon.rof * rofMult * 100) / 100,
+      rof: rof,
       velocity: newVelocity,
       ranges: newRanges,
-      flesh: Math.round((weapon.flesh + damageBonus) * 10) / 10,
-      armor: Math.round((weapon.armor + armorDamageBonus) * 10) / 10,
+      flesh: flesh,
+      armor: armor,
       mult: newMult
     };
   }

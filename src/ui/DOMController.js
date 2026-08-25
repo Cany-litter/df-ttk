@@ -33,6 +33,9 @@ export default class DOMController {
     this.weaponPrecisions = {};
     this.isRefreshing = false;
     this._refreshTimer = null;
+    
+    // ⭐ 保存 onBarrelEdit 回调（供 refreshWeaponTable 使用）
+    this._onBarrelEdit = null;
   }
 
   // ============================================================
@@ -41,6 +44,9 @@ export default class DOMController {
 
   initialize(options = {}) {
     const { onBarrelEdit = null } = options;
+
+    // ⭐ 保存到实例，供 refreshWeaponTable 使用
+    this._onBarrelEdit = onBarrelEdit;
 
     this.setupTabs();
     this.initWeaponTable(onBarrelEdit);
@@ -189,6 +195,9 @@ export default class DOMController {
       return ['无', ...options];
     };
 
+    // ⭐ 使用传入的 onBarrelEdit 或保存的 _onBarrelEdit
+    const editCallback = onBarrelEdit || this._onBarrelEdit;
+
     this.weaponTableInstance = WeaponTable.render({
       data: rowData,
       muzzleOptions: this.muzzleOptions,
@@ -211,11 +220,13 @@ export default class DOMController {
         }
       },
       onEditBarrel: (rowIndex) => {
-        if (onBarrelEdit) {
+        if (editCallback) {
           const row = this.weaponTableInstance?.getData()?.[rowIndex];
           if (row) {
-            onBarrelEdit(row.id);
+            editCallback(row.id);
           }
+        } else {
+          console.warn('⚠️ onEditBarrel 回调未设置');
         }
       }
     });
@@ -223,7 +234,45 @@ export default class DOMController {
     container.innerHTML = this.weaponTableInstance.getHTML();
     this.weaponTableInstance.bindEdit();
 
+    // ⭐ 核心修复：DOM 插入后，直接绑定编辑枪管按钮
+    // 因为 WeaponTable.bindCustomEvents 在 render 时无法获取 DOM 元素
+    this._bindEditBarrelButtons(onBarrelEdit || this._onBarrelEdit);
+
     console.log(`✅ 武器表格初始化完成，${rowData.length} 把武器`);
+  }
+
+  /**
+   * 直接绑定编辑枪管按钮（在 DOM 插入后调用）
+   * ⭐ 核心修复：绕过 WeaponTable.bindCustomEvents 的 DOM 时序问题
+   */
+  _bindEditBarrelButtons(onBarrelEdit) {
+    if (!onBarrelEdit) {
+      console.warn('⚠️ _bindEditBarrelButtons: onBarrelEdit 未设置，跳过绑定');
+      return;
+    }
+
+    const container = document.getElementById('tab-weapon');
+    if (!container) {
+      console.warn('⚠️ _bindEditBarrelButtons: 容器 #tab-weapon 不存在');
+      return;
+    }
+
+    // ⭐ 使用事件委托，监听容器内的点击
+    // 使用捕获阶段确保在 TableRenderer 的监听器之前处理
+    container.addEventListener('click', function(e) {
+      const editBtn = e.target.closest('.edit-barrel-btn');
+      if (!editBtn) return;
+
+      e.stopPropagation();
+      e.preventDefault();
+
+      const weaponId = parseInt(editBtn.dataset.weaponId);
+      console.log('🔧 编辑枪管 (DOMController直接绑定): weaponId =', weaponId);
+
+      onBarrelEdit(weaponId);
+    }, true); // ⭐ 捕获阶段
+
+    console.log('✅ 编辑枪管按钮直接绑定完成 (DOMController)');
   }
 
   initWeaponAttachments(weapons) {
@@ -280,6 +329,7 @@ export default class DOMController {
         return ['无', ...options];
       };
 
+      // ⭐ 使用保存的 _onBarrelEdit
       WeaponTable.update(container, rowData, {
         muzzleOptions: this.muzzleOptions,
         getBarrelOptions: getBarrelOptions,
@@ -300,7 +350,16 @@ export default class DOMController {
             this.handleAddClone(rowIndex);
           }
         },
-        onEditBarrel: (rowIndex) => {}
+        onEditBarrel: (rowIndex) => {
+          if (this._onBarrelEdit) {
+            const row = this.weaponTableInstance?.getData()?.[rowIndex];
+            if (row) {
+              this._onBarrelEdit(row.id);
+            }
+          } else {
+            console.warn('⚠️ _onBarrelEdit 未设置');
+          }
+        }
       });
 
       if (this.weaponTableInstance) {

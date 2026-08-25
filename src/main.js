@@ -154,7 +154,15 @@ class App {
     this.domController.initialize({
       onBarrelEdit: (weaponId) => {
         if (this.barrelEditor) {
-          this.barrelEditor.openEditor(weaponId);
+          // ⭐ 修复：将 weaponId 转换为 weapons 数组索引
+          const weapons = this.dataManager.getWeapons();
+          const index = weapons.findIndex(w => w.id === weaponId);
+          if (index !== -1) {
+            this.barrelEditor.openEditor(index);
+          } else {
+            console.error(`❌ 未找到武器 ID: ${weaponId}`);
+            alert('未找到该武器，请刷新页面后重试');
+          }
         }
       }
     });

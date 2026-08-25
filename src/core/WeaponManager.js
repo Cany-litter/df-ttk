@@ -475,6 +475,8 @@ export class WeaponTable {
    * @param {Object} handlers - 事件处理器
    */
   static bindCustomEvents(table, handlers) {
+    console.log('🔧 WeaponTable.bindCustomEvents 被调用了！');
+
     const {
       onAttachmentChange,
       onPrecisionChange,
