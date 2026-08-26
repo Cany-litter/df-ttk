@@ -1,3 +1,5 @@
+// src/main.js
+
 /**
  * 应用主入口
  * 
@@ -32,8 +34,11 @@ class App {
     this._refreshTimer = null;
     this._isCalculating = false;  // 防止重复计算
     
-    // ⭐ 防止事件重复绑定
+    // 防止事件重复绑定
     this._eventHandlerInitialized = false;
+    
+    // ⭐ 新增：标记是否已完成首次自动计算
+    this._initialAutoCalcDone = false;
   }
 
   /**
@@ -71,6 +76,9 @@ class App {
       
       // 10. 输出缓存统计
       this._logCacheStats();
+
+      // ⭐ 11. 自动加载 TTK 柱状图和折线图
+      this._autoLoadCharts();
 
     } catch (error) {
       console.error('❌ 应用启动失败:', error);
@@ -165,18 +173,17 @@ class App {
   }
 
   // ============================================================
-  // 6. 初始化 EventHandler ⭐ 核心修改
+  // 6. 初始化 EventHandler
   // ============================================================
 
   initEventHandler() {
-    // ⭐ 防止重复绑定
+    // 防止重复绑定
     if (this._eventHandlerInitialized) {
       console.warn('⚠️ EventHandler 已初始化，跳过重复绑定');
       return;
     }
     this._eventHandlerInitialized = true;
 
-    // EventHandler 负责按钮点击 → 通过回调触发计算
     this.eventHandler = new EventHandler(this.domController, this.dataManager);
     this.eventHandler.initialize({
       onCalculate: () => {
@@ -187,15 +194,44 @@ class App {
       }
     });
 
-    // ⭐ 完全移除 calculate-ttk 和 calculate-distance 的监听
-    // 因为这些已经由 EventHandler 的 onCalculate/onDistanceChart 回调处理
-    
-    // ⭐ 移除 export-distance-json 监听（功能已移除）
-    // 原 document.addEventListener('export-distance-json', ...) 已删除
+    // 只保留其他模块触发的特殊事件
+    document.addEventListener('export-distance-json', () => {
+      this.handleExportDistanceJSON();
+    });
   }
 
   // ============================================================
-  // 7. 核心功能 - TTK 计算
+  // ⭐ 7. 自动加载图表
+  // ============================================================
+
+  /**
+   * 启动完成后自动加载 TTK 柱状图和折线图
+   * 使用 requestAnimationFrame 确保 DOM 已完全渲染
+   */
+  _autoLoadCharts() {
+    // 延迟执行，确保所有组件都已完全初始化
+    setTimeout(() => {
+      if (this._initialAutoCalcDone) {
+        console.log('⏳ 自动加载已执行，跳过');
+        return;
+      }
+      this._initialAutoCalcDone = true;
+
+      console.log('🔄 自动加载 TTK 柱状图和折线图...');
+
+      // 先加载柱状图
+      this.handleCalculate();
+
+      // 延迟 300ms 再加载折线图，避免同时计算造成性能压力
+      setTimeout(() => {
+        this.handleDistanceChart();
+        console.log('✅ 自动加载完成');
+      }, 300);
+    }, 500);  // 等待 500ms 确保 DOM 完全渲染
+  }
+
+  // ============================================================
+  // 8. 核心功能 - TTK 计算
   // ============================================================
 
   /**
@@ -203,7 +239,7 @@ class App {
    * 使用防锁防止重复调用
    */
   handleCalculate() {
-    // ⭐ 防止重复调用
+    // 防止重复调用
     if (this._isCalculating) {
       console.log('⏳ 计算中，请稍候...');
       return;
@@ -243,7 +279,7 @@ class App {
    * 使用防锁防止重复调用
    */
   handleDistanceChart() {
-    // ⭐ 防止重复调用
+    // 防止重复调用
     if (this._isCalculating) {
       console.log('⏳ 计算中，请稍候...');
       return;
@@ -270,10 +306,21 @@ class App {
     }
   }
 
-  // ⭐ handleExportDistanceJSON 方法已移除（功能已删除）
+  handleExportDistanceJSON() {
+    try {
+      if (this.chartManager && this.chartManager.distanceChart) {
+        this.chartManager.distanceChart.exportAsJSON();
+      } else {
+        alert('⚠️ 请先生成折线图！');
+      }
+    } catch (error) {
+      console.error('JSON 导出失败:', error);
+      alert('❌ JSON 导出失败: ' + error.message);
+    }
+  }
 
   // ============================================================
-  // 8. 数据准备
+  // 9. 数据准备
   // ============================================================
 
   /**
@@ -554,7 +601,7 @@ class App {
   }
 
   // ============================================================
-  // 9. 缓存统计
+  // 10. 缓存统计
   // ============================================================
 
   /**
@@ -573,7 +620,7 @@ class App {
   }
 
   // ============================================================
-  // 10. 错误处理
+  // 11. 错误处理
   // ============================================================
 
   showError(message) {
@@ -581,7 +628,7 @@ class App {
   }
 
   // ============================================================
-  // 11. 工具方法
+  // 12. 工具方法
   // ============================================================
 
   getStatus() {
