@@ -8,6 +8,10 @@
  * 3. 导出时序列化 this.data
  * 4. 导入时替换 this.data
  * 5. 重置时恢复 this.originalData
+ * 
+ * 修改追踪：
+ * - modifiedWeaponIds: 记录被修改的武器 ID
+ * - 用于增量计算，只重新计算被修改的武器
  */
 export class DataManager {
   constructor() {
@@ -27,6 +31,9 @@ export class DataManager {
       { id: 3, name: '冲锋枪回声消音器', mult: 0.30 }
     ];
     this.originalMuzzles = null;
+    
+    // 修改追踪
+    this.modifiedWeaponIds = new Set();
   }
 
   // ============================================================
@@ -55,6 +62,9 @@ export class DataManager {
       this.originalData = JSON.parse(JSON.stringify(this.data));
       this.originalMuzzles = JSON.parse(JSON.stringify(this.muzzles));
       this.isLoaded = true;
+      
+      // 加载完成后清空修改标记
+      this.modifiedWeaponIds.clear();
       
       console.log(`✅ DataManager: 加载了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹, ${this.data.prices.length} 条价格配置`);
       return this.data;
@@ -86,6 +96,7 @@ export class DataManager {
 
   /**
    * 规范化数据
+   * 将 JSON 中的 "Infinity" 和 null 转换为 Infinity
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
@@ -93,16 +104,22 @@ export class DataManager {
     if (Array.isArray(normalized.weapons)) {
       normalized.weapons.forEach(weapon => {
         if (Array.isArray(weapon.ranges)) {
-          weapon.ranges = weapon.ranges.map(r => 
-            r === 'Infinity' || r === '∞' ? Infinity : Number(r)
-          );
+          weapon.ranges = weapon.ranges.map(r => {
+            if (r === 'Infinity' || r === '∞' || r === null || r === undefined) {
+              return Infinity;
+            }
+            return Number(r);
+          });
         }
         if (Array.isArray(weapon.barrels)) {
           weapon.barrels.forEach((barrel) => {
             if (Array.isArray(barrel.ranges)) {
-              barrel.ranges = barrel.ranges.map(r => 
-                r === 'Infinity' || r === '∞' ? Infinity : Number(r)
-              );
+              barrel.ranges = barrel.ranges.map(r => {
+                if (r === 'Infinity' || r === '∞' || r === null || r === undefined) {
+                  return Infinity;
+                }
+                return Number(r);
+              });
             }
           });
         }
@@ -214,7 +231,7 @@ export class DataManager {
 
   /**
    * 获取指定武器的价格行数据
-   * ⭐ 包含 enabled 字段
+   * ⭐ 包含 enabled 字段和 cache 字段
    */
   getPriceRowsForWeapon(weaponId) {
     const weapon = this.getWeaponById(weaponId);
@@ -262,7 +279,8 @@ export class DataManager {
       
       return {
         weaponName: weapon.name,
-        configId: config.id,
+        // ⭐ 确保 configId 是字符串格式 "#1", "#2", "#3"
+        configId: config.id || '#1',
         barrel: barrelName,
         barrelId: barrelId,
         muzzle: muzzleName,
@@ -273,10 +291,12 @@ export class DataManager {
         hitRate: config.hitRate || [],
         bulletDisplay: bulletDisplay,
         bulletId: config.bullet || '',
-        // ⭐ 读取 enabled 状态，默认为 true
         enabled: config.enabled !== undefined ? config.enabled : true,
         _weaponId: weaponId,
-        _rawConfig: config
+        _rawConfig: config,
+        // ⭐ 直接引用 config.cache（原始引用，不是副本）
+        cache: config.cache || null,
+        _cache: config.cache || null
       };
     });
   }
@@ -329,7 +349,6 @@ export class DataManager {
 
   /**
    * 从命中率映射中获取指定距离的命中率（支持插值和外推）
-   * 10米处强制100%命中率，映射点之间线性插值，超出后线性外推
    */
   getHitRateFromMap(hitRateMap, distance, fallback = 0.85) {
     if (!hitRateMap || hitRateMap.length === 0) {
@@ -417,8 +436,6 @@ export class DataManager {
 
   /**
    * 获取下一个配置 ID（使用 #1, #2, #3 格式）
-   * @param {number} weaponId - 武器 ID
-   * @returns {string} 下一个配置 ID
    */
   getNextConfigId(weaponId) {
     const price = this.getPriceByWeaponId(weaponId);
@@ -426,7 +443,6 @@ export class DataManager {
       return '#1';
     }
     const ids = price.configs.map(c => {
-      // 支持 #1, #2, #3 格式
       const num = parseInt(c.id.replace('#', ''));
       return isNaN(num) ? 0 : num;
     });
@@ -502,7 +518,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 7. 数据更新 - 武器
+  // 7. 数据更新 - 武器（含修改追踪）
   // ============================================================
 
   updateWeapon(weaponId, updates) {
@@ -510,6 +526,7 @@ export class DataManager {
     if (!weapon) return false;
     
     Object.assign(weapon, updates);
+    this.markWeaponModified(weaponId);
     return true;
   }
 
@@ -519,6 +536,7 @@ export class DataManager {
     if (barrelIndex < 0 || barrelIndex >= weapon.barrels.length) return false;
     
     Object.assign(weapon.barrels[barrelIndex], updates);
+    this.markWeaponModified(weaponId);
     return true;
   }
 
@@ -529,6 +547,7 @@ export class DataManager {
       weapon.barrels = [];
     }
     weapon.barrels.push(barrelData);
+    this.markWeaponModified(weaponId);
     return weapon.barrels.length - 1;
   }
 
@@ -549,6 +568,7 @@ export class DataManager {
     }
     
     weapon.barrels.splice(barrelIndex, 1);
+    this.markWeaponModified(weaponId);
     return true;
   }
 
@@ -578,6 +598,7 @@ export class DataManager {
     }
     
     Object.assign(bullet, updates);
+    this.markWeaponsByBullet(bulletId);
     return true;
   }
 
@@ -587,7 +608,6 @@ export class DataManager {
       console.warn(`子弹 ${bulletData.id} 已存在`);
       return false;
     }
-    
     this.data.bullets.push(bulletData);
     return true;
   }
@@ -609,17 +629,9 @@ export class DataManager {
   }
 
   // ============================================================
-  // 9. 数据更新 - 价格
+  // 9. 数据更新 - 价格（含修改追踪）
   // ============================================================
 
-  /**
-   * 更新价格配置
-   * ⭐ 支持更新 enabled 字段
-   * @param {number} weaponId - 武器 ID
-   * @param {string} configId - 配置 ID
-   * @param {Object} updates - 更新字段
-   * @returns {boolean} 是否更新成功
-   */
   updatePriceConfig(weaponId, configId, updates) {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price) {
@@ -633,8 +645,18 @@ export class DataManager {
       return false;
     }
     
-    // ⭐ 支持更新 enabled 字段
+    // 判断哪些字段影响 TTK 计算
+    const ttkAffectingKeys = ['barrelId', 'muzzleId', 'bullet', 'distance', 'hitRate'];
+    const hasTtkAffectingChange = Object.keys(updates).some(key => 
+      ttkAffectingKeys.includes(key)
+    );
+    
     Object.assign(config, updates);
+    
+    if (hasTtkAffectingChange) {
+      this.markWeaponModified(weaponId);
+    }
+    
     return true;
   }
 
@@ -642,7 +664,6 @@ export class DataManager {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price) return false;
     
-    // 确保新配置有 enabled 字段
     if (configData.enabled === undefined) {
       configData.enabled = true;
     }
@@ -654,6 +675,7 @@ export class DataManager {
     }
     
     price.configs.push(configData);
+    this.markWeaponModified(weaponId);
     return true;
   }
 
@@ -670,39 +692,156 @@ export class DataManager {
     }
     
     price.configs.splice(index, 1);
+    this.markWeaponModified(weaponId);
     return true;
   }
 
   // ============================================================
-  // 10. 数据导出/导入
+  // 10. 修改追踪管理
   // ============================================================
 
-  exportToJSON() {
-    try {
-      const serialized = this.serializeData(this.data);
-      return JSON.stringify(serialized, null, 2);
-    } catch (error) {
-      console.error('导出 JSON 失败:', error);
-      throw error;
+  markWeaponModified(weaponId) {
+    if (weaponId === undefined || weaponId === null) return;
+    const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId;
+    if (!isNaN(id)) {
+      this.modifiedWeaponIds.add(id);
     }
   }
 
+  markWeaponsModified(weaponIds) {
+    for (const id of weaponIds) {
+      this.markWeaponModified(id);
+    }
+  }
+
+  markWeaponsByBullet(bulletId) {
+    const affectedWeaponIds = [];
+    for (const price of this.data.prices) {
+      for (const config of price.configs) {
+        if (config.bullet === bulletId) {
+          affectedWeaponIds.push(price.weaponId);
+          break;
+        }
+      }
+    }
+    this.markWeaponsModified(affectedWeaponIds);
+  }
+
+  isWeaponModified(weaponId) {
+    const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId;
+    return this.modifiedWeaponIds.has(id);
+  }
+
+  getModifiedWeaponIds() {
+    return Array.from(this.modifiedWeaponIds);
+  }
+
+  clearWeaponModified(weaponId) {
+    const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId;
+    this.modifiedWeaponIds.delete(id);
+  }
+
+  clearAllModified() {
+    this.modifiedWeaponIds.clear();
+    console.log('📝 已清除所有修改标记');
+  }
+
+  // ============================================================
+  // 11. 缓存管理
+  // ============================================================
+
+  getConfigCache(weaponId, configId) {
+    const price = this.getPriceByWeaponId(weaponId);
+    if (!price) return null;
+    const config = price.configs.find(c => c.id === configId);
+    return config?.cache || null;
+  }
+
+  saveConfigCache(weaponId, configId, cacheData) {
+    const price = this.getPriceByWeaponId(weaponId);
+    if (!price) return false;
+    const config = price.configs.find(c => c.id === configId);
+    if (!config) return false;
+    
+    config.cache = {
+      keyPoints: cacheData.keyPoints,
+      hash: cacheData.hash,
+      cachedAt: new Date().toISOString()
+    };
+    return true;
+  }
+
+  clearWeaponCache(weaponId) {
+    const price = this.getPriceByWeaponId(weaponId);
+    if (!price) return 0;
+    let count = 0;
+    for (const config of price.configs) {
+      if (config.cache) {
+        delete config.cache;
+        count++;
+      }
+    }
+    if (count > 0) {
+      console.log(`🗑️ 清除武器 ${weaponId} 的 ${count} 个缓存`);
+    }
+    return count;
+  }
+
+  clearAllCache() {
+    let count = 0;
+    for (const price of this.data.prices) {
+      for (const config of price.configs) {
+        if (config.cache) {
+          delete config.cache;
+          count++;
+        }
+      }
+    }
+    console.log(`🗑️ 清除所有缓存，共 ${count} 个`);
+    return count;
+  }
+
+  getCacheStats() {
+    let total = 0;
+    let cached = 0;
+    for (const price of this.data.prices) {
+      for (const config of price.configs) {
+        total++;
+        if (config.cache) cached++;
+      }
+    }
+    return { total, cached, modified: this.modifiedWeaponIds.size };
+  }
+
+  // ============================================================
+  // 12. 数据序列化
+  // ============================================================
+
+  /**
+   * 序列化数据（将 Infinity 转为 "Infinity"）
+   */
   serializeData(data) {
     const serialized = JSON.parse(JSON.stringify(data));
     
     if (Array.isArray(serialized.weapons)) {
       serialized.weapons.forEach(weapon => {
         if (Array.isArray(weapon.ranges)) {
-          weapon.ranges = weapon.ranges.map(r => 
-            r === Infinity ? 'Infinity' : r
-          );
+          weapon.ranges = weapon.ranges.map(r => {
+            if (r === Infinity || r === null || r === undefined) {
+              return 'Infinity';
+            }
+            return r;
+          });
         }
         if (Array.isArray(weapon.barrels)) {
           weapon.barrels.forEach(barrel => {
             if (Array.isArray(barrel.ranges)) {
-              barrel.ranges = barrel.ranges.map(r => 
-                r === Infinity ? 'Infinity' : r
-              );
+              barrel.ranges = barrel.ranges.map(r => {
+                if (r === Infinity || r === null || r === undefined) {
+                  return 'Infinity';
+                }
+                return r;
+              });
             }
           });
         }
@@ -712,6 +851,102 @@ export class DataManager {
     return serialized;
   }
 
+  // ============================================================
+  // 13. 数据导出/导入
+  // ============================================================
+
+  /**
+   * 导出 JSON（含缓存）
+   * @param {boolean} includeCache - 是否包含缓存数据
+   * @returns {string} JSON 字符串
+   */
+  exportToJSON(includeCache = true) {
+    try {
+      const dataToExport = this.serializeData(this.data);
+      
+      // 如果不包含缓存，清除所有 cache 字段
+      if (!includeCache) {
+        for (const price of dataToExport.prices || []) {
+          for (const config of price.configs || []) {
+            delete config.cache;
+          }
+        }
+      }
+      
+      // 正常序列化
+      let json = JSON.stringify(dataToExport, null, 2);
+      
+      // 压缩 armorData：将多行压缩为单行
+      json = this._compressArmorData(json);
+      
+      // 压缩 keyPoints 数组
+      json = this._compressKeyPoints(json);
+      
+      return json;
+    } catch (error) {
+      console.error('导出 JSON 失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 压缩 armorData 格式
+   * 将多行压缩为单行：{ "armorMult": 0.6, "pen": 0.5 }
+   */
+  _compressArmorData(json) {
+    // 匹配 armorData 对象中的所有等级条目
+    return json.replace(
+      /"(\d+)":\s*\{\s*\n\s*"armorMult":\s*([\d.]+),\s*\n\s*"pen":\s*([\d.]+)\s*\n\s*\}/g,
+      (match, level, armorMult, pen) => {
+        return `"${level}": { "armorMult": ${armorMult}, "pen": ${pen} }`;
+      }
+    );
+  }
+
+  /**
+   * 压缩 keyPoints 数组
+   * 将多行 keyPoints 压缩为单行：[{ "d": 0, "t": 123.45 }, { "d": 100, "t": 234.56 }]
+   */
+  _compressKeyPoints(json) {
+    // 匹配 keyPoints 数组并压缩
+    return json.replace(
+      /"keyPoints":\s*\[\s*\n\s*((?:\{[^}]*\},\s*\n\s*)*\{[^}]*\})\s*\n\s*\]/g,
+      (match, content) => {
+        // 提取所有点 {"d": 0, "t": 123.45}
+        const points = content.match(/\{\s*"d":\s*([\d.]+),\s*"t":\s*([\d.]+)\s*\}/g);
+        if (!points) return match;
+        
+        // 压缩为单行数组
+        const compressed = points.map(p => p.replace(/\s+/g, ' ').trim());
+        return `"keyPoints": [${compressed.join(', ')}]`;
+      }
+    );
+  }
+
+  /**
+   * 导出到文件
+   * @param {string} filename - 文件名
+   * @param {boolean} includeCache - 是否包含缓存
+   */
+  exportToFile(filename = null, includeCache = true) {
+    const jsonStr = this.exportToJSON(includeCache);
+    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || `ttk_data_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    console.log(`✅ 数据已导出到: ${a.download}${includeCache ? ' (含缓存)' : ' (不含缓存)'}`);
+  }
+
+  /**
+   * 从 JSON 字符串导入数据
+   */
   importFromJSON(jsonStr) {
     try {
       const parsed = JSON.parse(jsonStr);
@@ -724,6 +959,9 @@ export class DataManager {
       this.originalData = JSON.parse(JSON.stringify(normalized));
       this.isLoaded = true;
       
+      // 导入后清空修改标记
+      this.clearAllModified();
+      
       console.log(`✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹`);
       return this.data;
       
@@ -733,22 +971,9 @@ export class DataManager {
     }
   }
 
-  exportToFile(filename = null) {
-    const jsonStr = this.exportToJSON();
-    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename || `ttk_data_${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    console.log(`✅ 数据已导出到: ${a.download}`);
-  }
-
+  /**
+   * 从文件导入
+   */
   importFromFile(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -768,7 +993,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 11. 数据重置
+  // 14. 数据重置
   // ============================================================
 
   resetToOriginal() {
@@ -781,6 +1006,8 @@ export class DataManager {
     if (this.originalMuzzles) {
       this.muzzles = JSON.parse(JSON.stringify(this.originalMuzzles));
     }
+    
+    this.clearAllModified();
     console.log('✅ 数据已重置为初始状态');
     return this.data;
   }
@@ -794,17 +1021,21 @@ export class DataManager {
   }
 
   // ============================================================
-  // 12. 工具方法
+  // 15. 工具方法
   // ============================================================
 
   getStats() {
+    const cacheStats = this.getCacheStats();
     return {
       weaponCount: this.data.weapons.length,
       bulletCount: this.data.bullets.length,
       priceCount: this.data.prices.length,
       muzzleCount: this.muzzles.length,
       isLoaded: this.isLoaded,
-      hasUnsavedChanges: this.hasUnsavedChanges()
+      hasUnsavedChanges: this.hasUnsavedChanges(),
+      modifiedWeapons: this.modifiedWeaponIds.size,
+      cachedConfigs: cacheStats.cached,
+      totalConfigs: cacheStats.total
     };
   }
 

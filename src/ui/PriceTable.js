@@ -62,7 +62,8 @@ export class PriceTable {
         editable: false,
         headerAttrs: { style: 'min-width:50px;' },
         render: (row) => {
-          return TableRenderer.escapeHtml(row.configId || '-');
+          // ⭐ 确保 configId 正确显示
+          return TableRenderer.escapeHtml(row.configId || '#1');
         }
       },
 
@@ -299,7 +300,11 @@ export class PriceTable {
         _muzzleOptions: muzzleOpts,
         _bulletOptions: bulletOptions,
         _isNewRow: row._isNewRow || false,
-        enabled: row.enabled !== false
+        enabled: row.enabled !== false,
+        // ⭐ 确保缓存数据被保留
+        _cache: row._cache || row.cache || null,
+        // ⭐ 确保 configId 正确传递
+        _configId: row.configId || '#1'
       };
     });
 
@@ -456,6 +461,11 @@ export class PriceTable {
         }
         if (colKey === 'bulletDisplay' && row._bulletOptions) {
           attrs['data-bullet-options'] = JSON.stringify(row._bulletOptions);
+        }
+        
+        // ⭐ 关键修复：传递 configId 到 dataset，方便调试
+        if (colKey === 'configId' && row.configId) {
+          attrs['data-config-id'] = row.configId;
         }
         
         const attrsStr = Object.entries(attrs)
@@ -745,7 +755,11 @@ export class PriceTable {
         _muzzleOptions: muzzleOpts,
         _bulletOptions: bulletOptions,
         _isNewRow: row._isNewRow || false,
-        enabled: row.enabled !== false
+        enabled: row.enabled !== false,
+        // ⭐ 确保缓存数据被保留
+        _cache: row._cache || row.cache || null,
+        // ⭐ 确保 configId 正确传递
+        _configId: row.configId || '#1'
       };
     });
 
@@ -818,7 +832,8 @@ export class PriceTable {
   /**
    * 构建价格行数据（从 DataManager 的原始数据转换）
    * 直接使用 configId 的原始值（#1, #2, #3），不再进行转换
-   * ⭐ 包含 enabled 字段
+   * ⭐ 包含 enabled 字段和 _cache 字段
+   * ⭐ 关键修复：确保 configId 正确传递
    * @param {Object} rowData - DataManager.getPriceRows() 返回的行数据
    * @param {Object} extra - 额外字段
    * @returns {Object} 完整的行数据
@@ -838,13 +853,14 @@ export class PriceTable {
 
     const weaponId = rowData._weaponId !== undefined ? rowData._weaponId : rowData.weaponId;
     
-    // 直接使用 configId，不再进行转换（data.json 中已经是 #1, #2, #3 格式）
+    // ⭐ 关键修复：直接使用 rowData.configId，确保 "#1", "#2", "#3" 格式正确传递
     const configId = rowData.configId || '#1';
     
     const result = {
       weaponName: rowData.weaponName || '-',
       configId: configId,
       _rawConfigId: configId,
+      _configId: configId,  // ⭐ 确保 _configId 也正确设置
       barrel: rowData.barrel || '无',
       muzzle: rowData.muzzle || '无',
       buildCode: rowData.buildCode || '',
@@ -853,14 +869,14 @@ export class PriceTable {
       bulletDisplay: rowData.bulletDisplay || '-',
       
       _weaponId: weaponId,
-      _configId: rowData.configId,
       _distance: rowData.distance || [],
       _hitRate: rowData.hitRate || [],
       _bulletId: rowData.bulletId || '',
       _rawConfig: rowData._rawConfig || {},
       _isNewRow: false,
-      // ⭐ 从 rowData 读取 enabled，默认为 true
       enabled: rowData.enabled !== undefined ? rowData.enabled : true,
+      // ⭐ 关键修复：传递缓存数据
+      _cache: rowData._cache || rowData.cache || null,
       
       ...extra
     };
@@ -885,6 +901,7 @@ export class PriceTable {
       weaponName: weaponName || '-',
       configId: displayId,
       _rawConfigId: rawId,
+      _configId: rawId,
       barrel: defaults.barrel || '无',
       muzzle: defaults.muzzle || '无',
       buildCode: defaults.buildCode || '',
@@ -892,14 +909,13 @@ export class PriceTable {
       hitRateRaw: defaults.hitRateRaw || '',
       bulletDisplay: defaults.bulletDisplay || '-',
       _weaponId: weaponId,
-      _configId: nextConfigId,
       _distance: [],
       _hitRate: [],
       _bulletId: '',
       _rawConfig: {},
       _isNewRow: true,
-      // ⭐ 新增配置默认启用
-      enabled: true
+      enabled: true,
+      _cache: null
     };
   }
 

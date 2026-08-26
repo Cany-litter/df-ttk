@@ -1,3 +1,4 @@
+// src/ui/DistanceChart.js
 import { 
   TIME_UNITS, 
   CHART_CONFIG, 
@@ -7,7 +8,7 @@ import { SimulationEngine } from '../core/SimulationEngine.js';
 import { BulletStrategyFactory } from '../core/BulletStrategy.js';
 import { formatTime } from '../utils/formatters.js';
 import { resetSeed } from '../utils/rng.js';
-import { getCacheManager } from '../core/CacheManager.js';
+import { getConfigCacheManager } from '../core/ConfigCacheManager.js';
 
 /**
  * 垂直线插件
@@ -36,56 +37,10 @@ const verticalLinePlugin = {
 };
 
 /**
- * 自定义 JSON 序列化
- * 数组保持在一行，对象使用 2 空格缩进
- */
-function stringifyWithInlineArrays(obj, indent = 2) {
-  const space = ' '.repeat(indent);
-  
-  function stringify(value, depth) {
-    const currentIndent = space.repeat(depth);
-    const nextIndent = space.repeat(depth + 1);
-    
-    if (value === null) return 'null';
-    if (value === undefined) return 'null';
-    
-    if (typeof value !== 'object') {
-      return JSON.stringify(value);
-    }
-    
-    // 数组 → 保持在一行
-    if (Array.isArray(value)) {
-      if (value.length === 0) return '[]';
-      const items = value.map(v => {
-        if (typeof v === 'number') return String(v);
-        if (typeof v === 'string') return JSON.stringify(v);
-        if (typeof v === 'boolean') return String(v);
-        if (v === null) return 'null';
-        return stringify(v, depth);
-      });
-      return '[' + items.join(', ') + ']';
-    }
-    
-    // 对象
-    const keys = Object.keys(value);
-    if (keys.length === 0) return '{}';
-    
-    const lines = keys.map(key => {
-      const val = value[key];
-      if (val === undefined) return null;
-      const keyStr = JSON.stringify(key);
-      const valStr = stringify(val, depth + 1);
-      return `${nextIndent}${keyStr}: ${valStr}`;
-    }).filter(Boolean);
-    
-    return `{\n${lines.join(',\n')}\n${currentIndent}}`;
-  }
-  
-  return stringify(obj, 0);
-}
-
-/**
- * 距离折线图专用类
+ * 距离折线图类
+ * 
+ * 使用快速模式（关键点模拟 + 插值）生成 0-100m 的 TTK 曲线
+ * 支持缓存：从 data.json 读取预计算的关键点数据
  */
 export class DistanceChart {
   constructor() {
@@ -97,28 +52,15 @@ export class DistanceChart {
     this.lastArmed = null;
     this.lastAttachments = null;
     
-    // 真实模拟相关
-    this.isRealMode = false;
-    this.selectedWeaponIndex = -1;
-    this.cacheManager = getCacheManager();
-    this.cachedBatchData = null;
-    this.isCalculating = false;
-    this.simProgress = 0;
-    
     // 控制台日志控制
     this._hitRateLogPrinted = false;
     this._keyDistancesLogged = false;
     
     // 防重入锁
     this._isUpdating = false;
-  }
-
-  /**
-   * 设置缓存管理器（允许外部注入）
-   * @param {CacheManager} cacheManager
-   */
-  setCacheManager(cacheManager) {
-    this.cacheManager = cacheManager;
+    
+    // 缓存管理器
+    this.cacheManager = null;
   }
 
   // ============================================================
@@ -127,8 +69,14 @@ export class DistanceChart {
 
   /**
    * 更新距离图表
+   * 
+   * 流程：
+   * 1. 检查每个配置的缓存状态
+   * 2. 缓存命中 → 直接使用关键点数据
+   * 3. 缓存未命中 → 执行快速模式模拟 → 保存缓存
+   * 4. 插值生成完整曲线
    */
-  async update(armed, attachments, params) {
+  update(armed, attachments, params) {
     // 防重入锁
     if (this._isUpdating) {
       console.log('⏳ 图表正在更新中，跳过本次请求');
@@ -138,13 +86,6 @@ export class DistanceChart {
     
     try {
       resetSeed();
-      
-      // 读取真实模拟开关状态
-      const toggle = document.getElementById('realSimulationToggle');
-      this.isRealMode = toggle ? toggle.checked : false;
-      
-      // 更新状态提示
-      this.updateStatusDisplay();
       
       const showAllCheckbox = document.getElementById('showAllWeapons');
       this.showAllWeapons = showAllCheckbox ? showAllCheckbox.checked : false;
@@ -161,15 +102,20 @@ export class DistanceChart {
       this._hitRateLogPrinted = false;
       this._keyDistancesLogged = false;
       
-      // 根据模式选择计算方式
-      let stats;
-      if (this.isRealMode) {
-        // 真实模拟模式：同时计算真实模拟和快速模式的数据
-        stats = await this.calculateRealModeWithComparison(armed, attachments, params, distances);
-      } else {
-        // 快速模式：6个关键点插值，显示所有武器
-        stats = this.calculateFastMode(armed, attachments, params, distances);
+      // 获取 DataManager 和缓存管理器
+      const dm = window.__app__?.dataManager;
+      if (!dm) {
+        console.error('DistanceChart: DataManager 未找到');
+        return;
       }
+      this.cacheManager = getConfigCacheManager(dm);
+      
+      // 获取修改标记
+      const modifiedWeaponIds = dm.getModifiedWeaponIds ? dm.getModifiedWeaponIds() : [];
+      const modifiedSet = new Set(modifiedWeaponIds);
+      
+      // 构建统计数据（含缓存）
+      const stats = this._buildStatsWithCache(armed, attachments, params, distances, dm, modifiedSet);
       
       if (!stats || stats.length === 0) {
         console.warn('DistanceChart: 没有可用的统计数据');
@@ -182,346 +128,209 @@ export class DistanceChart {
       this.lastStats = stats;
       
       this.renderChart(distances, stats);
+      
+      // 输出缓存统计
+      const cacheStats = this.cacheManager.getStats();
+      console.log(`📊 缓存统计: ${cacheStats.cached}/${cacheStats.total} 已缓存, ${modifiedSet.size} 个武器待重新计算`);
+      
     } finally {
       this._isUpdating = false;
     }
   }
 
   // ============================================================
-  // 2. 快速模式（原有逻辑）
+  // 2. 缓存构建
   // ============================================================
 
   /**
-   * 快速模式：在衰减边界两侧模拟，中间点插值
-   * 修复：返回毫秒值
+   * 从缓存构建统计数据
+   * 优先使用缓存，未命中的执行模拟
+   * 
+   * ⭐ 核心修复：所有 config 操作都通过 DataManager 获取原始引用
+   * ⭐ 修复：使用 configId 字符串格式 "#1", "#2", "#3" 进行匹配
    */
-  calculateFastMode(armed, attachments, params, distances) {
-    const dm = window.__app__?.dataManager;
-    if (!dm) {
-      console.error('DistanceChart: DataManager 未找到');
-      return [];
-    }
+  _buildStatsWithCache(armed, attachments, params, distances, dm, modifiedSet) {
+    const stats = [];
+    const itemsToCalculate = [];
 
-    return armed.map((w, idx) => {
-      const selectedBulletType = attachments[idx]?.bulletType;
+    // 第一遍：检查缓存状态
+    for (let idx = 0; idx < armed.length; idx++) {
+      const weapon = armed[idx];
+      const attachment = attachments[idx] || {};
+      const configId = attachment.configId || '#1';
+      const weaponId = weapon.id;
+      const displayName = weapon._displayName || weapon.name;
       
-      let realBulletKey = SimulationEngine.getRealBulletKey(selectedBulletType, w, params, dm);
-      
-      if (!realBulletKey) {
-        console.warn(`武器 ${w.name} 没有匹配的子弹，跳过`);
-        return null;
+      // ⭐ 通过 DataManager 获取原始配置引用（不是副本）
+      const price = dm.getPriceByWeaponId(weaponId);
+      if (!price) {
+        console.warn(`⚠️ 未找到武器 ${weaponId} 的价格配置`);
+        continue;
       }
       
-      const bulletData = dm.getBulletById(realBulletKey);
-      if (!bulletData) {
-        console.warn(`武器 ${w.name} 的子弹 ${realBulletKey} 不存在，跳过`);
-        return null;
+      // ⭐ 使用 configId（字符串格式 "#1", "#2", "#3"）查找配置
+      const config = price.configs.find(c => c.id === configId);
+      if (!config) {
+        console.warn(`⚠️ 未找到配置 ${configId}（武器 ${weaponId}）`);
+        continue;
       }
       
-      const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
-      
-      // 关键点：在衰减边界两侧都添加模拟点
-      const keyDistances = this.getKeyDistances(
-        w.ranges || [40, 70, Infinity, Infinity],
-        CHART_CONFIG.MAX_DISTANCE
+      // ⭐ 使用原始 config 检查缓存状态
+      const cacheStatus = this.cacheManager.checkCacheStatus(
+        weapon, config, params, attachment, modifiedSet
       );
       
-      if (!this._keyDistancesLogged) {
-        console.log(`📊 [快速模式] ${w.name} 关键模拟点:`, keyDistances);
-        this._keyDistancesLogged = true;
+      if (cacheStatus.needsRecalc) {
+        // 需要重新计算
+        itemsToCalculate.push({
+          idx,
+          weapon,
+          attachment,
+          config,  // ⭐ 保存原始 config 引用
+          configId,
+          weaponId,
+          displayName,
+          reason: cacheStatus.reason
+        });
+      } else {
+        // 缓存命中
+        const keyPoints = cacheStatus.cacheData.keyPoints;
+        const times = this._keyPointsToTimes(keyPoints, distances);
+        const avg35 = this._calculateAvg35(times);
+        
+        stats.push({
+          weapon,
+          times,
+          avg35,
+          displayName: displayName,
+          fromCache: true,
+          keyPoints: keyPoints
+        });
+        
+        console.log(`✅ 缓存命中: ${displayName} (${keyPoints.length} 个关键点)`);
+      }
+    }
+
+    // 第二遍：计算未命中的武器
+    if (itemsToCalculate.length > 0) {
+      console.log(`🔬 需要计算 ${itemsToCalculate.length} 个配置...`);
+      
+      let savedCount = 0;
+      
+      for (const item of itemsToCalculate) {
+        const { weapon, attachment, config, weaponId, configId, displayName } = item;
+        
+        console.log(`  计算中: ${displayName} (${item.reason})`);
+        
+        // 执行快速模式模拟
+        const result = this._calculateFastModeForSingleWeapon(
+          weapon, params, distances, attachment, dm
+        );
+        
+        if (result) {
+          const { keyPoints, times, avg35 } = result;
+          
+          // ⭐ 保存到缓存 - 使用已有的原始 config 引用（来自 DataManager）
+          const hash = this.cacheManager.generateParamsHash(
+            weapon, config, params, attachment
+          );
+          config.cache = {
+            keyPoints: keyPoints,
+            hash: hash,
+            cachedAt: new Date().toISOString()
+          };
+          savedCount++;
+          console.log(`  💾 缓存已保存: ${displayName} (${keyPoints.length} 个关键点)`);
+          
+          stats.push({
+            weapon,
+            times,
+            avg35,
+            displayName: displayName,
+            fromCache: false,
+            keyPoints: keyPoints
+          });
+          
+          console.log(`  ✅ 计算完成: ${displayName}`);
+        }
       }
       
-      const simulationCache = new Map();
+      // 计算完成后，清除这些武器的修改标记
+      const calculatedWeaponIds = [...new Set(itemsToCalculate.map(item => item.weaponId))];
+      for (const id of calculatedWeaponIds) {
+        dm.clearWeaponModified && dm.clearWeaponModified(id);
+      }
+      console.log(`📝 已清除 ${calculatedWeaponIds.length} 个武器的修改标记`);
       
-      // 在关键点执行模拟
-      keyDistances.forEach(distance => {
-        const hitRateAtDistance = this.getHitRateForDistance(
-          params.hitRateMap,
-          distance,
-          0.85
-        );
-        
-        const simParams = { 
-          ...params, 
-          distance, 
-          hitRate: hitRateAtDistance, 
-          bulletLevel: realBulletKey 
-        };
-        
-        const { avgTime } = SimulationEngine.calculateAvgStats(
-          w, 
-          simParams, 
-          SIMULATION_CONFIG.DEFAULT_SIM_COUNT, 
-          strategy, 
-          bulletData
-        );
-        
-        const trigger = params.triggerDelayEnable 
-          ? (w._current?.triggerDelay ?? w.triggerDelay ?? 0) / TIME_UNITS.SECONDS_TO_MS 
-          : 0;
-        
-        // 存储秒值
-        simulationCache.set(distance, avgTime + trigger);
-      });
-      
-      // 对所有距离点计算 TTK（插值），返回秒
-      const times = distances.map(d => {
-        if (simulationCache.has(d)) {
-          return simulationCache.get(d);
-        } else {
-          return this.calculateTTKByFormula(
-            w, 
-            d, 
-            params, 
-            strategy, 
-            simulationCache,
-            params.hitRateMap
-          );
-        }
-      });
-      
-      const cutoff = distances.findIndex(d => d > CHART_CONFIG.CUTOFF_DISTANCE);
-      const slice = cutoff === -1 ? times : times.slice(0, cutoff);
-      const avg35 = slice.reduce((s, t) => s + t, 0) / slice.length;
-      
-      // 获取显示名称（优先使用 _displayName）
-      const displayName = w._displayName || w.name;
-      
-      // 关键修复：将秒转换为毫秒
-      const timesMs = times.map(t => t * TIME_UNITS.SECONDS_TO_MS);
-      const avg35Ms = avg35 * TIME_UNITS.SECONDS_TO_MS;
-      
-      return { weapon: w, times: timesMs, avg35: avg35Ms, displayName };
-    }).filter(Boolean);
+      // 输出保存统计
+      console.log(`💾 本次保存了 ${savedCount} 个配置的缓存到 DataManager.data`);
+    }
+
+    return stats;
+  }
+
+  /**
+   * 将关键点转换为完整的距离-TTK 数组
+   */
+  _keyPointsToTimes(keyPoints, distances) {
+    return distances.map(d => {
+      return this.cacheManager.interpolateTTK(keyPoints, d);
+    });
+  }
+
+  /**
+   * 计算 35m 内的平均 TTK
+   */
+  _calculateAvg35(times) {
+    if (!times || times.length === 0) return 0;
+    const cutoff = Math.min(35, times.length - 1);
+    const slice = times.slice(0, cutoff + 1);
+    return slice.reduce((s, t) => s + t, 0) / slice.length;
   }
 
   // ============================================================
-  // 3. 真实模拟模式 + 对比
+  // 3. 快速模式模拟（单武器）
   // ============================================================
 
   /**
-   * 真实模拟模式：同时计算真实模拟和快速模式的数据用于对比
-   * 返回两个数据集：真实模拟曲线 + 快速模式曲线
+   * 计算单把武器的快速模式数据
+   * 返回关键点数据
    */
-  async calculateRealModeWithComparison(armed, attachments, params, distances) {
-    const dm = window.__app__?.dataManager;
-    if (!dm) {
-      console.error('DistanceChart: DataManager 未找到');
-      return [];
-    }
-
-    // 获取选中的武器索引（价格表格中第一个启用的配置）
-    const selectedIndex = this.getSelectedWeaponIndex(armed, attachments);
-    
-    if (selectedIndex === -1) {
-      console.warn('⚠️ 真实模拟模式：没有找到启用的价格配置，请到"价格数据" Tab 中启用至少一个配置');
-      this.showNoConfigWarning();
-      return [];
-    }
-
-    this.selectedWeaponIndex = selectedIndex;
-    const weapon = armed[selectedIndex];
-    const attachment = attachments[selectedIndex] || {};
-    
-    // 获取显示名称
-    const displayName = weapon._displayName || weapon.name;
-    
-    // 更新状态信息栏
-    this.updateRealSimInfo(weapon, '准备计算...');
-    
+  _calculateFastModeForSingleWeapon(weapon, params, distances, attachment, dm) {
     // 获取子弹
     const selectedBulletType = attachment.bulletType;
-    let realBulletKey = SimulationEngine.getRealBulletKey(selectedBulletType, weapon, params, dm);
+    let realBulletKey = SimulationEngine.getRealBulletKey(
+      selectedBulletType, weapon, params, dm
+    );
     
     if (!realBulletKey) {
-      console.warn(`武器 ${weapon.name} 没有匹配的子弹`);
-      return [];
+      console.warn(`武器 ${weapon.name} 没有匹配的子弹，跳过`);
+      return null;
     }
     
     const bulletData = dm.getBulletById(realBulletKey);
     if (!bulletData) {
       console.warn(`武器 ${weapon.name} 的子弹 ${realBulletKey} 不存在`);
-      return [];
+      return null;
     }
     
     const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
     
-    // ============================================================
-    // 第一部分：计算真实模拟数据（101点精确模拟）
-    // ============================================================
-    const realTimes = await this.calculateRealSimulationData(
-      weapon, attachment, params, distances, realBulletKey, bulletData, strategy, displayName
-    );
-    
-    // ============================================================
-    // 第二部分：计算快速模式数据（6点插值）- 用于对比
-    // ============================================================
-    console.log(`📊 [对比模式] 计算快速模式数据: ${displayName}`);
-    this.updateRealSimInfo(weapon, '⏳ 计算快速模式对比数据...');
-    
-    const fastTimes = this.calculateFastModeForSingleWeapon(
-      weapon, params, distances, realBulletKey, bulletData, strategy
-    );
-    
-    // 计算 avg35
-    const cutoff = distances.findIndex(d => d > CHART_CONFIG.CUTOFF_DISTANCE);
-    const realSlice = cutoff === -1 ? realTimes : realTimes.slice(0, cutoff);
-    const fastSlice = cutoff === -1 ? fastTimes : fastTimes.slice(0, cutoff);
-    const realAvg35 = realSlice.reduce((s, t) => s + t, 0) / realSlice.length;
-    const fastAvg35 = fastSlice.reduce((s, t) => s + t, 0) / fastSlice.length;
-    
-    this.updateRealSimInfo(weapon, '✅ 对比数据准备完成');
-    
-    // 返回两个数据集：真实模拟和快速模式
-    return [
-      { 
-        weapon, 
-        times: realTimes, 
-        avg35: realAvg35, 
-        displayName: `${displayName} (真实模拟)`,
-        isRealSim: true 
-      },
-      { 
-        weapon, 
-        times: fastTimes, 
-        avg35: fastAvg35, 
-        displayName: `${displayName} (快速模式)`,
-        isRealSim: false 
-      }
-    ];
-  }
-
-  /**
-   * 计算真实模拟数据（101点精确模拟）
-   * 修复：缓存读取时使用与写入时完全相同的参数
-   */
-  async calculateRealSimulationData(weapon, attachment, params, distances, realBulletKey, bulletData, strategy, displayName) {
-    // 构建批量缓存 Key
-    const batchKey = this.cacheManager.buildBatchKey(weapon, params, {
-      barrelName: attachment.barrelName || '无',
-      muzzleName: attachment.muzzleName || '无',
-      bulletId: realBulletKey
-    });
-    
-    // 检查是否有批量缓存
-    const cachedBatch = this.cacheManager.get(batchKey);
-    if (cachedBatch) {
-      console.log(`📦 [真实模拟] 缓存命中: ${displayName}`);
-      this.updateRealSimInfo(weapon, '✅ 缓存命中，立即显示');
-      
-      // 从缓存恢复数据，使用与写入时完全相同的参数
-      const times = distances.map(d => {
-        // 计算该点的命中率（与写入时保持一致）
-        const hitRateAtDistance = this.getHitRateForDistance(
-          params.hitRateMap,
-          d,
-          0.85
-        );
-        // 构建与写入时完全相同的 simParams
-        // 关键：使用 realBulletKey 而不是 params.bulletLevel
-        const simParams = { 
-          ...params, 
-          distance: d, 
-          hitRate: hitRateAtDistance, 
-          bulletLevel: realBulletKey
-        };
-        const pointKey = this.cacheManager.buildKey(weapon, simParams, {
-          barrelName: attachment.barrelName || '无',
-          muzzleName: attachment.muzzleName || '无',
-          bulletId: realBulletKey
-        });
-        const cached = this.cacheManager.get(pointKey);
-        return cached !== null ? cached : 0;
-      });
-      
-      return times;
-    }
-    
-    // 缓存未命中，执行真实模拟
-    console.log(`🔬 [真实模拟] 开始计算: ${displayName} (101点 × 20000次模拟)`);
-    this.updateRealSimInfo(weapon, '⏳ 计算真实模拟数据...');
-    this.isCalculating = true;
-    
-    const times = [];
-    const totalPoints = distances.length;
-    const batchEntries = new Map();
-    
-    // 逐点计算
-    for (let i = 0; i < totalPoints; i++) {
-      const distance = distances[i];
-      
-      // 更新进度
-      this.simProgress = ((i + 1) / totalPoints * 100);
-      this.updateRealSimInfo(weapon, `⏳ 真实模拟 ${i + 1}/${totalPoints} (${Math.round(this.simProgress)}%)`);
-      
-      // 计算该点的命中率
-      const hitRateAtDistance = this.getHitRateForDistance(
-        params.hitRateMap,
-        distance,
-        0.85
-      );
-      
-      const simParams = { 
-        ...params, 
-        distance, 
-        hitRate: hitRateAtDistance, 
-        bulletLevel: realBulletKey
-      };
-      
-      // 执行 20000 次模拟，返回平均 TTK（秒）
-      const avgTime = SimulationEngine.calculateSinglePoint(
-        weapon, 
-        simParams, 
-        SIMULATION_CONFIG.DEFAULT_SIM_COUNT, 
-        strategy, 
-        bulletData
-      );
-      
-      // 计算扳机延迟（秒）
-      const trigger = params.triggerDelayEnable 
-        ? (weapon._current?.triggerDelay ?? weapon.triggerDelay ?? 0) / TIME_UNITS.SECONDS_TO_MS 
-        : 0;
-      
-      // 转换为毫秒
-      const totalTimeMs = (avgTime + trigger) * TIME_UNITS.SECONDS_TO_MS;
-      times.push(totalTimeMs);
-      
-      // 存入缓存（毫秒）
-      const pointKey = this.cacheManager.buildKey(weapon, simParams, {
-        barrelName: attachment.barrelName || '无',
-        muzzleName: attachment.muzzleName || '无',
-        bulletId: realBulletKey
-      });
-      batchEntries.set(pointKey, totalTimeMs);
-    }
-    
-    // 批量存入缓存
-    this.cacheManager.setBatch(batchEntries);
-    this.cacheManager.set(batchKey, 'cached');
-    
-    this.isCalculating = false;
-    
-    console.log(`✅ [真实模拟] ${displayName} 计算完成，已缓存 ${times.length} 个点 (单位: ms)`);
-    this.cacheManager.logStats();
-    
-    return times;
-  }
-
-  /**
-   * 计算单把武器的快速模式数据（用于对比）
-   * 修复：返回毫秒值
-   */
-  calculateFastModeForSingleWeapon(weapon, params, distances, realBulletKey, bulletData, strategy) {
-    // 关键点：在衰减边界两侧都添加模拟点
+    // 获取关键距离点
     const keyDistances = this.getKeyDistances(
       weapon.ranges || [40, 70, Infinity, Infinity],
       CHART_CONFIG.MAX_DISTANCE
     );
     
-    const simulationCache = new Map();
+    if (!this._keyDistancesLogged) {
+      console.log(`📊 [快速模式] 关键模拟点:`, keyDistances);
+      this._keyDistancesLogged = true;
+    }
     
-    // 在关键点执行模拟
-    keyDistances.forEach(distance => {
+    // 在每个关键点执行模拟
+    const keyPoints = [];
+    
+    for (const distance of keyDistances) {
       const hitRateAtDistance = this.getHitRateForDistance(
         params.hitRateMap,
         distance,
@@ -535,7 +344,7 @@ export class DistanceChart {
         bulletLevel: realBulletKey 
       };
       
-      const { avgTime } = SimulationEngine.calculateAvgStats(
+      const avgTime = SimulationEngine.calculateSinglePoint(
         weapon, 
         simParams, 
         SIMULATION_CONFIG.DEFAULT_SIM_COUNT, 
@@ -547,55 +356,27 @@ export class DistanceChart {
         ? (weapon._current?.triggerDelay ?? weapon.triggerDelay ?? 0) / TIME_UNITS.SECONDS_TO_MS 
         : 0;
       
-      simulationCache.set(distance, avgTime + trigger);
-    });
+      // 转换为毫秒
+      const totalTimeMs = (avgTime + trigger) * TIME_UNITS.SECONDS_TO_MS;
+      
+      keyPoints.push({ d: distance, t: totalTimeMs });
+    }
     
-    // 对所有距离点计算 TTK（插值）
+    // 插值生成完整数据
     const times = distances.map(d => {
-      if (simulationCache.has(d)) {
-        return simulationCache.get(d);
-      } else {
-        return this.calculateTTKByFormula(
-          weapon, 
-          d, 
-          params, 
-          strategy, 
-          simulationCache,
-          params.hitRateMap
-        );
-      }
+      return this.cacheManager.interpolateTTK(keyPoints, d);
     });
     
-    // 关键修复：将秒转换为毫秒
-    const timesMs = times.map(t => t * TIME_UNITS.SECONDS_TO_MS);
-    return timesMs;
+    const avg35 = this._calculateAvg35(times);
+    
+    console.log(`  关键点: ${keyPoints.length} 个, avg35: ${avg35.toFixed(1)}ms`);
+    
+    return { keyPoints, times, avg35 };
   }
 
   // ============================================================
   // 4. 辅助方法
   // ============================================================
-
-  /**
-   * 获取选中的武器索引（价格表格中第一个启用的配置）
-   */
-  getSelectedWeaponIndex(armed, attachments) {
-    // 尝试从价格表格读取启用的配置
-    const priceTable = document.getElementById('priceTable');
-    if (!priceTable) return -1;
-    
-    const rows = priceTable.querySelectorAll('tbody tr');
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const checkbox = row.querySelector('.price-enabled-checkbox');
-      if (checkbox && checkbox.checked) {
-        if (i < armed.length) {
-          return i;
-        }
-      }
-    }
-    
-    return armed.length > 0 ? 0 : -1;
-  }
 
   /**
    * 获取射程边界点两侧的关键距离
@@ -659,251 +440,18 @@ export class DistanceChart {
     }
   }
 
-  /**
-   * 使用公式计算TTK（在模拟点之间线性插值）
-   */
-  calculateTTKByFormula(weapon, distance, params, strategy, simulationCache, hitRateMap) {
-    const keys = Array.from(simulationCache.keys()).filter(k => k <= distance);
-    const startDistance = keys.length ? Math.max(...keys) : 0;
-    const startTTK = simulationCache.get(startDistance);
-    
-    if (!startTTK) {
-      return 0;
-    }
-    
-    if (distance === startDistance) {
-      return startTTK;
-    }
-    
-    const nextKeys = Array.from(simulationCache.keys())
-      .filter(k => k > distance)
-      .sort((a, b) => a - b);
-    
-    if (nextKeys.length > 0) {
-      const nextDistance = nextKeys[0];
-      const nextTTK = simulationCache.get(nextDistance);
-      
-      if (nextTTK !== undefined && nextTTK !== null) {
-        const t = (distance - startDistance) / (nextDistance - startDistance);
-        return startTTK + t * (nextTTK - startTTK);
-      }
-    }
-    
-    const velocity = weapon._current?.velocity ?? weapon.velocity ?? 575;
-    const flightTimeDiff = (distance - startDistance) / velocity;
-    return startTTK + flightTimeDiff;
-  }
-
   // ============================================================
-  // 5. UI 状态更新
-  // ============================================================
-
-  /**
-   * 更新状态显示
-   */
-  updateStatusDisplay() {
-    const statusEl = document.getElementById('simStatus');
-    if (!statusEl) return;
-    
-    if (this.isRealMode) {
-      statusEl.textContent = '(真实模拟+对比)';
-      statusEl.className = 'hint-text mode-real';
-    } else {
-      statusEl.textContent = '(快速模式)';
-      statusEl.className = 'hint-text mode-fast';
-    }
-  }
-
-  /**
-   * 更新真实模拟信息栏
-   */
-  updateRealSimInfo(weapon, status) {
-    const infoEl = document.getElementById('realSimInfo');
-    const nameEl = document.getElementById('simWeaponName');
-    const progressEl = document.getElementById('simProgress');
-    
-    if (!infoEl) return;
-    
-    if (this.isRealMode) {
-      infoEl.style.display = 'flex';
-      if (nameEl && weapon) {
-        const displayName = weapon._displayName || weapon.name;
-        nameEl.textContent = displayName || '未知武器';
-      }
-      if (progressEl) {
-        progressEl.textContent = status;
-      }
-    } else {
-      infoEl.style.display = 'none';
-    }
-  }
-
-  /**
-   * 显示无配置警告
-   */
-  showNoConfigWarning() {
-    const infoEl = document.getElementById('realSimInfo');
-    if (infoEl) {
-      infoEl.style.display = 'flex';
-      infoEl.style.background = '#fff3e0';
-      infoEl.style.borderColor = '#ffcc80';
-      const nameEl = document.getElementById('simWeaponName');
-      if (nameEl) {
-        nameEl.textContent = '⚠️ 请先在"价格数据" Tab 中启用至少一个配置';
-      }
-      const progressEl = document.getElementById('simProgress');
-      if (progressEl) {
-        progressEl.textContent = '';
-      }
-    }
-  }
-
-  // ============================================================
-  // 6. 缓存管理（导出/导入/清除）
-  // ============================================================
-
-  /**
-   * 导出当前缓存
-   */
-  exportCache() {
-    const stats = this.cacheManager.getStats();
-    if (stats.size === 0) {
-      alert('⚠️ 缓存为空，请先执行真实模拟后再导出！');
-      return;
-    }
-
-    let weaponName = 'unknown';
-    let weaponId = null;
-    let barrelName = '无';
-    let muzzleName = '无';
-    let bulletId = 'default';
-    
-    if (this.selectedWeaponIndex >= 0 && this.lastArmed) {
-      const weapon = this.lastArmed[this.selectedWeaponIndex];
-      if (weapon) {
-        weaponName = weapon._displayName || weapon.name || 'unknown';
-        weaponId = weapon.id || null;
-      }
-    }
-    
-    if (this.lastAttachments && this.lastAttachments[this.selectedWeaponIndex]) {
-      const att = this.lastAttachments[this.selectedWeaponIndex];
-      barrelName = att.barrelName || '无';
-      muzzleName = att.muzzleName || '无';
-      bulletId = att.bulletType || 'default';
-    }
-    
-    const meta = {
-      weaponName,
-      weaponId,
-      barrelName,
-      muzzleName,
-      bulletId,
-      distancePoints: 101,
-      simCount: SIMULATION_CONFIG.DEFAULT_SIM_COUNT,
-      params: this.lastParams || {}
-    };
-    
-    this.cacheManager.exportToFile(meta);
-    this.updateCacheStats();
-  }
-
-  /**
-   * 导入缓存文件
-   */
-  async importCache() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    
-    return new Promise((resolve) => {
-      input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) {
-          resolve(false);
-          return;
-        }
-        
-        try {
-          const result = await this.cacheManager.importFromFile(file);
-          this.updateCacheStats();
-          
-          alert(
-            `✅ 缓存导入成功！\n` +
-            `武器: ${result.weaponName}\n` +
-            `导入: ${result.imported} 条新条目\n` +
-            `跳过: ${result.skipped} 条已存在\n` +
-            `导出时间: ${result.exportedAt || '未知'}`
-          );
-          
-          console.log('💡 缓存已导入，请点击"距离折线图"按钮刷新图表');
-          
-          resolve(true);
-        } catch (error) {
-          alert(`❌ 导入失败: ${error.message}`);
-          resolve(false);
-        }
-      };
-      
-      input.click();
-    });
-  }
-
-  /**
-   * 清除缓存
-   */
-  clearCache() {
-    if (!confirm('⚠️ 确定要清除所有缓存数据吗？\n（清除后将需要重新计算）')) {
-      return;
-    }
-    
-    const count = this.cacheManager.clear();
-    this.updateCacheStats();
-    alert(`✅ 已清除 ${count} 条缓存`);
-    
-    if (this.lastParams && this.lastArmed && this.lastAttachments) {
-      this.update(this.lastArmed, this.lastAttachments, this.lastParams);
-    }
-  }
-
-  /**
-   * 更新缓存统计显示
-   */
-  updateCacheStats() {
-    const statsEl = document.getElementById('cacheStats');
-    if (!statsEl) return;
-    
-    const stats = this.cacheManager.getStats();
-    statsEl.textContent = `缓存: ${stats.size}条`;
-    statsEl.className = 'cache-stats' + (stats.size > 0 ? ' has-cache' : '');
-  }
-
-  // ============================================================
-  // 7. 渲染图表
+  // 5. 渲染图表
   // ============================================================
 
   /**
    * 渲染距离图表
-   * 修复：快速模式各条线使用不同颜色
    */
   renderChart(distances, stats) {
-    // 真实模拟模式下，显示两条曲线（真实模拟 + 快速模式对比）
-    let displayStats = stats;
-    
-    if (this.isRealMode) {
-      const weaponId = this.lastArmed?.[this.selectedWeaponIndex]?.id;
-      if (weaponId) {
-        displayStats = stats.filter(s => s.weapon.id === weaponId);
-      }
-      if (displayStats.length === 0) {
-        displayStats = stats;
-      }
-    }
-    
-    const maxDisplay = this.showAllWeapons ? displayStats.length : CHART_CONFIG.TOP_WEAPONS_COUNT;
-    const displayCount = Math.min(maxDisplay, displayStats.length);
+    const maxDisplay = this.showAllWeapons ? stats.length : CHART_CONFIG.TOP_WEAPONS_COUNT;
+    const displayCount = Math.min(maxDisplay, stats.length);
 
-    // 颜色调色板（用于快速模式的各条折线）
+    // 颜色调色板
     const colorPalette = [
       '#e74c3c', '#2ecc71', '#3498db', '#f39c12', '#9b59b6',
       '#1abc9c', '#e67e22', '#2c3e50', '#27ae60', '#8e44ad',
@@ -912,14 +460,13 @@ export class DistanceChart {
     ];
 
     // 构建数据集
-    const datasets = displayStats.map((s, i) => {
-      const isRealSim = s.isRealSim === true;
+    const datasets = stats.map((s, i) => {
       const colorIndex = i % colorPalette.length;
-      // 真实模拟固定红色，快速模式使用调色板颜色
-      const color = isRealSim ? '#f44336' : colorPalette[colorIndex];
+      const color = colorPalette[colorIndex];
+      const label = s.displayName || s.weapon.name;
       
       return {
-        label: s.displayName || s.weapon.name,
+        label: label,
         data: s.times,
         fill: false,
         tension: 0,
@@ -927,9 +474,8 @@ export class DistanceChart {
         pointRadius: 0,
         pointHoverRadius: 3,
         borderColor: color,
-        borderWidth: isRealSim ? 3 : 1.5,
-        borderDash: isRealSim ? [] : [6, 3],  // 快速模式虚线
-        pointStyle: isRealSim ? 'circle' : 'rectRot',
+        borderWidth: 1.5,
+        pointStyle: 'circle',
         pointBackgroundColor: color,
       };
     });
@@ -966,9 +512,7 @@ export class DistanceChart {
               label: i => {
                 const label = i.dataset.label || '武器';
                 const value = formatTime(i.raw, 'ms', true);
-                const isReal = i.dataset.borderColor === '#f44336' || i.dataset.label?.includes('真实模拟');
-                const marker = isReal ? ' 🎯' : ' 📊';
-                return `${label}${marker}: ${value}`;
+                return `${label}: ${value}`;
               }
             }
           },
@@ -976,8 +520,8 @@ export class DistanceChart {
             position: 'bottom', 
             labels: { 
               usePointStyle: true,
-              font: displayStats.length > 20 ? { size: 10 } : { size: 12 },
-              padding: displayStats.length > 20 ? 4 : 8
+              font: stats.length > 20 ? { size: 10 } : { size: 12 },
+              padding: stats.length > 20 ? 4 : 8
             } 
           }
         },
@@ -992,8 +536,6 @@ export class DistanceChart {
       },
       plugins: [ChartDataLabels, verticalLinePlugin]
     });
-    
-    this.updateCacheStats();
   }
 
   /**
@@ -1021,144 +563,10 @@ export class DistanceChart {
   }
 
   // ============================================================
-  // 8. 导出功能（完整版）
+  // 6. ⭐ 导出功能已移除
   // ============================================================
-
-  /**
-   * 导出为 JSON（完整版）
-   * ⭐ config 格式: "枪管 | 枪口 | 子弹"
-   * ⭐ 包含 price、hitRateMap、hitRates、ttk
-   * ⭐ 数组保持在一行，2 空格缩进
-   */
-  exportAsJSON() {
-    if (!this.lastStats || !this.lastDistances) {
-      alert('⚠️ 请先生成折线图再导出数据！');
-      return;
-    }
-
-    const stats = this.lastStats;
-    const distances = this.lastDistances;
-    const params = this.lastParams || {};
-    const armed = this.lastArmed || [];
-    const attachments = this.lastAttachments || [];
-
-    // 距离点（步长5m，共21个点）
-    const distancePoints = distances.filter((d, i) => i % 5 === 0);
-
-    // 构建武器数据
-    const weapons = armed.map((w, idx) => {
-      const attach = attachments[idx] || {};
-      const stat = stats.find(s => s.weapon === w || s.weapon.id === w.id);
-      
-      const barrelName = attach.barrelName || '无';
-      const muzzleName = attach.muzzleName || '无';
-      
-      // ⭐ 子弹信息
-      let bulletInfo = '全局';
-      // 优先使用配置中指定的具体子弹
-      if (attach.bulletType && attach.bulletType !== '全局' && attach.bulletType !== 'Lv.4') {
-        bulletInfo = attach.bulletType;
-      } else if (w._bulletId) {
-        bulletInfo = w._bulletId;
-      } else if (params.bulletLevel) {
-        bulletInfo = `Lv.${params.bulletLevel}`;
-      }
-      
-      // ⭐ 价格
-      const price = attach.price || w._price || 0;
-      
-      // ⭐ 命中率映射（原始配置）
-      const hitRateMap = attach.hitRateMap || [];
-      const hitRateMapDisplay = hitRateMap.length > 0 
-        ? hitRateMap.map(p => `${p.distance}m:${Math.round(p.rate * 100)}%`).join(', ')
-        : '未配置';
-      
-      // ⭐ 计算 TTK 和每个距离点的命中率
-      let ttkValues = null;
-      let hitRateValues = null;
-      if (stat) {
-        const dm = window.__app__?.dataManager;
-        ttkValues = distancePoints.map(d => {
-          const idx = distances.indexOf(d);
-          const value = stat.times[idx];
-          return value !== undefined ? Math.round(value) : null;
-        });
-        
-        // 计算每个距离点的命中率
-        if (hitRateMap.length > 0 && dm) {
-          hitRateValues = distancePoints.map(d => {
-            const rate = dm.getHitRateFromMap(hitRateMap, d, 0.85);
-            return rate !== undefined ? Math.round(rate * 100) : null;
-          });
-        }
-      }
-      
-      // 构建配置字符串：枪管 | 枪口 | 子弹
-      const configStr = `${barrelName} | ${muzzleName} | ${bulletInfo}`;
-      
-      const weaponData = {
-        name: w._displayName || w.name || '未知',
-        config: configStr,      // 包含枪管 | 枪口 | 子弹
-        price: price,           // 整枪价格
-        hitRateMap: hitRateMapDisplay  // 原始命中率映射
-      };
-      
-      // ⭐ 添加每个距离点的命中率
-      if (hitRateValues && hitRateValues.some(v => v !== null)) {
-        weaponData.hitRates = hitRateValues;
-      }
-      
-      weaponData.ttk = ttkValues;
-      return weaponData;
-    });
-
-    const data = {
-      meta: {
-        exportedAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
-        mode: this.isRealMode ? 'real_simulation_with_comparison' : 'fast',
-        distances: distancePoints,
-        params: {
-          bulletLevel: params.bulletLevel,
-          armorLevel: params.armorLevel,
-          armorValue: params.armorValue,
-          helmetLevel: params.helmetLevel,
-          helmetValue: params.helmetValue,
-          healthValue: params.healthValue,
-          hitRate: params.hitRate,
-          triggerDelayEnable: params.triggerDelayEnable,
-          distance: params.distance
-        },
-        note: [
-          'config格式: "枪管 | 枪口 | 子弹"',
-          '  - 子弹ID (如 "7.62x39_4"): 价格配置中指定的具体子弹',
-          '  - "Lv.4": 使用UI选择的全局子弹等级',
-          '  - "全局": 未指定子弹，使用默认配置',
-          'price: 整枪价格 (来自价格配置)',
-          'hitRateMap: 原始距离-命中率映射 (如 "30m:90%, 50m:80%, 100m:60%")',
-          'hitRates: 每个距离点对应的命中率(%)，与distances一一对应',
-          'TTK单位: 毫秒(ms)，ttk数组与distances一一对应'
-        ].join('\n')
-      },
-      weapons: weapons
-    };
-
-    // 使用自定义序列化：数组保持在一行
-    const jsonStr = stringifyWithInlineArrays(data, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
-    this.downloadBlob(blob, `ttk_data_${new Date().toISOString().slice(0, 10)}.json`);
-  }
-
-  downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    console.log(`✅ 已导出: ${filename}`);
-  }
+  // exportAsJSON() 方法已删除
+  // downloadBlob() 方法已删除
 }
 
 export default DistanceChart;

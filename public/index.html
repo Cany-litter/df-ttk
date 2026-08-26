@@ -98,7 +98,7 @@
             <input type="number" id="distance" value="30" min="0" max="300" />
           </div>
 
-          <!-- 全局命中率 - 默认值 10:1.0 开头 -->
+          <!-- 全局命中率 -->
           <div class="param-group compact">
             <label for="hitRate">全局命中率</label>
             <input type="text" id="hitRate" value="10:1.0,30:0.9,50:0.8,100:0.7,150:0.6" placeholder="10:1.0,30:0.9,50:0.8,100:0.7" />
@@ -135,13 +135,18 @@
           </div>
         </div>
 
-        <!-- 第3行：操作按钮（仅保留计算 TTK + 数据管理） -->
+        <!-- 第3行：操作按钮 -->
         <div class="params-row">
           <div class="buttons-group">
             <button id="calcBtn" class="btn-primary">📊 计算 TTK</button>
             <button id="resetDataBtn" class="btn-secondary" style="background:#ff9800;color:#fff;">🔄 重置</button>
-            <button id="exportDataBtn" class="btn-secondary" style="background:#9c27b0;color:#fff;">📤 导出</button>
-            <button id="importDataBtn" class="btn-secondary" style="background:#607d8b;color:#fff;">📥 导入</button>
+            <button id="exportDataBtn" class="btn-secondary" style="background:#9c27b0;color:#fff;">📤 导出数据</button>
+            <button id="importDataBtn" class="btn-secondary" style="background:#607d8b;color:#fff;">📥 导入数据</button>
+            <!-- ⭐ 包含缓存复选框 -->
+            <label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#555;cursor:pointer;margin-left:4px;">
+              <input type="checkbox" id="includeCacheCheckbox" checked />
+              ☑ 包含缓存数据
+            </label>
           </div>
         </div>
       </div>
@@ -156,9 +161,9 @@
 
         <!-- 距离折线图 -->
         <div class="chart-wrapper">
-          <!-- ⭐ 图表头部控制栏（整合所有折线图控制项） -->
+          <!-- 图表头部控制栏 -->
           <div class="chart-header">
-            <!-- 左侧：标题 + 显示全部 + 真实模拟 -->
+            <!-- 左侧：标题 + 显示全部 -->
             <div class="left-group">
               <h3>距离 - TTK 折线图</h3>
 
@@ -169,75 +174,39 @@
                 <input type="checkbox" id="showAllWeapons" />
                 显示全部
               </label>
-
-              <span class="divider"></span>
-
-              <!-- ⭐ 真实模拟开关（从顶部移入） -->
-              <label class="real-sim-toggle">
-                <input type="checkbox" id="realSimulationToggle" />
-                🎯 真实模拟
-                <span class="hint-text" id="simStatus">(快速模式)</span>
-              </label>
             </div>
 
-            <!-- 右侧：操作按钮 + 缓存管理 + ⭐ 导出JSON -->
+            <!-- 右侧：操作按钮 -->
             <div class="right-group">
-              <!-- ⭐ 生成折线图按钮（从顶部移入） -->
+              <!-- 生成折线图按钮 -->
               <button id="distChartBtn" class="btn-primary">📈 生成折线图</button>
-
-              <span class="divider"></span>
-
-              <!-- ⭐ 导出JSON按钮（保留原有位置） -->
-              <button id="exportJSONBtn" class="btn-secondary" style="background:#9c27b0;color:#fff;font-size:11px;padding:2px 8px;height:22px;">
-                📤 导出JSON
-              </button>
-
-              <span class="divider"></span>
-
-              <!-- 缓存操作按钮 -->
-              <button id="exportCacheBtn" class="btn-secondary" style="background:#4caf50;color:#fff;font-size:11px;padding:2px 8px;height:22px;">
-                💾 导出缓存
-              </button>
-              <button id="importCacheBtn" class="btn-secondary" style="background:#2196f3;color:#fff;font-size:11px;padding:2px 8px;height:22px;">
-                📥 导入缓存
-              </button>
-              <button id="clearCacheBtn" class="btn-secondary" style="background:#f44336;color:#fff;font-size:11px;padding:2px 8px;height:22px;">
-                🗑️ 清除
-              </button>
-              <span class="cache-stats" id="cacheStats">缓存: 0条</span>
             </div>
           </div>
 
           <!-- 折线图 Canvas -->
           <canvas id="distanceChart"></canvas>
-
-          <!-- ⭐ 真实模拟状态信息栏（从顶部移入） -->
-          <div class="real-sim-info" id="realSimInfo" style="display:none;padding:4px 10px;font-size:12px;color:#666;border-top:1px dashed #e0e0e0;margin-top:6px;background:#fff3e0;border-radius:4px;border:1px solid #ffcc80;">
-            <span>🎯 真实模拟模式：将对 <strong id="simWeaponName">-</strong> 进行 0-100m 逐点精确计算 (101点 × 20000次模拟)</span>
-            <span style="margin-left:12px;color:#999;" id="simProgress"></span>
-          </div>
         </div>
       </div>
 
       <!-- ========== 底部表格区域 ========== -->
       <div class="table-section">
-        <!-- Tab 导航栏 -->
+        <!-- Tab 导航栏 - ⭐ 调整顺序：价格 → 枪械 → 子弹 -->
         <div class="table-tabs">
-          <button class="tab-btn active" data-tab="weapon">🔫 枪械数据</button>
-          <button class="tab-btn" data-tab="price">💰 价格数据</button>
+          <button class="tab-btn active" data-tab="price">💰 价格数据</button>
+          <button class="tab-btn" data-tab="weapon">🔫 枪械数据</button>
           <button class="tab-btn" data-tab="bullet">💊 子弹数据</button>
         </div>
 
         <!-- Tab 内容容器 -->
         <div class="tab-content-wrapper">
-          <!-- Tab 1: 枪械数据 -->
-          <div id="tab-weapon" class="tab-content active">
-            <!-- 由 WeaponTable 动态渲染 -->
+          <!-- Tab 1: 价格数据（默认显示） -->
+          <div id="tab-price" class="tab-content active">
+            <!-- 由 PriceTable 动态渲染 -->
           </div>
 
-          <!-- Tab 2: 价格数据 -->
-          <div id="tab-price" class="tab-content">
-            <!-- 由 PriceTable 动态渲染 -->
+          <!-- Tab 2: 枪械数据 -->
+          <div id="tab-weapon" class="tab-content">
+            <!-- 由 WeaponTable 动态渲染 -->
           </div>
 
           <!-- Tab 3: 子弹数据 -->

@@ -10,8 +10,19 @@
       "id": 1,
       "name": "AK-12",
       "type": "步枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.75, 0.75, 0.75],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.75,
+        0.75,
+        0.75
+      ],
       "velocity": 575,
       "flesh": 30,
       "armor": 42,
@@ -38,8 +49,19 @@
       "id": 2,
       "name": "AKM",
       "type": "步枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 525,
       "flesh": 40,
       "armor": 42,
@@ -90,8 +112,19 @@
       "id": 3,
       "name": "AKS-74U",
       "type": "步枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.8, 0.6, 0.6, 0.6],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.8,
+        0.6,
+        0.6,
+        0.6
+      ],
       "velocity": 500,
       "flesh": 34,
       "armor": 36,
@@ -110,8 +143,19 @@
       "id": 4,
       "name": "AR57",
       "type": "步枪",
-      "ranges": [35, 50, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        35,
+        50,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 525,
       "flesh": 30,
       "armor": 31,
@@ -145,8 +189,19 @@
       "id": 5,
       "name": "AS Val",
       "type": "步枪",
-      "ranges": [27, 54, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.8, 0.8, 0.8],
+      "ranges": [
+        27,
+        54,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.8,
+        0.8,
+        0.8
+      ],
       "velocity": 330,
       "flesh": 28,
       "armor": 44,
@@ -162,8 +217,19 @@
         },
         {
           "name": "刺客高级枪管",
-          "ranges": [40, 60, "Infinity", "Infinity"],
-          "decays": [1, 0.85, 0.75, 0.75, 0.75],
+          "ranges": [
+            40,
+            60,
+            "Infinity",
+            "Infinity"
+          ],
+          "decays": [
+            1,
+            0.85,
+            0.75,
+            0.75,
+            0.75
+          ],
           "rangeMult": 1,
           "velocityAdd": 120,
           "damageBonus": 8,
@@ -192,8 +258,19 @@
       "id": 6,
       "name": "ASh-12",
       "type": "步枪",
-      "ranges": [55, 90, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.85, 0.85, 0.85],
+      "ranges": [
+        55,
+        90,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.85,
+        0.85,
+        0.85
+      ],
       "velocity": 340,
       "flesh": 56,
       "armor": 55,
@@ -233,8 +310,19 @@
       "id": 7,
       "name": "AUG",
       "type": "步枪",
-      "ranges": [55, 90, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.8, 0.8, 0.8],
+      "ranges": [
+        55,
+        90,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.8,
+        0.8,
+        0.8
+      ],
       "velocity": 575,
       "flesh": 32,
       "armor": 35,
@@ -275,8 +363,19 @@
       "id": 8,
       "name": "CAR-15",
       "type": "步枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 27,
       "armor": 32,
@@ -327,8 +426,19 @@
       "id": 9,
       "name": "G3",
       "type": "步枪",
-      "ranges": [55, 90, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.8, 0.8, 0.8],
+      "ranges": [
+        55,
+        90,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.8,
+        0.8,
+        0.8
+      ],
       "velocity": 630,
       "flesh": 39,
       "armor": 42,
@@ -369,8 +479,19 @@
       "id": 10,
       "name": "G18",
       "type": "手枪",
-      "ranges": [10, 20, 30, "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.6, 0.6],
+      "ranges": [
+        10,
+        20,
+        30,
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.6,
+        0.6
+      ],
       "velocity": 400,
       "flesh": 23,
       "armor": 16,
@@ -397,8 +518,19 @@
       "id": 11,
       "name": "K416",
       "type": "步枪",
-      "ranges": [27, 54, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        27,
+        54,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 31,
       "armor": 35,
@@ -439,8 +571,19 @@
       "id": 12,
       "name": "K437",
       "type": "步枪",
-      "ranges": [35, 60, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.7, 0.7, 0.7],
+      "ranges": [
+        35,
+        60,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 36,
       "armor": 32,
@@ -474,8 +617,19 @@
       "id": 13,
       "name": "KC17",
       "type": "步枪",
-      "ranges": [55, 90, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        55,
+        90,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 31,
       "armor": 48,
@@ -509,8 +663,19 @@
       "id": 14,
       "name": "M14",
       "type": "精确射手步枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.8, 0.7, 0.7, 0.7],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.8,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 39,
       "armor": 41,
@@ -544,8 +709,19 @@
       "id": 15,
       "name": "M249",
       "type": "轻机枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 30,
       "armor": 38,
@@ -572,8 +748,19 @@
       "id": 16,
       "name": "M250",
       "type": "轻机枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 630,
       "flesh": 55,
       "armor": 53,
@@ -603,8 +790,19 @@
       "id": 17,
       "name": "M4A1",
       "type": "步枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 31,
       "armor": 33,
@@ -655,8 +853,19 @@
       "id": 18,
       "name": "M7",
       "type": "步枪",
-      "ranges": [50, 85, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.8, 0.8, 0.8],
+      "ranges": [
+        50,
+        85,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.8,
+        0.8,
+        0.8
+      ],
       "velocity": 630,
       "flesh": 37,
       "armor": 40,
@@ -697,8 +906,19 @@
       "id": 19,
       "name": "MCX LT",
       "type": "步枪",
-      "ranges": [30, 50, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        30,
+        50,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 450,
       "flesh": 34,
       "armor": 26,
@@ -732,8 +952,19 @@
       "id": 20,
       "name": "MK4",
       "type": "冲锋枪",
-      "ranges": [20, 30, 40, "Infinity"],
-      "decays": [1, 0.9, 0.8, 0.7, 0.7],
+      "ranges": [
+        20,
+        30,
+        40,
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.8,
+        0.7,
+        0.7
+      ],
       "velocity": 475,
       "flesh": 34,
       "armor": 30,
@@ -776,8 +1007,19 @@
       "id": 21,
       "name": "MK47",
       "type": "步枪",
-      "ranges": [30, 45, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        30,
+        45,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 525,
       "flesh": 42,
       "armor": 46,
@@ -812,8 +1054,19 @@
       "id": 22,
       "name": "MP5",
       "type": "冲锋枪",
-      "ranges": [20, 27, 40, 55],
-      "decays": [1, 0.75, 0.65, 0.55, 0.45],
+      "ranges": [
+        20,
+        27,
+        40,
+        55
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.55,
+        0.45
+      ],
       "velocity": 450,
       "flesh": 30,
       "armor": 32,
@@ -861,8 +1114,19 @@
       "id": 23,
       "name": "MP7",
       "type": "冲锋枪",
-      "ranges": [20, 27, 40, "Infinity"],
-      "decays": [1, 0.75, 0.65, 0.55, 0.55],
+      "ranges": [
+        20,
+        27,
+        40,
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.55,
+        0.55
+      ],
       "velocity": 450,
       "flesh": 32,
       "armor": 28,
@@ -903,8 +1167,19 @@
       "id": 24,
       "name": "P90",
       "type": "冲锋枪",
-      "ranges": [20, 27, 40, 55],
-      "decays": [1, 0.75, 0.65, 0.55, 0.45],
+      "ranges": [
+        20,
+        27,
+        40,
+        55
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.55,
+        0.45
+      ],
       "velocity": 450,
       "flesh": 32,
       "armor": 35,
@@ -931,8 +1206,19 @@
       "id": 25,
       "name": "PKM",
       "type": "轻机枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 630,
       "flesh": 45,
       "armor": 42,
@@ -959,8 +1245,19 @@
       "id": 26,
       "name": "PTR-32",
       "type": "步枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 630,
       "flesh": 36,
       "armor": 37,
@@ -1001,8 +1298,19 @@
       "id": 27,
       "name": "QBZ95-1",
       "type": "步枪",
-      "ranges": [55, 90, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        55,
+        90,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 28,
       "armor": 42,
@@ -1036,8 +1344,19 @@
       "id": 28,
       "name": "QJB201",
       "type": "轻机枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 32,
       "armor": 38,
@@ -1072,8 +1391,19 @@
       "id": 29,
       "name": "QJB201高导",
       "type": "轻机枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 32,
       "armor": 38,
@@ -1108,8 +1438,19 @@
       "id": 30,
       "name": "QJB201稳固",
       "type": "轻机枪",
-      "ranges": [54, 94.5, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        54,
+        94.5,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 32,
       "armor": 38,
@@ -1144,8 +1485,19 @@
       "id": 31,
       "name": "QCQ171",
       "type": "冲锋枪",
-      "ranges": [20, 27, 40, 55],
-      "decays": [1, 0.75, 0.65, 0.55, 0.45],
+      "ranges": [
+        20,
+        27,
+        40,
+        55
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.55,
+        0.45
+      ],
       "velocity": 450,
       "flesh": 36,
       "armor": 33,
@@ -1179,8 +1531,19 @@
       "id": 32,
       "name": "QCQ171高导",
       "type": "冲锋枪",
-      "ranges": [20, 27, 40, 55],
-      "decays": [1, 0.75, 0.65, 0.55, 0.45],
+      "ranges": [
+        20,
+        27,
+        40,
+        55
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.55,
+        0.45
+      ],
       "velocity": 450,
       "flesh": 36,
       "armor": 33,
@@ -1214,8 +1577,19 @@
       "id": 33,
       "name": "QCQ171稳固",
       "type": "冲锋枪",
-      "ranges": [27, 36.45, 54, 74.25],
-      "decays": [1, 0.75, 0.65, 0.55, 0.45],
+      "ranges": [
+        27,
+        36.45,
+        54,
+        74.25
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.55,
+        0.45
+      ],
       "velocity": 450,
       "flesh": 36,
       "armor": 33,
@@ -1249,8 +1623,19 @@
       "id": 34,
       "name": "RM277",
       "type": "步枪",
-      "ranges": [55, 90, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.7, 0.7, 0.7],
+      "ranges": [
+        55,
+        90,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 650,
       "flesh": 41,
       "armor": 42,
@@ -1284,8 +1669,19 @@
       "id": 35,
       "name": "SCAR-H",
       "type": "步枪",
-      "ranges": [40, 70, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.75, 0.75, 0.75],
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.75,
+        0.75,
+        0.75
+      ],
       "velocity": 630,
       "flesh": 40,
       "armor": 40,
@@ -1319,8 +1715,19 @@
       "id": 36,
       "name": "SG552",
       "type": "步枪",
-      "ranges": [35, 65, "Infinity", "Infinity"],
-      "decays": [1, 0.85, 0.75, 0.75, 0.75],
+      "ranges": [
+        35,
+        65,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.75,
+        0.75,
+        0.75
+      ],
       "velocity": 575,
       "flesh": 25,
       "armor": 34,
@@ -1347,8 +1754,19 @@
       "id": 37,
       "name": "SMG-45",
       "type": "冲锋枪",
-      "ranges": [27, 54, 90, "Infinity"],
-      "decays": [1, 0.75, 0.65, 0.55, 0.55],
+      "ranges": [
+        27,
+        54,
+        90,
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.55,
+        0.55
+      ],
       "velocity": 500,
       "flesh": 35,
       "armor": 40,
@@ -1389,8 +1807,19 @@
       "id": 38,
       "name": "SR-3M",
       "type": "冲锋枪",
-      "ranges": [15, 31, "Infinity", "Infinity"],
-      "decays": [1, 0.75, 0.65, 0.65, 0.65],
+      "ranges": [
+        15,
+        31,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.65,
+        0.65
+      ],
       "velocity": 330,
       "flesh": 36,
       "armor": 48,
@@ -1417,8 +1846,19 @@
       "id": 39,
       "name": "UZI",
       "type": "冲锋枪",
-      "ranges": [20, 27, 40, 55],
-      "decays": [1, 0.75, 0.65, 0.55, 0.45],
+      "ranges": [
+        20,
+        27,
+        40,
+        55
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.55,
+        0.45
+      ],
       "velocity": 450,
       "flesh": 28,
       "armor": 35,
@@ -1452,8 +1892,19 @@
       "id": 40,
       "name": "Vector",
       "type": "冲锋枪",
-      "ranges": [20, 27, 40, 55],
-      "decays": [1, 0.75, 0.65, 0.55, 0.45],
+      "ranges": [
+        20,
+        27,
+        40,
+        55
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.55,
+        0.45
+      ],
       "velocity": 500,
       "flesh": 32,
       "armor": 28,
@@ -1487,8 +1938,19 @@
       "id": 41,
       "name": "腾龙",
       "type": "步枪",
-      "ranges": [35, 62, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.7, 0.7, 0.7],
+      "ranges": [
+        35,
+        62,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 35,
       "armor": 38,
@@ -1515,8 +1977,19 @@
       "id": 42,
       "name": "腾龙高导",
       "type": "步枪",
-      "ranges": [35, 62, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.7, 0.7, 0.7],
+      "ranges": [
+        35,
+        62,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 35,
       "armor": 38,
@@ -1543,8 +2016,19 @@
       "id": 43,
       "name": "腾龙稳固",
       "type": "步枪",
-      "ranges": [35, 62, "Infinity", "Infinity"],
-      "decays": [1, 0.9, 0.7, 0.7, 0.7],
+      "ranges": [
+        35,
+        62,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.7,
+        0.7,
+        0.7
+      ],
       "velocity": 575,
       "flesh": 35,
       "armor": 38,
@@ -1571,8 +2055,19 @@
       "id": 44,
       "name": "勇士",
       "type": "冲锋枪",
-      "ranges": [20, 27, 40, 55],
-      "decays": [1, 0.7, 0.6, 0.5, 0.4],
+      "ranges": [
+        20,
+        27,
+        40,
+        55
+      ],
+      "decays": [
+        1,
+        0.7,
+        0.6,
+        0.5,
+        0.4
+      ],
       "velocity": 500,
       "flesh": 36,
       "armor": 35,
@@ -1599,8 +2094,19 @@
       "id": 45,
       "name": "野牛",
       "type": "冲锋枪",
-      "ranges": [20, 27, 40, 55],
-      "decays": [1, 0.75, 0.65, 0.55, 0.45],
+      "ranges": [
+        20,
+        27,
+        40,
+        55
+      ],
+      "decays": [
+        1,
+        0.75,
+        0.65,
+        0.55,
+        0.45
+      ],
       "velocity": 500,
       "flesh": 32,
       "armor": 35,
@@ -1663,7 +2169,7 @@
       "id": "5.45x39_3",
       "caliber": "5.45x39mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 550,
@@ -1680,7 +2186,7 @@
       "id": "5.45x39_4",
       "caliber": "5.45x39mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 1800,
@@ -1697,7 +2203,7 @@
       "id": "5.45x39_5",
       "caliber": "5.45x39mm",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 4400,
@@ -1765,7 +2271,7 @@
       "id": "5.56x45_3",
       "caliber": "5.56x45mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 550,
@@ -1782,7 +2288,7 @@
       "id": "5.56x45_4",
       "caliber": "5.56x45mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 1800,
@@ -1799,7 +2305,7 @@
       "id": "5.56x45_5",
       "caliber": "5.56x45mm",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 4400,
@@ -1833,7 +2339,7 @@
       "id": "5.8x42_3",
       "caliber": "5.8x42mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 550,
@@ -1850,7 +2356,7 @@
       "id": "5.8x42_4",
       "caliber": "5.8x42mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 2000,
@@ -1867,7 +2373,7 @@
       "id": "5.8x42_5",
       "caliber": "5.8x42mm",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 5000,
@@ -1918,7 +2424,7 @@
       "id": "7.62x39_3",
       "caliber": "7.62x39mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 600,
@@ -1935,7 +2441,7 @@
       "id": "7.62x39_4",
       "caliber": "7.62x39mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 1800,
@@ -1952,7 +2458,7 @@
       "id": "7.62x39_5",
       "caliber": "7.62x39mm",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 4700,
@@ -1969,7 +2475,7 @@
       "id": "7.62x39_AP",
       "caliber": "7.62x39mm",
       "level": "AP",
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 3800,
@@ -2003,7 +2509,7 @@
       "id": "7.62x51_3",
       "caliber": "7.62x51mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 650,
@@ -2020,7 +2526,7 @@
       "id": "7.62x51_4",
       "caliber": "7.62x51mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 1600,
@@ -2037,7 +2543,7 @@
       "id": "7.62x51_5",
       "caliber": "7.62x51mm",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 6000,
@@ -2054,7 +2560,7 @@
       "id": "7.62x51_M61",
       "caliber": "7.62x51mm",
       "level": "M61",
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.2,
       "pen": 1,
       "price": 4500,
@@ -2071,7 +2577,7 @@
       "id": "7.62x54R_3",
       "caliber": "7.62x54R",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 650,
@@ -2088,7 +2594,7 @@
       "id": "7.62x54R_4",
       "caliber": "7.62x54R",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 2000,
@@ -2105,7 +2611,7 @@
       "id": "7.62x54R_5",
       "caliber": "7.62x54R",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 5700,
@@ -2122,7 +2628,7 @@
       "id": "6.8x51_3",
       "caliber": "6.8x51mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 530,
@@ -2139,7 +2645,7 @@
       "id": "6.8x51_4",
       "caliber": "6.8x51mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 2000,
@@ -2156,7 +2662,7 @@
       "id": "6.8x51_5",
       "caliber": "6.8x51mm",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 5000,
@@ -2173,7 +2679,7 @@
       "id": "9x39_3",
       "caliber": "9x39mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 500,
@@ -2190,7 +2696,7 @@
       "id": "9x39_4",
       "caliber": "9x39mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 1800,
@@ -2207,7 +2713,7 @@
       "id": "9x39_5",
       "caliber": "9x39mm",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 4200,
@@ -2258,7 +2764,7 @@
       "id": "9x19_3",
       "caliber": "9x19mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 500,
@@ -2275,7 +2781,7 @@
       "id": "9x19_4",
       "caliber": "9x19mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 1600,
@@ -2377,7 +2883,7 @@
       "id": ".45ACP_3",
       "caliber": ".45ACP",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 600,
@@ -2394,7 +2900,7 @@
       "id": ".45ACP_4",
       "caliber": ".45ACP",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 2000,
@@ -2411,7 +2917,7 @@
       "id": ".45ACP_5",
       "caliber": ".45ACP",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 1,
@@ -2462,7 +2968,7 @@
       "id": ".300BLK_3",
       "caliber": ".300BLK",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 600,
@@ -2479,7 +2985,7 @@
       "id": ".300BLK_4",
       "caliber": ".300BLK",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 1900,
@@ -2496,7 +3002,7 @@
       "id": ".300BLK_5",
       "caliber": ".300BLK",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 4700,
@@ -2513,7 +3019,7 @@
       "id": "4.6x30_3",
       "caliber": "4.6x30mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 480,
@@ -2530,7 +3036,7 @@
       "id": "4.6x30_4",
       "caliber": "4.6x30mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 1400,
@@ -2547,7 +3053,7 @@
       "id": "4.6x30_5",
       "caliber": "4.6x30mm",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 3800,
@@ -2598,7 +3104,7 @@
       "id": "5.7x28_3",
       "caliber": "5.7x28mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 550,
@@ -2615,7 +3121,7 @@
       "id": "5.7x28_4",
       "caliber": "5.7x28mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 1800,
@@ -2632,7 +3138,7 @@
       "id": "5.7x28_5",
       "caliber": "5.7x28mm",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 4700,
@@ -2649,7 +3155,7 @@
       "id": "12.7x55_3",
       "caliber": "12.7x55mm",
       "level": 3,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 0.9,
       "pen": 1,
       "price": 870,
@@ -2666,7 +3172,7 @@
       "id": "12.7x55_4",
       "caliber": "12.7x55mm",
       "level": 4,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 3000,
@@ -2683,7 +3189,7 @@
       "id": "12.7x55_5",
       "caliber": "12.7x55mm",
       "level": 5,
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1.1,
       "pen": 1,
       "price": 4600,
@@ -2700,7 +3206,7 @@
       "id": "12.7x55_Double",
       "caliber": "12.7x55mm",
       "level": "Double",
-      "base": 1.0,
+      "base": 1,
       "armorMult": 1,
       "pen": 1,
       "price": 4200,
@@ -2725,10 +3231,23 @@
           "muzzle": "无",
           "buildCode": "AK12-CFG1",
           "price": 200000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.45x39_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 462.56734693874523 }, { "d": 51, "t": 525.4828095654708 }, { "d": 52, "t": 578.2689871040272 }, { "d": 90, "t": 624.2906723426204 }, { "d": 91, "t": 713.6605233503407 }, { "d": 100, "t": 723.8299987479892 }],
+            "hash": "hti43r4",
+            "cachedAt": "2026-08-25T12:42:27.257Z"
+          }
         }
       ]
     },
@@ -2742,10 +3261,23 @@
           "muzzle": "无",
           "buildCode": "AKM-CFG1",
           "price": 200000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x39_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 439.17499999999524 }, { "d": 41, "t": 505.61530477760306 }, { "d": 42, "t": 584.4077512355931 }, { "d": 73, "t": 634.0035914331894 }, { "d": 74, "t": 718.5710378912801 }, { "d": 100, "t": 761.4346457991226 }],
+            "hash": "hd78g4o",
+            "cachedAt": "2026-08-25T13:09:20.599Z"
+          }
         },
         {
           "id": "#2",
@@ -2753,10 +3285,23 @@
           "muzzle": "无",
           "buildCode": "AKM-CFG2",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x39_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 460.98499999997085 }, { "d": 46, "t": 530.7431481481149 }, { "d": 47, "t": 602.9096296297641 }, { "d": 82, "t": 657.9064814814311 }, { "d": 83, "t": 747.1629629630366 }, { "d": 100, "t": 772.5431481481818 }],
+            "hash": "hhfdlon",
+            "cachedAt": "2026-08-25T13:09:20.695Z"
+          }
         },
         {
           "id": "#3",
@@ -2764,10 +3309,23 @@
           "muzzle": "无",
           "buildCode": "AKM-CFG3",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x39_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 462.0099999999744 }, { "d": 51, "t": 530.7483870967244 }, { "d": 52, "t": 603.8174731183854 }, { "d": 90, "t": 656.3727419355255 }, { "d": 91, "t": 746.6468279568879 }, { "d": 100, "t": 760.5636021505591 }],
+            "hash": "hj8oymf",
+            "cachedAt": "2026-08-25T13:09:20.793Z"
+          }
         },
         {
           "id": "#4",
@@ -2775,10 +3333,23 @@
           "muzzle": "无",
           "buildCode": "AKM-CFG4",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x39_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 461.8649999999728 }, { "d": 51, "t": 530.7283870967237 }, { "d": 52, "t": 604.1374731183816 }, { "d": 90, "t": 653.8177419355244 }, { "d": 91, "t": 746.6868279568996 }, { "d": 100, "t": 758.6536021505581 }],
+            "hash": "hj8oymf",
+            "cachedAt": "2026-08-25T13:09:20.894Z"
+          }
         }
       ]
     },
@@ -2792,10 +3363,23 @@
           "muzzle": "无",
           "buildCode": "AKS74U-CFG1",
           "price": 20000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.45x39_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 622.8180112570578 }, { "d": 39, "t": 696.3813966297433 }, { "d": 40, "t": 828.6684166135084 }, { "d": 69, "t": 883.494810403358 }, { "d": 70, "t": 1069.7649448337315 }, { "d": 100, "t": 1125.829578119252 }],
+            "hash": "hh1a97z",
+            "cachedAt": "2026-08-25T12:42:27.746Z"
+          }
         }
       ]
     },
@@ -2809,10 +3393,23 @@
           "muzzle": "无",
           "buildCode": "AR57-CFG1",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.7x28_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 423.29666666657835 }, { "d": 45, "t": 484.21053763433974 }, { "d": 46, "t": 548.6979569892599 }, { "d": 64, "t": 572.1515053763704 }, { "d": 65, "t": 655.5522580645231 }, { "d": 100, "t": 701.6019354839226 }],
+            "hash": "hyrhz42",
+            "cachedAt": "2026-08-25T12:42:39.611Z"
+          }
         },
         {
           "id": "#2",
@@ -2820,10 +3417,23 @@
           "muzzle": "无",
           "buildCode": "AR57-CFG2",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.7x28_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 425.493333333247 }, { "d": 40, "t": 482.2925925925086 }, { "d": 41, "t": 547.9640740741485 }, { "d": 58, "t": 572.4559259259208 }, { "d": 59, "t": 654.8507407407134 }, { "d": 100, "t": 715.9248148148058 }],
+            "hash": "hykvw4r",
+            "cachedAt": "2026-08-25T13:09:21.020Z"
+          }
         }
       ]
     },
@@ -2837,10 +3447,23 @@
           "muzzle": "无",
           "buildCode": "ASVAL-CFG1",
           "price": 700000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x39_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 380.7623456790336 }, { "d": 34, "t": 453.890313390303 }, { "d": 35, "t": 490.6690408357093 }, { "d": 69, "t": 564.1797245963377 }, { "d": 70, "t": 609.5510446342975 }, { "d": 100, "t": 673.1690408357804 }],
+            "hash": "hahy780",
+            "cachedAt": "2026-08-25T12:42:39.725Z"
+          }
         },
         {
           "id": "#2",
@@ -2848,10 +3471,23 @@
           "muzzle": "无",
           "buildCode": "ASVAL-CFG2",
           "price": 800000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x39_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 393.7125220458622 }, { "d": 39, "t": 473.2436682147436 }, { "d": 40, "t": 518.2741552531185 }, { "d": 59, "t": 558.6241320846364 }, { "d": 60, "t": 599.2278113628895 }, { "d": 100, "t": 679.865282312669 }],
+            "hash": "h4yny1v",
+            "cachedAt": "2026-08-25T13:09:21.108Z"
+          }
         }
       ]
     },
@@ -2865,10 +3501,23 @@
           "muzzle": "无",
           "buildCode": "ASH12-CFG1",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "12.7x55_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 347.3399999998767 }, { "d": 71, "t": 494.1269045643982 }, { "d": 72, "t": 590.4195933608711 }, { "d": 100, "t": 647.5628796680822 }],
+            "hash": "hqb58xm",
+            "cachedAt": "2026-08-25T12:42:39.768Z"
+          }
         },
         {
           "id": "#2",
@@ -2876,10 +3525,23 @@
           "muzzle": "无",
           "buildCode": "ASH12-CFG2",
           "price": 500000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "12.7x55_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 402.0749999999976 }, { "d": 54, "t": 502.9800688072975 }, { "d": 55, "t": 537.8074311925956 }, { "d": 89, "t": 597.9202522936413 }, { "d": 90, "t": 637.1201146789285 }, { "d": 100, "t": 654.531238532095 }],
+            "hash": "h6rdhga",
+            "cachedAt": "2026-08-25T13:09:21.168Z"
+          }
         }
       ]
     },
@@ -2893,10 +3555,23 @@
           "muzzle": "无",
           "buildCode": "AUG-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 501.0574374079996 }, { "d": 57, "t": 586.6578064837362 }, { "d": 58, "t": 635.4436538494957 }, { "d": 94, "t": 688.684085384169 }, { "d": 95, "t": 748.3167663290141 }, { "d": 100, "t": 755.9794346752901 }],
+            "hash": "hs9xcac",
+            "cachedAt": "2026-08-25T13:09:21.275Z"
+          }
         },
         {
           "id": "#2",
@@ -2904,10 +3579,23 @@
           "muzzle": "无",
           "buildCode": "AUG-CFG2",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 499.0868924890013 }, { "d": 64, "t": 587.6101978267104 }, { "d": 65, "t": 634.6993989571969 }, { "d": 100, "t": 681.6829996418251 }],
+            "hash": "hbirbau",
+            "cachedAt": "2026-08-25T13:09:21.345Z"
+          }
         },
         {
           "id": "#3",
@@ -2915,10 +3603,23 @@
           "muzzle": "无",
           "buildCode": "AUG-CFG3",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 501.10603829165 }, { "d": 71, "t": 588.6555923995265 }, { "d": 72, "t": 636.3185214633247 }, { "d": 100, "t": 670.135321701847 }],
+            "hash": "hk9hsy7",
+            "cachedAt": "2026-08-25T13:09:21.414Z"
+          }
         }
       ]
     },
@@ -2932,10 +3633,23 @@
           "muzzle": "无",
           "buildCode": "CAR15-CFG1",
           "price": 250000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 624.631329113986 }, { "d": 46, "t": 686.8979216558007 }, { "d": 47, "t": 779.9581337666662 }, { "d": 82, "t": 828.60827916519 }, { "d": 83, "t": 949.1004533014035 }, { "d": 100, "t": 972.4721604515954 }],
+            "hash": "h3xqha6",
+            "cachedAt": "2026-08-25T13:09:21.542Z"
+          }
         },
         {
           "id": "#2",
@@ -2943,10 +3657,23 @@
           "muzzle": "无",
           "buildCode": "CAR15-CFG2",
           "price": 20000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 656.1740506329684 }, { "d": 46, "t": 717.3868457064596 }, { "d": 47, "t": 810.0625641464147 }, { "d": 82, "t": 860.9437222031504 }, { "d": 83, "t": 984.6779849469852 }, { "d": 100, "t": 1005.5386161478264 }],
+            "hash": "hczxxzz",
+            "cachedAt": "2026-08-25T13:09:21.676Z"
+          }
         },
         {
           "id": "#3",
@@ -2954,10 +3681,23 @@
           "muzzle": "无",
           "buildCode": "CAR15-CFG3",
           "price": 280000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 655.637658227903 }, { "d": 46, "t": 717.1115292507654 }, { "d": 47, "t": 810.8552856653996 }, { "d": 82, "t": 859.1256842284702 }, { "d": 83, "t": 984.69697228877 }, { "d": 100, "t": 1007.3756414642841 }],
+            "hash": "hczxxzz",
+            "cachedAt": "2026-08-25T13:09:21.811Z"
+          }
         },
         {
           "id": "#4",
@@ -2965,10 +3705,23 @@
           "muzzle": "无",
           "buildCode": "CAR15-CFG4",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 656.2879746836013 }, { "d": 51, "t": 718.7649782558663 }, { "d": 52, "t": 811.5489341461525 }, { "d": 90, "t": 857.5671060806224 }, { "d": 91, "t": 983.6738467811298 }, { "d": 100, "t": 993.9525510600624 }],
+            "hash": "h29wzzb",
+            "cachedAt": "2026-08-25T13:09:21.946Z"
+          }
         }
       ]
     },
@@ -2982,10 +3735,23 @@
           "muzzle": "无",
           "buildCode": "G3-CFG1",
           "price": 200000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x51_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 535.1144465290604 }, { "d": 64, "t": 613.2937715701922 }, { "d": 65, "t": 661.5264632987927 }, { "d": 100, "t": 704.1397169528358 }],
+            "hash": "hh04vrb",
+            "cachedAt": "2026-08-25T13:09:22.009Z"
+          }
         },
         {
           "id": "#2",
@@ -2993,10 +3759,23 @@
           "muzzle": "无",
           "buildCode": "G3-CFG2",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x51_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 533.3639774859055 }, { "d": 71, "t": 611.7680668279065 }, { "d": 72, "t": 661.8841353113057 }, { "d": 100, "t": 690.9539402775448 }],
+            "hash": "hs9yjao",
+            "cachedAt": "2026-08-25T13:09:22.072Z"
+          }
         },
         {
           "id": "#3",
@@ -3004,10 +3783,23 @@
           "muzzle": "无",
           "buildCode": "G3-CFG3",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x51_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 615.5269457203508 }, { "d": 74, "t": 692.2652869001802 }, { "d": 75, "t": 747.4408869864739 }, { "d": 100, "t": 774.6797602078717 }],
+            "hash": "h4al9cz",
+            "cachedAt": "2026-08-25T13:09:22.134Z"
+          }
         }
       ]
     },
@@ -3021,10 +3813,23 @@
           "muzzle": "无",
           "buildCode": "G18-CFG1",
           "price": 100000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 467.72098976119224 }, { "d": 12, "t": 489.576137204983 }, { "d": 13, "t": 574.9481674100599 }, { "d": 25, "t": 596.3425640007423 }, { "d": 26, "t": 694.5823416460262 }, { "d": 38, "t": 715.3086494994977 }, { "d": 39, "t": 798.8171984760023 }, { "d": 100, "t": 906.4444880846718 }],
+            "hash": "hrubjri",
+            "cachedAt": "2026-08-25T12:42:29.492Z"
+          }
         }
       ]
     },
@@ -3038,10 +3843,23 @@
           "muzzle": "无",
           "buildCode": "K416-CFG1",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 413.46477272729345 }, { "d": 28, "t": 454.8186746987866 }, { "d": 29, "t": 512.0701533407124 }, { "d": 56, "t": 552.4464403067816 }, { "d": 57, "t": 633.4865553120795 }, { "d": 100, "t": 699.1592278205198 }],
+            "hash": "hd61blg",
+            "cachedAt": "2026-08-25T13:09:22.253Z"
+          }
         },
         {
           "id": "#2",
@@ -3049,10 +3867,23 @@
           "muzzle": "无",
           "buildCode": "K416-CFG2",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 412.46590909093055 }, { "d": 31, "t": 455.0634828010566 }, { "d": 32, "t": 511.56710687967876 }, { "d": 63, "t": 554.1544533169042 }, { "d": 64, "t": 634.4092137592359 }, { "d": 100, "t": 684.5851351350268 }],
+            "hash": "hto0kn",
+            "cachedAt": "2026-08-25T13:09:22.379Z"
+          }
         },
         {
           "id": "#3",
@@ -3060,10 +3891,23 @@
           "muzzle": "无",
           "buildCode": "K416-CFG3",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 413.880681818202 }, { "d": 34, "t": 455.14506413822227 }, { "d": 35, "t": 511.2550125487388 }, { "d": 69, "t": 553.1637130508692 }, { "d": 70, "t": 636.3861614613725 }, { "d": 100, "t": 672.2175683213696 }],
+            "hash": "hz4jeiw",
+            "cachedAt": "2026-08-25T13:09:22.503Z"
+          }
         }
       ]
     },
@@ -3077,10 +3921,23 @@
           "muzzle": "无",
           "buildCode": "K437-CFG1",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": ".300BLK_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 419.61538461533956 }, { "d": 40, "t": 473.6963617463627 }, { "d": 41, "t": 511.49002079008557 }, { "d": 70, "t": 550.0830561330287 }, { "d": 71, "t": 658.7228690228252 }, { "d": 100, "t": 697.0620582120448 }],
+            "hash": "hc3mm5m",
+            "cachedAt": "2026-08-25T12:42:40.790Z"
+          }
         },
         {
           "id": "#2",
@@ -3088,10 +3945,23 @@
           "muzzle": "无",
           "buildCode": "K437-CFG2",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": ".300BLK_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 419.6730769230334 }, { "d": 45, "t": 474.7378008494673 }, { "d": 46, "t": 510.69941009907905 }, { "d": 77, "t": 548.5208352996801 }, { "d": 78, "t": 658.8247522416781 }, { "d": 100, "t": 685.3070788106813 }],
+            "hash": "hbhuken",
+            "cachedAt": "2026-08-25T13:09:22.620Z"
+          }
         }
       ]
     },
@@ -3105,10 +3975,23 @@
           "muzzle": "无",
           "buildCode": "KC17-CFG1",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.45x39_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 454.0864864864475 }, { "d": 64, "t": 541.5945945946283 }, { "d": 65, "t": 599.9256756757007 }, { "d": 100, "t": 646.7081081081325 }],
+            "hash": "hoxfs00",
+            "cachedAt": "2026-08-25T12:42:40.858Z"
+          }
         },
         {
           "id": "#2",
@@ -3116,10 +3999,23 @@
           "muzzle": "无",
           "buildCode": "KC17-CFG2",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.45x39_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 455.4932432432055 }, { "d": 71, "t": 543.0354833361223 }, { "d": 72, "t": 600.1232880118536 }, { "d": 100, "t": 634.1183054219177 }],
+            "hash": "hftpo4b",
+            "cachedAt": "2026-08-25T13:09:22.699Z"
+          }
         }
       ]
     },
@@ -3133,10 +4029,23 @@
           "muzzle": "无",
           "buildCode": "M14-CFG1",
           "price": 700000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x51_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 397.8486932599311 }, { "d": 46, "t": 458.7233726160642 }, { "d": 47, "t": 536.2796758244294 }, { "d": 82, "t": 581.9139744971858 }, { "d": 83, "t": 638.7673891223524 }, { "d": 100, "t": 661.1832781887033 }],
+            "hash": "hqhq0jh",
+            "cachedAt": "2026-08-25T12:42:40.955Z"
+          }
         },
         {
           "id": "#2",
@@ -3144,10 +4053,23 @@
           "muzzle": "无",
           "buildCode": "M14-CFG2",
           "price": 800000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x51_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 397.7207702888183 }, { "d": 51, "t": 458.84903924863113 }, { "d": 52, "t": 535.2328419169053 }, { "d": 90, "t": 583.1749774264242 }, { "d": 91, "t": 638.9012835334452 }, { "d": 100, "t": 648.6567455127996 }],
+            "hash": "h9ykm83",
+            "cachedAt": "2026-08-25T13:09:22.814Z"
+          }
         }
       ]
     },
@@ -3161,10 +4083,23 @@
           "muzzle": "无",
           "buildCode": "M249-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 474.3426573427079 }, { "d": 51, "t": 537.8599038997298 }, { "d": 52, "t": 598.7372474152005 }, { "d": 90, "t": 643.9504268736748 }, { "d": 91, "t": 728.6494487108732 }, { "d": 100, "t": 738.8077781114281 }],
+            "hash": "hz0ofve",
+            "cachedAt": "2026-08-25T12:42:30.499Z"
+          }
         }
       ]
     },
@@ -3178,10 +4113,23 @@
           "muzzle": "无",
           "buildCode": "M250-CFG1",
           "price": 700000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "6.8x51_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 460.1254545453679 }, { "d": 51, "t": 517.3890440803353 }, { "d": 52, "t": 568.1452285452683 }, { "d": 90, "t": 608.7838745801545 }, { "d": 91, "t": 684.6964226816109 }, { "d": 100, "t": 693.7711737757554 }],
+            "hash": "h1sq39c",
+            "cachedAt": "2026-08-25T12:42:30.570Z"
+          }
         }
       ]
     },
@@ -3195,10 +4143,23 @@
           "muzzle": "无",
           "buildCode": "M4A1-CFG1",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 439.8149999999692 }, { "d": 46, "t": 502.5321621620892 }, { "d": 47, "t": 558.4572635135094 }, { "d": 82, "t": 604.2995608107319 }, { "d": 83, "t": 699.1309121620949 }, { "d": 100, "t": 721.6988851350969 }],
+            "hash": "h5w1f93",
+            "cachedAt": "2026-08-25T13:09:22.935Z"
+          }
         },
         {
           "id": "#2",
@@ -3206,10 +4167,23 @@
           "muzzle": "无",
           "buildCode": "M4A1-CFG2",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 461.2237499999761 }, { "d": 46, "t": 523.6259121620893 }, { "d": 47, "t": 583.7585135135155 }, { "d": 82, "t": 631.8920608107236 }, { "d": 83, "t": 724.5146621621059 }, { "d": 100, "t": 747.5588851350836 }],
+            "hash": "hb1n012",
+            "cachedAt": "2026-08-25T13:09:23.065Z"
+          }
         },
         {
           "id": "#3",
@@ -3217,10 +4191,23 @@
           "muzzle": "无",
           "buildCode": "M4A1-CFG3",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 461.7749999999729 }, { "d": 46, "t": 524.6909121620901 }, { "d": 47, "t": 584.2497635135155 }, { "d": 82, "t": 630.3545608107215 }, { "d": 83, "t": 722.7746621621044 }, { "d": 100, "t": 747.5663851350903 }],
+            "hash": "hb1n012",
+            "cachedAt": "2026-08-25T13:09:23.191Z"
+          }
         },
         {
           "id": "#4",
@@ -3228,10 +4215,23 @@
           "muzzle": "无",
           "buildCode": "M4A1-CFG4",
           "price": 500000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 460.7249999999729 }, { "d": 51, "t": 524.1566871166057 }, { "d": 52, "t": 581.4986809815891 }, { "d": 90, "t": 631.0606978527032 }, { "d": 91, "t": 725.756441717798 }, { "d": 100, "t": 736.2781365031143 }],
+            "hash": "h487xy8",
+            "cachedAt": "2026-08-25T13:09:23.320Z"
+          }
         }
       ]
     },
@@ -3245,10 +4245,23 @@
           "muzzle": "无",
           "buildCode": "M7-CFG1",
           "price": 800000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "6.8x51_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 477.9060092450583 }, { "d": 58, "t": 548.3090985180725 }, { "d": 59, "t": 593.6469021668194 }, { "d": 99, "t": 642.5812360895186 }, { "d": 100, "t": 689.6802107706349 }],
+            "hash": "h8ynrp9",
+            "cachedAt": "2026-08-25T13:09:23.403Z"
+          }
         },
         {
           "id": "#2",
@@ -3256,10 +4269,23 @@
           "muzzle": "无",
           "buildCode": "M7-CFG2",
           "price": 900000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "6.8x51_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 431.21879815106706 }, { "d": 64, "t": 504.42662240294635 }, { "d": 65, "t": 550.6989856043982 }, { "d": 100, "t": 590.3688317112512 }],
+            "hash": "hizwutj",
+            "cachedAt": "2026-08-25T13:09:23.461Z"
+          }
         },
         {
           "id": "#3",
@@ -3267,10 +4293,23 @@
           "muzzle": "无",
           "buildCode": "M7-CFG3",
           "price": 600000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "6.8x51_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 476.8751926040738 }, { "d": 34, "t": 547.4087209172268 }, { "d": 35, "t": 590.7435011164355 }, { "d": 58, "t": 640.5482222768604 }, { "d": 59, "t": 690.1927097179407 }, { "d": 100, "t": 773.9849536629898 }],
+            "hash": "h3l9pgi",
+            "cachedAt": "2026-08-25T13:09:23.564Z"
+          }
         }
       ]
     },
@@ -3284,10 +4323,23 @@
           "muzzle": "无",
           "buildCode": "MCXLT-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": ".300BLK_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 414.6464285714801 }, { "d": 29, "t": 476.7559935990472 }, { "d": 30, "t": 544.8140820482871 }, { "d": 49, "t": 584.08204829789 }, { "d": 50, "t": 670.5008510328495 }, { "d": 100, "t": 771.6195592085633 }],
+            "hash": "h169bbp",
+            "cachedAt": "2026-08-25T12:42:41.555Z"
+          }
         },
         {
           "id": "#2",
@@ -3295,10 +4347,23 @@
           "muzzle": "无",
           "buildCode": "MCXLT-CFG2",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": ".300BLK_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 435.171428571464 }, { "d": 34, "t": 494.55407722677245 }, { "d": 35, "t": 567.8347643720807 }, { "d": 58, "t": 608.290568714499 }, { "d": 59, "t": 699.3641130027501 }, { "d": 100, "t": 769.9008573895715 }],
+            "hash": "hnglplg",
+            "cachedAt": "2026-08-25T13:09:23.704Z"
+          }
         }
       ]
     },
@@ -3312,10 +4377,23 @@
           "muzzle": "无",
           "buildCode": "MK4-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 409.67725000000655 }, { "d": 24, "t": 449.05881196175284 }, { "d": 25, "t": 494.95685829340664 }, { "d": 34, "t": 509.4590252790807 }, { "d": 35, "t": 558.769371610829 }, { "d": 44, "t": 574.4208385965063 }, { "d": 45, "t": 637.1438849281624 }, { "d": 100, "t": 724.1833831738043 }],
+            "hash": "hv83f84",
+            "cachedAt": "2026-08-25T12:42:41.712Z"
+          }
         },
         {
           "id": "#2",
@@ -3323,10 +4401,23 @@
           "muzzle": "无",
           "buildCode": "MK4-CFG2",
           "price": 280000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 349.7626500000558 }, { "d": 25, "t": 387.40840252595046 }, { "d": 26, "t": 430.17423662698394 }, { "d": 38, "t": 448.6430958395311 }, { "d": 39, "t": 507.46932994054936 }, { "d": 51, "t": 524.9171891530281 }, { "d": 52, "t": 578.1160232540985 }, { "d": 100, "t": 649.2094101039867 }],
+            "hash": "hvp6ywf",
+            "cachedAt": "2026-08-25T13:09:23.857Z"
+          }
         }
       ]
     },
@@ -3340,10 +4431,23 @@
           "muzzle": "无",
           "buildCode": "MK47-CFG1",
           "price": 800000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x39_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 383.7023999998922 }, { "d": 24, "t": 425.82364195810214 }, { "d": 25, "t": 481.5430937064054 }, { "d": 39, "t": 505.44261818183344 }, { "d": 40, "t": 595.261269930098 }, { "d": 100, "t": 700.6027748251371 }],
+            "hash": "hhoo6n1",
+            "cachedAt": "2026-08-25T12:42:41.796Z"
+          }
         },
         {
           "id": "#2",
@@ -3351,10 +4455,23 @@
           "muzzle": "无",
           "buildCode": "MK47-CFG2",
           "price": 750000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x39_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 400.23839999989616 }, { "d": 34, "t": 444.0937436434886 }, { "d": 35, "t": 497.3499596330092 }, { "d": 49, "t": 515.0217834863616 }, { "d": 50, "t": 604.0427994758847 }, { "d": 100, "t": 668.4887989515961 }],
+            "hash": "hf6tzd3",
+            "cachedAt": "2026-08-25T13:09:23.949Z"
+          }
         }
       ]
     },
@@ -3368,10 +4485,23 @@
           "muzzle": "无",
           "buildCode": "MP5-CFG1",
           "price": 200000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 461.2134146341326 }, { "d": 20, "t": 500.0920262664333 }, { "d": 21, "t": 625.6224202626826 }, { "d": 28, "t": 639.0546904315166 }, { "d": 29, "t": 709.0631332082413 }, { "d": 41, "t": 733.1973733583004 }, { "d": 42, "t": 828.4826454033521 }, { "d": 57, "t": 858.7409943714613 }, { "d": 58, "t": 997.6543151969496 }, { "d": 100, "t": 1077.3918386491848 }],
+            "hash": "h72b00d",
+            "cachedAt": "2026-08-25T13:09:24.229Z"
+          }
         },
         {
           "id": "#2",
@@ -3379,10 +4509,23 @@
           "muzzle": "无",
           "buildCode": "MP5-CFG2",
           "price": 180000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 461.5646341463284 }, { "d": 20, "t": 499.6749530957052 }, { "d": 21, "t": 626.0870544090276 }, { "d": 28, "t": 638.9851782364 }, { "d": 29, "t": 709.6631332082403 }, { "d": 41, "t": 733.559568480256 }, { "d": 42, "t": 829.627767354567 }, { "d": 57, "t": 860.0763602251224 }, { "d": 58, "t": 996.6043151969528 }, { "d": 100, "t": 1077.3186679174755 }],
+            "hash": "h72b00d",
+            "cachedAt": "2026-08-25T13:09:24.519Z"
+          }
         },
         {
           "id": "#3",
@@ -3390,10 +4533,23 @@
           "muzzle": "无",
           "buildCode": "MP5-CFG3",
           "price": 250000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 460.2768292682763 }, { "d": 23, "t": 501.43463709501225 }, { "d": 24, "t": 626.6885820801366 }, { "d": 31, "t": 639.6271725852147 }, { "d": 32, "t": 708.5762395214666 }, { "d": 46, "t": 733.549761995014 }, { "d": 47, "t": 830.2415118580797 }, { "d": 64, "t": 858.7756497747346 }, { "d": 65, "t": 999.0186191499654 }, { "d": 100, "t": 1058.8420594802144 }],
+            "hash": "hb0xj4l",
+            "cachedAt": "2026-08-25T13:09:24.811Z"
+          }
         },
         {
           "id": "#4",
@@ -3401,10 +4557,23 @@
           "muzzle": "无",
           "buildCode": "MP5-CFG4",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 460.85121951217917 }, { "d": 25, "t": 500.7495871244605 }, { "d": 26, "t": 625.3206437800792 }, { "d": 34, "t": 638.562267757463 }, { "d": 35, "t": 709.2577146571443 }, { "d": 51, "t": 733.6665723679105 }, { "d": 52, "t": 829.7303119503872 }, { "d": 71, "t": 861.9767298723561 }, { "d": 72, "t": 999.301445064606 }, { "d": 100, "t": 1043.7629826438704 }],
+            "hash": "hzg7xbg",
+            "cachedAt": "2026-08-25T13:09:25.076Z"
+          }
         }
       ]
     },
@@ -3418,10 +4587,23 @@
           "muzzle": "无",
           "buildCode": "MP7-CFG1",
           "price": 500000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "4.6x30_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 388.4747368420552 }, { "d": 20, "t": 428.212064777429 }, { "d": 21, "t": 541.4161943319936 }, { "d": 28, "t": 553.4566801618619 }, { "d": 29, "t": 613.3365991901651 }, { "d": 41, "t": 637.5693117408537 }, { "d": 42, "t": 716.4660728744536 }, { "d": 100, "t": 827.698218623571 }],
+            "hash": "hr26vb4",
+            "cachedAt": "2026-08-25T12:42:42.717Z"
+          }
         },
         {
           "id": "#2",
@@ -3429,10 +4611,23 @@
           "muzzle": "无",
           "buildCode": "MP7-CFG2",
           "price": 550000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "4.6x30_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 389.23894736837104 }, { "d": 25, "t": 429.24811087271127 }, { "d": 26, "t": 541.3860353077681 }, { "d": 34, "t": 553.2683781554247 }, { "d": 35, "t": 613.1747236430252 }, { "d": 51, "t": 638.1646724962202 }, { "d": 52, "t": 720.0310179838589 }, { "d": 100, "t": 791.6566540175716 }],
+            "hash": "hxldzj",
+            "cachedAt": "2026-08-25T13:09:25.276Z"
+          }
         },
         {
           "id": "#3",
@@ -3440,10 +4635,23 @@
           "muzzle": "无",
           "buildCode": "MP7-CFG3",
           "price": 520000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "4.6x30_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 390.34421052626556 }, { "d": 25, "t": 429.0081108727114 }, { "d": 26, "t": 540.8839300446166 }, { "d": 34, "t": 554.0862728922668 }, { "d": 35, "t": 613.831565748288 }, { "d": 51, "t": 638.7994093383259 }, { "d": 52, "t": 718.1331232470192 }, { "d": 100, "t": 792.1113908596818 }],
+            "hash": "hxldzj",
+            "cachedAt": "2026-08-25T13:09:25.485Z"
+          }
         }
       ]
     },
@@ -3457,10 +4665,23 @@
           "muzzle": "无",
           "buildCode": "P90-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.7x28_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 388.16258351889303 }, { "d": 25, "t": 427.8787168979482 }, { "d": 26, "t": 536.5875404068012 }, { "d": 34, "t": 549.0131396135677 }, { "d": 35, "t": 610.9112726994655 }, { "d": 51, "t": 635.4818475052144 }, { "d": 52, "t": 717.4412278066557 }, { "d": 71, "t": 749.1193421817316 }, { "d": 72, "t": 863.8482102336008 }, { "d": 100, "t": 909.3923731594202 }],
+            "hash": "hks2kt3",
+            "cachedAt": "2026-08-25T12:42:33.820Z"
+          }
         }
       ]
     },
@@ -3474,10 +4695,23 @@
           "muzzle": "无",
           "buildCode": "PKM-CFG1",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x54R_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 424.3318385650459 }, { "d": 51, "t": 481.0346290782003 }, { "d": 52, "t": 542.5356158260922 }, { "d": 90, "t": 586.3758028311794 }, { "d": 91, "t": 661.7019016867289 }, { "d": 100, "t": 670.452934884617 }],
+            "hash": "hjmsk6d",
+            "cachedAt": "2026-08-25T12:42:33.910Z"
+          }
         }
       ]
     },
@@ -3491,10 +4725,23 @@
           "muzzle": "无",
           "buildCode": "PTR32-CFG1",
           "price": 200000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x39_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 506.5965189873678 }, { "d": 46, "t": 561.9056297859472 }, { "d": 47, "t": 635.3585521175296 }, { "d": 82, "t": 679.228238787314 }, { "d": 83, "t": 769.2333763087474 }, { "d": 100, "t": 791.3175496170428 }],
+            "hash": "hiqc68k",
+            "cachedAt": "2026-08-25T13:09:25.629Z"
+          }
         },
         {
           "id": "#2",
@@ -3502,10 +4749,23 @@
           "muzzle": "无",
           "buildCode": "PTR32-CFG2",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x39_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 507.2610759493957 }, { "d": 51, "t": 563.0380774519051 }, { "d": 52, "t": 633.3904932173239 }, { "d": 90, "t": 678.2933682509735 }, { "d": 91, "t": 767.8847080669653 }, { "d": 100, "t": 778.7842980565796 }],
+            "hash": "hoik1xg",
+            "cachedAt": "2026-08-25T13:09:25.738Z"
+          }
         },
         {
           "id": "#3",
@@ -3513,10 +4773,23 @@
           "muzzle": "无",
           "buildCode": "PTR32-CFG3",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x39_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 581.3945875161792 }, { "d": 53, "t": 639.3783116506781 }, { "d": 54, "t": 723.5295079805825 }, { "d": 94, "t": 763.5679766368409 }, { "d": 95, "t": 868.2014950970279 }, { "d": 100, "t": 874.1659010166503 }],
+            "hash": "h6wuqiz",
+            "cachedAt": "2026-08-25T13:09:25.871Z"
+          }
         }
       ]
     },
@@ -3530,10 +4803,23 @@
           "muzzle": "无",
           "buildCode": "QBZ95-CFG1",
           "price": 200000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 534.0927835052008 }, { "d": 57, "t": 619.304345511717 }, { "d": 58, "t": 702.8398246889858 }, { "d": 94, "t": 755.2540412015273 }, { "d": 95, "t": 863.2755292156191 }, { "d": 100, "t": 870.4433522010684 }],
+            "hash": "hh8m4os",
+            "cachedAt": "2026-08-25T12:42:43.052Z"
+          }
         },
         {
           "id": "#2",
@@ -3541,10 +4827,23 @@
           "muzzle": "无",
           "buildCode": "QBZ95-CFG2",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 532.3652430044588 }, { "d": 71, "t": 620.9751800283361 }, { "d": 72, "t": 702.2787571039905 }, { "d": 100, "t": 736.8466619080527 }],
+            "hash": "hdc1ndf",
+            "cachedAt": "2026-08-25T13:09:25.970Z"
+          }
         }
       ]
     },
@@ -3558,10 +4857,23 @@
           "muzzle": "无",
           "buildCode": "QJB201-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 479.87133757963716 }, { "d": 51, "t": 541.7906998553461 }, { "d": 52, "t": 605.5552733381816 }, { "d": 90, "t": 652.2116134579667 }, { "d": 91, "t": 738.6959321635987 }, { "d": 100, "t": 750.7592591145496 }],
+            "hash": "hu9rra",
+            "cachedAt": "2026-08-25T12:42:43.164Z"
+          }
         },
         {
           "id": "#2",
@@ -3569,10 +4881,23 @@
           "muzzle": "无",
           "buildCode": "QJB201-CFG2",
           "price": 250000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 479.90955414014195 }, { "d": 39, "t": 541.8926766830393 }, { "d": 40, "t": 605.127063460637 }, { "d": 69, "t": 651.8605857435446 }, { "d": 70, "t": 738.193061693081 }, { "d": 100, "t": 786.9112892246886 }],
+            "hash": "hcz0tz7",
+            "cachedAt": "2026-08-25T13:09:26.112Z"
+          }
         }
       ]
     },
@@ -3586,10 +4911,23 @@
           "muzzle": "无",
           "buildCode": "QJB201G-CFG1",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 436.5841924399276 }, { "d": 51, "t": 497.61792422990834 }, { "d": 52, "t": 555.9273923218386 }, { "d": 90, "t": 601.5291042101036 }, { "d": 91, "t": 681.0241393123216 }, { "d": 100, "t": 693.0430291147934 }],
+            "hash": "h7h0hkp",
+            "cachedAt": "2026-08-25T12:42:43.276Z"
+          }
         },
         {
           "id": "#2",
@@ -3597,10 +4935,23 @@
           "muzzle": "无",
           "buildCode": "QJB201G-CFG2",
           "price": 350000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 436.73539518906773 }, { "d": 39, "t": 498.86075075227535 }, { "d": 40, "t": 556.050148802188 }, { "d": 69, "t": 602.5804929380089 }, { "d": 70, "t": 681.7733274141841 }, { "d": 100, "t": 730.2593926239781 }],
+            "hash": "h4nqkn8",
+            "cachedAt": "2026-08-25T13:09:26.244Z"
+          }
         }
       ]
     },
@@ -3614,10 +4965,23 @@
           "muzzle": "无",
           "buildCode": "QJB201W-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 521.827731092407 }, { "d": 69, "t": 608.5995514770881 }, { "d": 70, "t": 676.5156209722667 }, { "d": 100, "t": 713.4514873433515 }],
+            "hash": "h1pj6yz",
+            "cachedAt": "2026-08-25T12:42:43.344Z"
+          }
         },
         {
           "id": "#2",
@@ -3625,10 +4989,23 @@
           "muzzle": "无",
           "buildCode": "QJB201W-CFG2",
           "price": 250000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 522.4495798318989 }, { "d": 53, "t": 606.374043397331 }, { "d": 54, "t": 676.8596960314718 }, { "d": 94, "t": 740.0967257716492 }, { "d": 95, "t": 835.8806977335674 }, { "d": 100, "t": 845.0316499804557 }],
+            "hash": "hi8fmo",
+            "cachedAt": "2026-08-25T13:09:26.384Z"
+          }
         }
       ]
     },
@@ -3642,10 +5019,23 @@
           "muzzle": "无",
           "buildCode": "QCQ171-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 428.7994757536403 }, { "d": 25, "t": 467.1312177225711 }, { "d": 26, "t": 581.1337403501124 }, { "d": 34, "t": 592.9376697329725 }, { "d": 35, "t": 657.1079512073196 }, { "d": 51, "t": 682.4222319914008 }, { "d": 52, "t": 774.7838634001199 }, { "d": 71, "t": 803.9235364445111 }, { "d": 72, "t": 926.147553174505 }, { "d": 100, "t": 968.0137306539358 }],
+            "hash": "hnn792b",
+            "cachedAt": "2026-08-25T12:42:35.529Z"
+          }
         },
         {
           "id": "#2",
@@ -3653,10 +5043,23 @@
           "muzzle": "无",
           "buildCode": "QCQ171-CFG2",
           "price": 280000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 428.775884665826 }, { "d": 25, "t": 468.1456344984555 }, { "d": 26, "t": 580.9096250159062 }, { "d": 34, "t": 594.7070013188185 }, { "d": 35, "t": 656.5103103161048 }, { "d": 51, "t": 681.2780642325514 }, { "d": 52, "t": 775.1573889571376 }, { "d": 71, "t": 805.0362494196111 }, { "d": 72, "t": 924.4804496358413 }, { "d": 100, "t": 968.0727083734648 }],
+            "hash": "hnn792b",
+            "cachedAt": "2026-08-25T13:09:26.648Z"
+          }
         }
       ]
     },
@@ -3670,10 +5073,23 @@
           "muzzle": "无",
           "buildCode": "QCQ171G-CFG1",
           "price": 500000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 385.6061320755667 }, { "d": 25, "t": 424.5186793931991 }, { "d": 26, "t": 527.6261718519556 }, { "d": 34, "t": 539.4896492576389 }, { "d": 35, "t": 596.3872360561556 }, { "d": 51, "t": 621.1224455847464 }, { "d": 52, "t": 705.0094191755255 }, { "d": 71, "t": 734.698002306754 }, { "d": 72, "t": 843.0554947654704 }, { "d": 100, "t": 885.7115100253734 }],
+            "hash": "hr0z2d0",
+            "cachedAt": "2026-08-25T12:42:35.986Z"
+          }
         },
         {
           "id": "#2",
@@ -3681,10 +5097,23 @@
           "muzzle": "无",
           "buildCode": "QCQ171G-CFG2",
           "price": 480000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 384.52358490575887 }, { "d": 25, "t": 424.5399058082946 }, { "d": 26, "t": 526.5011718519535 }, { "d": 34, "t": 538.8670077482076 }, { "d": 35, "t": 596.3695473769156 }, { "d": 51, "t": 620.5316436979474 }, { "d": 52, "t": 705.3172021943935 }, { "d": 71, "t": 734.7369174010969 }, { "d": 72, "t": 843.1156362749007 }, { "d": 100, "t": 885.8954722895269 }],
+            "hash": "hr0z2d0",
+            "cachedAt": "2026-08-25T13:09:26.928Z"
+          }
         }
       ]
     },
@@ -3698,10 +5127,23 @@
           "muzzle": "无",
           "buildCode": "QCQ171W-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 469.82420749279345 }, { "d": 34, "t": 523.7295763959742 }, { "d": 35, "t": 649.044813131835 }, { "d": 46, "t": 667.4663077158199 }, { "d": 47, "t": 736.4429277370862 }, { "d": 69, "t": 769.4083952914802 }, { "d": 70, "t": 870.4945253990627 }, { "d": 96, "t": 911.8909687153382 }, { "d": 97, "t": 1043.625513808437 }, { "d": 100, "t": 1049.5683421715732 }],
+            "hash": "ho41j3c",
+            "cachedAt": "2026-08-25T12:42:36.429Z"
+          }
         },
         {
           "id": "#2",
@@ -3709,10 +5151,23 @@
           "muzzle": "无",
           "buildCode": "QCQ171W-CFG2",
           "price": 280000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 472.0806916426533 }, { "d": 34, "t": 523.1546484420819 }, { "d": 35, "t": 648.3920753796788 }, { "d": 46, "t": 665.3092471970871 }, { "d": 47, "t": 735.9458095814673 }, { "d": 69, "t": 772.7066661848506 }, { "d": 70, "t": 872.1458222290408 }, { "d": 96, "t": 910.3520638162029 }, { "d": 97, "t": 1042.0001535778824 }, { "d": 100, "t": 1049.6461519698469 }],
+            "hash": "ho41j3c",
+            "cachedAt": "2026-08-25T13:09:27.215Z"
+          }
         }
       ]
     },
@@ -3726,10 +5181,23 @@
           "muzzle": "无",
           "buildCode": "RM277-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "6.8x51_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 472.71272727264204 }, { "d": 71, "t": 551.8810285261713 }, { "d": 72, "t": 625.8395321289034 }, { "d": 100, "t": 657.4085420983577 }],
+            "hash": "h7mxuz6",
+            "cachedAt": "2026-08-25T12:42:43.400Z"
+          }
         },
         {
           "id": "#2",
@@ -3737,10 +5205,23 @@
           "muzzle": "无",
           "buildCode": "RM277-CFG2",
           "price": 320000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "6.8x51_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 474.8072727271867 }, { "d": 64, "t": 552.2732057416025 }, { "d": 65, "t": 626.2548325360347 }, { "d": 100, "t": 668.4590430620274 }],
+            "hash": "hqa0i4r",
+            "cachedAt": "2026-08-25T13:09:27.290Z"
+          }
         }
       ]
     },
@@ -3754,10 +5235,23 @@
           "muzzle": "无",
           "buildCode": "SCARH-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x51_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 456.9897435897614 }, { "d": 41, "t": 512.1186813186755 }, { "d": 42, "t": 551.6307692307889 }, { "d": 73, "t": 593.6798534798651 }, { "d": 74, "t": 673.3765567766294 }, { "d": 100, "t": 707.8395604394749 }],
+            "hash": "hby4qd7",
+            "cachedAt": "2026-08-25T12:42:43.487Z"
+          }
         },
         {
           "id": "#2",
@@ -3765,10 +5259,23 @@
           "muzzle": "无",
           "buildCode": "SCARH-CFG2",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "7.62x51_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 457.0410256410405 }, { "d": 51, "t": 513.9672725184969 }, { "d": 52, "t": 552.8563241163698 }, { "d": 90, "t": 594.5018232980815 }, { "d": 91, "t": 672.8831825883094 }, { "d": 100, "t": 683.8897751743232 }],
+            "hash": "hdmuv9e",
+            "cachedAt": "2026-08-25T13:09:27.393Z"
+          }
         }
       ]
     },
@@ -3782,10 +5289,23 @@
           "muzzle": "无",
           "buildCode": "SG552-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.56x45_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 479.05960264900807 }, { "d": 40, "t": 533.3653123323285 }, { "d": 41, "t": 601.1901736174513 }, { "d": 76, "t": 647.7093252192059 }, { "d": 77, "t": 706.5838553785519 }, { "d": 100, "t": 738.1814927508389 }],
+            "hash": "hlfivju",
+            "cachedAt": "2026-08-25T12:42:36.865Z"
+          }
         }
       ]
     },
@@ -3799,10 +5319,23 @@
           "muzzle": "无",
           "buildCode": "SMG45-CFG1",
           "price": 200000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": ".45ACP_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 501.5256198348841 }, { "d": 28, "t": 550.2015842603773 }, { "d": 29, "t": 685.0969773229759 }, { "d": 56, "t": 730.3668048844999 }, { "d": 57, "t": 830.6704624098411 }, { "d": 94, "t": 894.2033115043687 }, { "d": 95, "t": 993.1086219223123 }, { "d": 100, "t": 997.9707112014198 }],
+            "hash": "havvmmo",
+            "cachedAt": "2026-08-25T13:09:27.589Z"
+          }
         },
         {
           "id": "#2",
@@ -3810,10 +5343,23 @@
           "muzzle": "无",
           "buildCode": "SMG45-CFG2",
           "price": 250000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": ".45ACP_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 501.19338842992465 }, { "d": 31, "t": 551.3288639255147 }, { "d": 32, "t": 684.4477102424205 }, { "d": 63, "t": 732.4906237550567 }, { "d": 64, "t": 831.9053378401389 }, { "d": 100, "t": 884.6995077308444 }],
+            "hash": "hswtbqy",
+            "cachedAt": "2026-08-25T13:09:27.720Z"
+          }
         },
         {
           "id": "#3",
@@ -3821,10 +5367,23 @@
           "muzzle": "无",
           "buildCode": "SMG45-CFG3",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": ".45ACP_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 502.5471074381892 }, { "d": 34, "t": 549.1879238595262 }, { "d": 35, "t": 684.0859644008979 }, { "d": 69, "t": 732.0804998311598 }, { "d": 70, "t": 831.2016808679844 }, { "d": 100, "t": 873.579260744319 }],
+            "hash": "hyff049",
+            "cachedAt": "2026-08-25T13:09:27.850Z"
+          }
         }
       ]
     },
@@ -3838,10 +5397,23 @@
           "muzzle": "无",
           "buildCode": "SR3M-CFG1",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x39_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 400.45381526116455 }, { "d": 17, "t": 440.4116086989604 }, { "d": 18, "t": 541.8825490640604 }, { "d": 36, "t": 582.1024475258612 }, { "d": 37, "t": 649.2521027506386 }, { "d": 100, "t": 799.5518678490023 }],
+            "hash": "h7mmzf3",
+            "cachedAt": "2026-08-25T12:42:37.350Z"
+          }
         }
       ]
     },
@@ -3855,10 +5427,23 @@
           "muzzle": "无",
           "buildCode": "UZI-CFG1",
           "price": 20000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 568.5423076922996 }, { "d": 20, "t": 606.1346153845961 }, { "d": 21, "t": 743.1846153845664 }, { "d": 28, "t": 757.4692307692093 }, { "d": 29, "t": 835.0769230769337 }, { "d": 41, "t": 859.16153846159 }, { "d": 42, "t": 965.9153846153592 }, { "d": 57, "t": 995.7499999999948 }, { "d": 58, "t": 1146.9653846153992 }, { "d": 100, "t": 1228.315384615338 }],
+            "hash": "hbsgtmx",
+            "cachedAt": "2026-08-25T12:42:44.009Z"
+          }
         },
         {
           "id": "#2",
@@ -3866,10 +5451,23 @@
           "muzzle": "无",
           "buildCode": "UZI-CFG2",
           "price": 30000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 567.7769230769152 }, { "d": 23, "t": 608.5390461007368 }, { "d": 24, "t": 743.6930848944156 }, { "d": 31, "t": 756.055971834708 }, { "d": 32, "t": 836.8677029361868 }, { "d": 46, "t": 860.8473229705464 }, { "d": 47, "t": 969.2782848412387 }, { "d": 64, "t": 996.4430981797753 }, { "d": 65, "t": 1147.097136973583 }, { "d": 100, "t": 1208.5731101368785 }],
+            "hash": "hv1agy9",
+            "cachedAt": "2026-08-25T13:09:28.143Z"
+          }
         }
       ]
     },
@@ -3883,10 +5481,23 @@
           "muzzle": "无",
           "buildCode": "VECTOR-CFG1",
           "price": 400000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": ".45ACP_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 339.30797433551413 }, { "d": 20, "t": 373.8853025224011 }, { "d": 21, "t": 471.4751680150642 }, { "d": 28, "t": 483.37141253222916 }, { "d": 29, "t": 537.4819013064011 }, { "d": 41, "t": 557.8416804366155 }, { "d": 42, "t": 627.4471279642919 }, { "d": 57, "t": 653.659913288597 }, { "d": 58, "t": 752.4376797896331 }, { "d": 100, "t": 825.0112972132092 }],
+            "hash": "hg8ru4g",
+            "cachedAt": "2026-08-25T12:42:44.257Z"
+          }
         },
         {
           "id": "#2",
@@ -3894,10 +5505,23 @@
           "muzzle": "无",
           "buildCode": "VECTOR-CFG2",
           "price": 450000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": ".45ACP_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 339.11824014669827 }, { "d": 25, "t": 373.67797946786357 }, { "d": 26, "t": 471.26165226709287 }, { "d": 34, "t": 484.640475541009 }, { "d": 35, "t": 536.5422051689071 }, { "d": 51, "t": 558.5702458504405 }, { "d": 52, "t": 627.6745419310404 }, { "d": 71, "t": 654.7368274082222 }, { "d": 72, "t": 755.4167421872957 }, { "d": 100, "t": 793.4873532519179 }],
+            "hash": "h9jf77p",
+            "cachedAt": "2026-08-25T13:09:28.407Z"
+          }
         }
       ]
     },
@@ -3911,10 +5535,23 @@
           "muzzle": "无",
           "buildCode": "TL-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 453.5779036826604 }, { "d": 45, "t": 508.24871826058285 }, { "d": 46, "t": 539.3737291228063 }, { "d": 80, "t": 581.5037018369221 }, { "d": 81, "t": 693.3737551922612 }, { "d": 100, "t": 717.060576304653 }],
+            "hash": "hr6y0qc",
+            "cachedAt": "2026-08-25T12:42:38.470Z"
+          }
         }
       ]
     },
@@ -3928,10 +5565,23 @@
           "muzzle": "无",
           "buildCode": "TLG-CFG1",
           "price": 40000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": true,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 420.95256916993395 }, { "d": 45, "t": 476.0289531754532 }, { "d": 46, "t": 507.3389509930073 }, { "d": 80, "t": 547.5863866727553 }, { "d": 81, "t": 651.8963844904449 }, { "d": 100, "t": 675.2053153568344 }],
+            "hash": "ho2v571",
+            "cachedAt": "2026-08-25T12:42:38.575Z"
+          }
         }
       ]
     },
@@ -3945,10 +5595,23 @@
           "muzzle": "无",
           "buildCode": "TLW-CFG1",
           "price": 300000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "5.8x42_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 484.07272727270043 }, { "d": 45, "t": 539.3647239263382 }, { "d": 46, "t": 571.9008087004858 }, { "d": 80, "t": 615.282236475158 }, { "d": 81, "t": 735.4637757947897 }, { "d": 100, "t": 756.8402955939462 }],
+            "hash": "hvpx2wn",
+            "cachedAt": "2026-08-25T12:42:38.681Z"
+          }
         }
       ]
     },
@@ -3962,10 +5625,23 @@
           "muzzle": "无",
           "buildCode": "YONG-CFG1",
           "price": 200000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 460.7314285713729 }, { "d": 25, "t": 497.0209308886002 }, { "d": 26, "t": 643.215653838504 }, { "d": 34, "t": 656.0677231512494 }, { "d": 35, "t": 740.792446101223 }, { "d": 51, "t": 763.7537275840614 }, { "d": 52, "t": 877.3941648196205 }, { "d": 71, "t": 904.4067580092616 }, { "d": 72, "t": 1067.1829095305611 }, { "d": 100, "t": 1106.6580092686338 }],
+            "hash": "hjpg78l",
+            "cachedAt": "2026-08-25T12:42:38.910Z"
+          }
         }
       ]
     },
@@ -3979,10 +5655,23 @@
           "muzzle": "无",
           "buildCode": "YENIU-CFG1",
           "price": 20000,
-          "distance": [30, 50, 100],
-          "hitRate": [0.9, 0.8, 0.6],
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.9,
+            0.8,
+            0.6
+          ],
           "bullet": "9x19_4",
-          "enabled": true
+          "enabled": false,
+          "cache": {
+            "keyPoints": [{ "d": 0, "t": 529.4021244309346 }, { "d": 25, "t": 564.8497017534639 }, { "d": 26, "t": 710.9156776840764 }, { "d": 34, "t": 722.5542590282826 }, { "d": 35, "t": 805.5656067341531 }, { "d": 51, "t": 827.4588543996286 }, { "d": 52, "t": 942.7418257778912 }, { "d": 71, "t": 968.6433198996338 }, { "d": 72, "t": 1127.1736357389868 }, { "d": 100, "t": 1167.8722516271816 }],
+            "hash": "hrg9nmf",
+            "cachedAt": "2026-08-25T12:42:39.143Z"
+          }
         }
       ]
     }

@@ -231,6 +231,10 @@ export class BarrelEditor {
     }
 
     weapon.barrels.splice(index, 1);
+    
+    // ⭐ 标记武器为已修改
+    this.weaponManager.markWeaponModified(weapon.id);
+    
     this.renderBarrelList(weapon);
   }
 
@@ -262,10 +266,10 @@ export class BarrelEditor {
       const armorDamageBonus = parseFloat(row.querySelector('.barrel-edit-armorDamageBonus')?.value) || 0;
       const triggerDelayDelta = parseFloat(row.querySelector('.barrel-edit-triggerDelayDelta')?.value) || 0;
 
-      // ⭐ 新增：读取开火模式
+      // 读取开火模式
       const fireMode = row.querySelector('.barrel-edit-fireMode')?.value || '';
 
-      // ⭐ 新增：读取连发参数
+      // 读取连发参数
       const burstCount = parseInt(row.querySelector('.barrel-edit-burstCount')?.value) || 3;
       const burstInternalROF = parseInt(row.querySelector('.barrel-edit-burstInternalROF')?.value) || 800;
       const burstInterval = parseFloat(row.querySelector('.barrel-edit-burstInterval')?.value) || 0.1;
@@ -280,7 +284,6 @@ export class BarrelEditor {
         damageBonus,
         armorDamageBonus,
         triggerDelayDelta,
-        // ⭐ 新增字段
         fireMode: fireMode || undefined,
         burstCount: fireMode === 'burst' ? burstCount : undefined,
         burstInternalROF: fireMode === 'burst' ? burstInternalROF : undefined,
@@ -310,6 +313,9 @@ export class BarrelEditor {
     // 更新武器数据
     weapon.barrels = newBarrels;
 
+    // ⭐ 标记武器为已修改
+    this.weaponManager.markWeaponModified(weapon.id);
+
     // 关闭弹窗
     this.closeEditor();
 
@@ -323,7 +329,7 @@ export class BarrelEditor {
       this.viewRenderer.updateWeaponStats();
     }
 
-    console.log(`✅ 枪管已保存: ${newBarrels.length} 个`);
+    console.log(`✅ 枪管已保存: ${newBarrels.length} 个，武器 ${weapon.id} 已标记为修改`);
   }
 
   /**
@@ -402,11 +408,10 @@ export class BarrelEditor {
       damageBonus: parseFloat(document.getElementById('newBarrelDamageBonus').value) || 0,
       armorDamageBonus: parseFloat(document.getElementById('newBarrelArmorDamageBonus').value) || 0,
       triggerDelayDelta: parseFloat(document.getElementById('newBarrelTriggerDelayDelta').value) || 0,
-      // ⭐ 开火模式
       fireMode: fireMode || undefined
     };
 
-    // ⭐ 连发参数（仅当选择连发模式时）
+    // 连发参数（仅当选择连发模式时）
     if (fireMode === 'burst') {
       barrel.burstCount = parseInt(document.getElementById('newBarrelBurstCount').value) || 3;
       barrel.burstInternalROF = parseInt(document.getElementById('newBarrelBurstInternalROF').value) || 800;
@@ -444,6 +449,9 @@ export class BarrelEditor {
       weapon.barrels = [];
     }
     weapon.barrels.push(barrel);
+
+    // ⭐ 标记武器为已修改
+    this.weaponManager.markWeaponModified(weapon.id);
 
     // 关闭新增弹窗
     document.getElementById('addBarrelModal').style.display = 'none';

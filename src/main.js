@@ -9,8 +9,7 @@
  * 5. 初始化 ChartManager（图表）
  * 6. 初始化 BarrelEditor（枪管编辑器）
  * 7. 设置 SimulationEngine 的 DataManager 依赖
- * 8. 初始化 CacheManager（缓存管理）
- * 9. 协调 TTK 计算和距离图表计算
+ * 8. 协调 TTK 计算和距离图表计算
  */
 import { getDataManager } from './core/DataManager.js';
 import { SimulationEngine } from './core/SimulationEngine.js';
@@ -21,7 +20,6 @@ import { ChartManager } from './ui/ChartManager.js';
 import WeaponTable from './ui/WeaponTable.js';
 import { resetSeed } from './utils/rng.js';
 import { validateHitProb, validateWeaponHitRates, validatePageParams } from './utils/validators.js';
-import { getCacheManager } from './core/CacheManager.js';
 
 class App {
   constructor() {
@@ -30,9 +28,12 @@ class App {
     this.eventHandler = null;
     this.chartManager = null;
     this.barrelEditor = null;
-    this.cacheManager = null;
     this.isInitialized = false;
     this._refreshTimer = null;
+    this._isCalculating = false;  // 防止重复计算
+    
+    // ⭐ 防止事件重复绑定
+    this._eventHandlerInitialized = false;
   }
 
   /**
@@ -49,35 +50,27 @@ class App {
       // 3. 初始化 DataManager 并加载数据
       await this.initDataManager();
 
-      // 4. 初始化 CacheManager
-      this.initCacheManager();
-
-      // 5. 设置 SimulationEngine 的 DataManager 依赖
+      // 4. 设置 SimulationEngine 的 DataManager 依赖
       this.setupSimulationEngine();
 
-      // 6. 初始化图表管理器
+      // 5. 初始化图表管理器
       this.initChartManager();
 
-      // 7. 初始化 DOM 控制器
+      // 6. 初始化 DOM 控制器
       this.initDOMController();
 
-      // 8. 初始化枪管编辑器
+      // 7. 初始化枪管编辑器
       this.initBarrelEditor();
 
-      // 9. 初始化事件处理器
+      // 8. 初始化事件处理器
       this.initEventHandler();
 
-      // 10. 绑定缓存相关事件
-      this.bindCacheEvents();
-
-      // 11. 应用启动完成
+      // 9. 应用启动完成
       this.isInitialized = true;
       console.log('✅ 应用启动完成');
       
-      // 12. 输出缓存统计
-      if (this.cacheManager) {
-        this.cacheManager.logStats();
-      }
+      // 10. 输出缓存统计
+      this._logCacheStats();
 
     } catch (error) {
       console.error('❌ 应用启动失败:', error);
@@ -126,27 +119,15 @@ class App {
   }
 
   // ============================================================
-  // 3. 初始化 CacheManager
-  // ============================================================
-
-  initCacheManager() {
-    this.cacheManager = getCacheManager();
-    console.log('✅ CacheManager 初始化完成');
-  }
-
-  // ============================================================
-  // 4. 初始化 ChartManager
+  // 3. 初始化 ChartManager
   // ============================================================
 
   initChartManager() {
     this.chartManager = new ChartManager();
-    if (this.chartManager.distanceChart) {
-      this.chartManager.distanceChart.setCacheManager(this.cacheManager);
-    }
   }
 
   // ============================================================
-  // 5. 初始化 DOMController
+  // 4. 初始化 DOMController
   // ============================================================
 
   initDOMController() {
@@ -154,7 +135,7 @@ class App {
     this.domController.initialize({
       onBarrelEdit: (weaponId) => {
         if (this.barrelEditor) {
-          // ⭐ 修复：将 weaponId 转换为 weapons 数组索引
+          // 将 weaponId 转换为 weapons 数组索引
           const weapons = this.dataManager.getWeapons();
           const index = weapons.findIndex(w => w.id === weaponId);
           if (index !== -1) {
@@ -169,7 +150,7 @@ class App {
   }
 
   // ============================================================
-  // 6. 初始化 BarrelEditor
+  // 5. 初始化 BarrelEditor
   // ============================================================
 
   initBarrelEditor() {
@@ -184,10 +165,18 @@ class App {
   }
 
   // ============================================================
-  // 7. 初始化 EventHandler
+  // 6. 初始化 EventHandler ⭐ 核心修改
   // ============================================================
 
   initEventHandler() {
+    // ⭐ 防止重复绑定
+    if (this._eventHandlerInitialized) {
+      console.warn('⚠️ EventHandler 已初始化，跳过重复绑定');
+      return;
+    }
+    this._eventHandlerInitialized = true;
+
+    // EventHandler 负责按钮点击 → 通过回调触发计算
     this.eventHandler = new EventHandler(this.domController, this.dataManager);
     this.eventHandler.initialize({
       onCalculate: () => {
@@ -198,59 +187,35 @@ class App {
       }
     });
 
-    document.addEventListener('calculate-ttk', () => {
-      this.handleCalculate();
-    });
-
-    document.addEventListener('calculate-distance', () => {
-      this.handleDistanceChart();
-    });
-
-    document.addEventListener('export-distance-json', () => {
-      this.handleExportDistanceJSON();
-    });
+    // ⭐ 完全移除 calculate-ttk 和 calculate-distance 的监听
+    // 因为这些已经由 EventHandler 的 onCalculate/onDistanceChart 回调处理
+    
+    // ⭐ 移除 export-distance-json 监听（功能已移除）
+    // 原 document.addEventListener('export-distance-json', ...) 已删除
   }
 
   // ============================================================
-  // 8. 缓存相关事件绑定
+  // 7. 核心功能 - TTK 计算
   // ============================================================
 
-  bindCacheEvents() {
-    document.addEventListener('export-cache', () => {
-      if (this.chartManager && this.chartManager.distanceChart) {
-        this.chartManager.distanceChart.exportCache();
-      } else {
-        alert('⚠️ 请先生成折线图！');
-      }
-    });
-
-    document.addEventListener('import-cache', async () => {
-      if (this.chartManager && this.chartManager.distanceChart) {
-        await this.chartManager.distanceChart.importCache();
-      } else {
-        alert('⚠️ 请先生成折线图！');
-      }
-    });
-
-    document.addEventListener('clear-cache', () => {
-      if (this.chartManager && this.chartManager.distanceChart) {
-        this.chartManager.distanceChart.clearCache();
-      }
-    });
-
-    console.log('✅ 缓存事件绑定完成');
-  }
-
-  // ============================================================
-  // 9. 核心功能 - TTK 计算
-  // ============================================================
-
+  /**
+   * 处理 TTK 计算
+   * 使用防锁防止重复调用
+   */
   handleCalculate() {
+    // ⭐ 防止重复调用
+    if (this._isCalculating) {
+      console.log('⏳ 计算中，请稍候...');
+      return;
+    }
+    this._isCalculating = true;
+
     try {
       const { params, armed, attachments } = this.prepareWeaponData();
       
       if (!armed || armed.length === 0) {
         alert('没有可用的武器数据，请检查 data.json');
+        this._isCalculating = false;
         return;
       }
 
@@ -268,42 +233,30 @@ class App {
     } catch (error) {
       console.error('TTK 计算失败:', error);
       alert('TTK 计算失败: ' + error.message);
+    } finally {
+      this._isCalculating = false;
     }
   }
 
+  /**
+   * 处理距离图表生成
+   * 使用防锁防止重复调用
+   */
   handleDistanceChart() {
+    // ⭐ 防止重复调用
+    if (this._isCalculating) {
+      console.log('⏳ 计算中，请稍候...');
+      return;
+    }
+    this._isCalculating = true;
+
     try {
       const { params, armed, attachments } = this.prepareWeaponData();
       
       if (!armed || armed.length === 0) {
         alert('没有可用的武器数据，请检查 data.json');
+        this._isCalculating = false;
         return;
-      }
-
-      // 检查真实模拟模式下是否有启用的配置
-      const toggle = document.getElementById('realSimulationToggle');
-      const isRealMode = toggle ? toggle.checked : false;
-      
-      if (isRealMode) {
-        const priceTable = document.getElementById('priceTable');
-        if (priceTable) {
-          const rows = priceTable.querySelectorAll('tbody tr');
-          let hasEnabled = false;
-          for (const row of rows) {
-            const checkbox = row.querySelector('.price-enabled-checkbox');
-            if (checkbox && checkbox.checked) {
-              hasEnabled = true;
-              break;
-            }
-          }
-          if (!hasEnabled) {
-            alert('⚠️ 真实模拟模式需要至少一个启用的价格配置！\n请到"价格数据" Tab 中启用至少一个配置。');
-            return;
-          }
-        } else {
-          alert('⚠️ 价格表格未加载，请刷新页面后重试。');
-          return;
-        }
       }
 
       this.chartManager.updateDistanceChart(armed, attachments, params);
@@ -312,24 +265,15 @@ class App {
     } catch (error) {
       console.error('距离图表生成失败:', error);
       alert('距离图表生成失败: ' + error.message);
+    } finally {
+      this._isCalculating = false;
     }
   }
 
-  handleExportDistanceJSON() {
-    try {
-      if (this.chartManager && this.chartManager.distanceChart) {
-        this.chartManager.distanceChart.exportAsJSON();
-      } else {
-        alert('⚠️ 请先生成折线图！');
-      }
-    } catch (error) {
-      console.error('JSON 导出失败:', error);
-      alert('❌ JSON 导出失败: ' + error.message);
-    }
-  }
+  // ⭐ handleExportDistanceJSON 方法已移除（功能已删除）
 
   // ============================================================
-  // 10. 数据准备
+  // 8. 数据准备
   // ============================================================
 
   /**
@@ -360,7 +304,6 @@ class App {
     }
     
     console.log(`📋 使用 ${enabledConfigs.length} 个启用的价格配置`);
-    // 打印启用的配置列表，便于调试
     console.log('  配置列表:', enabledConfigs.map(c => c.displayName).join(', '));
     
     // 从启用的配置构建武器数据
@@ -435,7 +378,6 @@ class App {
         const armedWeapon = {
           ...weapon,
           ...current,
-          // ⭐ 显式覆盖为计算后的值
           velocity: current.velocity,
           rof: current.rof,
           flesh: current.flesh,
@@ -484,7 +426,6 @@ class App {
         const armedWeapon = {
           ...weapon,
           ...current,
-          // ⭐ 显式覆盖为计算后的值
           velocity: current.velocity,
           rof: current.rof,
           flesh: current.flesh,
@@ -558,7 +499,6 @@ class App {
       const armedWeapon = {
         ...weapon,
         ...current,
-        // ⭐ 显式覆盖为计算后的值，确保柱状图使用应用枪管加成后的属性
         velocity: current.velocity,
         rof: current.rof,
         flesh: current.flesh,
@@ -575,9 +515,7 @@ class App {
           muzzleId: config.muzzleId,
           muzzleName: config.muzzleName
         },
-        // 使用配置中的命中率
         hitRate: hitRate,
-        // 存储价格配置显示信息
         _displayName: config.displayName,
         _buildCode: config.buildCode,
         _price: config.price,
@@ -616,7 +554,26 @@ class App {
   }
 
   // ============================================================
-  // 11. 错误处理
+  // 9. 缓存统计
+  // ============================================================
+
+  /**
+   * 输出缓存统计信息
+   */
+  _logCacheStats() {
+    if (!this.dataManager) return;
+    
+    const stats = this.dataManager.getStats();
+    console.log(`📊 数据统计: ${stats.weaponCount} 把武器, ${stats.bulletCount} 种子弹, ${stats.priceCount} 条价格配置`);
+    console.log(`📊 缓存统计: ${stats.cachedConfigs}/${stats.totalConfigs} 个配置已缓存`);
+    
+    if (stats.modifiedWeapons > 0) {
+      console.log(`📝 修改标记: ${stats.modifiedWeapons} 个武器待重新计算`);
+    }
+  }
+
+  // ============================================================
+  // 10. 错误处理
   // ============================================================
 
   showError(message) {
@@ -624,17 +581,20 @@ class App {
   }
 
   // ============================================================
-  // 12. 工具方法
+  // 11. 工具方法
   // ============================================================
 
   getStatus() {
+    const stats = this.dataManager?.getStats() || {};
     return {
       initialized: this.isInitialized,
       dataLoaded: this.dataManager?.isLoaded || false,
-      weaponCount: this.dataManager?.getWeapons()?.length || 0,
-      bulletCount: this.dataManager?.getBullets()?.length || 0,
-      priceCount: this.dataManager?.getPrices()?.length || 0,
-      cacheSize: this.cacheManager?.getStats()?.size || 0
+      weaponCount: stats.weaponCount || 0,
+      bulletCount: stats.bulletCount || 0,
+      priceCount: stats.priceCount || 0,
+      cachedConfigs: stats.cachedConfigs || 0,
+      totalConfigs: stats.totalConfigs || 0,
+      modifiedWeapons: stats.modifiedWeapons || 0
     };
   }
 
@@ -660,10 +620,8 @@ class App {
       clearTimeout(this._refreshTimer);
       this._refreshTimer = null;
     }
-    if (this.cacheManager) {
-      this.cacheManager.clear();
-    }
     this.isInitialized = false;
+    this._eventHandlerInitialized = false;
   }
 }
 

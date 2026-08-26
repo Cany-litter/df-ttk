@@ -1,3 +1,4 @@
+// src/ui/TTKChart.js
 import { 
   TIME_UNITS, 
   CHART_COLORS, 
@@ -5,9 +6,13 @@ import {
   CHART_CONFIG 
 } from '../core/config.js';
 import { formatTime } from '../utils/formatters.js';
+import { getConfigCacheManager } from '../core/ConfigCacheManager.js';
 
 /**
  * TTK柱状图专用类
+ * 
+ * 使用缓存的 keyPoints 数据，通过插值计算指定距离的 TTK
+ * 优先从缓存读取，缓存未命中时使用 SimulationEngine 的计算结果
  */
 export class TTKChart {
   constructor() {
@@ -85,7 +90,6 @@ export class TTKChart {
           x: { 
             stacked: true,
             ticks: {
-              // ⭐ 当武器数量多时，旋转标签避免重叠
               maxRotation: 45,
               minRotation: 0,
               font: (ctx) => {
@@ -97,156 +101,153 @@ export class TTKChart {
           y: { 
             stacked: true, 
             beginAtZero: true, 
-            ticks: { callback: v => formatTime(v, 'ms') } 
+            ticks: { 
+              // ⭐ 第三个参数 true 表示传入的值已经是毫秒
+              callback: v => formatTime(v, 'ms', true) 
+            } 
           }
         }
       }
     });
   }
 
+  /**
+   * 更新柱状图
+   * 
+   * 流程：
+   * 1. 优先从缓存读取 TTK 值（用关键点插值计算指定距离的 TTK）
+   * 2. 缓存未命中时，使用 SimulationEngine 的计算结果（stats 中的 avgTime）
+   * 3. 计算各部分组成（飞行延迟、射击延迟等）用于堆叠柱状图
+   * 
+   * @param {Array} stats - 统计结果（来自 SimulationEngine）
+   * @param {Object} params - 参数 { distance, triggerDelayEnable }
+   */
   update(stats, params) {
     this.previousResults = this.lastResults.slice();
-    const newResults = stats.map(stat => this.calculateDelays(stat, params));
+    
+    const dm = window.__app__?.dataManager;
+    let cacheManager = null;
+    if (dm) {
+      cacheManager = getConfigCacheManager(dm);
+    }
+    
+    const distance = params.distance || 30;
+    
+    const newResults = stats.map(stat => {
+      const weapon = stat.weapon;
+      const weaponId = weapon.id;
+      const configId = weapon._configId || '#1';
+      
+      let totalTimeMs = 0;
+      let fromCache = false;
+      let keyPoints = null;
+      let avgShots = stat.avgShots || 0;
+      let avgMisses = stat.avgMisses || 0;
+      let avgBurstInterval = stat.avgBurstInterval || 0;
+      
+      // ⭐ 优先从缓存获取 TTK 值
+      if (dm && cacheManager) {
+        const price = dm.getPriceByWeaponId(weaponId);
+        if (price) {
+          const config = price.configs.find(c => c.id === configId);
+          if (config && config.cache && config.cache.keyPoints) {
+            keyPoints = config.cache.keyPoints;
+            // 用插值计算指定距离的 TTK（返回毫秒）
+            totalTimeMs = cacheManager.interpolateTTK(keyPoints, distance);
+            fromCache = true;
+            
+            // ⭐ 缓存命中时，从缓存的关键点数量估算射击次数
+            // 使用最后几个点的平均值来估算 avgShots
+            // 如果缓存中没有 avgShots，用 stat 中的值或估算值
+            if (stat.avgShots === undefined || stat.avgShots === 0) {
+              // 粗略估算：根据 TTK 值和射速估算射击次数
+              const rof = weapon._current?.rof || weapon.rof || 600;
+              const shotInterval = 60 / rof;
+              avgShots = Math.max(1, Math.round(totalTimeMs / 1000 / shotInterval) + 1);
+              avgMisses = Math.max(0, Math.round(avgShots * 0.15)); // 假设约15%空枪率
+            } else {
+              avgShots = stat.avgShots;
+              avgMisses = stat.avgMisses || 0;
+            }
+            avgBurstInterval = stat.avgBurstInterval || 0;
+          }
+        }
+      }
+      
+      // ⭐ 如果缓存未命中，使用 stat 中的 avgTime
+      // stat.avgTime 是秒，需要转换为毫秒
+      if (!fromCache) {
+        totalTimeMs = stat.avgTime * TIME_UNITS.SECONDS_TO_MS;
+        avgShots = stat.avgShots || 0;
+        avgMisses = stat.avgMisses || 0;
+        avgBurstInterval = stat.avgBurstInterval || 0;
+      }
+      
+      // 计算扳机延迟（毫秒）
+      const triggerDelayValue = weapon._current?.triggerDelay ?? weapon.triggerDelay ?? 0;
+      const triggerDelay = params.triggerDelayEnable ? triggerDelayValue : 0;
+      
+      // 计算飞行延迟（毫秒）
+      const velocity = weapon.velocity || weapon._current?.velocity || 1;
+      const flight = (params.distance / velocity) * TIME_UNITS.SECONDS_TO_MS;
+      
+      // 总时间 - 飞行 - 扳机延迟 - 连发间隔 = 射击延迟（命中间隔 + 空枪间隔）
+      const burstIntervalMs = (avgBurstInterval || 0) * TIME_UNITS.SECONDS_TO_MS;
+      const remainingTime = totalTimeMs - flight - triggerDelay - burstIntervalMs;
+      
+      // 按比例分配命中延迟和空枪延迟
+      let noMissFireDelay = 0;
+      let emptyDelay = 0;
+      const totalIntervals = Math.max(1, avgShots - 1);
+      if (avgMisses > 0 && remainingTime > 0) {
+        const missRatio = Math.min(1, avgMisses / totalIntervals);
+        emptyDelay = remainingTime * missRatio;
+        noMissFireDelay = remainingTime * (1 - missRatio);
+      } else {
+        noMissFireDelay = Math.max(0, remainingTime);
+      }
+      
+      // 确保数值有效
+      const clamp = (v) => Math.max(0, v);
+      
+      return { 
+        name: weapon._displayName || weapon.name,
+        weapon,
+        noMissFireDelay: clamp(noMissFireDelay),
+        flight: clamp(flight),
+        emptyDelay: clamp(emptyDelay),
+        burstInterval: clamp(burstIntervalMs),
+        triggerDelay: clamp(triggerDelay),
+        avgShots: avgShots,
+        totalTime: clamp(totalTimeMs),
+        fromCache: fromCache
+      };
+    });
+    
+    // 按 totalTime 排序
     newResults.sort((a, b) => a.totalTime - b.totalTime);
+    
+    // 计算排名变化
     this.calculateRankChanges(newResults);
     this.lastResults = newResults;
+    
+    // 更新图表数据
     this.updateChartData(newResults);
+    
+    // 输出缓存统计
+    const cachedCount = newResults.filter(r => r.fromCache).length;
+    console.log(`📊 TTK柱状图: ${cachedCount}/${newResults.length} 个配置使用缓存 (距离: ${distance}m)`);
   }
 
   /**
-   * 计算TTK的各个组成部分
-   * 
-   * 将平均TTK时间分解为：
-   * - 飞行延迟：子弹飞行时间
-   * - 无空枪射击延迟：命中之间的间隔时间
-   * - 连发间隔：连发之间的间隔时间（仅连发模式）
-   * - 平均空枪延迟：未命中导致的延迟
-   * - 扳机延迟：开火前的延迟
-   * 
-   * 关键：从 avgTime 反推各部分，确保各部分之和等于 avgTime
-   * 
-   * @param {Object} stats - 统计结果 { weapon, avgTime, avgShots, avgMisses, avgBurstInterval }
-   * @param {Object} params - 参数 { distance, triggerDelayEnable }
-   * @returns {Object} 包含各部分延迟的结果对象
+   * 计算排名变化
    */
-  calculateDelays(stats, params) {
-    const { weapon, avgTime, avgShots, avgMisses, avgBurstInterval } = stats;
-    
-    // ⭐ 优先使用 _displayName，如果没有则使用 weapon.name
-    const displayName = weapon._displayName || weapon.name;
-    
-    // 优先从 _current 读取 triggerDelay，兼容旧数据
-    const velocity = weapon.velocity || weapon._current?.velocity || 1;
-    const triggerDelayValue = weapon._current?.triggerDelay ?? weapon.triggerDelay ?? 0;
-    
-    // 基础延迟计算
-    const flight = params.distance / velocity;
-    const triggerDelay = params.triggerDelayEnable ? triggerDelayValue / 1000 : 0;
-    const burstInterval = avgBurstInterval || 0;
-    
-    // 判断是否为连发模式（添加空值保护）
-    const isBurstMode = weapon.fireMode === 'burst' && 
-                        weapon.burstCount && 
-                        weapon.burstInternalROF;
-    
-    // 计算射击延迟（命中延迟 + 空枪延迟）
-    const { noMissFireDelay, emptyDelay } = this._calculateShootingDelays(
-      weapon, avgTime, avgShots, avgMisses, flight, burstInterval, isBurstMode
-    );
-    
-    return { 
-      name: displayName,  // ⭐ 使用显示名称
-      weapon, 
-      noMissFireDelay, 
-      flight, 
-      emptyDelay, 
-      burstInterval,
-      triggerDelay, 
-      avgShots, 
-      totalTime: avgTime + triggerDelay
-    };
-  }
-
-  /**
-   * 计算射击延迟（命中间隔 + 空枪间隔）
-   * 
-   * 核心思路：
-   * 1. 从 avgTime 反推所有间隔时间：allIntervalTime = avgTime - flight - burstInterval
-   * 2. 将所有间隔时间按命中/空枪比例分配
-   * 
-   * @private
-   */
-  _calculateShootingDelays(weapon, avgTime, avgShots, avgMisses, flight, burstInterval, isBurstMode) {
-    // 从总时间中减去已知部分，得到所有间隔时间
-    const allIntervalTime = isBurstMode 
-      ? avgTime - flight - burstInterval
-      : avgTime - flight;
-    
-    // 如果 avgMisses 为 undefined 或 null，设为 0
-    const safeAvgMisses = avgMisses || 0;
-    
-    // 无空枪时，所有间隔时间都是命中间隔
-    if (safeAvgMisses === 0) {
-      return { noMissFireDelay: allIntervalTime, emptyDelay: 0 };
-    }
-    
-    // 有空枪时，按比例分配
-    if (isBurstMode) {
-      return this._calculateBurstModeDelays(weapon, avgShots, safeAvgMisses, allIntervalTime);
-    } else {
-      return this._calculateAutoModeDelays(avgShots, safeAvgMisses, allIntervalTime);
-    }
-  }
-
-  /**
-   * 计算连发模式下的射击延迟
-   * @private
-   */
-  _calculateBurstModeDelays(weapon, avgShots, avgMisses, allIntervalTime) {
-    const burstCount = weapon.burstCount || 1;
-    
-    // 计算连发间隔数量
-    const burstIntervalCount = Math.floor((avgShots - 1) / burstCount);
-    // 计算总间隔数（不包括连发间隔，因为已经单独计算了）
-    const totalIntervalCount = (avgShots - 1) - burstIntervalCount;
-    
-    if (totalIntervalCount <= 0) {
-      return { noMissFireDelay: 0, emptyDelay: 0 };
-    }
-    
-    // 按空枪比例分配间隔时间
-    const missRatio = Math.min(1, Math.max(0, avgMisses / totalIntervalCount));
-    const emptyDelay = allIntervalTime * missRatio;
-    const noMissFireDelay = allIntervalTime * (1 - missRatio);
-    
-    return { noMissFireDelay, emptyDelay };
-  }
-
-  /**
-   * 计算全自动模式下的射击延迟
-   * @private
-   */
-  _calculateAutoModeDelays(avgShots, avgMisses, allIntervalTime) {
-    const totalIntervalCount = avgShots - 1;
-    
-    if (totalIntervalCount <= 0) {
-      return { noMissFireDelay: 0, emptyDelay: 0 };
-    }
-    
-    // 按空枪比例分配间隔时间
-    const missRatio = Math.min(1, Math.max(0, avgMisses / totalIntervalCount));
-    const emptyDelay = allIntervalTime * missRatio;
-    const noMissFireDelay = allIntervalTime * (1 - missRatio);
-    
-    return { noMissFireDelay, emptyDelay };
-  }
-
   calculateRankChanges(newResults) {
     newResults.forEach((r, newIdx) => {
       const oldIdx = this.previousResults.findIndex(o => o.name === r.name);
       if (oldIdx >= 0) {
         r.rankChange = newIdx - oldIdx;
-        r.delayChange = Math.round((r.totalTime - this.previousResults[oldIdx].totalTime) * TIME_UNITS.SECONDS_TO_MS);
+        r.delayChange = Math.round(r.totalTime - this.previousResults[oldIdx].totalTime);
       } else {
         r.rankChange = 0;
         r.delayChange = 0;
@@ -254,20 +255,27 @@ export class TTKChart {
     });
   }
 
+  /**
+   * 更新图表数据
+   */
   updateChartData(newResults) {
     this.chart.data.labels = newResults.map(r => r.name);
     const keys = ['noMissFireDelay', 'burstInterval', 'emptyDelay', 'flight', 'triggerDelay'];
     this.chart.data.datasets.forEach((ds, i) => {
-      ds.data = newResults.map(r => r[keys[i]]);
+      ds.data = newResults.map(r => r[keys[i]] || 0);
     });
     this.chart.update();
   }
 
+  /**
+   * 绘制排名和延迟变化
+   */
   drawRankDelayPlugin(chart) {
     if (chart.config.type !== 'bar') return;
     
     const { ctx } = chart;
     const meta = chart.getDatasetMeta(4);
+    if (!meta || !meta.data) return;
     
     meta.data.forEach((bar, i) => {
       const r = this.lastResults[i];
@@ -303,51 +311,66 @@ export class TTKChart {
     });
   }
 
+  /**
+   * 获取图表上下文
+   */
   getChartContext(chartId) {
     return document.getElementById(chartId).getContext('2d');
   }
 
+  /**
+   * 格式化 TTK 标签（显示在柱状图顶部）
+   * ⭐ sum 已经是毫秒，直接使用
+   */
   formatTTKLabel(value, ctx) {
     const totals = this.lastResults.map(r => r.totalTime);
+    if (totals.length === 0 || ctx.dataIndex >= totals.length) return '';
+    
     const sum = totals[ctx.dataIndex];
     const best = Math.min(...totals);
     const pct = Math.round((sum / best) * 100);
-    return `${pct}%\n${formatTime(sum, 'ms_raw')}`;
+    return `${pct}%\n${Math.round(sum)}ms`;
   }
 
+  /**
+   * 获取 Tooltip 回调
+   */
   getTooltipCallbacks() {
     return {
-      title: items => items[0].label,
-      label: ctx => `${ctx.dataset.label}: ${formatTime(ctx.raw, 'ms')}`,
+      title: items => items[0]?.label || '',
+      label: ctx => `${ctx.dataset.label}: ${formatTime(ctx.raw, 'ms', true)}`,
       afterBody: items => {
+        if (items.length === 0) return [];
         const idx = items[0].dataIndex;
         const r = this.lastResults[idx];
         if (!r) return [];
         
         const currentRank = idx + 1;
         const totalWeapons = this.lastResults.length;
+        const weapon = r.weapon || {};
         
-        const isSemiAuto = r.weapon && 
-                           r.weapon.fireMode === 'burst' && 
-                           r.weapon.burstCount && 
-                           r.weapon.burstInternalROF;
+        const isBurst = weapon.fireMode === 'burst' && weapon.burstCount && weapon.burstInternalROF;
         
         const tooltipLines = [
           `当前排名: ${currentRank}/${totalWeapons}`,
-          `子弹初速: ${Math.round(r.weapon?.velocity || r.weapon?._current?.velocity || 0)} m/s`,
-          `肉伤: ${r.weapon?.flesh || r.weapon?._current?.flesh || 0}`,
-          `甲伤: ${r.weapon?.armor || r.weapon?._current?.armor || 0}`,
-          `射速: ${r.weapon?.rof || r.weapon?._current?.rof || 0}`,
+          `子弹初速: ${Math.round(weapon._current?.velocity || weapon.velocity || 0)} m/s`,
+          `肉伤: ${weapon._current?.flesh || weapon.flesh || 0}`,
+          `甲伤: ${weapon._current?.armor || weapon.armor || 0}`,
+          `射速: ${weapon._current?.rof || weapon.rof || 0}`,
           `平均致死枪数: ${(r.avgShots || 0).toFixed(2)}`
         ];
         
-        if (isSemiAuto) {
-          const burstInterval = r.weapon.burstInterval || 0;
-          const burstInternalROF = r.weapon.burstInternalROF || 0;
+        if (isBurst) {
+          const burstInterval = weapon.burstInterval || 0;
+          const burstInternalROF = weapon.burstInternalROF || 0;
           tooltipLines.push(
             `连发间隔: ${formatTime(burstInterval, 'ms')}`,
             `内部射速: ${burstInternalROF}`
           );
+        }
+        
+        if (r.fromCache) {
+          tooltipLines.push('💾 数据来源: 缓存');
         }
         
         return tooltipLines;
@@ -355,6 +378,9 @@ export class TTKChart {
     };
   }
 
+  /**
+   * 销毁图表
+   */
   destroy() {
     if (this.chart) {
       this.chart.destroy();
