@@ -653,11 +653,6 @@ export class DistanceChart {
   setShowAllWeapons(showAll) {
     this.showAllWeapons = showAll;
   }
-
-  // ============================================================
-  // 6. ⭐ 导出功能已移除
-  // ============================================================
-  // exportAsJSON() 和 downloadBlob() 方法已删除
 }
 
 export default DistanceChart;

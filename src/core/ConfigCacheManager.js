@@ -31,7 +31,7 @@ export class ConfigCacheManager {
      * - 武器基础属性（rof, velocity, flesh, armor, ranges, mult, decays）
      * - 枪管选择（barrelId）
      * - 枪口选择（muzzleId）
-     * - 子弹选择（bullet）
+     * - 实际使用的子弹（包含口径 + 全局子弹等级）
      * - 战斗参数（护甲等级/值、头盔等级/值、生命值）
      * - 命中率映射（hitRateMap）
      * - 命中概率分布（hitProb）
@@ -57,6 +57,20 @@ export class ConfigCacheManager {
             decays: weapon.decays || [1, 0.9, 0.7, 0.7, 0.7],
             triggerDelay: weapon.triggerDelay || 0
         };
+
+        // ⭐ 获取实际使用的子弹 ID（包含全局子弹等级）
+        let actualBulletId = config.bullet || '';
+        
+        // 如果没有指定子弹，根据口径和全局子弹等级查找
+        if (!actualBulletId && weapon.allowedBullet && this.dataManager) {
+            const bullet = this.dataManager.getBulletByCaliberAndLevel(
+                weapon.allowedBullet,
+                params.bulletLevel || 4
+            );
+            if (bullet) {
+                actualBulletId = bullet.id;
+            }
+        }
 
         // 命中概率排序（确保顺序不影响哈希）
         const hitProb = params.hitProb || { head: 0.1, chest: 0.3, stomach: 0.3, limbs: 0.3 };
@@ -90,7 +104,10 @@ export class ConfigCacheManager {
             // 配置选择
             config.barrelId !== undefined ? config.barrelId : -1,
             config.muzzleId !== undefined ? config.muzzleId : 0,
-            config.bullet || '',
+            // ⭐ 关键修复：使用实际子弹 ID（包含全局子弹等级）
+            actualBulletId || '',
+            // ⭐ 额外包含子弹等级作为双重保险
+            params.bulletLevel || 4,
             
             // 战斗参数
             params.armorLevel || 4,

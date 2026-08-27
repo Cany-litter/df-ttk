@@ -68,14 +68,14 @@ export function validateHitRateMap(hitRateRaw) {
     throw new Error('距离不能重复，请确保每个距离值唯一');
   }
   
-  // 如果第一个距离 > 10，给出建议
-  if (sortedParts.length > 0 && sortedParts[0].distance > 10) {
-    console.warn('⚠️ 命中率映射中第一个距离为 ' + sortedParts[0].distance + 'm，建议添加 10m 点以获得更准确的近战命中率');
+  // 如果第一个距离 > 30，给出建议（30m 是新的最近距离）
+  if (sortedParts.length > 0 && sortedParts[0].distance > 30) {
+      console.warn('⚠️ 命中率映射中第一个距离为 ' + sortedParts[0].distance + 'm，建议添加 30m 点以获得更准确的近战命中率');
   }
-  
-  // 如果最近距离的命中率低于 0.9，给出建议
+
+  // 如果最近距离的命中率低于 0.9，给出建议（30m 处 100% 符合要求）
   if (sortedParts.length > 0 && sortedParts[0].rate < 0.9) {
-    console.warn('⚠️ 最近距离 (' + sortedParts[0].distance + 'm) 的命中率为 ' + (sortedParts[0].rate * 100) + '%，建议设置更高的近距离命中率');
+      console.warn('⚠️ 最近距离 (' + sortedParts[0].distance + 'm) 的命中率为 ' + (sortedParts[0].rate * 100) + '%，建议设置更高的近距离命中率');
   }
   
   return true;

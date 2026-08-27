@@ -39,10 +39,11 @@ export class EventHandler {
     // 1. 绑定计算相关事件
     this.bindCalculateEvents(onCalculate, onDistanceChart);
 
-    // 2. 绑定数据操作事件（导入/导出/重置）
-    this.bindDataOperationEvents();
+    // ⭐ 数据操作事件（导入/导出/重置）由 DOMController 负责，此处不重复绑定
+    // 注释掉以避免重复绑定导致导出两个文件
+    // this.bindDataOperationEvents();
 
-    // 3. 绑定其他事件
+    // 2. 绑定其他事件
     this.bindMiscEvents();
 
     this._initialized = true;
@@ -108,45 +109,18 @@ export class EventHandler {
   }
 
   // ============================================================
-  // 2. 数据操作事件
+  // 2. 数据操作事件（已废弃 - 由 DOMController 负责）
   // ============================================================
 
   /**
    * 绑定数据操作事件（导入/导出/重置）
+   * ⚠️ 此方法已被弃用，数据操作事件由 DOMController 统一管理
+   * 保留方法体为空，避免调用时报错
    */
   bindDataOperationEvents() {
-    // ===== 导出数据按钮 =====
-    const exportBtn = document.getElementById('exportDataBtn');
-    if (exportBtn) {
-      const handler = () => {
-        this.domController.exportData();
-      };
-      exportBtn.addEventListener('click', handler);
-      this._boundEvents.push({ element: exportBtn, event: 'click', handler });
-    }
-
-    // ===== 导入数据按钮 =====
-    const importBtn = document.getElementById('importDataBtn');
-    if (importBtn) {
-      const handler = () => {
-        this.domController.importData();
-      };
-      importBtn.addEventListener('click', handler);
-      this._boundEvents.push({ element: importBtn, event: 'click', handler });
-    }
-
-    // ===== 重置数据按钮 =====
-    const resetBtn = document.getElementById('resetDataBtn');
-    if (resetBtn) {
-      const handler = () => {
-        this.domController.resetData();
-      };
-      resetBtn.addEventListener('click', handler);
-      this._boundEvents.push({ element: resetBtn, event: 'click', handler });
-    }
-
-    // ===== ⭐ 移除：距离图表 JSON 导出按钮（功能已移除） =====
-    // 原 exportJSONBtn 事件绑定已删除
+    // 数据操作事件（导入/导出/重置）已由 DOMController.bindImportExportEvents() 处理
+    // 此处不再重复绑定，防止导出时下载两个文件
+    // 保留此方法为空，确保向后兼容
   }
 
   // ============================================================

@@ -18,8 +18,8 @@ import WeaponTable from './WeaponTable.js';
 import PriceTable from './PriceTable.js';
 import BulletTable from './BulletTable.js';
 
-// 默认命中率映射（10米100%命中率，更符合实际）
-const DEFAULT_HIT_RATE_MAP = '10:1.0,30:0.9,50:0.8,100:0.7,150:0.6';
+// 默认命中率映射
+const DEFAULT_HIT_RATE_MAP = '30:1.0,50:0.9,100:0.6';
 
 export default class DOMController {
   constructor() {
