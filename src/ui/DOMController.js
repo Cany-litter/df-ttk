@@ -18,7 +18,7 @@ import WeaponTable from './WeaponTable.js';
 import PriceTable from './PriceTable.js';
 import BulletTable from './BulletTable.js';
 
-// 默认命中率映射
+// 默认命中率映射（30米100%命中率）
 const DEFAULT_HIT_RATE_MAP = '30:1.0,50:0.9,100:0.6';
 
 export default class DOMController {
@@ -1125,6 +1125,18 @@ export default class DOMController {
 
     if (distChartBtn) {
       distChartBtn.addEventListener('click', () => {
+        const event = new CustomEvent('calculate-distance', {
+          detail: { dataManager: this.dataManager }
+        });
+        document.dispatchEvent(event);
+      });
+    }
+
+    // ⭐ 新增：高亮武器选择变化时自动刷新折线图
+    const highlightSelect = document.getElementById('highlightWeaponSelect');
+    if (highlightSelect) {
+      highlightSelect.addEventListener('change', () => {
+        // 触发折线图更新
         const event = new CustomEvent('calculate-distance', {
           detail: { dataManager: this.dataManager }
         });

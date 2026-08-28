@@ -178,6 +178,14 @@
 
             <!-- 右侧：操作按钮 -->
             <div class="right-group">
+              <!-- ⭐ 高亮武器选择 -->
+              <div class="highlight-selector" style="display:flex;align-items:center;gap:4px;">
+                <label style="font-size:12px;color:#555;white-space:nowrap;">⭐ 高亮:</label>
+                <select id="highlightWeaponSelect" style="max-width:150px;padding:2px 4px;border:1px solid #d0d0d0;border-radius:3px;font-size:11px;height:24px;">
+                  <option value="">无</option>
+                </select>
+              </div>
+
               <!-- 生成折线图按钮 -->
               <button id="distChartBtn" class="btn-primary">📈 生成折线图</button>
             </div>
@@ -190,7 +198,7 @@
 
       <!-- ========== 底部表格区域 ========== -->
       <div class="table-section">
-        <!-- Tab 导航栏 - ⭐ 调整顺序：价格 → 枪械 → 子弹 -->
+        <!-- Tab 导航栏 -->
         <div class="table-tabs">
           <button class="tab-btn active" data-tab="price">💰 价格数据</button>
           <button class="tab-btn" data-tab="weapon">🔫 枪械数据</button>

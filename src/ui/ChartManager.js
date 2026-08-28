@@ -24,8 +24,13 @@ export class ChartManager {
 
   /**
    * 更新距离图表
+   * ⭐ 同时更新高亮武器下拉选项
    */
   updateDistanceChart(armed, attachments, params) {
+    // ⭐ 更新高亮武器下拉选项
+    if (this.distanceChart) {
+      this.distanceChart.updateHighlightOptions(armed);
+    }
     this.distanceChart.update(armed, attachments, params);
   }
 

@@ -45,6 +45,7 @@ const verticalLinePlugin = {
  * 线条样式：
  * - 全距离加权平均 TTK 排名前 15% 的武器：实线 (borderDash: [])，粗线 (2.5px)，鲜艳颜色
  * - 其余 85% 的武器：虚线 (borderDash: [6, 4])，细线 (1.0px)，淡色
+ * - 用户高亮的武器：红色实线，最粗 (4px)，带数据点
  */
 export class DistanceChart {
   constructor() {
@@ -65,6 +66,11 @@ export class DistanceChart {
     
     // 缓存管理器
     this.cacheManager = null;
+    
+    // ⭐ 高亮武器相关
+    this.highlightWeapon = null;      // 当前高亮武器名称
+    this.highlightColor = '#ff0000';  // 高亮颜色（红色）
+    this.highlightBorderWidth = 4;    // 高亮线条宽度
   }
 
   // ============================================================
@@ -111,6 +117,9 @@ export class DistanceChart {
       // 重置日志标记
       this._hitRateLogPrinted = false;
       this._keyDistancesLogged = false;
+      
+      // ⭐ 读取高亮武器选择
+      this._readHighlightWeapon(armed);
       
       // 获取 DataManager 和缓存管理器
       const dm = window.__app__?.dataManager;
@@ -458,7 +467,68 @@ export class DistanceChart {
   }
 
   // ============================================================
-  // 5. 渲染图表
+  // 5. ⭐ 高亮武器相关方法
+  // ============================================================
+
+  /**
+   * 读取高亮武器选择
+   */
+  _readHighlightWeapon(armed) {
+    const select = document.getElementById('highlightWeaponSelect');
+    if (!select) {
+      this.highlightWeapon = null;
+      return;
+    }
+    
+    const selectedValue = select.value;
+    if (!selectedValue) {
+      this.highlightWeapon = null;
+      return;
+    }
+    
+    // 从 armed 中查找匹配的武器
+    const matched = armed.find(w => {
+      const displayName = w._displayName || w.name;
+      return displayName === selectedValue;
+    });
+    
+    this.highlightWeapon = matched ? (matched._displayName || matched.name) : null;
+  }
+
+  /**
+   * 更新高亮武器下拉选项
+   */
+  updateHighlightOptions(armed) {
+    const select = document.getElementById('highlightWeaponSelect');
+    if (!select) return;
+    
+    // 保存当前选中的值
+    const currentValue = select.value;
+    
+    // 清空并重新填充选项
+    select.innerHTML = '<option value="">无</option>';
+    
+    // 去重：使用 Set 存储显示名称
+    const seen = new Set();
+    for (const weapon of armed) {
+      const displayName = weapon._displayName || weapon.name;
+      if (!seen.has(displayName)) {
+        seen.add(displayName);
+        const option = document.createElement('option');
+        option.value = displayName;
+        option.textContent = displayName;
+        select.appendChild(option);
+      }
+    }
+    
+    // 恢复选中的值
+    if (currentValue && seen.has(currentValue)) {
+      select.value = currentValue;
+    }
+  }
+
+  // ============================================================
+  // 6. 渲染图表
   // ============================================================
 
   /**
@@ -502,13 +572,17 @@ export class DistanceChart {
     const datasets = stats.map((s, i) => {
       const label = s.displayName || s.weapon.name;
       const isTop15 = top15Names.has(label);
+      const isHighlighted = this.highlightWeapon && label === this.highlightWeapon;
       
-      // 根据是否前15% 选择颜色和样式
+      // 根据是否高亮/前15% 选择颜色和样式
       let colorIndex;
       let color;
       
-      if (isTop15) {
-        // 前15% 使用鲜艳颜色，按排名顺序分配
+      if (isHighlighted) {
+        // ⭐ 高亮武器：使用鲜艳红色
+        color = this.highlightColor;
+      } else if (isTop15) {
+        // 前15% 使用鲜艳颜色
         colorIndex = top15Names.size > 0 ? Array.from(top15Names).indexOf(label) % topColorPalette.length : i % topColorPalette.length;
         color = topColorPalette[colorIndex % topColorPalette.length];
       } else {
@@ -517,8 +591,29 @@ export class DistanceChart {
         color = mutedColorPalette[colorIndex];
       }
       
-      // 前15% 使用更粗的线条 (2.5)，其余使用细线 (1.0)
-      const borderWidth = isTop15 ? 2.5 : 1.0;
+      // ⭐ 高亮武器使用最粗线条，前15%次之，其余最细
+      let borderWidth;
+      if (isHighlighted) {
+        borderWidth = this.highlightBorderWidth; // 4px
+      } else if (isTop15) {
+        borderWidth = 2.5;
+      } else {
+        borderWidth = 1.0;
+      }
+      
+      // ⭐ 高亮武器使用实线（即使不在前15%）
+      let borderDash;
+      if (isHighlighted) {
+        borderDash = [];
+      } else if (isTop15) {
+        borderDash = [];
+      } else {
+        borderDash = [6, 4];
+      }
+      
+      // ⭐ 高亮武器显示数据点
+      const pointRadius = isHighlighted ? 4 : 0;
+      const pointHoverRadius = isHighlighted ? 6 : (isTop15 ? 4 : 2);
       
       return {
         label: label,
@@ -526,17 +621,17 @@ export class DistanceChart {
         fill: false,
         tension: 0,
         hidden: i >= displayCount,
-        pointRadius: 0,
-        pointHoverRadius: isTop15 ? 4 : 2,
+        pointRadius: pointRadius,
+        pointHoverRadius: pointHoverRadius,
         borderColor: color,
         borderWidth: borderWidth,
-        // 前15% 实线，其余虚线
-        borderDash: isTop15 ? [] : [6, 4],
+        borderDash: borderDash,
         pointStyle: 'circle',
-        pointBackgroundColor: color,
-        pointBorderColor: isTop15 ? color : 'rgba(0,0,0,0.1)',
+        pointBackgroundColor: isHighlighted ? color : (isTop15 ? color : 'rgba(0,0,0,0.1)'),
+        pointBorderColor: isHighlighted ? color : (isTop15 ? color : 'rgba(0,0,0,0.1)'),
         // 保存排名信息，用于图例显示
         _isTop15: isTop15,
+        _isHighlighted: isHighlighted,
         _rank: i + 1,
         _weightedAvg: s.weightedAvg
       };
@@ -584,7 +679,8 @@ export class DistanceChart {
                 const value = formatTime(i.raw, 'ms', true);
                 const rank = i.dataset._rank || '?';
                 const isTop15 = i.dataset._isTop15 ? '⭐' : '';
-                return `${isTop15} #${rank} ${label}: ${value}`;
+                const isHighlighted = i.dataset._isHighlighted ? '🔴' : '';
+                return `${isHighlighted}${isTop15} #${rank} ${label}: ${value}`;
               }
             }
           },
@@ -602,7 +698,8 @@ export class DistanceChart {
                   if (dataset) {
                     const rank = dataset._rank || '?';
                     const isTop15 = dataset._isTop15 ? '⭐ ' : '';
-                    label.text = `${isTop15}#${rank} ${label.text}`;
+                    const isHighlighted = dataset._isHighlighted ? '🔴 ' : '';
+                    label.text = `${isHighlighted}${isTop15}#${rank} ${label.text}`;
                     // 虚线样式在图例中显示
                     if (dataset.borderDash && dataset.borderDash.length > 0) {
                       label.lineDash = dataset.borderDash;
@@ -610,6 +707,10 @@ export class DistanceChart {
                     // 图例颜色也使用对应的颜色
                     label.fillStyle = dataset.borderColor;
                     label.strokeStyle = dataset.borderColor;
+                    // 高亮武器的图例边框加粗
+                    if (dataset._isHighlighted) {
+                      label.borderWidth = 3;
+                    }
                   }
                   return label;
                 });
