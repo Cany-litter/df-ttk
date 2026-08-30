@@ -8,6 +8,7 @@
  * - 支持动态 select 选项：从行数据的 _barrelOptions / _muzzleOptions 读取
  * - 支持列配置中的 getOptions 函数
  * - 支持从列配置的 getOptions 作为备用方案（当 dataset 不存在时）
+ * - 支持 getEditValue 函数，用于编辑时获取自定义显示值
  * 
  * 使用示例：
  * ```javascript
@@ -20,6 +21,14 @@
  *       editable: true,
  *       inputType: 'select',
  *       getOptions: (row) => ['无', '长枪管', '短枪管']
+ *     },
+ *     {
+ *       key: 'price',
+ *       label: '价格 (万)',
+ *       editable: true,
+ *       inputType: 'number',
+ *       render: (row) => `¥${row.price}W`,
+ *       getEditValue: (row) => row.price  // 编辑时显示纯数字
  *     }
  *   ],
  *   data: [...],
@@ -465,6 +474,7 @@ export class TableRenderer {
 
   /**
    * 进入编辑模式
+   * ⭐ 支持 getEditValue 函数，用于编辑时获取自定义显示值
    * @param {HTMLElement} cell - 单元格元素
    * @param {Function} onCellChange - 变更回调
    * @param {Object} col - 列配置
@@ -475,9 +485,41 @@ export class TableRenderer {
     const colKey = cell.dataset.col;
     const inputType = cell.dataset.inputType || 'text';
     
-    let currentValue = cell.textContent.trim();
-    if (currentValue === '-' || currentValue === '') {
+    // ⭐ 优先从 getEditValue 获取当前值
+    let currentValue = '';
+    if (col && typeof col.getEditValue === 'function') {
+      // 获取行数据
+      const table = cell.closest('table');
+      const tableId = table?.id;
+      let rowData = null;
+      if (tableId && window._tableInstances && window._tableInstances[tableId]) {
+        const instance = window._tableInstances[tableId];
+        const allData = instance.getData();
+        if (allData && allData[rowIndex]) {
+          rowData = allData[rowIndex];
+        }
+      }
+      if (rowData) {
+        currentValue = String(col.getEditValue(rowData));
+      } else {
+        // 备用：从 cell.textContent 提取
+        currentValue = cell.textContent.trim();
+      }
+    } else {
+      currentValue = cell.textContent.trim();
+    }
+    
+    // 清理特殊字符
+    if (currentValue === '-' || currentValue === '' || currentValue === '¥' || currentValue === '¥-') {
       currentValue = '';
+    }
+    
+    // 如果值是 "¥35.0W" 格式，尝试提取数字
+    if (currentValue.startsWith('¥') && currentValue.endsWith('W')) {
+      const numMatch = currentValue.match(/¥([\d.]+)W/);
+      if (numMatch) {
+        currentValue = numMatch[1];
+      }
     }
     
     cell.dataset.originalValue = currentValue;
@@ -641,6 +683,7 @@ export class TableRenderer {
 
   /**
    * 退出编辑模式
+   * ⭐ 使用列配置的 render 函数来格式化显示值
    * @param {HTMLElement} cell - 单元格
    * @param {Function} onCellChange - 变更回调
    * @param {boolean} save - 是否保存
@@ -660,15 +703,16 @@ export class TableRenderer {
     
     cell.classList.remove('editing');
     
-    // 获取表格信息用于日志
+    // 获取表格信息和列配置
     const table = cell.closest('table');
     const tableId = table?.id || 'unknown';
     
-    // 使用 table.getData() 获取原始数据
     let rowData = {};
+    let columns = [];
     if (tableId && window._tableInstances && window._tableInstances[tableId]) {
       const instance = window._tableInstances[tableId];
       const allData = instance.getData();
+      columns = instance.getColumns();
       if (allData && allData[rowIndex]) {
         rowData = allData[rowIndex];
       }
@@ -680,15 +724,47 @@ export class TableRenderer {
       rowData = allData?.[rowIndex] || {};
     }
     
+    // 触发变更回调
     if (save && newValue !== originalValue) {
       if (typeof onCellChange === 'function') {
         onCellChange(rowIndex, colKey, newValue, rowData);
       }
     }
     
-    cell.textContent = save ? newValue : originalValue;
-    if (cell.textContent === '' || cell.textContent === null) {
-      cell.textContent = '-';
+    // ⭐ 使用列配置的 render 函数来显示值
+    const col = columns.find(c => c.key === colKey);
+    if (col && typeof col.render === 'function') {
+      // 更新 rowData 中的值（如果保存成功）
+      if (save && newValue !== originalValue) {
+        // 尝试转换类型（数字类型特殊处理）
+        if (col.inputType === 'number') {
+          const numValue = parseFloat(newValue);
+          if (!isNaN(numValue)) {
+            rowData[colKey] = numValue;
+          } else {
+            rowData[colKey] = newValue;
+          }
+        } else {
+          rowData[colKey] = newValue;
+        }
+      } else if (!save) {
+        // 取消编辑，恢复原值
+        const originalDisplayValue = originalValue;
+        if (col.inputType === 'number') {
+          rowData[colKey] = parseFloat(originalDisplayValue) || 0;
+        } else {
+          rowData[colKey] = originalDisplayValue;
+        }
+      }
+      // 使用 render 函数重新渲染单元格
+      cell.innerHTML = col.render(rowData, rowIndex);
+    } else {
+      // 备用：直接设置文本
+      const displayValue = save ? newValue : originalValue;
+      cell.textContent = displayValue;
+      if (cell.textContent === '' || cell.textContent === null) {
+        cell.textContent = '-';
+      }
     }
   }
 

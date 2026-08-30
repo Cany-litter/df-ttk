@@ -741,6 +741,7 @@ export default class DOMController {
   /**
    * 处理价格配置单元格变更
    * ⭐ 影响 TTK 的字段变更时标记武器
+   * ⭐ 价格输入以万为单位，存储时乘以 10000
    */
   handlePriceCellChange(rowIndex, key, value, row) {
     const weaponId = row._weaponId;
@@ -775,7 +776,11 @@ export default class DOMController {
       this.scheduleRefresh('price');
       return;
     } else if (key === 'price') {
-      this.dataManager.updatePriceConfig(weaponId, configId, { price: parseFloat(value) || 0 });
+      // ⭐ 用户输入的是万为单位，存储时乘以 10000
+      const priceInW = parseFloat(value);
+      if (!isNaN(priceInW) && priceInW >= 0) {
+        this.dataManager.updatePriceConfig(weaponId, configId, { price: priceInW * 10000 });
+      }
       this.scheduleRefresh('price');
       return;
     } else if (key === 'hitRateRaw') {
@@ -810,7 +815,7 @@ export default class DOMController {
       muzzleId: 0,
       muzzle: '无',
       buildCode: '',
-      price: 0,
+      price: 0,  // 以元为单位存储
       distance: [],
       hitRate: [],
       bullet: '',
@@ -1073,7 +1078,7 @@ export default class DOMController {
         hitRateMap: hitRateMap,
         hitRate: hitRate,
         buildCode: row.buildCode || '-',
-        price: row.price || 0,
+        price: row.price || 0,  // 以元为单位
         _rawRow: row
       });
     }

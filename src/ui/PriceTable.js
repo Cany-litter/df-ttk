@@ -11,7 +11,7 @@
  * - 枪管（下拉选择，从武器.barrels 读取）
  * - 枪口（下拉选择，从全局枪口列表读取）
  * - 改枪码（文本编辑）
- * - 整枪价格（数字编辑）
+ * - 整枪价格（数字编辑，单位：万）
  * - 命中率（文本编辑，格式：30:0.9,50:0.8,100:0.6）
  * - 子弹（下拉选择，从武器口径对应的子弹列表读取）
  * - 操作（新增行 / 删除行）
@@ -62,7 +62,6 @@ export class PriceTable {
         editable: false,
         headerAttrs: { style: 'min-width:50px;' },
         render: (row) => {
-          // ⭐ 确保 configId 正确显示
           return TableRenderer.escapeHtml(row.configId || '#1');
         }
       },
@@ -122,19 +121,29 @@ export class PriceTable {
         }
       },
 
-      // ==================== 整枪价格（数字编辑） ====================
+      // ==================== 整枪价格（数字编辑，单位：万） ====================
       {
         key: 'price',
-        label: '整枪价格',
+        label: '整枪价格 (万)',
         editable: true,
         inputType: 'number',
         inputStep: 1,
         inputMin: 0,
-        headerAttrs: { style: 'min-width:80px;' },
+        inputPlaceholder: '输入万为单位',
+        headerAttrs: { style: 'min-width:90px;' },
         render: (row) => {
           const price = row.price;
+          // price 存储的是实际价格（元），显示时除以 10000
           if (price === undefined || price === null || price === 0) return '-';
-          return `¥${Number(price).toLocaleString()}`;
+          const priceInW = price / 10000;
+          return `¥${priceInW.toFixed(1)}W`;
+        },
+        // ⭐ 编辑时获取值（以万为单位）
+        getEditValue: (row) => {
+          const price = row.price;
+          if (price === undefined || price === null || price === 0) return '';
+          const priceInW = price / 10000;
+          return priceInW.toFixed(1);
         }
       },
 
@@ -352,9 +361,10 @@ export class PriceTable {
         rowClass: (row) => row._isNewRow ? 'new-price-row' : '',
         onCellChange: (rowIndex, key, value, row) => {
           if (key === 'price') {
-            const numValue = parseFloat(value);
-            if (!isNaN(numValue) && numValue >= 0) {
-              if (onCellChange) onCellChange(rowIndex, key, numValue, row);
+            // ⭐ 用户输入的是万为单位，存储时乘以 10000
+            const priceInW = parseFloat(value);
+            if (!isNaN(priceInW) && priceInW >= 0) {
+              if (onCellChange) onCellChange(rowIndex, key, priceInW * 10000, row);
             }
             return;
           }
@@ -864,6 +874,7 @@ export class PriceTable {
       barrel: rowData.barrel || '无',
       muzzle: rowData.muzzle || '无',
       buildCode: rowData.buildCode || '',
+      // ⭐ 价格存储的是元，直接使用
       price: rowData.price || 0,
       hitRateRaw: hitRateRaw,
       bulletDisplay: rowData.bulletDisplay || '-',
@@ -886,6 +897,7 @@ export class PriceTable {
 
   /**
    * 创建新增行数据
+   * ⭐ 价格默认值以元为单位存储（用户输入万，存储时乘以 10000）
    * @param {number} weaponId - 武器 ID
    * @param {string} weaponName - 武器名称
    * @param {string} nextConfigId - 下一个配置 ID（格式：#1, #2, #3）
@@ -905,7 +917,8 @@ export class PriceTable {
       barrel: defaults.barrel || '无',
       muzzle: defaults.muzzle || '无',
       buildCode: defaults.buildCode || '',
-      price: defaults.price || 0,
+      // ⭐ 价格存储时乘以 10000（用户输入的是万）
+      price: (defaults.price || 0) * 10000,
       hitRateRaw: defaults.hitRateRaw || '',
       bulletDisplay: defaults.bulletDisplay || '-',
       _weaponId: weaponId,
