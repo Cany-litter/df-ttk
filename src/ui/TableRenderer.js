@@ -307,6 +307,7 @@ export class TableRenderer {
         }
         
         // 如果行数据中有预计算的选项，存储在 cell 的 dataset 中
+        // ⭐ 修复：只在有值且不为空数组时才设置
         if (colKey === 'barrel' && row._barrelOptions && row._barrelOptions.length > 0) {
           cellAttrs['data-barrel-options'] = JSON.stringify(row._barrelOptions);
         }
@@ -387,7 +388,7 @@ export class TableRenderer {
     }
     
     return Object.entries(attrs)
-      .filter(([_, value]) => value !== undefined && value !== null)
+      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => {
         if (value === true) return key;
         return `${key}="${this.escapeHtml(String(value))}"`;
@@ -475,6 +476,7 @@ export class TableRenderer {
   /**
    * 进入编辑模式
    * ⭐ 支持 getEditValue 函数，用于编辑时获取自定义显示值
+   * ⭐ 修复：增加 JSON 解析的空值检查
    * @param {HTMLElement} cell - 单元格元素
    * @param {Function} onCellChange - 变更回调
    * @param {Object} col - 列配置
@@ -529,24 +531,37 @@ export class TableRenderer {
     if (inputType === 'select') {
       let optionList = [];
       
-      // 1. 从 cell dataset 中读取预计算的选项
-      if (colKey === 'barrel' && cell.dataset.barrelOptions) {
+      // ⭐ 修复：从 cell dataset 中读取预计算的选项 - 增加空值检查
+      if (colKey === 'barrel' && cell.dataset.barrelOptions && cell.dataset.barrelOptions !== '') {
         try {
           optionList = JSON.parse(cell.dataset.barrelOptions);
+          if (!Array.isArray(optionList)) {
+            optionList = [];
+          }
         } catch (e) {
           console.warn('解析 barrelOptions 失败:', e);
           optionList = [];
         }
-      } else if (colKey === 'muzzle' && cell.dataset.muzzleOptions) {
+      }
+      
+      if (colKey === 'muzzle' && cell.dataset.muzzleOptions && cell.dataset.muzzleOptions !== '') {
         try {
           optionList = JSON.parse(cell.dataset.muzzleOptions);
+          if (!Array.isArray(optionList)) {
+            optionList = [];
+          }
         } catch (e) {
           console.warn('解析 muzzleOptions 失败:', e);
           optionList = [];
         }
-      } else if (colKey === 'bulletDisplay' && cell.dataset.bulletOptions) {
+      }
+      
+      if (colKey === 'bulletDisplay' && cell.dataset.bulletOptions && cell.dataset.bulletOptions !== '') {
         try {
           optionList = JSON.parse(cell.dataset.bulletOptions);
+          if (!Array.isArray(optionList)) {
+            optionList = [];
+          }
         } catch (e) {
           console.warn('解析 bulletOptions 失败:', e);
           optionList = [];
@@ -556,7 +571,7 @@ export class TableRenderer {
       // 2. 从 data-input-options 读取（静态选项）
       if (!optionList || optionList.length === 0) {
         const optionsData = cell.dataset.inputOptions;
-        if (optionsData) {
+        if (optionsData && optionsData !== '') {
           try {
             const parsed = JSON.parse(optionsData);
             optionList = Array.isArray(parsed) ? parsed : Object.keys(parsed);

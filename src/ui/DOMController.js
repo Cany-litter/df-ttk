@@ -790,10 +790,15 @@ export default class DOMController {
         hitRate: parsed.hitRate
       });
     } else if (key === 'bulletDisplay') {
+      // ⭐ 修复：使用 DataManager 的 findBulletIdByDisplay 查找子弹 ID
       const bulletId = this.dataManager.findBulletIdByDisplay(value);
       if (bulletId) {
         this.dataManager.updatePriceConfig(weaponId, configId, { bullet: bulletId });
+      } else {
+        console.warn('⚠️ 未找到匹配的子弹:', value);
       }
+      this.scheduleRefresh('price');
+      return;
     }
 
     if (affectsTTK && weaponId) {

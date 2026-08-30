@@ -279,7 +279,6 @@ export class DataManager {
       
       return {
         weaponName: weapon.name,
-        // ⭐ 确保 configId 是字符串格式 "#1", "#2", "#3"
         configId: config.id || '#1',
         barrel: barrelName,
         barrelId: barrelId,
@@ -294,7 +293,6 @@ export class DataManager {
         enabled: config.enabled !== undefined ? config.enabled : true,
         _weaponId: weaponId,
         _rawConfig: config,
-        // ⭐ 直接引用 config.cache（原始引用，不是副本）
         cache: config.cache || null,
         _cache: config.cache || null
       };
@@ -1039,17 +1037,42 @@ export class DataManager {
     };
   }
 
+  /**
+   * ⭐ 修复：根据显示字符串查找子弹 ID
+   * 支持 "5.56x45mm Lv.4" 格式，支持精确匹配和模糊匹配
+   */
   findBulletIdByDisplay(bulletDisplay) {
-    if (!bulletDisplay || bulletDisplay === '-') return null;
+    if (!bulletDisplay || bulletDisplay === '-' || bulletDisplay === '') return null;
     
+    // 方法1：解析 "5.56x45mm Lv.4" 格式
     const match = bulletDisplay.match(/^(.+?)\s+Lv\.(.+)$/);
-    if (!match) return null;
+    if (match) {
+      const caliber = match[1].trim();
+      const level = match[2].trim();
+      
+      // 精确匹配
+      let bullet = this.getBulletByCaliberAndLevel(caliber, level);
+      if (bullet) return bullet.id;
+      
+      // 模糊匹配（去掉 mm 后缀，忽略大小写）
+      const normalizedCaliber = caliber.replace(/mm$/, '').toLowerCase();
+      for (const b of this.data.bullets) {
+        const bCaliber = b.caliber.replace(/mm$/, '').toLowerCase();
+        if (bCaliber === normalizedCaliber && String(b.level) === String(level)) {
+          return b.id;
+        }
+      }
+    }
     
-    const caliber = match[1];
-    const level = match[2];
+    // 方法2：直接匹配显示字符串
+    for (const b of this.data.bullets) {
+      const display = `${b.caliber} Lv.${b.level}`;
+      if (display === bulletDisplay) {
+        return b.id;
+      }
+    }
     
-    const bullet = this.getBulletByCaliberAndLevel(caliber, level);
-    return bullet ? bullet.id : null;
+    return null;
   }
 }
 

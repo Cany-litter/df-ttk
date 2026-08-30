@@ -227,6 +227,13 @@ export class DistanceChart {
       );
       
       if (cacheStatus.needsRecalc) {
+        // ⭐ 新增：打印缓存未命中时的子弹信息
+        console.log(`🔄 缓存未命中: ${displayName}`);
+        console.log(`  - 武器口径: ${weapon.allowedBullet}`);
+        console.log(`  - 全局子弹等级: ${params.bulletLevel}`);
+        console.log(`  - 配置中指定的子弹: ${attachment.bulletType || '无'}`);
+        console.log(`  - 原因: ${cacheStatus.reason}`);
+        
         itemsToCalculate.push({
           idx,
           weapon,
@@ -338,9 +345,18 @@ export class DistanceChart {
    */
   _calculateFastModeForSingleWeapon(weapon, params, distances, attachment, dm) {
     const selectedBulletType = attachment.bulletType;
+    
+    // ⭐ 新增：打印调试信息
+    console.log(`🔫 计算武器: ${weapon.name || weapon._displayName}`);
+    console.log(`  - 配置中指定的子弹 (attachment.bulletType): ${selectedBulletType || '无'}`);
+    console.log(`  - 武器口径 (weapon.allowedBullet): ${weapon.allowedBullet}`);
+    console.log(`  - 当前全局子弹等级 (params.bulletLevel): ${params.bulletLevel}`);
+    
     let realBulletKey = SimulationEngine.getRealBulletKey(
       selectedBulletType, weapon, params, dm
     );
+    
+    console.log(`  - 实际使用的子弹 (realBulletKey): ${realBulletKey || '未找到'}`);
     
     if (!realBulletKey) {
       console.warn(`武器 ${weapon.name} 没有匹配的子弹，跳过`);
@@ -352,6 +368,8 @@ export class DistanceChart {
       console.warn(`武器 ${weapon.name} 的子弹 ${realBulletKey} 不存在`);
       return null;
     }
+    
+    console.log(`  - 子弹数据: 口径=${bulletData.caliber}, 等级=${bulletData.level}, base=${bulletData.base}`);
     
     const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
     

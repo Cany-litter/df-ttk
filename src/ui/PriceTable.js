@@ -185,6 +185,20 @@ export class PriceTable {
         headerAttrs: { style: 'min-width:100px;' },
         render: (row) => {
           return TableRenderer.escapeHtml(row.bulletDisplay || '-');
+        },
+        // ⭐ getOptions 用于获取子弹选项
+        getOptions: (row) => {
+          if (row._bulletOptions && row._bulletOptions.length > 0) {
+            return row._bulletOptions;
+          }
+          // 如果行数据中有 _getBulletOptions 函数，调用它
+          if (typeof row._getBulletOptions === 'function') {
+            const opts = row._getBulletOptions(row);
+            if (opts && opts.length > 0) {
+              return opts;
+            }
+          }
+          return ['-'];
         }
       },
 
@@ -299,6 +313,7 @@ export class PriceTable {
           }
         } catch (e) {
           // 忽略
+          console.warn('计算子弹选项失败:', e);
         }
       }
       
@@ -308,6 +323,7 @@ export class PriceTable {
         _barrelOptions: barrelOptions,
         _muzzleOptions: muzzleOpts,
         _bulletOptions: bulletOptions,
+        _getBulletOptions: getBulletOptions, // ⭐ 保存引用以便列配置使用
         _isNewRow: row._isNewRow || false,
         enabled: row.enabled !== false,
         // ⭐ 确保缓存数据被保留
@@ -428,6 +444,8 @@ export class PriceTable {
 
   /**
    * 渲染表体（内部使用）
+   * ⭐ 修复：重新定义 cellAttrs 变量
+   * ⭐ 修复：只在有值且不为空数组时才设置 data-*-options 属性
    */
   static renderBody(columns, data) {
     if (!data || data.length === 0) {
@@ -448,41 +466,64 @@ export class PriceTable {
         const colKey = col.key;
         const isEditable = col.editable !== false;
         
-        const attrs = {
+        // ⭐ 定义 cellAttrs
+        const cellAttrs = {
           'data-col': colKey,
           'data-row': index
         };
         
         if (isEditable) {
-          attrs['data-editable'] = 'true';
-          if (col.inputType) attrs['data-input-type'] = col.inputType;
-          if (col.inputStep) attrs['data-input-step'] = col.inputStep;
-          if (col.inputMin !== undefined) attrs['data-input-min'] = col.inputMin;
-          if (col.inputMax !== undefined) attrs['data-input-max'] = col.inputMax;
-          if (col.inputPlaceholder) attrs['data-input-placeholder'] = col.inputPlaceholder;
+          cellAttrs['data-editable'] = 'true';
+          if (col.inputType) cellAttrs['data-input-type'] = col.inputType;
+          if (col.inputStep) cellAttrs['data-input-step'] = col.inputStep;
+          if (col.inputMin !== undefined) cellAttrs['data-input-min'] = col.inputMin;
+          if (col.inputMax !== undefined) cellAttrs['data-input-max'] = col.inputMax;
+          if (col.inputPlaceholder) cellAttrs['data-input-placeholder'] = col.inputPlaceholder;
         }
         
-        // 传递选项数据到 dataset，供 TableRenderer 使用
-        if (colKey === 'barrel' && row._barrelOptions) {
-          attrs['data-barrel-options'] = JSON.stringify(row._barrelOptions);
+        // ⭐ 修复：只在有值且不为空数组时才设置 data-*-options 属性
+        if (colKey === 'barrel' && row._barrelOptions && row._barrelOptions.length > 0) {
+          cellAttrs['data-barrel-options'] = JSON.stringify(row._barrelOptions);
         }
-        if (colKey === 'muzzle' && row._muzzleOptions) {
-          attrs['data-muzzle-options'] = JSON.stringify(row._muzzleOptions);
+        if (colKey === 'muzzle' && row._muzzleOptions && row._muzzleOptions.length > 0) {
+          cellAttrs['data-muzzle-options'] = JSON.stringify(row._muzzleOptions);
         }
-        if (colKey === 'bulletDisplay' && row._bulletOptions) {
-          attrs['data-bullet-options'] = JSON.stringify(row._bulletOptions);
+        if (colKey === 'bulletDisplay' && row._bulletOptions && row._bulletOptions.length > 0) {
+          cellAttrs['data-bullet-options'] = JSON.stringify(row._bulletOptions);
+        }
+        
+        // 也支持从列配置的 getOptions 获取选项（备用）
+        if (isEditable && col.inputType === 'select' && typeof col.getOptions === 'function') {
+          try {
+            const opts = col.getOptions(row);
+            if (opts && opts.length > 0) {
+              const optionsStr = JSON.stringify(opts);
+              if (colKey === 'barrel' && !cellAttrs['data-barrel-options']) {
+                cellAttrs['data-barrel-options'] = optionsStr;
+              }
+              if (colKey === 'muzzle' && !cellAttrs['data-muzzle-options']) {
+                cellAttrs['data-muzzle-options'] = optionsStr;
+              }
+              if (colKey === 'bulletDisplay' && !cellAttrs['data-bullet-options']) {
+                cellAttrs['data-bullet-options'] = optionsStr;
+              }
+            }
+          } catch(e) {
+            // 忽略 getOptions 错误
+          }
         }
         
         // ⭐ 关键修复：传递 configId 到 dataset，方便调试
         if (colKey === 'configId' && row.configId) {
-          attrs['data-config-id'] = row.configId;
+          cellAttrs['data-config-id'] = row.configId;
         }
         
-        const attrsStr = Object.entries(attrs)
-          .map(([k, v]) => `${k}="${v}"`)
+        const finalAttrsStr = Object.entries(cellAttrs)
+          .filter(([_, v]) => v !== undefined && v !== null && v !== '')
+          .map(([k, v]) => `${k}="${TableRenderer.escapeHtml(String(v))}"`)
           .join(' ');
         
-        return `<td ${attrsStr}>${cellValue}</td>`;
+        return `<td ${finalAttrsStr}>${cellValue}</td>`;
       }).join('');
       html += '</tr>';
       return html;
@@ -764,6 +805,7 @@ export class PriceTable {
         _barrelOptions: barrelOptions,
         _muzzleOptions: muzzleOpts,
         _bulletOptions: bulletOptions,
+        _getBulletOptions: getBulletOptions,
         _isNewRow: row._isNewRow || false,
         enabled: row.enabled !== false,
         // ⭐ 确保缓存数据被保留
