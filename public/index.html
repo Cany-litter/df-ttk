@@ -88,6 +88,26 @@
             <label for="healthValue">生命值</label>
             <input type="number" id="healthValue" value="100" min="1" max="200" />
           </div>
+
+          <!-- ⭐ 新增：KD -->
+          <div class="param-group compact economic-group">
+            <label for="kdRatio">KD</label>
+            <input type="number" id="kdRatio" value="1.0" min="0" step="0.1" style="width:50px;" />
+          </div>
+
+          <!-- ⭐ 新增：撤离率（显示为百分比） -->
+          <div class="param-group compact economic-group">
+            <label for="extractRate">撤离率</label>
+            <input type="number" id="extractRate" value="50" min="0" max="100" step="1" style="width:50px;" />
+            <span style="font-size:10px;color:#aaa;">%</span>
+          </div>
+
+          <!-- ⭐ 新增：其他消耗 -->
+          <div class="param-group compact economic-group">
+            <label for="extraCost">其他消耗</label>
+            <input type="number" id="extraCost" value="30" min="0" step="1" style="width:50px;" />
+            <span style="font-size:10px;color:#aaa;">发</span>
+          </div>
         </div>
 
         <!-- 第2行：命中相关参数 -->

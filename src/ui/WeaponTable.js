@@ -353,8 +353,6 @@ export class WeaponTable {
    * @returns {Object} 表格实例
    */
   static render(config) {
-    console.log('🔧 WeaponTable.render 被调用了');
-
     const {
       data,
       onCellChange = null,
@@ -837,7 +835,7 @@ export class WeaponTable {
 
   /**
    * 计算当前值（应用附件加成）
-   * ⭐ 修复：处理枪管缺少 rangeMult 等属性时导致的 NaN 问题
+   * ⭐ 修复：只有当 rangeAdd 存在且不等于 0 时才使用 rangeAdd 模式
    * 
    * @param {Object} weapon - 原始武器数据
    * @param {Object} barrel - 枪管数据
@@ -867,15 +865,26 @@ export class WeaponTable {
     }
 
     // ============================================================
-    // ⭐ 核心修复：处理枪管缺少 rangeMult/rangeAdd 属性时的 NaN 问题
+    // ⭐ 核心修复：处理 rangeAdd 和 rangeMult 的优先级
+    // 只有当 rangeAdd 存在且不等于 0 时才使用 rangeAdd 模式
     // ============================================================
     let rangeMult = 1.0;
-    const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
     
-    // 如果 barrel 存在，但 rangeMult 不存在，默认为 1.0
-    // 使用 ?? 运算符处理 undefined 和 null
-    const barrelRange = hasRangeAdd ? 1.0 : (barrel ? (barrel.rangeMult ?? 1.0) : 1.0);
-    rangeMult *= (barrelRange + muzzleRangeMult);
+    if (barrel) {
+      // ⭐ 修复：rangeAdd 必须存在且不等于 0 才视为有效
+      const hasRangeAdd = typeof barrel.rangeAdd === 'number' && barrel.rangeAdd !== 0;
+      
+      if (hasRangeAdd) {
+        // rangeAdd 模式：rangeMult 固定为 1.0（不乘倍率，只加增量）
+        rangeMult = 1.0;
+      } else {
+        // rangeMult 模式：使用 rangeMult（默认为 1.0）
+        rangeMult = barrel.rangeMult ?? 1.0;
+      }
+    }
+    
+    // 枪口加成（枪口加成是加法而不是乘法）
+    rangeMult += muzzleRangeMult;
 
     // 确保 rangeMult 是有效数字
     if (!isFinite(rangeMult) || isNaN(rangeMult)) {
@@ -886,6 +895,7 @@ export class WeaponTable {
       rangeMult = 1.0;
     }
 
+    // 初速倍率 = rangeMult × 枪口初速倍率 × (1 + 精校)
     let velocityMult = rangeMult * muzzleVelocityMult * (1 + precision);
     
     // 确保 velocityMult 是有效数字
@@ -909,19 +919,26 @@ export class WeaponTable {
       }
     }
 
+    // ============================================================
+    // ⭐ 修复：计算射程时正确处理 rangeAdd 和 rangeMult
+    // ============================================================
     let newRanges;
     if (barrel && Array.isArray(barrel.ranges) && barrel.ranges.length > 0) {
+      // 枪管自定义射程（完全覆盖）
       newRanges = barrel.ranges;
     } else {
-      const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number';
-      newRanges = hasRangeAdd
-        ? weapon.ranges.map(r => (r === Infinity ? Infinity : Math.round(r * rangeMult + barrel.rangeAdd)))
-        : weapon.ranges.map(r => {
-            if (r === Infinity) return Infinity;
-            return Math.round(r * rangeMult);
-          });
+      // 使用武器原始射程 × rangeMult + rangeAdd
+      const hasRangeAdd = barrel && typeof barrel.rangeAdd === 'number' && barrel.rangeAdd !== 0;
+      const rangeAddValue = hasRangeAdd ? barrel.rangeAdd : 0;
+      
+      newRanges = weapon.ranges.map(r => {
+        if (r === Infinity) return Infinity;
+        // ⭐ 修正：先乘以 rangeMult，再加上 rangeAdd
+        return Math.round(r * rangeMult + rangeAddValue);
+      });
     }
 
+    // 计算初速：如果枪管有 velocityAdd，先加再乘
     const hasVelocityAdd = barrel && typeof barrel.velocityAdd === 'number';
     let newVelocity = hasVelocityAdd
       ? Math.round((weapon.velocity + barrel.velocityAdd) * velocityMult)

@@ -157,9 +157,35 @@ body {
   background: #fff;
 }
 
+/* ⭐ 经济参数特殊样式 */
+.param-group.compact.economic-group {
+  border-left: 2px solid #ff9800;
+  padding-left: 8px;
+  margin-left: 4px;
+}
+
+.param-group.compact.economic-group label {
+  color: #e65100;
+  font-weight: 600;
+}
+
+/* ⭐ 经济参数输入框宽度 */
+.param-group.compact input#kdRatio,
+.param-group.compact input#extractRate,
+.param-group.compact input#extraCost {
+  width: 50px;
+  text-align: center;
+}
+
+.param-group.compact input#extractRate + span {
+  font-size: 10px;
+  color: #aaa;
+  margin-left: -2px;
+}
+
 /* 全局命中率输入框特殊宽度 */
 .param-group.compact #hitRate {
-  width: 140px;
+  width: 200px;
   font-family: 'Courier New', monospace;
   font-size: 11px;
   letter-spacing: 0.2px;
@@ -625,6 +651,33 @@ table tbody td {
 
 table tbody tr:hover {
   background: #f8faff;
+}
+
+/* ============================================================
+   ⭐ 哈弗币消耗列样式（新增）
+   ============================================================ */
+.havoc-cost {
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  transition: color 0.2s;
+  padding: 0 4px;
+  border-radius: 2px;
+}
+
+.havoc-cost:hover {
+  background: #fff3e0;
+  transform: scale(1.02);
+}
+
+/* 消耗列表头特殊样式 */
+#priceTable thead th[data-col="havocCost"] {
+  background: #fff3e0 !important;
+  border-bottom: 2px solid #ff9800 !important;
+}
+
+/* 消耗列单元格样式 */
+#priceTable tbody td[data-col="havocCost"] {
+  background: #fffbf5;
 }
 
 /* ============================================================

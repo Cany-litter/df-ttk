@@ -7,6 +7,7 @@ import {
 } from '../core/config.js';
 import { formatTime } from '../utils/formatters.js';
 import { getConfigCacheManager } from '../core/ConfigCacheManager.js';
+import perf from '../utils/performance.js';
 
 /**
  * TTK柱状图专用类
@@ -102,7 +103,6 @@ export class TTKChart {
             stacked: true, 
             beginAtZero: true, 
             ticks: { 
-              // ⭐ 第三个参数 true 表示传入的值已经是毫秒
               callback: v => formatTime(v, 'ms', true) 
             } 
           }
@@ -114,15 +114,15 @@ export class TTKChart {
   /**
    * 更新柱状图
    * 
-   * 流程：
-   * 1. 优先从缓存读取 TTK 值（用关键点插值计算指定距离的 TTK）
-   * 2. 缓存未命中时，使用 SimulationEngine 的计算结果（stats 中的 avgTime）
-   * 3. 计算各部分组成（飞行延迟、射击延迟等）用于堆叠柱状图
+   * ⭐ 核心修改：优先从缓存读取 TTK 值
+   * 只有缓存未命中时才使用 SimulationEngine 的计算结果
    * 
-   * @param {Array} stats - 统计结果（来自 SimulationEngine）
+   * @param {Array} stats - 统计结果（来自 SimulationEngine，作为缓存未命中时的降级方案）
    * @param {Object} params - 参数 { distance, triggerDelayEnable }
    */
   update(stats, params) {
+    perf.mark('ttkChartUpdate', 'TTK图表更新开始');
+    
     this.previousResults = this.lastResults.slice();
     
     const dm = window.__app__?.dataManager;
@@ -132,6 +132,10 @@ export class TTKChart {
     }
     
     const distance = params.distance || 30;
+    
+    // ⭐ 统计缓存命中情况
+    let cacheHitCount = 0;
+    let cacheMissCount = 0;
     
     const newResults = stats.map(stat => {
       const weapon = stat.weapon;
@@ -145,7 +149,7 @@ export class TTKChart {
       let avgMisses = stat.avgMisses || 0;
       let avgBurstInterval = stat.avgBurstInterval || 0;
       
-      // ⭐ 优先从缓存获取 TTK 值
+      // ⭐⭐⭐ 优先从缓存获取 TTK 值
       if (dm && cacheManager) {
         const price = dm.getPriceByWeaponId(weaponId);
         if (price) {
@@ -155,28 +159,37 @@ export class TTKChart {
             // 用插值计算指定距离的 TTK（返回毫秒）
             totalTimeMs = cacheManager.interpolateTTK(keyPoints, distance);
             fromCache = true;
+            cacheHitCount++;
             
-            // ⭐ 缓存命中时，从缓存的关键点数量估算射击次数
-            // 使用最后几个点的平均值来估算 avgShots
-            // 如果缓存中没有 avgShots，用 stat 中的值或估算值
-            if (stat.avgShots === undefined || stat.avgShots === 0) {
-              // 粗略估算：根据 TTK 值和射速估算射击次数
+            // ⭐ 从缓存的关键点中提取 avgShots
+            // 计算所有关键点的平均 shots
+            let totalShots = 0;
+            let shotCount = 0;
+            for (const point of keyPoints) {
+              if (point.shots !== undefined && point.shots !== null) {
+                totalShots += point.shots;
+                shotCount++;
+              }
+            }
+            if (shotCount > 0) {
+              avgShots = totalShots / shotCount;
+            } else if (stat.avgShots !== undefined && stat.avgShots > 0) {
+              avgShots = stat.avgShots;
+            } else {
+              // 粗略估算
               const rof = weapon._current?.rof || weapon.rof || 600;
               const shotInterval = 60 / rof;
               avgShots = Math.max(1, Math.round(totalTimeMs / 1000 / shotInterval) + 1);
-              avgMisses = Math.max(0, Math.round(avgShots * 0.15)); // 假设约15%空枪率
-            } else {
-              avgShots = stat.avgShots;
-              avgMisses = stat.avgMisses || 0;
             }
+            avgMisses = stat.avgMisses || Math.max(0, Math.round(avgShots * 0.15));
             avgBurstInterval = stat.avgBurstInterval || 0;
           }
         }
       }
       
-      // ⭐ 如果缓存未命中，使用 stat 中的 avgTime
-      // stat.avgTime 是秒，需要转换为毫秒
+      // ⭐ 如果缓存未命中，使用 stat 中的 avgTime（降级方案）
       if (!fromCache) {
+        cacheMissCount++;
         totalTimeMs = stat.avgTime * TIME_UNITS.SECONDS_TO_MS;
         avgShots = stat.avgShots || 0;
         avgMisses = stat.avgMisses || 0;
@@ -234,9 +247,19 @@ export class TTKChart {
     // 更新图表数据
     this.updateChartData(newResults);
     
-    // 输出缓存统计
-    const cachedCount = newResults.filter(r => r.fromCache).length;
-    console.log(`📊 TTK柱状图: ${cachedCount}/${newResults.length} 个配置使用缓存 (距离: ${distance}m)`);
+    // ⭐ 输出缓存统计（区分折线图的缓存统计）
+    const total = cacheHitCount + cacheMissCount;
+    if (total > 0) {
+      const hitRate = Math.round((cacheHitCount / total) * 100);
+      console.log(`📊 TTK柱状图: ${cacheHitCount}/${total} 个配置使用缓存 (${hitRate}%, 距离: ${distance}m)`);
+      if (cacheMissCount > 0) {
+        console.log(`  ⚠️ ${cacheMissCount} 个配置缓存未命中，使用模拟计算结果`);
+      }
+    } else {
+      console.log(`📊 TTK柱状图: 0 个配置 (距离: ${distance}m)`);
+    }
+    
+    perf.mark('ttkChartUpdateDone', 'TTK图表更新完成');
   }
 
   /**

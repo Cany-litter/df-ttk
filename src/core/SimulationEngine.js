@@ -30,7 +30,7 @@ export class SimulationEngine {
   }
 
   // ============================================================
-  // 1. 单次模拟（核心）
+  // 1. 单次模拟（核心）⭐ 修改命中率取值逻辑
   // ============================================================
 
   /**
@@ -41,6 +41,9 @@ export class SimulationEngine {
    * 2. 每次射击有命中率判断
    * 3. 命中后根据部位计算伤害
    * 4. 连发模式下需要计算连发间隔
+   * 
+   * ⭐ 核心修改：优先使用 params.hitRate（由调用方传入，包含不同距离的命中率）
+   * 而不是 weapon.hitRate（在构建时固定为 30m 的命中率）
    * 
    * @param {Object} weapon - 武器对象（已包含原始值和当前值）
    * @param {Object} params - 游戏参数（距离、命中率、护甲等级等）
@@ -59,7 +62,14 @@ export class SimulationEngine {
     
     // 获取参数和配置
     const { distance, hitProb } = params;
-    const hitRate = (typeof weapon.hitRate === 'number') ? weapon.hitRate : params.hitRate;
+    
+    // ⭐⭐⭐ 核心修改：优先使用 params.hitRate（由调用方传入）
+    // 这样可以确保每个距离点使用对应的命中率
+    // 如果 params.hitRate 不存在，降级使用 weapon.hitRate
+    // 如果都没有，使用默认值 0.85
+    const hitRate = (typeof params.hitRate === 'number') 
+      ? params.hitRate 
+      : (typeof weapon.hitRate === 'number' ? weapon.hitRate : 0.85);
     
     // 计算射击间隔（连发模式使用内部射速，全自动模式使用平均射速）
     const isBurstMode = weapon.fireMode === 'burst' && weapon.burstCount && weapon.burstInternalROF;
@@ -233,18 +243,20 @@ export class SimulationEngine {
   }
 
   /**
-   * ✅ 新增：计算单个距离点的 TTK（用于真实模拟）
+   * ✅ 新增：计算单个距离点的 TTK 统计（用于折线图）
    * 
    * 与 calculateAvgStats 的区别：
-   * - 返回格式更简洁，只包含 avgTime
+   * - 返回格式更简洁，包含 avgTime 和 avgShots
    * - 用于折线图的逐点计算
+   * 
+   * ⭐ 修改：返回完整统计信息，而不仅仅是 avgTime
    * 
    * @param {Object} weapon - 武器对象
    * @param {Object} params - 游戏参数
    * @param {number} times - 模拟次数
    * @param {Object} bulletStrategy - 子弹策略
    * @param {Object} bulletData - 子弹数据
-   * @returns {number} 平均 TTK 时间（秒）
+   * @returns {Object} { avgTime, avgShots, avgMisses, avgBurstInterval }
    */
   static calculateSinglePoint(weapon, params, times = SIMULATION_CONFIG.DEFAULT_SIM_COUNT, bulletStrategy, bulletData) {
     let totalTime = 0;
@@ -267,7 +279,13 @@ export class SimulationEngine {
       totalBurstInterval += (result.burstIntervalTime || 0);
     }
     
-    return totalTime / times;
+    // ⭐ 返回完整统计数据，而不仅仅是平均时间
+    return {
+      avgTime: totalTime / times,
+      avgShots: totalShots / times,
+      avgMisses: totalMisses / times,
+      avgBurstInterval: totalBurstInterval / times
+    };
   }
 
   // ============================================================
@@ -307,7 +325,7 @@ export class SimulationEngine {
           return null;
         }
         
-        // 获取命中率（优先使用价格配置中的距离-命中率）
+        // ⭐ 获取命中率（优先使用价格配置中的距离-命中率）
         let hitRate = params.hitRate;
         if (weapon.id && attachment.configId) {
           const priceHitRate = dm.getHitRateForDistance(
@@ -321,6 +339,8 @@ export class SimulationEngine {
           }
         }
         
+        // ⭐ 重要：将命中率放入 params 中，而不是 weapon 上
+        // 这样 simulateOneTTK 会优先使用 params.hitRate
         const simParams = { ...params, hitRate };
         const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
         

@@ -126,7 +126,7 @@ export class StandardBulletStrategy {
  */
 export class BulletStrategyFactory {
   static getStrategy(bulletType) {
-    if (bulletType && /RIP/i.test(bulletType)) {
+    if (bulletType && /RIP|CT/i.test(bulletType)) {
       return RIPBulletStrategy;
     }
     if (bulletType === 'Double') {

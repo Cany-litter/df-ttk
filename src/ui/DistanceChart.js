@@ -9,6 +9,7 @@ import { BulletStrategyFactory } from '../core/BulletStrategy.js';
 import { formatTime } from '../utils/formatters.js';
 import { resetSeed } from '../utils/rng.js';
 import { getConfigCacheManager } from '../core/ConfigCacheManager.js';
+import perf from '../utils/performance.js';
 
 /**
  * 垂直线插件
@@ -71,6 +72,10 @@ export class DistanceChart {
     this.highlightWeapon = null;      // 当前高亮武器名称
     this.highlightColor = '#ff0000';  // 高亮颜色（红色）
     this.highlightBorderWidth = 4;    // 高亮线条宽度
+    
+    // ⭐ 缓存统计
+    this._cacheHitCount = 0;
+    this._cacheMissCount = 0;
   }
 
   // ============================================================
@@ -86,8 +91,11 @@ export class DistanceChart {
    * 3. 缓存未命中 → 执行快速模式模拟 → 保存缓存
    * 4. 插值生成完整曲线
    * 5. 计算全距离加权平均 TTK，确定线条样式
+   * 6. ⭐ 计算哈弗币消耗并触发更新
    */
   update(armed, attachments, params) {
+    perf.mark('distanceChartUpdate', 'DistanceChart 更新开始');
+    
     // 防重入锁
     if (this._isUpdating) {
       console.log('⏳ 图表正在更新中，跳过本次请求');
@@ -114,9 +122,11 @@ export class DistanceChart {
       this.lastAttachments = attachments;
       this.lastDistances = distances;
       
-      // 重置日志标记
+      // 重置日志标记和统计
       this._hitRateLogPrinted = false;
       this._keyDistancesLogged = false;
+      this._cacheHitCount = 0;
+      this._cacheMissCount = 0;
       
       // ⭐ 读取高亮武器选择
       this._readHighlightWeapon(armed);
@@ -172,26 +182,35 @@ export class DistanceChart {
       const top15Weapons = statsWithWeightedAvg.slice(0, top15PercentCount);
       const top15Names = new Set(top15Weapons.map(s => s.displayName));
       
-      console.log(`📊 前 15% 武器 (${top15PercentCount}/${statsWithWeightedAvg.length}):`, 
-                  Array.from(top15Names).join(', '));
-      
       // 保存数据供导出使用
       this.lastStats = statsWithWeightedAvg;
+      
+      // ⭐ 提取经济参数
+      const economicParams = {
+        kdRatio: params.kdRatio || 1.0,
+        extractRate: params.extractRate || 0.5,
+        extraCost: params.extraCost || 30
+      };
+      
+      // ⭐ 计算哈弗币消耗并触发更新
+      const havocCosts = this._calculateHavocCosts(statsWithWeightedAvg, economicParams);
+      this._emitHavocCostUpdate(havocCosts);
       
       // 渲染图表（传入 top15Names 用于线条样式判断）
       this.renderChart(distances, statsWithWeightedAvg, top15Names);
       
-      // 输出缓存统计
+      // ⭐ 输出精简的缓存统计
       const cacheStats = this.cacheManager.getStats();
       console.log(`📊 缓存统计: ${cacheStats.cached}/${cacheStats.total} 已缓存, ${modifiedSet.size} 个武器待重新计算`);
       
     } finally {
       this._isUpdating = false;
+      perf.mark('distanceChartUpdateDone', 'DistanceChart 更新完成');
     }
   }
 
   // ============================================================
-  // 2. 缓存构建
+  // 2. 缓存构建 ⭐ 精简日志
   // ============================================================
 
   /**
@@ -227,13 +246,8 @@ export class DistanceChart {
       );
       
       if (cacheStatus.needsRecalc) {
-        // ⭐ 新增：打印缓存未命中时的子弹信息
-        console.log(`🔄 缓存未命中: ${displayName}`);
-        console.log(`  - 武器口径: ${weapon.allowedBullet}`);
-        console.log(`  - 全局子弹等级: ${params.bulletLevel}`);
-        console.log(`  - 配置中指定的子弹: ${attachment.bulletType || '无'}`);
-        console.log(`  - 原因: ${cacheStatus.reason}`);
-        
+        // ⭐ 只记录需要计算的配置，不打印详细日志
+        this._cacheMissCount++;
         itemsToCalculate.push({
           idx,
           weapon,
@@ -245,6 +259,7 @@ export class DistanceChart {
           reason: cacheStatus.reason
         });
       } else {
+        this._cacheHitCount++;
         const keyPoints = cacheStatus.cacheData.keyPoints;
         const times = this._keyPointsToTimes(keyPoints, distances);
         const avg35 = this._calculateAvg35(times);
@@ -257,8 +272,6 @@ export class DistanceChart {
           fromCache: true,
           keyPoints: keyPoints
         });
-        
-        console.log(`✅ 缓存命中: ${displayName} (${keyPoints.length} 个关键点)`);
       }
     }
 
@@ -270,8 +283,6 @@ export class DistanceChart {
       
       for (const item of itemsToCalculate) {
         const { weapon, attachment, config, weaponId, configId, displayName } = item;
-        
-        console.log(`  计算中: ${displayName} (${item.reason})`);
         
         const result = this._calculateFastModeForSingleWeapon(
           weapon, params, distances, attachment, dm
@@ -289,7 +300,6 @@ export class DistanceChart {
             cachedAt: new Date().toISOString()
           };
           savedCount++;
-          console.log(`  💾 缓存已保存: ${displayName} (${keyPoints.length} 个关键点)`);
           
           stats.push({
             weapon,
@@ -299,8 +309,6 @@ export class DistanceChart {
             fromCache: false,
             keyPoints: keyPoints
           });
-          
-          console.log(`  ✅ 计算完成: ${displayName}`);
         }
       }
       
@@ -308,9 +316,16 @@ export class DistanceChart {
       for (const id of calculatedWeaponIds) {
         dm.clearWeaponModified && dm.clearWeaponModified(id);
       }
-      console.log(`📝 已清除 ${calculatedWeaponIds.length} 个武器的修改标记`);
       
-      console.log(`💾 本次保存了 ${savedCount} 个配置的缓存到 DataManager.data`);
+      // ⭐ 精简缓存保存日志
+      console.log(`💾 保存了 ${savedCount} 个配置的缓存, 清除了 ${calculatedWeaponIds.length} 个修改标记`);
+    }
+
+    // ⭐ 输出缓存命中率汇总
+    const total = this._cacheHitCount + this._cacheMissCount;
+    if (total > 0) {
+      const hitRate = Math.round((this._cacheHitCount / total) * 100);
+      console.log(`📊 缓存命中率: ${this._cacheHitCount}/${total} (${hitRate}%)`);
     }
 
     return stats;
@@ -336,40 +351,35 @@ export class DistanceChart {
   }
 
   // ============================================================
-  // 3. 快速模式模拟（单武器）
+  // 3. 快速模式模拟（单武器）⭐ 精简日志
   // ============================================================
 
   /**
    * 计算单把武器的快速模式数据
-   * 返回关键点数据
+   * 返回关键点数据（含 avgShots 和 bulletPrice）
+   * 
+   * ⭐ 核心修改：使用配置自己的命中率映射，而不是全局的 params.hitRateMap
    */
   _calculateFastModeForSingleWeapon(weapon, params, distances, attachment, dm) {
     const selectedBulletType = attachment.bulletType;
-    
-    // ⭐ 新增：打印调试信息
-    console.log(`🔫 计算武器: ${weapon.name || weapon._displayName}`);
-    console.log(`  - 配置中指定的子弹 (attachment.bulletType): ${selectedBulletType || '无'}`);
-    console.log(`  - 武器口径 (weapon.allowedBullet): ${weapon.allowedBullet}`);
-    console.log(`  - 当前全局子弹等级 (params.bulletLevel): ${params.bulletLevel}`);
     
     let realBulletKey = SimulationEngine.getRealBulletKey(
       selectedBulletType, weapon, params, dm
     );
     
-    console.log(`  - 实际使用的子弹 (realBulletKey): ${realBulletKey || '未找到'}`);
-    
     if (!realBulletKey) {
-      console.warn(`武器 ${weapon.name} 没有匹配的子弹，跳过`);
+      console.warn(`⚠️ 武器 ${weapon._displayName || weapon.name} 没有匹配的子弹，跳过`);
       return null;
     }
     
     const bulletData = dm.getBulletById(realBulletKey);
     if (!bulletData) {
-      console.warn(`武器 ${weapon.name} 的子弹 ${realBulletKey} 不存在`);
+      console.warn(`⚠️ 武器 ${weapon._displayName || weapon.name} 的子弹 ${realBulletKey} 不存在`);
       return null;
     }
     
-    console.log(`  - 子弹数据: 口径=${bulletData.caliber}, 等级=${bulletData.level}, base=${bulletData.base}`);
+    // ⭐ 获取子弹单价
+    const bulletPrice = bulletData.price || 0;
     
     const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
     
@@ -385,9 +395,15 @@ export class DistanceChart {
     
     const keyPoints = [];
     
+    // ⭐⭐⭐ 核心修改：获取配置自己的命中率映射
+    // 优先使用 attachment.hitRateMap（来自价格配置）
+    // 如果没有，降级使用 params.hitRateMap（全局）
+    const configHitRateMap = attachment.hitRateMap || params.hitRateMap || [];
+    
     for (const distance of keyDistances) {
+      // ⭐ 使用配置自己的命中率映射
       const hitRateAtDistance = this.getHitRateForDistance(
-        params.hitRateMap,
+        configHitRateMap,
         distance,
         0.85
       );
@@ -399,7 +415,8 @@ export class DistanceChart {
         bulletLevel: realBulletKey 
       };
       
-      const avgTime = SimulationEngine.calculateSinglePoint(
+      // ⭐ 现在返回完整数据（包含 avgShots）
+      const result = SimulationEngine.calculateSinglePoint(
         weapon, 
         simParams, 
         SIMULATION_CONFIG.DEFAULT_SIM_COUNT, 
@@ -411,9 +428,15 @@ export class DistanceChart {
         ? (weapon._current?.triggerDelay ?? weapon.triggerDelay ?? 0) / TIME_UNITS.SECONDS_TO_MS 
         : 0;
       
-      const totalTimeMs = (avgTime + trigger) * TIME_UNITS.SECONDS_TO_MS;
+      const totalTimeMs = (result.avgTime + trigger) * TIME_UNITS.SECONDS_TO_MS;
       
-      keyPoints.push({ d: distance, t: totalTimeMs });
+      // ⭐ 存储：距离、TTK、平均枪数、子弹单价
+      keyPoints.push({ 
+        d: distance, 
+        t: totalTimeMs,
+        shots: result.avgShots,
+        bulletPrice: bulletPrice
+      });
     }
     
     const times = distances.map(d => {
@@ -422,13 +445,100 @@ export class DistanceChart {
     
     const avg35 = this._calculateAvg35(times);
     
-    console.log(`  关键点: ${keyPoints.length} 个, avg35: ${avg35.toFixed(1)}ms`);
-    
     return { keyPoints, times, avg35 };
   }
 
   // ============================================================
-  // 4. 辅助方法
+  // 4. ⭐ 新增：哈弗币消耗计算（使用唯一 Key）
+  // ============================================================
+
+  /**
+   * 计算所有配置的哈弗币消耗估算
+   * 
+   * 取所有关键点 shots 的平均值作为最终平均致死枪数
+   * ⭐ 使用 weaponId + configId 组合作为唯一 key
+   * 
+   * @param {Array} stats - 统计数据（包含 keyPoints 和 weapon）
+   * @param {Object} economicParams - 经济参数
+   * @param {number} economicParams.kdRatio - KD 比率
+   * @param {number} economicParams.extractRate - 撤离率 (0-1)
+   * @param {number} economicParams.extraCost - 其他消耗子弹数量（发）
+   * @returns {Object} { uniqueKey: { totalCost, weaponLossCost, bulletCost, weaponPrice, avgShots, bulletPrice, effectiveShots, kdRatio, extractRate, extraCost, displayName, configId } }
+   */
+  _calculateHavocCosts(stats, economicParams = {}) {
+    const {
+      kdRatio = 1.0,
+      extractRate = 0.5,
+      extraCost = 30
+    } = economicParams;
+
+    const havocCosts = {};
+
+    for (const stat of stats) {
+      const weapon = stat.weapon;
+      // ⭐ 使用 weaponId + configId 组合作为唯一 key
+      const weaponId = weapon.id;
+      const configId = weapon._configId || '#1';
+      const uniqueKey = `${weaponId}_${configId}`;
+      const weaponPrice = weapon._price || 0;
+      const keyPoints = stat.keyPoints || [];
+      const displayName = weapon._displayName || weapon.name || '未知武器';
+
+      if (keyPoints.length === 0) {
+        const weaponLossCost = weaponPrice * (1 - extractRate);
+        havocCosts[uniqueKey] = {
+          totalCost: weaponLossCost,
+          weaponLossCost: weaponLossCost,
+          bulletCost: 0,
+          weaponPrice: weaponPrice,
+          avgShots: 0,
+          bulletPrice: 0,
+          effectiveShots: 0,
+          kdRatio: kdRatio,
+          extractRate: extractRate,
+          extraCost: extraCost,
+          displayName: displayName,
+          configId: configId
+        };
+        continue;
+      }
+
+      // ⭐ 使用缓存管理器计算（取所有关键点的平均 shots）
+      const costResult = this.cacheManager.calculateHavocCostAverage(
+        keyPoints,
+        {
+          weaponPrice: weaponPrice,
+          kdRatio: kdRatio,
+          extractRate: extractRate,
+          extraCost: extraCost
+        }
+      );
+
+      havocCosts[uniqueKey] = {
+        ...costResult,
+        displayName: displayName,
+        configId: configId
+      };
+    }
+
+    console.log(`💰 哈弗币消耗估算完成 (${Object.keys(havocCosts).length} 个配置)`);
+    
+    return havocCosts;
+  }
+
+  /**
+   * 触发哈弗币消耗数据更新事件
+   */
+  _emitHavocCostUpdate(havocCosts) {
+    const event = new CustomEvent('havoc-cost-update', {
+      detail: { havocCosts },
+      bubbles: true
+    });
+    document.dispatchEvent(event);
+  }
+
+  // ============================================================
+  // 5. 辅助方法
   // ============================================================
 
   getKeyDistances(ranges, maxDistance) {
@@ -485,7 +595,7 @@ export class DistanceChart {
   }
 
   // ============================================================
-  // 5. ⭐ 高亮武器相关方法
+  // 6. ⭐ 高亮武器相关方法
   // ============================================================
 
   /**
@@ -546,7 +656,7 @@ export class DistanceChart {
   }
 
   // ============================================================
-  // 6. 渲染图表
+  // 7. 渲染图表
   // ============================================================
 
   /**

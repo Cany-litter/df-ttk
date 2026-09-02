@@ -5,6 +5,8 @@
  * 1. 生成影响 TTK 计算的参数哈希
  * 2. 检查缓存有效性
  * 3. 关键点线性插值（供柱状图和折线图共用）
+ * 4. ⭐ 新增：插值计算平均致死枪数
+ * 5. ⭐ 新增：计算哈弗币消耗估算
  * 
  * 不负责：
  * - 缓存的读写（由 DataManager 负责）
@@ -14,6 +16,7 @@
  *   const cacheMgr = getConfigCacheManager(dataManager);
  *   const isValid = cacheMgr.isCacheValid(weapon, config, params, attachment);
  *   const ttk = cacheMgr.interpolateTTK(cacheData.keyPoints, distance);
+ *   const shots = cacheMgr.interpolateShots(cacheData.keyPoints, distance);
  */
 export class ConfigCacheManager {
     constructor(dataManager) {
@@ -213,7 +216,7 @@ export class ConfigCacheManager {
     }
 
     // ============================================================
-    // 3. 插值计算
+    // 3. 插值计算 - TTK
     // ============================================================
 
     /**
@@ -264,13 +267,13 @@ export class ConfigCacheManager {
     }
 
     /**
-     * 从关键点插值生成完整的距离- TTK 数组
+     * 从关键点插值生成完整的距离-TTK 数组
      * 用于折线图绘制
      * 
      * @param {Array} keyPoints - 关键点数组 [{ d, t }, ...]
      * @param {number} maxDistance - 最大距离（默认 100）
      * @param {number} step - 步长（默认 1）
-     * @returns {Array} 距离- TTK 数组 [{ d, t }, ...]
+     * @returns {Array} 距离-TTK 数组 [{ d, t }, ...]
      */
     interpolateFullRange(keyPoints, maxDistance = 100, step = 1) {
         if (!keyPoints || keyPoints.length === 0) {
@@ -309,7 +312,229 @@ export class ConfigCacheManager {
     }
 
     // ============================================================
-    // 4. 工具方法
+    // 4. ⭐ 新增：插值计算 - 平均致死枪数
+    // ============================================================
+
+    /**
+     * 从关键点插值计算指定距离的平均致死枪数
+     * 
+     * @param {Array} keyPoints - 关键点数组 [{ d, t, shots }, ...]
+     * @param {number} distance - 目标距离
+     * @returns {number} 插值后的平均枪数
+     */
+    interpolateShots(keyPoints, distance) {
+        if (!keyPoints || keyPoints.length === 0) {
+            return 0;
+        }
+
+        // 如果只有一个点，直接返回
+        if (keyPoints.length === 1) {
+            return keyPoints[0].shots || 0;
+        }
+
+        // 按距离排序
+        const sorted = [...keyPoints].sort((a, b) => a.d - b.d);
+
+        // 如果目标距离小于最小距离
+        if (distance <= sorted[0].d) {
+            return sorted[0].shots || 0;
+        }
+
+        // 如果目标距离大于最大距离
+        if (distance >= sorted[sorted.length - 1].d) {
+            return sorted[sorted.length - 1].shots || 0;
+        }
+
+        // 线性插值
+        for (let i = 0; i < sorted.length - 1; i++) {
+            const p1 = sorted[i];
+            const p2 = sorted[i + 1];
+            
+            if (distance >= p1.d && distance <= p2.d) {
+                const range = p2.d - p1.d;
+                if (range === 0) return p1.shots || 0;
+                const t = (distance - p1.d) / range;
+                return (p1.shots || 0) + t * ((p2.shots || 0) - (p1.shots || 0));
+            }
+        }
+
+        return sorted[sorted.length - 1].shots || 0;
+    }
+
+    /**
+     * 计算所有关键点的平均致死枪数
+     * 用于哈弗币消耗估算
+     * 
+     * @param {Array} keyPoints - 关键点数组 [{ d, t, shots }, ...]
+     * @returns {number} 所有关键点 shots 的平均值
+     */
+    averageShots(keyPoints) {
+        if (!keyPoints || keyPoints.length === 0) {
+            return 0;
+        }
+
+        let totalShots = 0;
+        let count = 0;
+
+        for (const point of keyPoints) {
+            if (point.shots !== undefined && point.shots !== null) {
+                totalShots += point.shots;
+                count++;
+            }
+        }
+
+        return count > 0 ? totalShots / count : 0;
+    }
+
+    /**
+     * 获取关键点中的子弹单价
+     * 
+     * @param {Array} keyPoints - 关键点数组 [{ d, t, shots, bulletPrice }, ...]
+     * @returns {number} 子弹单价
+     */
+    getBulletPrice(keyPoints) {
+        if (!keyPoints || keyPoints.length === 0) {
+            return 0;
+        }
+        return keyPoints[0]?.bulletPrice || 0;
+    }
+
+    // ============================================================
+    // 5. ⭐ 哈弗币消耗估算（KD 放大 5 倍）
+    // ============================================================
+
+    /**
+     * 计算指定距离的哈弗币消耗估算
+     * 
+     * 公式：
+     *   哈弗币消耗 = 整枪价格 × (1 - 撤离率) + (KD × 5 × 平均致死枪数 + 其他消耗) × 子弹单价
+     * 
+     * @param {Array} keyPoints - 关键点数组 [{ d, t, shots, bulletPrice }, ...]
+     * @param {number} distance - 目标距离（用于插值计算该距离的 avgShots）
+     * @param {Object} economicParams - 经济参数
+     * @param {number} economicParams.weaponPrice - 整枪价格（元）
+     * @param {number} economicParams.kdRatio - KD 比率（同时也是消耗倍率）
+     * @param {number} economicParams.extractRate - 撤离率 (0-1)
+     * @param {number} economicParams.extraCost - 其他消耗子弹数量（发）
+     * @returns {Object} { 
+     *   totalCost,        // 总消耗（元）
+     *   weaponLossCost,   // 整枪损失成本（元）
+     *   bulletCost,       // 子弹消耗成本（元）
+     *   weaponPrice,      // 整枪价格（元）
+     *   avgShots,         // 该距离的平均致死枪数（插值）
+     *   bulletPrice,      // 子弹单价（元）
+     *   effectiveShots,   // 有效枪数 = KD × 5 × avgShots + extraCost
+     *   kdRatio,          // KD 比率
+     *   extractRate,      // 撤离率
+     *   extraCost         // 其他消耗
+     * }
+     */
+    calculateHavocCost(keyPoints, distance, economicParams = {}) {
+        const {
+            weaponPrice = 0,
+            kdRatio = 1.0,
+            extractRate = 0.5,
+            extraCost = 30
+        } = economicParams;
+
+        // 1. 插值计算当前距离的平均致死枪数
+        const avgShots = this.interpolateShots(keyPoints, distance);
+        const bulletPrice = this.getBulletPrice(keyPoints);
+
+        // 2. 计算整枪损失成本：整枪价格 × (1 - 撤离率)
+        const weaponLossCost = weaponPrice * (1 - extractRate);
+
+        // 3. ⭐ 计算有效枪数：KD × 5 × 平均致死枪数 + 其他消耗
+        const effectiveKd = kdRatio * 5;
+        const effectiveShots = effectiveKd * avgShots + extraCost;
+
+        // 4. 计算子弹消耗成本：有效枪数 × 子弹单价
+        const bulletCost = effectiveShots * bulletPrice;
+
+        // 5. 总消耗 = 整枪损失成本 + 子弹消耗成本
+        const totalCost = weaponLossCost + bulletCost;
+
+        return {
+            totalCost: totalCost,              // 总消耗（元）
+            weaponLossCost: weaponLossCost,    // 整枪损失成本（元）
+            bulletCost: bulletCost,            // 子弹消耗成本（元）
+            weaponPrice: weaponPrice,          // 整枪价格（元）
+            avgShots: avgShots,                // 该距离的平均致死枪数（插值）
+            bulletPrice: bulletPrice,          // 子弹单价（元）
+            effectiveShots: effectiveShots,    // 有效枪数
+            kdRatio: kdRatio,                  // KD 比率
+            extractRate: extractRate,          // 撤离率
+            extraCost: extraCost               // 其他消耗
+        };
+    }
+
+    /**
+     * 计算所有关键点平均的哈弗币消耗估算
+     * 
+     * 与 calculateHavocCost 的区别：
+     * - 不插值特定距离，而是取所有关键点 shots 的平均值
+     * - 用于价格表格展示（不依赖具体距离）
+     * 
+     * @param {Array} keyPoints - 关键点数组 [{ d, t, shots, bulletPrice }, ...]
+     * @param {Object} economicParams - 经济参数
+     * @param {number} economicParams.weaponPrice - 整枪价格（元）
+     * @param {number} economicParams.kdRatio - KD 比率
+     * @param {number} economicParams.extractRate - 撤离率 (0-1)
+     * @param {number} economicParams.extraCost - 其他消耗子弹数量（发）
+     * @returns {Object} { 
+     *   totalCost,        // 总消耗（元）
+     *   weaponLossCost,   // 整枪损失成本（元）
+     *   bulletCost,       // 子弹消耗成本（元）
+     *   weaponPrice,      // 整枪价格（元）
+     *   avgShots,         // 所有关键点的平均致死枪数
+     *   bulletPrice,      // 子弹单价（元）
+     *   effectiveShots,   // 有效枪数 = KD × 5 × avgShots + extraCost
+     *   kdRatio,          // KD 比率
+     *   extractRate,      // 撤离率
+     *   extraCost         // 其他消耗
+     * }
+     */
+    calculateHavocCostAverage(keyPoints, economicParams = {}) {
+        const {
+            weaponPrice = 0,
+            kdRatio = 1.0,
+            extractRate = 0.5,
+            extraCost = 30
+        } = economicParams;
+
+        // 1. 计算所有关键点的平均致死枪数
+        const avgShots = this.averageShots(keyPoints);
+        const bulletPrice = this.getBulletPrice(keyPoints);
+
+        // 2. 计算整枪损失成本
+        const weaponLossCost = weaponPrice * (1 - extractRate);
+
+        // 3. ⭐ 计算有效枪数：KD × 5 × 平均致死枪数 + 其他消耗
+        const effectiveKd = kdRatio * 5;
+        const effectiveShots = effectiveKd * avgShots + extraCost;
+
+        // 4. 计算子弹消耗成本
+        const bulletCost = effectiveShots * bulletPrice;
+
+        // 5. 总消耗
+        const totalCost = weaponLossCost + bulletCost;
+
+        return {
+            totalCost: totalCost,
+            weaponLossCost: weaponLossCost,
+            bulletCost: bulletCost,
+            weaponPrice: weaponPrice,
+            avgShots: avgShots,
+            bulletPrice: bulletPrice,
+            effectiveShots: effectiveShots,
+            kdRatio: kdRatio,
+            extractRate: extractRate,
+            extraCost: extraCost
+        };
+    }
+
+    // ============================================================
+    // 6. 工具方法
     // ============================================================
 
     /**

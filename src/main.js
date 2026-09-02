@@ -12,9 +12,12 @@
  * 6. 初始化 BarrelEditor（枪管编辑器）
  * 7. 设置 SimulationEngine 的 DataManager 依赖
  * 8. 协调 TTK 计算和距离图表计算
+ * 9. ⭐ 监听哈弗币消耗更新事件
  */
 import { getDataManager } from './core/DataManager.js';
 import { SimulationEngine } from './core/SimulationEngine.js';
+import { BulletStrategyFactory } from './core/BulletStrategy.js';
+import { getConfigCacheManager } from './core/ConfigCacheManager.js';
 import DOMController from './ui/DOMController.js';
 import EventHandler from './ui/EventHandler.js';
 import BarrelEditor from './ui/BarrelEditor.js';
@@ -22,9 +25,13 @@ import { ChartManager } from './ui/ChartManager.js';
 import WeaponTable from './ui/WeaponTable.js';
 import { resetSeed } from './utils/rng.js';
 import { validateHitProb, validateWeaponHitRates, validatePageParams } from './utils/validators.js';
+import perf from './utils/performance.js';
 
 class App {
   constructor() {
+    // ⭐ 记录应用启动时间
+    perf.mark('appStart', '应用启动');
+    
     this.dataManager = null;
     this.domController = null;
     this.eventHandler = null;
@@ -51,9 +58,11 @@ class App {
 
       // 2. 等待第三方库加载
       await this.waitForLibraries();
+      perf.mark('librariesLoaded', '第三方库加载完成');
 
       // 3. 初始化 DataManager 并加载数据
       await this.initDataManager();
+      perf.mark('dataLoaded', '数据加载完成');
 
       // 4. 设置 SimulationEngine 的 DataManager 依赖
       this.setupSimulationEngine();
@@ -72,6 +81,7 @@ class App {
 
       // 9. 应用启动完成
       this.isInitialized = true;
+      perf.mark('appReady', '应用就绪');
       console.log('✅ 应用启动完成');
       
       // 10. 输出缓存统计
@@ -79,6 +89,9 @@ class App {
 
       // ⭐ 11. 自动加载 TTK 柱状图和折线图
       this._autoLoadCharts();
+
+      // ⭐ 12. 监听哈弗币消耗更新事件
+      this._bindHavocCostEvents();
 
     } catch (error) {
       console.error('❌ 应用启动失败:', error);
@@ -201,7 +214,28 @@ class App {
   }
 
   // ============================================================
-  // ⭐ 7. 自动加载图表
+  // 7. ⭐ 绑定哈弗币消耗更新事件
+  // ============================================================
+
+  _bindHavocCostEvents() {
+    document.addEventListener('havoc-cost-update', (e) => {
+      this._handleHavocCostUpdate(e.detail.havocCosts);
+    });
+  }
+
+  /**
+   * 处理哈弗币消耗更新
+   */
+  _handleHavocCostUpdate(havocCosts) {
+    if (!this.domController) {
+      console.warn('⚠️ DOMController 未初始化，无法更新哈弗币消耗');
+      return;
+    }
+    this.domController.updateHavocCosts(havocCosts);
+  }
+
+  // ============================================================
+  // 8. ⭐ 自动加载图表
   // ============================================================
 
   /**
@@ -218,6 +252,7 @@ class App {
       this._initialAutoCalcDone = true;
 
       console.log('🔄 自动加载 TTK 柱状图和折线图...');
+      perf.mark('autoCalcStart', '自动计算开始');
 
       // 先加载柱状图
       this.handleCalculate();
@@ -225,17 +260,22 @@ class App {
       // 延迟 300ms 再加载折线图，避免同时计算造成性能压力
       setTimeout(() => {
         this.handleDistanceChart();
+        perf.mark('autoCalcDone', '自动计算完成');
         console.log('✅ 自动加载完成');
+        
+        // ⭐ 输出性能报告
+        perf.report();
       }, 300);
     }, 500);  // 等待 500ms 确保 DOM 完全渲染
   }
 
   // ============================================================
-  // 8. 核心功能 - TTK 计算
+  // 9. 核心功能 - TTK 计算 ⭐ 核心修改：优先从缓存读取
   // ============================================================
 
   /**
    * 处理 TTK 计算
+   * ⭐ 核心修改：优先从缓存读取，避免重复模拟
    * 使用防锁防止重复调用
    */
   handleCalculate() {
@@ -255,17 +295,108 @@ class App {
         return;
       }
 
+      perf.mark('ttkCalcStart', 'TTK计算开始');
       resetSeed();
-      const results = SimulationEngine.calculateWeaponsTTK(
-        armed, 
-        attachments, 
-        params, 
-        this.dataManager
-      );
+      
+      // ⭐⭐⭐ 核心修改：直接从缓存构建结果，而不是调用 SimulationEngine.calculateWeaponsTTK()
+      const dm = this.dataManager;
+      const cacheManager = getConfigCacheManager(dm);
+      const distance = params.distance || 30;
+      
+      const results = [];
+      let cacheHitCount = 0;
+      let cacheMissCount = 0;
+      
+      for (let idx = 0; idx < armed.length; idx++) {
+        const weapon = armed[idx];
+        const attachment = attachments[idx] || {};
+        const configId = attachment.configId || '#1';
+        const weaponId = weapon.id;
+        
+        let avgTime = 0;
+        let avgShots = 0;
+        let avgMisses = 0;
+        let avgBurstInterval = 0;
+        let fromCache = false;
+        
+        // ⭐ 优先从缓存获取
+        const price = dm.getPriceByWeaponId(weaponId);
+        if (price) {
+          const config = price.configs.find(c => c.id === configId);
+          if (config && config.cache && config.cache.keyPoints) {
+            const totalTimeMs = cacheManager.interpolateTTK(config.cache.keyPoints, distance);
+            avgTime = totalTimeMs / 1000;  // 转换为秒
+            fromCache = true;
+            cacheHitCount++;
+            
+            // 从关键点提取 avgShots
+            let totalShots = 0;
+            let shotCount = 0;
+            for (const point of config.cache.keyPoints) {
+              if (point.shots !== undefined && point.shots !== null) {
+                totalShots += point.shots;
+                shotCount++;
+              }
+            }
+            avgShots = shotCount > 0 ? totalShots / shotCount : 0;
+            avgMisses = Math.max(0, Math.round(avgShots * 0.15));
+          }
+        }
+        
+        // ⭐ 缓存未命中，降级到模拟计算
+        if (!fromCache) {
+          cacheMissCount++;
+          console.log(`  ⚠️ 缓存未命中: ${weapon._displayName || weapon.name}，执行模拟计算`);
+          
+          // 获取真实子弹
+          const realBulletKey = SimulationEngine.getRealBulletKey(
+            attachment.bulletType, weapon, params, dm
+          );
+          if (realBulletKey) {
+            const bulletData = dm.getBulletById(realBulletKey);
+            if (bulletData) {
+              const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
+              const stat = SimulationEngine.calculateAvgStats(
+                weapon, params, undefined, strategy, bulletData
+              );
+              avgTime = stat.avgTime;
+              avgShots = stat.avgShots;
+              avgMisses = stat.avgMisses;
+              avgBurstInterval = stat.avgBurstInterval;
+            }
+          }
+        }
+        
+        results.push({
+          weapon: weapon,
+          avgTime: avgTime,
+          avgShots: avgShots,
+          avgMisses: avgMisses,
+          avgBurstInterval: avgBurstInterval,
+          name: weapon._displayName || weapon.name,
+          _fromCache: fromCache
+        });
+      }
+      
+      // 按 TTK 排序
+      results.sort((a, b) => a.avgTime - b.avgTime);
+      
+      perf.mark('ttkCalcDone', 'TTK计算完成');
+      
+      // ⭐ 输出缓存统计
+      const total = cacheHitCount + cacheMissCount;
+      if (total > 0) {
+        const hitRate = Math.round((cacheHitCount / total) * 100);
+        console.log(`📊 TTK计算结果: ${cacheHitCount}/${total} 个配置来自缓存 (${hitRate}%)`);
+        if (cacheMissCount > 0) {
+          console.log(`  ⚠️ ${cacheMissCount} 个配置缓存未命中，已执行模拟计算`);
+        }
+      }
       
       this.chartManager.updateTtkChart(results, params);
       
       console.log(`📊 TTK 计算完成，${results.length} 把武器`);
+      
     } catch (error) {
       console.error('TTK 计算失败:', error);
       alert('TTK 计算失败: ' + error.message);
@@ -295,7 +426,10 @@ class App {
         return;
       }
 
+      perf.mark('distanceChartStart', '折线图计算开始');
+      // ⭐ DistanceChart.update 内部会计算哈弗币消耗并触发更新事件
       this.chartManager.updateDistanceChart(armed, attachments, params);
+      perf.mark('distanceChartDone', '折线图计算完成');
       
       console.log(`📈 距离图表生成完成，${armed.length} 把武器`);
     } catch (error) {
@@ -320,13 +454,15 @@ class App {
   }
 
   // ============================================================
-  // 9. 数据准备
+  // 10. 数据准备 ⭐ 核心修改：传递 hitRateMap
   // ============================================================
 
   /**
    * 准备武器数据
    * 优先从价格表格读取启用的配置，每个配置作为一个独立武器实例
    * 如果没有启用的配置，降级到原有逻辑
+   * 
+   * ⭐ 核心修改：确保 hitRateMap 在 attachments 中传递
    */
   prepareWeaponData() {
     const params = this.domController.readPageParams();
@@ -339,7 +475,7 @@ class App {
       throw new Error('没有武器数据');
     }
 
-    // 从价格表格获取启用的配置
+    // 从价格表格获取启用的配置（包含 hitRateMap）
     const enabledConfigs = this.domController.getEnabledPriceConfigs(weapons, params);
     
     if (!enabledConfigs || enabledConfigs.length === 0) {
@@ -350,13 +486,8 @@ class App {
       return { params, armed, attachments };
     }
     
-    console.log(`📋 使用 ${enabledConfigs.length} 个启用的价格配置`);
-    console.log('  配置列表:', enabledConfigs.map(c => c.displayName).join(', '));
-    
-    // 从启用的配置构建武器数据
+    // 从启用的配置构建武器数据（包含 hitRateMap）
     const { armed, attachments } = this.buildFromConfigs(enabledConfigs, params);
-    
-    console.log(`✅ 从配置构建: ${armed.length} 个武器实例`);
     
     return { params, armed, attachments };
   }
@@ -364,6 +495,7 @@ class App {
   /**
    * 降级方案：每个武器取第一个价格配置
    * 当没有启用的价格配置时使用
+   * ⭐ 修改：包含 hitRateMap
    */
   buildFallbackData(weapons, params) {
     const armed = [];
@@ -411,13 +543,34 @@ class App {
         const muzzleId = config.muzzleId || 0;
         const current = WeaponTable.calculateCurrentValues(weapon, barrel, muzzleId, 0.09);
         
+        // ⭐ 构建配置自己的命中率映射
+        let hitRateMap = [];
+        if (config.distance && config.hitRate && 
+            Array.isArray(config.distance) && Array.isArray(config.hitRate) &&
+            config.distance.length > 0 && config.hitRate.length > 0) {
+          const len = Math.min(config.distance.length, config.hitRate.length);
+          for (let i = 0; i < len; i++) {
+            hitRateMap.push({
+              distance: config.distance[i],
+              rate: config.hitRate[i]
+            });
+          }
+        }
+        
+        // 如果没有配置自己的映射，使用全局的
+        if (hitRateMap.length === 0) {
+          hitRateMap = params.hitRateMap || [];
+        }
+        
         // 获取命中率
-        const hitRate = this.dataManager.getHitRateForDistance(
-          weapon.id,
-          config.id || '#1',
-          params.distance,
-          params.hitRate
-        );
+        let hitRate = params.hitRate || 0.85;
+        if (hitRateMap.length > 0) {
+          hitRate = this.dataManager.getHitRateFromMap(
+            hitRateMap,
+            params.distance || 30,
+            0.85
+          );
+        }
         
         // 显示名称：武器名 + 序号（直接使用 config.id）
         const displayName = `${weapon.name} ${config.id || '#1'}`;
@@ -457,6 +610,7 @@ class App {
           barrelName: barrelName,
           muzzleIndex: muzzleId,
           muzzleName: config.muzzle || '无',
+          hitRateMap: hitRateMap,
           hitRate: hitRate,
           bulletType: config.bullet || null,
           displayName: displayName,
@@ -469,6 +623,17 @@ class App {
         const barrel = bestIdx >= 0 && weapon.barrels ? weapon.barrels[bestIdx] : null;
         const barrelName = barrel?.name || '无';
         const current = WeaponTable.calculateCurrentValues(weapon, barrel, 0, 0.09);
+        
+        // 使用全局命中率映射
+        const hitRateMap = params.hitRateMap || [];
+        let hitRate = params.hitRate || 0.85;
+        if (hitRateMap.length > 0) {
+          hitRate = this.dataManager.getHitRateFromMap(
+            hitRateMap,
+            params.distance || 30,
+            0.85
+          );
+        }
         
         const armedWeapon = {
           ...weapon,
@@ -489,7 +654,7 @@ class App {
             muzzleId: 0,
             muzzleName: '无'
           },
-          hitRate: params.hitRate,
+          hitRate: hitRate,
           _displayName: weapon.name,
           _buildCode: '-',
           _price: 0,
@@ -505,7 +670,8 @@ class App {
           barrelName: barrelName,
           muzzleIndex: 0,
           muzzleName: '无',
-          hitRate: params.hitRate,
+          hitRateMap: hitRateMap,
+          hitRate: hitRate,
           bulletType: null,
           displayName: weapon.name,
           buildCode: '-',
@@ -520,6 +686,9 @@ class App {
   /**
    * 从价格配置构建武器数据
    * 每个配置生成一个独立的武器实例
+   * 
+   * ⭐ 核心修改：确保 hitRateMap 在 attachments 中传递
+   * ⭐ 精简日志：移除逐条命中率打印
    */
   buildFromConfigs(configs, params) {
     const armed = [];
@@ -539,8 +708,24 @@ class App {
         0.09  // 默认精校值，价格配置不单独设置精校
       );
       
-      // 获取命中率（从配置中读取）
-      const hitRate = config.hitRate;
+      // ⭐ 获取配置自己的命中率映射（由 DOMController 提供）
+      const hitRateMap = config.hitRateMap || [];
+      
+      // 获取命中率（从配置中读取，或从映射计算）
+      let hitRate = config.hitRate;
+      
+      // 如果配置没有提供 hitRate，从 hitRateMap 计算
+      if (hitRate === undefined || hitRate === null) {
+        if (hitRateMap.length > 0) {
+          hitRate = this.dataManager.getHitRateFromMap(
+            hitRateMap,
+            params.distance || 30,
+            0.85
+          );
+        } else {
+          hitRate = params.hitRate || 0.85;
+        }
+      }
       
       // 构建武装后的武器
       const armedWeapon = {
@@ -568,7 +753,7 @@ class App {
         _price: config.price,
         _configId: config.configId,
         _bulletId: config.bulletId,
-        _hitRateMap: config.hitRateMap,
+        _hitRateMap: hitRateMap,
         _configIndex: config.configIndex,
         _priceRow: config._rawRow
       };
@@ -585,8 +770,8 @@ class App {
         barrelName: config.barrelName,
         muzzleIndex: config.muzzleId,
         muzzleName: config.muzzleName,
+        hitRateMap: hitRateMap,
         hitRate: hitRate,
-        hitRateMap: config.hitRateMap,
         bulletType: config.bulletId,
         displayName: config.displayName,
         buildCode: config.buildCode,
@@ -595,13 +780,20 @@ class App {
       });
     }
     
+    // ⭐ 精简日志：只打印汇总信息
     console.log(`✅ 从配置构建: ${armed.length} 个武器实例`);
+    
+    // ⭐ 只打印统计信息，不逐条打印
+    const withCustomMap = attachments.filter(a => a.hitRateMap && a.hitRateMap.length > 0).length;
+    if (withCustomMap > 0) {
+      console.log(`  📊 ${withCustomMap}/${attachments.length} 个配置使用自定义命中率映射`);
+    }
     
     return { armed, attachments };
   }
 
   // ============================================================
-  // 10. 缓存统计
+  // 11. 缓存统计
   // ============================================================
 
   /**
@@ -620,7 +812,7 @@ class App {
   }
 
   // ============================================================
-  // 11. 错误处理
+  // 12. 错误处理
   // ============================================================
 
   showError(message) {
@@ -628,7 +820,7 @@ class App {
   }
 
   // ============================================================
-  // 12. 工具方法
+  // 13. 工具方法
   // ============================================================
 
   getStatus() {

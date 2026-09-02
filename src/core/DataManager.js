@@ -13,6 +13,8 @@
  * - modifiedWeaponIds: 记录被修改的武器 ID
  * - 用于增量计算，只重新计算被修改的武器
  */
+import perf from '../utils/performance.js';
+
 export class DataManager {
   constructor() {
     this.data = {
@@ -46,6 +48,8 @@ export class DataManager {
    * @returns {Promise<Object>} 加载的数据对象
    */
   async loadFromJSON(url = './data.json') {
+    perf.mark('dataLoadStart', '数据加载开始');
+    
     try {
       const response = await fetch(url);
       if (!response.ok) {
@@ -66,6 +70,7 @@ export class DataManager {
       // 加载完成后清空修改标记
       this.modifiedWeaponIds.clear();
       
+      perf.mark('dataLoadDone', '数据加载完成');
       console.log(`✅ DataManager: 加载了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹, ${this.data.prices.length} 条价格配置`);
       return this.data;
       
@@ -270,8 +275,9 @@ export class DataManager {
       }
       
       let bulletDisplay = '-';
-      if (config.bullet) {
-        const bullet = this.getBulletById(config.bullet);
+      let bulletId = config.bullet || '';
+      if (bulletId) {
+        const bullet = this.getBulletById(bulletId);
         if (bullet) {
           bulletDisplay = `${bullet.caliber} Lv.${bullet.level}`;
         }
@@ -289,7 +295,7 @@ export class DataManager {
         distance: config.distance || [],
         hitRate: config.hitRate || [],
         bulletDisplay: bulletDisplay,
-        bulletId: config.bullet || '',
+        bulletId: bulletId,
         enabled: config.enabled !== undefined ? config.enabled : true,
         _weaponId: weaponId,
         _rawConfig: config,
@@ -627,7 +633,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 9. 数据更新 - 价格（含修改追踪）
+  // 9. 数据更新 - 价格（含修改追踪）⭐ 增强版
   // ============================================================
 
   updatePriceConfig(weaponId, configId, updates) {
@@ -649,6 +655,24 @@ export class DataManager {
       ttkAffectingKeys.includes(key)
     );
     
+    // ⭐ 如果更新了 barrelId，同步更新 barrel 字段
+    if (updates.barrelId !== undefined) {
+      const weapon = this.getWeaponById(weaponId);
+      if (weapon && weapon.barrels && weapon.barrels[updates.barrelId]) {
+        updates.barrel = weapon.barrels[updates.barrelId].name || '无';
+      } else {
+        updates.barrel = '无';
+      }
+    }
+    
+    // ⭐ 如果更新了 muzzleId，同步更新 muzzle 字段
+    if (updates.muzzleId !== undefined) {
+      const muzzle = this.getMuzzleById(updates.muzzleId);
+      updates.muzzle = muzzle ? muzzle.name : '无';
+    }
+    
+    // ⭐ 如果更新了 bullet，同步更新 bulletDisplay（由调用方处理）
+    
     Object.assign(config, updates);
     
     if (hasTtkAffectingChange) {
@@ -658,14 +682,77 @@ export class DataManager {
     return true;
   }
 
+  /**
+   * ⭐ 增强版：添加价格配置
+   * 自动补全缺失字段，设置默认值
+   */
   addPriceConfig(weaponId, configData) {
     const price = this.getPriceByWeaponId(weaponId);
-    if (!price) return false;
+    if (!price) {
+      console.warn(`⚠️ 未找到武器 ${weaponId} 的价格配置`);
+      return false;
+    }
     
+    // ⭐ 确保 enabled 字段存在
     if (configData.enabled === undefined) {
       configData.enabled = true;
     }
     
+    // ⭐ 确保 barrel 字段存在
+    if (configData.barrel === undefined) {
+      const weapon = this.getWeaponById(weaponId);
+      if (configData.barrelId !== undefined && configData.barrelId >= 0 && 
+          weapon?.barrels && weapon.barrels[configData.barrelId]) {
+        configData.barrel = weapon.barrels[configData.barrelId].name || '无';
+      } else {
+        configData.barrel = '无';
+      }
+    }
+    
+    // ⭐ 确保 barrelId 存在
+    if (configData.barrelId === undefined) {
+      configData.barrelId = -1;
+    }
+    
+    // ⭐ 确保 muzzle 字段存在
+    if (configData.muzzle === undefined) {
+      configData.muzzle = '无';
+    }
+    
+    // ⭐ 确保 muzzleId 存在
+    if (configData.muzzleId === undefined) {
+      configData.muzzleId = 0;
+    }
+    
+    // ⭐ 确保 bullet 字段存在
+    if (configData.bullet === undefined) {
+      configData.bullet = '';
+    }
+    
+    // ⭐ 确保 distance 和 hitRate 是数组
+    if (!Array.isArray(configData.distance)) {
+      configData.distance = [];
+    }
+    if (!Array.isArray(configData.hitRate)) {
+      configData.hitRate = [];
+    }
+    
+    // ⭐ 如果配置没有命中率映射，设置默认值（30m 100%, 50m 90%, 100m 60%）
+    if (configData.distance.length === 0) {
+      configData.distance = [30, 50, 100];
+      configData.hitRate = [1.0, 0.9, 0.6];
+    }
+    
+    // ⭐ 确保 buildCode 存在
+    if (configData.buildCode === undefined) {
+      configData.buildCode = '';
+    }
+    
+    // ⭐ 确保 price 存在
+    if (configData.price === undefined) {
+      configData.price = 0;
+    }
+
     const existing = price.configs.find(c => c.id === configData.id);
     if (existing) {
       console.warn(`配置 ${configData.id} 已存在`);
@@ -674,6 +761,7 @@ export class DataManager {
     
     price.configs.push(configData);
     this.markWeaponModified(weaponId);
+    console.log(`✅ 已添加配置 ${configData.id} 到武器 ${weaponId}`);
     return true;
   }
 
