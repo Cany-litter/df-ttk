@@ -10,10 +10,11 @@
  * 4. 数据变更时同步到 DataManager 并刷新表格
  * 5. 数据变更时标记武器为已修改（触发缓存失效）
  * 6. 导入/导出功能
- * 7. 操作按钮（添加副本、编辑枪管、新增/删除行）
+ * 7. 操作按钮（编辑枪管、新增/删除行）
  * 8. 获取价格表格中启用的配置（供柱状图使用）⭐ 包含 hitRateMap
  * 9. 更新哈弗币消耗数据
  * 10. 新增价格配置
+ * 11. 新增枪械（新增行显示在第一行，包含口径字段）
  */
 import { getDataManager } from '../core/DataManager.js';
 import WeaponTable from './WeaponTable.js';
@@ -344,13 +345,6 @@ export default class DOMController {
       onPrecisionChange: (rowIndex, value) => {
         this.handleWeaponPrecisionChange(rowIndex, value);
       },
-      onAddClone: (rowIndex, isDelete) => {
-        if (isDelete) {
-          this.handleRemoveClone(rowIndex);
-        } else {
-          this.handleAddClone(rowIndex);
-        }
-      },
       onEditBarrel: (rowIndex) => {
         if (editCallback) {
           const row = this.weaponTableInstance?.getData()?.[rowIndex];
@@ -360,6 +354,12 @@ export default class DOMController {
         } else {
           console.warn('⚠️ onBarrelEdit 回调未设置');
         }
+      },
+      onAddRow: (rowIndex, rowData) => {
+        this.handleWeaponAddRow(rowIndex, rowData);
+      },
+      onDeleteRow: (rowIndex, weaponId, isCancelled) => {
+        this.handleWeaponDeleteRow(rowIndex, weaponId, isCancelled);
       }
     });
 
@@ -393,6 +393,9 @@ export default class DOMController {
 
   initWeaponAttachments(weapons) {
     weapons.forEach(weapon => {
+      // 跳过新增行（临时占位武器）
+      if (weapon._isNewRow) return;
+      
       const existing = this.weaponAttachments[weapon.id];
       if (existing && existing.barrelId !== undefined && existing.barrelId !== -1) {
         return;
@@ -411,6 +414,11 @@ export default class DOMController {
 
   buildWeaponRows(weapons) {
     return weapons.map(weapon => {
+      // ⭐ 检查是否为新增行（通过 _isNewRow 标记或 temp_ 前缀）
+      if (weapon._isNewRow || (typeof weapon.id === 'string' && weapon.id.startsWith('temp_'))) {
+        return WeaponTable.createNewRow(this.muzzleOptions);
+      }
+      
       const attachment = this.weaponAttachments[weapon.id] || {
         barrelId: -1,
         muzzleId: 0,
@@ -458,13 +466,6 @@ export default class DOMController {
         onPrecisionChange: (rowIndex, value) => {
           this.handleWeaponPrecisionChange(rowIndex, value);
         },
-        onAddClone: (rowIndex, isDelete) => {
-          if (isDelete) {
-            this.handleRemoveClone(rowIndex);
-          } else {
-            this.handleAddClone(rowIndex);
-          }
-        },
         onEditBarrel: (rowIndex) => {
           if (this._onBarrelEdit) {
             const row = this.weaponTableInstance?.getData()?.[rowIndex];
@@ -472,6 +473,12 @@ export default class DOMController {
               this._onBarrelEdit(row.id);
             }
           }
+        },
+        onAddRow: (rowIndex, rowData) => {
+          this.handleWeaponAddRow(rowIndex, rowData);
+        },
+        onDeleteRow: (rowIndex, weaponId, isCancelled) => {
+          this.handleWeaponDeleteRow(rowIndex, weaponId, isCancelled);
         }
       });
 
@@ -487,10 +494,13 @@ export default class DOMController {
   }
 
   handleWeaponCellChange(rowIndex, key, value, row) {
+    // 如果是新增行，不处理（新增行由 handleWeaponAddRow 处理）
+    if (row._isNewRow) return;
+    
     const weaponId = row.id;
     let updateData = {};
 
-    if (key === 'name' || key === 'type') {
+    if (key === 'name' || key === 'type' || key === 'allowedBullet') {
       updateData[key] = value;
     } else if (key === 'rof' || key === 'velocity' || key === 'flesh' || key === 'armor') {
       updateData[key] = parseFloat(value) || 0;
@@ -527,6 +537,9 @@ export default class DOMController {
       return;
     }
 
+    // 如果是新增行，不处理
+    if (row._isNewRow) return;
+
     const weaponId = row.id;
     
     if (!this.weaponAttachments[weaponId]) {
@@ -549,6 +562,9 @@ export default class DOMController {
     const row = this.weaponTableInstance?.getData()?.[rowIndex];
     if (!row) return;
 
+    // 如果是新增行，不处理
+    if (row._isNewRow) return;
+
     const weaponId = row.id;
     
     if (!this.weaponAttachments[weaponId]) {
@@ -563,41 +579,192 @@ export default class DOMController {
     this.scheduleRefresh('weapon');
   }
 
-  handleAddClone(rowIndex) {
-    const row = this.weaponTableInstance?.getData()?.[rowIndex];
-    if (!row) return;
+  // ============================================================
+  // 7. 新增枪械功能（新增行显示在第一行，包含口径字段）
+  // ============================================================
 
-    const weapon = this.dataManager.getWeaponById(row.id);
-    if (!weapon) return;
-
-    const clone = {
-      ...weapon,
-      id: `clone_${Date.now()}_${row.id}`,
-      name: `${weapon.name} [副本]`,
-      isClone: true,
-      originalId: row.id
-    };
-
-    this.dataManager.data.weapons.push(clone);
-    this.scheduleRefresh('weapon');
+  /**
+   * 获取下一个可用的武器 ID
+   * @returns {number} 下一个可用 ID
+   */
+  getNextWeaponId() {
+    const weapons = this.dataManager.getWeapons();
+    let maxId = 0;
+    for (const w of weapons) {
+      // 跳过临时占位武器
+      if (w._isNewRow) continue;
+      const id = typeof w.id === 'number' ? w.id : parseInt(w.id);
+      if (!isNaN(id) && id > maxId) {
+        maxId = id;
+      }
+    }
+    return maxId + 1;
   }
 
-  handleRemoveClone(rowIndex) {
-    const row = this.weaponTableInstance?.getData()?.[rowIndex];
-    if (!row) return;
-
-    const weaponId = row.id;
-    const weapons = this.dataManager.data.weapons;
-    const index = weapons.findIndex(w => w.id === weaponId);
-    if (index !== -1 && weapons[index].isClone) {
-      weapons.splice(index, 1);
+  /**
+   * 处理新增武器行
+   * @param {number} rowIndex - 行索引（-1 表示新增）
+   * @param {Object} rowData - 新增行数据
+   */
+  handleWeaponAddRow(rowIndex, rowData) {
+    // rowIndex === -1 表示点击了"新增枪械"按钮，需要插入新行
+    if (rowIndex === -1) {
+      // 检查是否已有新增行
+      const weapons = this.dataManager.data.weapons;
+      const hasNewRow = weapons.some(w => w._isNewRow === true);
+      
+      if (hasNewRow) {
+        alert('⚠️ 已有新增行，请先完成或取消当前新增操作');
+        return;
+      }
+      
+      // ⭐ 在 DataManager 中添加一个临时占位武器（插入到第一行）
+      const tempId = `temp_${Date.now()}`;
+      const tempWeapon = {
+        id: tempId,
+        name: '',
+        type: '步枪',
+        allowedBullet: '',
+        ranges: [40, 70, Infinity, Infinity],
+        decays: [1, 0.9, 0.75, 0.75, 0.75],
+        velocity: 500,
+        flesh: 30,
+        armor: 35,
+        rof: 600,
+        triggerDelay: 0,
+        barrels: [],
+        mult: { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 },
+        _isNewRow: true
+      };
+      
+      // ⭐ 插入到第一行
+      weapons.unshift(tempWeapon);
+      
+      // 刷新表格
+      this.refreshWeaponTable();
+      
+      // 滚动到新增行并聚焦
+      setTimeout(() => {
+        const container = document.getElementById('tab-weapon');
+        const newRowEl = container?.querySelector('.new-weapon-row');
+        if (newRowEl) {
+          newRowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const nameInput = newRowEl.querySelector('.weapon-new-name');
+          if (nameInput) {
+            nameInput.focus();
+          }
+        }
+      }, 150);
+      
+      return;
     }
 
-    this.scheduleRefresh('weapon');
+    // rowIndex >= 0 表示确认新增，保存数据
+    if (!rowData || !rowData.name) {
+      alert('⚠️ 请输入武器名称');
+      return;
+    }
+    if (!rowData.allowedBullet) {
+      alert('⚠️ 请选择口径');
+      return;
+    }
+
+    const newWeaponId = this.getNextWeaponId();
+    
+    // 构建新武器对象（⭐ 包含 allowedBullet）
+    const newWeapon = {
+      id: newWeaponId,
+      name: rowData.name,
+      type: rowData.type || '步枪',
+      allowedBullet: rowData.allowedBullet,
+      ranges: rowData.ranges || [40, 70, Infinity, Infinity],
+      decays: [1, 0.9, 0.75, 0.75, 0.75],
+      velocity: rowData.velocity || 500,
+      flesh: rowData.flesh || 30,
+      armor: rowData.armor || 35,
+      rof: rowData.rof || 600,
+      triggerDelay: 0,
+      barrels: [],
+      mult: rowData.mult || { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 }
+    };
+
+    // ⭐ 移除临时占位武器，添加真实武器（替换位置）
+    const weapons = this.dataManager.data.weapons;
+    const tempIndex = weapons.findIndex(w => w._isNewRow === true);
+    if (tempIndex !== -1) {
+      weapons.splice(tempIndex, 1, newWeapon);
+    } else {
+      weapons.push(newWeapon);
+    }
+    
+    // 为这个武器创建默认的价格配置
+    const defaultPriceConfig = {
+      id: '#1',
+      barrelId: -1,
+      barrel: '无',
+      muzzleId: 0,
+      muzzle: '无',
+      buildCode: '',
+      price: 0,
+      distance: [30, 50, 100],
+      hitRate: [1.0, 0.9, 0.6],
+      bullet: '',
+      enabled: true,
+      cache: null
+    };
+    
+    let price = this.dataManager.getPriceByWeaponId(newWeaponId);
+    if (!price) {
+      this.dataManager.data.prices.push({
+        weaponId: newWeaponId,
+        weaponName: rowData.name,
+        configs: [defaultPriceConfig]
+      });
+    } else {
+      price.configs.push(defaultPriceConfig);
+    }
+    
+    // 初始化附件配置
+    this.weaponAttachments[newWeaponId] = {
+      barrelId: -1,
+      muzzleId: 0,
+      precision: 0.09
+    };
+    this.weaponPrecisions[newWeaponId] = 0.09;
+
+    // 标记为已修改
+    this.dataManager.markWeaponModified(newWeaponId);
+
+    // 刷新表格
+    this.refreshWeaponTable();
+    this.refreshPriceTable();
+
+    console.log(`✅ 新增枪械: ${rowData.name} (ID: ${newWeaponId}, 口径: ${rowData.allowedBullet})`);
+  }
+
+  /**
+   * 处理删除武器行（取消新增）
+   * @param {number} rowIndex - 行索引
+   * @param {number|string} weaponId - 武器 ID
+   * @param {boolean} isCancelled - 是否为取消新增
+   */
+  handleWeaponDeleteRow(rowIndex, weaponId, isCancelled) {
+    if (isCancelled) {
+      // 取消新增：移除临时占位武器
+      const weapons = this.dataManager.data.weapons;
+      const tempIndex = weapons.findIndex(w => w._isNewRow === true);
+      if (tempIndex !== -1) {
+        weapons.splice(tempIndex, 1);
+      }
+      this.refreshWeaponTable();
+      return;
+    }
+    // 删除已存在的武器（目前暂不支持删除已有武器，仅支持取消新增）
+    console.warn('⚠️ 删除已有武器功能暂未实现');
   }
 
   // ============================================================
-  // 7. 价格表格数据处理
+  // 8. 价格表格数据处理
   // ============================================================
 
   buildPriceRows(priceRows) {
@@ -684,7 +851,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 8. 刷新价格表格 ⭐ 确保 havocCosts 被传递
+  // 9. 刷新价格表格 ⭐ 确保 havocCosts 被传递
   // ============================================================
 
   refreshPriceTable() {
@@ -939,7 +1106,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 9. 子弹表格
+  // 10. 子弹表格
   // ============================================================
 
   initBulletTable() {
@@ -1020,15 +1187,23 @@ export default class DOMController {
   }
 
   handleBulletAddRow(rowIndex, rowData) {
+    // rowData 已经包含了完整的数据
     const caliber = rowData.caliber || '';
     const level = rowData.level || '1';
     const bulletId = `${caliber}_${level}`;
 
+    // 检查是否已存在相同子弹
+    const existing = this.dataManager.getBulletById(bulletId);
+    if (existing) {
+      alert(`⚠️ 子弹 ${bulletId} 已存在`);
+      return;
+    }
+
     const armorData = {};
     for (let i = 1; i <= 6; i++) {
       armorData[i] = {
-        armorMult: rowData.armorMult || 1.0,
-        pen: rowData.pen || 0.5
+        armorMult: rowData.armorData?.[i]?.armorMult || 1.0,
+        pen: rowData.armorData?.[i]?.pen || 0.5
       };
     }
 
@@ -1037,8 +1212,8 @@ export default class DOMController {
       caliber: caliber,
       level: level,
       base: rowData.base || 1.0,
-      armorMult: rowData.armorMult || 1.0,
-      pen: rowData.pen || 0.5,
+      armorMult: rowData.armorData?.[1]?.armorMult || 1.0,
+      pen: rowData.armorData?.[1]?.pen || 0.5,
       price: rowData.price || 0,
       armorData: armorData
     };
@@ -1068,7 +1243,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 10. 价格配置读取（供柱状图使用）⭐ 精简日志
+  // 11. 价格配置读取（供柱状图使用）⭐ 精简日志
   // ============================================================
 
   /**
@@ -1207,7 +1382,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 11. 新增配置功能
+  // 12. 新增配置功能
   // ============================================================
 
   _handleAddConfig(e) {
@@ -1369,7 +1544,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 12. 延迟刷新
+  // 13. 延迟刷新
   // ============================================================
 
   scheduleRefresh(tab) {
@@ -1389,7 +1564,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 13. 控制按钮事件
+  // 14. 控制按钮事件
   // ============================================================
 
   bindControlEvents() {
@@ -1426,7 +1601,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 14. 导入/导出事件
+  // 15. 导入/导出事件
   // ============================================================
 
   bindImportExportEvents() {
@@ -1516,7 +1691,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 15. 公共方法
+  // 16. 公共方法
   // ============================================================
 
   getCurrentTab() {

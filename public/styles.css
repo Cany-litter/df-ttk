@@ -654,7 +654,257 @@ table tbody tr:hover {
 }
 
 /* ============================================================
-   ⭐ 哈弗币消耗列样式（新增）
+   ⭐ 武器表格控制栏
+   ============================================================ */
+.weapon-table-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  border: 1px solid #e8e8e8;
+}
+
+.weapon-table-controls .add-weapon-btn {
+  padding: 2px 12px;
+  border: 1px solid #4caf50;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  background: #4caf50;
+  color: #fff;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.weapon-table-controls .add-weapon-btn:hover {
+  background: #388e3c;
+  border-color: #388e3c;
+}
+
+.weapon-table-controls .control-hint {
+  font-size: 11px;
+  color: #999;
+}
+
+.weapon-table-controls .weapon-count {
+  font-size: 11px;
+  color: #666;
+  margin-left: auto;
+  background: #e8e8e8;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+/* ⭐ 新增武器行 */
+.new-weapon-row td {
+  background: #fff8e1;
+  border-top: 2px solid #ff9800;
+}
+
+.new-weapon-row input,
+.new-weapon-row select {
+  width: 100%;
+  padding: 2px 4px;
+  border: 1px solid #d0d0d0;
+  border-radius: 2px;
+  font-size: 11px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.new-weapon-row input:focus,
+.new-weapon-row select:focus {
+  border-color: #4a6cf7;
+  outline: none;
+}
+
+/* ⭐ 操作列按钮 - 编辑枪管（中文文字） */
+.edit-barrel-btn {
+  padding: 0 10px;
+  border: none;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #ff9800;
+  color: #fff;
+  transition: all 0.2s;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+}
+
+.edit-barrel-btn:hover {
+  background: #e68900;
+}
+
+/* ⭐ 确认/取消新增武器按钮 */
+.confirm-add-weapon-btn {
+  padding: 0 8px;
+  border: none;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #4caf50;
+  color: #fff;
+  transition: all 0.2s;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-add-weapon-btn:hover {
+  background: #388e3c;
+}
+
+.cancel-add-weapon-btn {
+  padding: 0 8px;
+  border: none;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #f44336;
+  color: #fff;
+  transition: all 0.2s;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-add-weapon-btn:hover {
+  background: #d32f2f;
+}
+
+/* ============================================================
+   ⭐ 子弹表格控制栏
+   ============================================================ */
+.bullet-table-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  border: 1px solid #e8e8e8;
+}
+
+.bullet-table-controls .add-bullet-btn {
+  padding: 2px 12px;
+  border: 1px solid #4caf50;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  background: #4caf50;
+  color: #fff;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.bullet-table-controls .add-bullet-btn:hover {
+  background: #388e3c;
+  border-color: #388e3c;
+}
+
+.bullet-table-controls .control-hint {
+  font-size: 11px;
+  color: #999;
+}
+
+.bullet-table-controls .bullet-count {
+  font-size: 11px;
+  color: #666;
+  margin-left: auto;
+  background: #e8e8e8;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+/* ⭐ 新增子弹行 */
+.new-bullet-row td {
+  background: #fff8e1;
+  border-top: 2px solid #ff9800;
+}
+
+.new-bullet-row input,
+.new-bullet-row select {
+  width: 100%;
+  padding: 2px 4px;
+  border: 1px solid #d0d0d0;
+  border-radius: 2px;
+  font-size: 11px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.new-bullet-row input:focus,
+.new-bullet-row select:focus {
+  border-color: #4a6cf7;
+  outline: none;
+}
+
+/* ⭐ 子弹表格确认/取消按钮 */
+.confirm-add-bullet-btn {
+  padding: 0 8px;
+  border: none;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #4caf50;
+  color: #fff;
+  transition: all 0.2s;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-add-bullet-btn:hover {
+  background: #388e3c;
+}
+
+.cancel-add-bullet-btn {
+  padding: 0 8px;
+  border: none;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  background: #f44336;
+  color: #fff;
+  transition: all 0.2s;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-add-bullet-btn:hover {
+  background: #d32f2f;
+}
+
+/* ============================================================
+   ⭐ 哈弗币消耗列样式
    ============================================================ */
 .havoc-cost {
   font-weight: 600;
@@ -852,64 +1102,6 @@ table tbody tr:hover {
   text-align: center;
 }
 
-/* 操作按钮（添加/删除副本、编辑枪管） */
-#weaponTable .add-clone-btn,
-#weaponTable .remove-clone-btn,
-#weaponTable .edit-barrel-btn {
-  padding: 0 6px;
-  border: none;
-  border-radius: 3px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin: 0 1px;
-  line-height: 1.6;
-}
-
-#weaponTable .add-clone-btn {
-  background: #4caf50;
-  color: #fff;
-}
-
-#weaponTable .add-clone-btn:hover {
-  background: #388e3c;
-}
-
-#weaponTable .remove-clone-btn {
-  background: #f44336;
-  color: #fff;
-}
-
-#weaponTable .remove-clone-btn:hover {
-  background: #d32f2f;
-}
-
-#weaponTable .edit-barrel-btn {
-  background: #ff9800;
-  color: #fff;
-  font-size: 11px;
-  padding: 0 5px;
-}
-
-#weaponTable .edit-barrel-btn:hover {
-  background: #e68900;
-}
-
-/* 副本行样式 */
-#weaponTable .clone-row {
-  background: #fafffe;
-}
-
-#weaponTable .clone-row:hover {
-  background: #f0faf5;
-}
-
-#weaponTable .clone-name,
-#weaponTable .clone-type {
-  color: #666;
-}
-
 /* ============================================================
    价格数据表格 (Tab 2) 专属样式
    ============================================================ */
@@ -1008,9 +1200,7 @@ table tbody tr:hover {
   color: #fff;
 }
 
-/* 子弹表格操作按钮 */
-#bulletTable .confirm-add-bullet-btn,
-#bulletTable .cancel-add-bullet-btn,
+/* 子弹表格操作按钮（删除） */
 #bulletTable .delete-bullet-btn {
   padding: 0 5px;
   border: none;
@@ -1019,39 +1209,12 @@ table tbody tr:hover {
   cursor: pointer;
   transition: all 0.2s;
   line-height: 1.6;
-}
-
-#bulletTable .confirm-add-bullet-btn {
-  background: #4caf50;
-  color: #fff;
-}
-
-#bulletTable .confirm-add-bullet-btn:hover {
-  background: #388e3c;
-}
-
-#bulletTable .cancel-add-bullet-btn {
-  background: #f44336;
-  color: #fff;
-}
-
-#bulletTable .cancel-add-bullet-btn:hover {
-  background: #d32f2f;
-}
-
-#bulletTable .delete-bullet-btn {
   background: #e0e0e0;
   color: #333;
 }
 
 #bulletTable .delete-bullet-btn:hover {
   background: #ccc;
-}
-
-/* 新增子弹行 */
-#bulletTable .new-bullet-row td {
-  background: #fff8e1;
-  border-top: 2px solid #ff9800;
 }
 
 /* ============================================================
@@ -1214,7 +1377,7 @@ td.editing .table-editor-select {
 }
 
 /* ============================================================
-   枪管编辑器弹窗 - 专属样式 ⭐ 新增
+   枪管编辑器弹窗 - 专属样式
    ============================================================ */
 #barrelEditorContainer {
   min-height: 80px;
@@ -1707,6 +1870,32 @@ td.editing .table-editor-select {
     min-width: 700px;
     font-size: 10px;
   }
+
+  /* 武器表格控制栏响应式 */
+  .weapon-table-controls {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+  .weapon-table-controls .control-hint {
+    font-size: 10px;
+  }
+  .weapon-table-controls .weapon-count {
+    font-size: 10px;
+    padding: 0 6px;
+  }
+
+  /* 子弹表格控制栏响应式 */
+  .bullet-table-controls {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+  .bullet-table-controls .control-hint {
+    font-size: 10px;
+  }
+  .bullet-table-controls .bullet-count {
+    font-size: 10px;
+    padding: 0 6px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1862,6 +2051,50 @@ td.editing .table-editor-select {
     font-size: 9px;
     min-width: 24px;
     padding: 1px 2px;
+  }
+
+  /* 武器表格控制栏移动端 */
+  .weapon-table-controls {
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .weapon-table-controls .control-hint {
+    width: 100%;
+    margin-left: 0;
+  }
+  .weapon-table-controls .weapon-count {
+    margin-left: 0;
+  }
+  .edit-barrel-btn {
+    font-size: 10px;
+    padding: 0 6px;
+    min-width: 44px;
+    height: 20px;
+  }
+  .confirm-add-weapon-btn,
+  .cancel-add-weapon-btn {
+    font-size: 10px;
+    padding: 0 6px;
+    height: 20px;
+  }
+
+  /* 子弹表格控制栏移动端 */
+  .bullet-table-controls {
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .bullet-table-controls .control-hint {
+    width: 100%;
+    margin-left: 0;
+  }
+  .bullet-table-controls .bullet-count {
+    margin-left: 0;
+  }
+  .confirm-add-bullet-btn,
+  .cancel-add-bullet-btn {
+    font-size: 10px;
+    padding: 0 6px;
+    height: 20px;
   }
 }
 

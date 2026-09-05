@@ -7,6 +7,114 @@
   },
   "weapons": [
     {
+      "id": 47,
+      "name": "MDR",
+      "type": "步枪",
+      "allowedBullet": "7.62x51mm",
+      "ranges": [
+        35,
+        50,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.75,
+        0.75,
+        0.75
+      ],
+      "velocity": 650,
+      "flesh": 41,
+      "armor": 43,
+      "rof": 630,
+      "triggerDelay": 0,
+      "barrels": [
+        {
+          "name": "对峙者长枪管",
+          "rangeMult": 1.3,
+          "rangeAdd": 0,
+          "velocityMult": 1,
+          "velocityAdd": 0,
+          "rofMult": 1,
+          "damageBonus": 0,
+          "armorDamageBonus": 0,
+          "triggerDelayDelta": 0
+        },
+        {
+          "name": "渗透者短枪管",
+          "rangeMult": 1,
+          "rangeAdd": 0,
+          "velocityMult": 1,
+          "velocityAdd": 0,
+          "rofMult": 1,
+          "damageBonus": 0,
+          "armorDamageBonus": 0,
+          "triggerDelayDelta": 0
+        }
+      ],
+      "mult": {
+        "head": 1.9,
+        "chest": 1,
+        "stomach": 0.9,
+        "limbs": 0.4
+      }
+    },
+    {
+      "id": 46,
+      "name": "汤姆逊",
+      "type": "冲锋枪",
+      "allowedBullet": ".45ACP",
+      "ranges": [
+        18,
+        30,
+        44,
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.9,
+        0.75,
+        0.75,
+        0.75
+      ],
+      "velocity": 500,
+      "flesh": 34,
+      "armor": 36,
+      "rof": 900,
+      "triggerDelay": 0,
+      "barrels": [
+        {
+          "name": "一体冲锋枪管",
+          "rangeMult": 1.18,
+          "rangeAdd": 0,
+          "velocityMult": 1,
+          "velocityAdd": 0,
+          "rofMult": 1,
+          "damageBonus": 0,
+          "armorDamageBonus": 0,
+          "triggerDelayDelta": 0
+        },
+        {
+          "name": "精工长枪管",
+          "rangeMult": 1.3,
+          "rangeAdd": 0,
+          "velocityMult": 1,
+          "velocityAdd": 0,
+          "rofMult": 1,
+          "damageBonus": 0,
+          "armorDamageBonus": 0,
+          "triggerDelayDelta": 0
+        }
+      ],
+      "mult": {
+        "head": 1.9,
+        "chest": 1,
+        "stomach": 1,
+        "limbs": 0.35
+      }
+    },
+    {
       "id": 1,
       "name": "AK-12",
       "type": "步枪",
@@ -593,16 +701,24 @@
         {
           "name": "特攻一体消音枪管",
           "rangeMult": 1.18,
+          "rangeAdd": 0,
+          "velocityMult": 1,
+          "velocityAdd": 0,
+          "rofMult": 1,
           "damageBonus": 0,
           "armorDamageBonus": 0,
-          "rofMult": 1
+          "triggerDelayDelta": 0
         },
         {
           "name": "长矛手长枪管组合",
-          "rangeMult": 1.3,
+          "rangeMult": 1.5,
+          "rangeAdd": 0,
+          "velocityMult": 1,
+          "velocityAdd": 0,
+          "rofMult": 1,
           "damageBonus": 0,
-          "armorDamageBonus": 0,
-          "rofMult": 1
+          "armorDamageBonus": 3,
+          "triggerDelayDelta": 0
         }
       ],
       "mult": {
@@ -3250,6 +3366,23 @@
         "5": { "armorMult": 1, "pen": 0.4 },
         "6": { "armorMult": 1, "pen": 0.3 }
       }
+    },
+    {
+      "id": "4.6x30mm_CT",
+      "caliber": "4.6x30mm",
+      "level": "CT",
+      "base": 1.75,
+      "armorMult": 0.4,
+      "pen": 0,
+      "price": 27000,
+      "armorData": {
+        "1": { "armorMult": 0.4, "pen": 0 },
+        "2": { "armorMult": 0.4, "pen": 0 },
+        "3": { "armorMult": 0.4, "pen": 0 },
+        "4": { "armorMult": 0.4, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
+      }
     }
   ],
   "prices": [
@@ -3337,7 +3470,7 @@
             0.4
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -3622,7 +3755,7 @@
             0.4
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -3798,7 +3931,7 @@
             0.9,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -3864,7 +3997,7 @@
             0.8,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -3982,7 +4115,7 @@
             0.8,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -4180,7 +4313,7 @@
             0.9,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -4488,7 +4621,7 @@
             1,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -4819,7 +4952,7 @@
             0.5
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -4925,8 +5058,8 @@
           "id": "#2",
           "barrel": "长矛手长枪管组合",
           "muzzle": "无",
-          "buildCode": "K437突击步枪-烽火地带-6L3TI6G0CCNDBQDO7A8E4",
-          "price": 410000,
+          "buildCode": "K437突击步枪-烽火地带-6L6L3KO05506E7BV9G8G5",
+          "price": 560000,
           "distance": [
             30,
             50,
@@ -4935,7 +5068,7 @@
           "hitRate": [
             1,
             0.9,
-            0.6
+            0.7
           ],
           "enabled": false,
           "cache": {
@@ -5000,48 +5133,48 @@
             0.5
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
                 "d": 0,
-                "t": 369.9769230768681,
-                "shots": 5.8097,
+                "t": 365.70769230764125,
+                "shots": 5.7542,
                 "bulletPrice": 1900
               },
               {
-                "d": 45,
-                "t": 462.19164700332095,
-                "shots": 6.2907,
+                "d": 52,
+                "t": 478.992225859212,
+                "shots": 6.50775,
                 "bulletPrice": 1900
               },
               {
-                "d": 46,
-                "t": 499.69171779138645,
-                "shots": 6.76225,
+                "d": 53,
+                "t": 514.4214402618527,
+                "shots": 6.9545,
                 "bulletPrice": 1900
               },
               {
-                "d": 77,
-                "t": 716.3477583765736,
-                "shots": 9.0843,
+                "d": 89,
+                "t": 817.5885433715622,
+                "shots": 10.3978,
                 "bulletPrice": 1900
               },
               {
-                "d": 78,
-                "t": 868.209367626245,
-                "shots": 11.04255,
+                "d": 90,
+                "t": 985.2600654664147,
+                "shots": 12.5637,
                 "bulletPrice": 1900
               },
               {
                 "d": 100,
-                "t": 1197.16861727233,
-                "shots": 14.9681,
+                "t": 1145.5060556464723,
+                "shots": 14.5086,
                 "bulletPrice": 1900
               }
             ],
-            "hash": "htn0w1u",
-            "cachedAt": "2026-09-02T06:47:09.567Z"
+            "hash": "h66og1s",
+            "cachedAt": "2026-09-04T10:32:13.791Z"
           }
         }
       ]
@@ -5106,7 +5239,7 @@
             0.9,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -5212,7 +5345,7 @@
             0.8,
             0.35
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -5278,7 +5411,7 @@
             0.85,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -5344,7 +5477,7 @@
             0.7,
             0.4
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -5563,10 +5696,10 @@
           ],
           "hitRate": [
             1,
-            1,
+            0.9,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -5676,38 +5809,38 @@
           "hitRate": [
             1,
             0.9,
-            0.45
+            0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
                 "d": 0,
-                "t": 378.91063174118557,
-                "shots": 5.09855,
+                "t": 380.4175654854076,
+                "shots": 5.11485,
                 "bulletPrice": 2000
               },
               {
                 "d": 64,
-                "t": 588.1076701687768,
-                "shots": 6.58615,
+                "t": 556.0922618482739,
+                "shots": 6.23985,
                 "bulletPrice": 2000
               },
               {
                 "d": 65,
-                "t": 652.0425911514575,
-                "shots": 7.2656,
+                "t": 617.1150102577561,
+                "shots": 6.8878,
                 "bulletPrice": 2000
               },
               {
                 "d": 100,
-                "t": 1166.276381788161,
-                "shots": 12.40395,
+                "t": 879.8665204630304,
+                "shots": 9.30595,
                 "bulletPrice": 2000
               }
             ],
             "hash": "hi0f8rj",
-            "cachedAt": "2026-09-02T06:47:10.154Z"
+            "cachedAt": "2026-09-05T10:32:45.602Z"
           }
         },
         {
@@ -5784,7 +5917,7 @@
             0.8,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -5966,7 +6099,7 @@
             1,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "muzzleId": 3,
           "cache": {
             "keyPoints": [
@@ -6097,7 +6230,7 @@
             0.8,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -6315,7 +6448,7 @@
             0.8,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "bullet": "9x19_RIP",
           "cache": {
             "keyPoints": [
@@ -6690,7 +6823,7 @@
             0.9,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "muzzleId": 3,
           "cache": {
             "keyPoints": [
@@ -6781,7 +6914,7 @@
             0.85,
             0.4
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -6899,7 +7032,7 @@
             0.9,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -7069,7 +7202,7 @@
             1,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -7233,7 +7366,7 @@
             0.85,
             0.4
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -7683,7 +7816,7 @@
             1,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "bullet": "9x19_RIP",
           "cache": {
             "keyPoints": [
@@ -7932,7 +8065,7 @@
             0.9,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "muzzleId": 2,
           "cache": {
             "keyPoints": [
@@ -8079,7 +8212,7 @@
             0.9,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -8142,7 +8275,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -8208,7 +8341,7 @@
             0.9,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "barrelId": 0,
           "cache": {
             "keyPoints": [
@@ -8271,7 +8404,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -8402,7 +8535,7 @@
             0.95,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "bullet": ".45ACP_RIP",
           "cache": {
             "keyPoints": [
@@ -8521,7 +8654,7 @@
             0.7,
             0.35
           ],
-          "enabled": true,
+          "enabled": false,
           "muzzleId": 3,
           "cache": {
             "keyPoints": [
@@ -8822,7 +8955,7 @@
             0.8,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "bullet": ".45ACP_RIP",
           "cache": {
             "keyPoints": [
@@ -8971,7 +9104,7 @@
             0.85,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "cache": {
             "keyPoints": [
               {
@@ -9095,7 +9228,7 @@
             0.9,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "bullet": "9x19_RIP",
           "cache": {
             "keyPoints": [
@@ -9244,6 +9377,156 @@
             ],
             "hash": "hrxjs5f",
             "cachedAt": "2026-09-01T23:27:18.687Z"
+          }
+        }
+      ]
+    },
+    {
+      "weaponId": 46,
+      "weaponName": "汤姆逊",
+      "configs": [
+        {
+          "id": "#1",
+          "barrelId": -1,
+          "barrel": "无",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "buildCode": "",
+          "price": 0,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.9,
+            0.6
+          ],
+          "bullet": "",
+          "enabled": true,
+          "cache": {
+            "keyPoints": [
+              {
+                "d": 0,
+                "t": 332.2299999999204,
+                "shots": 5.98345,
+                "bulletPrice": 2000
+              },
+              {
+                "d": 22,
+                "t": 362.91628584850633,
+                "shots": 5.9783,
+                "bulletPrice": 2000
+              },
+              {
+                "d": 23,
+                "t": 391.58338975076623,
+                "shots": 6.38715,
+                "bulletPrice": 2000
+              },
+              {
+                "d": 38,
+                "t": 431.1366149506048,
+                "shots": 6.6631,
+                "bulletPrice": 2000
+              },
+              {
+                "d": 39,
+                "t": 496.91705218620126,
+                "shots": 7.62865,
+                "bulletPrice": 2000
+              },
+              {
+                "d": 56,
+                "t": 573.1444851903965,
+                "shots": 8.4124,
+                "bulletPrice": 2000
+              },
+              {
+                "d": 57,
+                "t": 578.4382557592634,
+                "shots": 8.47065,
+                "bulletPrice": 2000
+              },
+              {
+                "d": 100,
+                "t": 882.387056887647,
+                "shots": 12.12015,
+                "bulletPrice": 2000
+              }
+            ],
+            "hash": "h5p5se5",
+            "cachedAt": "2026-09-05T10:22:53.306Z"
+          }
+        }
+      ]
+    },
+    {
+      "weaponId": 47,
+      "weaponName": "MDR",
+      "configs": [
+        {
+          "id": "#1",
+          "barrelId": -1,
+          "barrel": "无",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "buildCode": "",
+          "price": 0,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.9,
+            0.6
+          ],
+          "bullet": "",
+          "enabled": false,
+          "cache": {
+            "keyPoints": [
+              {
+                "d": 0,
+                "t": 373.3761904762133,
+                "shots": 4.92045,
+                "bulletPrice": 1600
+              },
+              {
+                "d": 45,
+                "t": 458.2027919962941,
+                "shots": 5.2981,
+                "bulletPrice": 1600
+              },
+              {
+                "d": 46,
+                "t": 513.021901659665,
+                "shots": 5.8623,
+                "bulletPrice": 1600
+              },
+              {
+                "d": 64,
+                "t": 604.2706375057123,
+                "shots": 6.6152,
+                "bulletPrice": 1600
+              },
+              {
+                "d": 65,
+                "t": 684.7278424072822,
+                "shots": 7.4486,
+                "bulletPrice": 1600
+              },
+              {
+                "d": 100,
+                "t": 972.2633472932646,
+                "shots": 10.0687,
+                "bulletPrice": 1600
+              }
+            ],
+            "hash": "hwxjq39",
+            "cachedAt": "2026-09-05T10:28:04.221Z"
           }
         }
       ]
