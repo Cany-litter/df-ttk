@@ -3464,7 +3464,7 @@
             0.85,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -3588,7 +3588,7 @@
             0.9,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -3652,7 +3652,7 @@
             0.4
           ],
           "bullet": "",
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -3822,7 +3822,7 @@
             0.8,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -3937,7 +3937,7 @@
             0.4
           ],
           "bullet": "",
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -4113,7 +4113,7 @@
             0.9,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -4179,7 +4179,7 @@
             0.8,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -4297,7 +4297,7 @@
             0.8,
             0.6
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -4495,7 +4495,7 @@
             0.9,
             0.7
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -4803,7 +4803,7 @@
             1,
             0.7
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -5001,7 +5001,7 @@
             0.9,
             0.6
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -5064,7 +5064,7 @@
             0.5
           ],
           "bullet": "",
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -5182,48 +5182,48 @@
             0.9,
             0.7
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
                 "d": 0,
-                "t": 370.28076923071296,
-                "shots": 5.81365,
+                "t": 365.70769230764125,
+                "shots": 5.7542,
                 "bulletPrice": 1900
               },
               {
-                "d": 45,
-                "t": 460.9339546956326,
-                "shots": 6.27435,
+                "d": 52,
+                "t": 474.55376432074735,
+                "shots": 6.45005,
                 "bulletPrice": 1900
               },
               {
-                "d": 46,
-                "t": 500.107102406767,
-                "shots": 6.76765,
+                "d": 53,
+                "t": 507.2291325695438,
+                "shots": 6.861,
                 "bulletPrice": 1900
               },
               {
-                "d": 77,
-                "t": 666.8785276073485,
-                "shots": 8.4412,
+                "d": 89,
+                "t": 648.2000818331252,
+                "shots": 8.19575,
                 "bulletPrice": 1900
               },
               {
-                "d": 78,
-                "t": 805.6285983955079,
-                "shots": 10.229,
+                "d": 90,
+                "t": 776.3062193125752,
+                "shots": 9.8473,
                 "bulletPrice": 1900
               },
               {
                 "d": 100,
-                "t": 1004.030155733828,
-                "shots": 12.4573,
+                "t": 826.8637479541397,
+                "shots": 10.36625,
                 "bulletPrice": 1900
               }
             ],
-            "hash": "huxce2z",
-            "cachedAt": "2026-09-02T00:07:31.329Z"
+            "hash": "he6s7eb",
+            "cachedAt": "2026-09-06T04:26:11.377Z"
           }
         },
         {
@@ -5245,7 +5245,7 @@
             0.5
           ],
           "bullet": "",
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -5351,7 +5351,7 @@
             0.9,
             0.7
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -5561,7 +5561,7 @@
             0.9,
             0.7
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -5673,7 +5673,7 @@
             0.9,
             0.6
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -5779,7 +5779,7 @@
             0.8,
             0.7
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -5900,7 +5900,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -6018,7 +6018,7 @@
             0.8,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -6136,7 +6136,7 @@
             0.9,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -6306,7 +6306,7 @@
             1,
             0.6
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -6360,7 +6360,7 @@
             0.9,
             0.6
           ],
-          "enabled": false,
+          "enabled": true,
           "muzzleId": 2,
           "cache": {
             "keyPoints": [
@@ -6507,7 +6507,7 @@
             0.9,
             0.6
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -6570,7 +6570,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -6636,7 +6636,7 @@
             0.9,
             0.7
           ],
-          "enabled": false,
+          "enabled": true,
           "barrelId": 0,
           "cache": {
             "keyPoints": [
@@ -6699,7 +6699,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -6928,7 +6928,7 @@
             0.9,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "bullet": "9x19_RIP",
           "cache": {
             "keyPoints": [
@@ -7083,7 +7083,7 @@
             1,
             0.6
           ],
-          "enabled": false,
+          "enabled": true,
           "muzzleId": 3,
           "cache": {
             "keyPoints": [
@@ -7314,7 +7314,7 @@
             0.8,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "bullet": "9x19_RIP",
           "cache": {
             "keyPoints": [
@@ -7689,7 +7689,7 @@
             0.9,
             0.6
           ],
-          "enabled": false,
+          "enabled": true,
           "muzzleId": 3,
           "cache": {
             "keyPoints": [
@@ -8014,7 +8014,7 @@
             1,
             0.6
           ],
-          "enabled": false,
+          "enabled": true,
           "bullet": "9x19_RIP",
           "cache": {
             "keyPoints": [
@@ -8328,7 +8328,7 @@
             0.95,
             0.7
           ],
-          "enabled": false,
+          "enabled": true,
           "bullet": ".45ACP_RIP",
           "cache": {
             "keyPoints": [
@@ -8447,7 +8447,7 @@
             0.7,
             0.35
           ],
-          "enabled": false,
+          "enabled": true,
           "muzzleId": 3,
           "cache": {
             "keyPoints": [
@@ -8748,7 +8748,7 @@
             0.8,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "bullet": ".45ACP_RIP",
           "cache": {
             "keyPoints": [
@@ -8839,7 +8839,7 @@
             0.85,
             0.5
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -8905,7 +8905,7 @@
             0.7,
             0.4
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -8971,7 +8971,7 @@
             0.85,
             0.4
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -9147,7 +9147,7 @@
             0.85,
             0.4
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
@@ -9415,7 +9415,7 @@
             0.8,
             0.35
           ],
-          "enabled": false,
+          "enabled": true,
           "cache": {
             "keyPoints": [
               {
