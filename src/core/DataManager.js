@@ -5,13 +5,18 @@
  * 数据流向：
  * 1. 从 data.json 加载原始数据
  * 2. 数据存储在 this.data 中
- * 3. 导出时序列化 this.data
+ * 3. 导出时序列化 this.data（排序后导出，不影响内存数据）
  * 4. 导入时替换 this.data
  * 5. 重置时恢复 this.originalData
  * 
  * 修改追踪：
  * - modifiedWeaponIds: 记录被修改的武器 ID
  * - 用于增量计算，只重新计算被修改的武器
+ * 
+ * 导出排序：
+ * - weapons: 按类型 → 名称 排序
+ * - bullets: 按口径 → 等级 排序
+ * - prices: 按 enabled → 类型 → 武器名称 → 配置序号 排序
  */
 import perf from '../utils/performance.js';
 
@@ -900,7 +905,138 @@ export class DataManager {
   }
 
   // ============================================================
-  // 12. 数据序列化
+  // 12. 导出排序方法（仅导出时使用，不影响内存数据）
+  // ============================================================
+
+  /**
+   * 武器类型优先级映射（自定义顺序）
+   * 步枪 → 冲锋枪 → 轻机枪 → 精确射手步枪 → 手枪
+   */
+  static get TYPE_ORDER() {
+    return {
+      '步枪': 0,
+      '冲锋枪': 1,
+      '轻机枪': 2,
+      '精确射手步枪': 3,
+      '手枪': 4
+    };
+  }
+
+  /**
+   * 获取子弹等级的排序权重
+   * 数字 1-5 按数值排序，特殊值按字母序排在后面
+   */
+  static getLevelWeight(level) {
+    if (level === undefined || level === null) return 999;
+    
+    // 如果是数字（1-5），直接返回数值
+    if (typeof level === 'number' && level >= 1 && level <= 5) {
+      return level;
+    }
+    if (typeof level === 'string' && /^[1-5]$/.test(level)) {
+      return parseInt(level);
+    }
+    
+    // 特殊值：按字母序映射到 100+ 
+    const specialLevels = ['AP', 'BT+P', 'CT', 'Double', 'M61', 'RIP', 'SUPER'];
+    const index = specialLevels.indexOf(String(level));
+    if (index !== -1) {
+      return 100 + index;
+    }
+    
+    return 999;
+  }
+
+  /**
+   * 对武器进行排序（导出用）
+   * 排序规则：类型（自定义顺序）→ 名称字母序
+   * @param {Array} weapons - 武器数组（会被原地排序）
+   */
+  _sortWeaponsForExport(weapons) {
+    if (!weapons || weapons.length === 0) return;
+    
+    const typeOrder = DataManager.TYPE_ORDER;
+    
+    weapons.sort((a, b) => {
+      // 先按类型排序
+      const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 99;
+      const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 99;
+      if (typeA !== typeB) return typeA - typeB;
+      
+      // 再按名称字母序
+      return (a.name || '').localeCompare(b.name || '', 'zh-CN');
+    });
+  }
+
+  /**
+   * 对子弹进行排序（导出用）
+   * 排序规则：口径字母序 → 等级（数字升序，特殊值按字母序）
+   * @param {Array} bullets - 子弹数组（会被原地排序）
+   */
+  _sortBulletsForExport(bullets) {
+    if (!bullets || bullets.length === 0) return;
+    
+    bullets.sort((a, b) => {
+      // 先按口径字母序
+      const calA = a.caliber || '';
+      const calB = b.caliber || '';
+      const calCompare = calA.localeCompare(calB);
+      if (calCompare !== 0) return calCompare;
+      
+      // 再按等级权重
+      const levelA = DataManager.getLevelWeight(a.level);
+      const levelB = DataManager.getLevelWeight(b.level);
+      return levelA - levelB;
+    });
+  }
+
+  /**
+   * 对价格配置进行排序（导出用）
+   * 排序规则：enabled（启用在前）→ 类型 → 武器名称 → 配置序号
+   * @param {Array} prices - 价格数组（会被原地排序）
+   * @param {Map} weaponsMap - 武器 ID 到武器对象的映射
+   */
+  _sortPricesForExport(prices, weaponsMap) {
+    if (!prices || prices.length === 0) return;
+    
+    const typeOrder = DataManager.TYPE_ORDER;
+    
+    prices.sort((a, b) => {
+      // 1. 先按 enabled 排序（启用的在前）
+      const enabledA = a.enabled !== false ? 0 : 1;
+      const enabledB = b.enabled !== false ? 0 : 1;
+      if (enabledA !== enabledB) return enabledA - enabledB;
+      
+      // 获取对应的武器信息
+      const weaponA = weaponsMap.get(a.weaponId);
+      const weaponB = weaponsMap.get(b.weaponId);
+      
+      // 2. 按武器类型排序
+      const typeA = weaponA ? (typeOrder[weaponA.type] !== undefined ? typeOrder[weaponA.type] : 99) : 99;
+      const typeB = weaponB ? (typeOrder[weaponB.type] !== undefined ? typeOrder[weaponB.type] : 99) : 99;
+      if (typeA !== typeB) return typeA - typeB;
+      
+      // 3. 按武器名称排序
+      const nameA = weaponA ? weaponA.name || '' : '';
+      const nameB = weaponB ? weaponB.name || '' : '';
+      const nameCompare = nameA.localeCompare(nameB, 'zh-CN');
+      if (nameCompare !== 0) return nameCompare;
+      
+      // 4. 按配置序号排序 (#1, #2, #3...)
+      // 提取配置 ID 中的数字
+      const getConfigNum = (config) => {
+        const id = config.id || '';
+        const match = id.match(/#(\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      };
+      const numA = getConfigNum(a);
+      const numB = getConfigNum(b);
+      return numA - numB;
+    });
+  }
+
+  // ============================================================
+  // 13. 数据序列化
   // ============================================================
 
   /**
@@ -938,17 +1074,40 @@ export class DataManager {
   }
 
   // ============================================================
-  // 13. 数据导出/导入
+  // 14. 数据导出/导入 ⭐ 核心修改：导出时排序
   // ============================================================
 
   /**
    * 导出 JSON（含缓存）
+   * ⭐ 导出时对 weapons、bullets、prices 进行排序
+   * 
    * @param {boolean} includeCache - 是否包含缓存数据
    * @returns {string} JSON 字符串
    */
   exportToJSON(includeCache = true) {
     try {
-      const dataToExport = this.serializeData(this.data);
+      // ⭐ 深拷贝数据（避免影响内存数据）
+      const dataToExport = JSON.parse(JSON.stringify(this.data));
+      
+      // ⭐ 过滤掉临时武器（_isNewRow: true）
+      if (Array.isArray(dataToExport.weapons)) {
+        dataToExport.weapons = dataToExport.weapons.filter(w => !w._isNewRow);
+      }
+      
+      // ⭐ 排序：武器
+      this._sortWeaponsForExport(dataToExport.weapons);
+      
+      // ⭐ 排序：子弹
+      this._sortBulletsForExport(dataToExport.bullets);
+      
+      // ⭐ 构建武器映射用于价格排序
+      const weaponsMap = new Map();
+      if (Array.isArray(dataToExport.weapons)) {
+        dataToExport.weapons.forEach(w => weaponsMap.set(w.id, w));
+      }
+      
+      // ⭐ 排序：价格配置
+      this._sortPricesForExport(dataToExport.prices, weaponsMap);
       
       // 如果不包含缓存，清除所有 cache 字段
       if (!includeCache) {
@@ -959,8 +1118,11 @@ export class DataManager {
         }
       }
       
+      // 序列化（处理 Infinity）
+      const serialized = this.serializeData(dataToExport);
+      
       // 正常序列化
-      let json = JSON.stringify(dataToExport, null, 2);
+      let json = JSON.stringify(serialized, null, 2);
       
       // 压缩 armorData：将多行压缩为单行
       json = this._compressArmorData(json);
@@ -969,6 +1131,7 @@ export class DataManager {
       json = this._compressKeyPoints(json);
       
       return json;
+      
     } catch (error) {
       console.error('导出 JSON 失败:', error);
       throw error;
@@ -1079,7 +1242,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 14. 数据重置
+  // 15. 数据重置
   // ============================================================
 
   resetToOriginal() {
@@ -1107,7 +1270,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 15. 工具方法
+  // 16. 工具方法
   // ============================================================
 
   getStats() {

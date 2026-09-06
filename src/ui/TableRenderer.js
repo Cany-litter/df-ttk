@@ -9,6 +9,7 @@
  * - 支持列配置中的 getOptions 函数
  * - 支持从列配置的 getOptions 作为备用方案（当 dataset 不存在时）
  * - 支持 getEditValue 函数，用于编辑时获取自定义显示值
+ * - ⭐ 支持 hitRateRaw 列编辑时显示原始格式
  * 
  * 使用示例：
  * ```javascript
@@ -307,7 +308,6 @@ export class TableRenderer {
         }
         
         // 如果行数据中有预计算的选项，存储在 cell 的 dataset 中
-        // ⭐ 修复：只在有值且不为空数组时才设置
         if (colKey === 'barrel' && row._barrelOptions && row._barrelOptions.length > 0) {
           cellAttrs['data-barrel-options'] = JSON.stringify(row._barrelOptions);
         }
@@ -318,6 +318,24 @@ export class TableRenderer {
         
         if (colKey === 'bulletDisplay' && row._bulletOptions && row._bulletOptions.length > 0) {
           cellAttrs['data-bullet-options'] = JSON.stringify(row._bulletOptions);
+        }
+        
+        // ⭐ 对于 hitRateRaw 列，存储原始格式数据用于编辑
+        if (colKey === 'hitRateRaw' && row._hitRateRaw) {
+          cellAttrs['data-hitrate-raw'] = row._hitRateRaw;
+        }
+        // 如果没有 _hitRateRaw，从 _distance 和 _hitRate 构建
+        if (colKey === 'hitRateRaw' && !row._hitRateRaw && row._distance && row._hitRate) {
+          const parts = [];
+          const len = Math.min(row._distance.length, row._hitRate.length);
+          for (let i = 0; i < len; i++) {
+            if (row._distance[i] !== undefined && row._hitRate[i] !== undefined) {
+              parts.push(`${row._distance[i]}:${row._hitRate[i]}`);
+            }
+          }
+          if (parts.length > 0) {
+            cellAttrs['data-hitrate-raw'] = parts.join(',');
+          }
         }
         
         // 也支持从列配置的 getOptions 获取选项（备用）
@@ -476,6 +494,7 @@ export class TableRenderer {
   /**
    * 进入编辑模式
    * ⭐ 支持 getEditValue 函数，用于编辑时获取自定义显示值
+   * ⭐ 支持 hitRateRaw 列，编辑时显示原始格式
    * ⭐ 修复：增加 JSON 解析的空值检查
    * @param {HTMLElement} cell - 单元格元素
    * @param {Function} onCellChange - 变更回调
@@ -487,28 +506,73 @@ export class TableRenderer {
     const colKey = cell.dataset.col;
     const inputType = cell.dataset.inputType || 'text';
     
-    // ⭐ 优先从 getEditValue 获取当前值
+    // ⭐ 获取当前值
     let currentValue = '';
-    if (col && typeof col.getEditValue === 'function') {
-      // 获取行数据
-      const table = cell.closest('table');
-      const tableId = table?.id;
-      let rowData = null;
-      if (tableId && window._tableInstances && window._tableInstances[tableId]) {
-        const instance = window._tableInstances[tableId];
-        const allData = instance.getData();
-        if (allData && allData[rowIndex]) {
-          rowData = allData[rowIndex];
+    
+    // ⭐⭐ 特殊处理：hitRateRaw 列使用原始格式
+    if (colKey === 'hitRateRaw') {
+      // 优先从 dataset 中读取原始格式
+      if (cell.dataset.hitrateRaw) {
+        currentValue = cell.dataset.hitrateRaw;
+      } else {
+        // 备用：从列配置的 getEditValue 获取
+        if (col && typeof col.getEditValue === 'function') {
+          const table = cell.closest('table');
+          const tableId = table?.id;
+          let rowData = null;
+          if (tableId && window._tableInstances && window._tableInstances[tableId]) {
+            const instance = window._tableInstances[tableId];
+            const allData = instance.getData();
+            if (allData && allData[rowIndex]) {
+              rowData = allData[rowIndex];
+            }
+          }
+          if (rowData) {
+            currentValue = String(col.getEditValue(rowData));
+          }
+        }
+        // 如果都没有，尝试从显示的文本反推（不推荐，但作为最后的备用）
+        if (!currentValue) {
+          // 显示格式如 "30m:100% 50m:90% 100m:70%"，反推为 "30:1.0,50:0.9,100:0.7"
+          const displayText = cell.textContent.trim();
+          if (displayText && displayText !== '-') {
+            const parts = displayText.split(/\s+/);
+            const rawParts = parts.map(p => {
+              const match = p.match(/^(\d+)m:(\d+)%$/);
+              if (match) {
+                return `${match[1]}:${(parseInt(match[2]) / 100).toFixed(2)}`;
+              }
+              return p;
+            });
+            currentValue = rawParts.join(',');
+          }
         }
       }
-      if (rowData) {
-        currentValue = String(col.getEditValue(rowData));
-      } else {
-        // 备用：从 cell.textContent 提取
-        currentValue = cell.textContent.trim();
+      // 如果还是空，使用默认值
+      if (!currentValue) {
+        currentValue = '30:1.0,50:0.9,100:0.6';
       }
     } else {
-      currentValue = cell.textContent.trim();
+      // ⭐ 普通列：优先从 getEditValue 获取当前值
+      if (col && typeof col.getEditValue === 'function') {
+        const table = cell.closest('table');
+        const tableId = table?.id;
+        let rowData = null;
+        if (tableId && window._tableInstances && window._tableInstances[tableId]) {
+          const instance = window._tableInstances[tableId];
+          const allData = instance.getData();
+          if (allData && allData[rowIndex]) {
+            rowData = allData[rowIndex];
+          }
+        }
+        if (rowData) {
+          currentValue = String(col.getEditValue(rowData));
+        } else {
+          currentValue = cell.textContent.trim();
+        }
+      } else {
+        currentValue = cell.textContent.trim();
+      }
     }
     
     // 清理特殊字符
@@ -531,7 +595,6 @@ export class TableRenderer {
     if (inputType === 'select') {
       let optionList = [];
       
-      // ⭐ 修复：从 cell dataset 中读取预计算的选项 - 增加空值检查
       if (colKey === 'barrel' && cell.dataset.barrelOptions && cell.dataset.barrelOptions !== '') {
         try {
           optionList = JSON.parse(cell.dataset.barrelOptions);
