@@ -3,10 +3,12 @@
  * 负责枪管的增删改查，以及弹窗管理
  * 
  * 支持完整枪管属性编辑：
- * - 基础属性：名称、射程倍率、射程增量、初速倍率、初速增量、射速倍率
+ * - 基础属性：名称、射程倍率、射程增量、初速增量、射速倍率
  * - 伤害属性：肉伤加成、甲伤加成、扳机延迟Δ
  * - 自定义属性：自定义射程、自定义衰减、部位倍率加成
  * - 开火模式：默认/全自动/连发（含连发参数）
+ * 
+ * 注意：velocityMult（初速倍率）已移除，因为没有任何枪管使用该字段
  */
 export class BarrelEditor {
   constructor(weaponManager, viewRenderer, onDataChange) {
@@ -74,6 +76,7 @@ export class BarrelEditor {
     }
 
     // 构建表格HTML - 完整版包含开火模式和连发参数
+    // 注意：已移除 velocityMult（初速倍率）列
     let html = `
       <table class="barrel-editor-table">
         <thead>
@@ -81,14 +84,13 @@ export class BarrelEditor {
             <th style="min-width:80px;">名称</th>
             <th style="min-width:50px;">射程倍率</th>
             <th style="min-width:50px;">射程增量</th>
-            <th style="min-width:50px;">初速倍率</th>
             <th style="min-width:50px;">初速增量</th>
             <th style="min-width:50px;">射速倍率</th>
             <th style="min-width:45px;">肉伤加成</th>
             <th style="min-width:45px;">甲伤加成</th>
             <th style="min-width:55px;">扳机延迟Δ</th>
             <th style="min-width:80px;">自定义射程</th>
-            <th style="min-width:80px;">自定义衰减</th>
+            <th style="min-width:140px;">自定义衰减</th>
             <th style="min-width:60px;">开火模式</th>
             <th style="min-width:45px;">连发数</th>
             <th style="min-width:50px;">内部射速</th>
@@ -125,14 +127,13 @@ export class BarrelEditor {
           <td><input type="text" class="barrel-edit-name" value="${this.escapeHtml(barrel.name || '')}" placeholder="枪管名称" /></td>
           <td><input type="number" class="barrel-edit-rangeMult" step="0.01" value="${barrel.rangeMult ?? 1.0}" /></td>
           <td><input type="number" class="barrel-edit-rangeAdd" step="0.01" value="${barrel.rangeAdd ?? 0}" /></td>
-          <td><input type="number" class="barrel-edit-velocityMult" step="0.01" value="${barrel.velocityMult ?? 1.0}" /></td>
           <td><input type="number" class="barrel-edit-velocityAdd" step="1" value="${barrel.velocityAdd ?? 0}" /></td>
           <td><input type="number" class="barrel-edit-rofMult" step="0.01" value="${barrel.rofMult ?? 1.0}" /></td>
           <td><input type="number" class="barrel-edit-damageBonus" step="0.1" value="${barrel.damageBonus ?? 0}" /></td>
           <td><input type="number" class="barrel-edit-armorDamageBonus" step="0.1" value="${barrel.armorDamageBonus ?? 0}" /></td>
           <td><input type="number" class="barrel-edit-triggerDelayDelta" step="1" value="${barrel.triggerDelayDelta ?? 0}" /></td>
           <td><input type="text" class="barrel-edit-ranges" value="${rangesStr}" placeholder="40,70,∞,∞" /></td>
-          <td><input type="text" class="barrel-edit-decays" value="${decaysStr}" placeholder="1.0,0.85,0.7,0.7,0.7" /></td>
+          <td><input type="text" class="barrel-edit-decays" value="${decaysStr}" placeholder="1.0,0.85,0.7,0.7,0.7" style="min-width:120px;" /></td>
           <td>
             <select class="barrel-edit-fireMode" data-row="${index}">
               <option value="" ${fireMode === '' ? 'selected' : ''}>默认</option>
@@ -259,7 +260,6 @@ export class BarrelEditor {
 
       const rangeMult = parseFloat(row.querySelector('.barrel-edit-rangeMult')?.value) || 1.0;
       const rangeAdd = parseFloat(row.querySelector('.barrel-edit-rangeAdd')?.value) || 0;
-      const velocityMult = parseFloat(row.querySelector('.barrel-edit-velocityMult')?.value) || 1.0;
       const velocityAdd = parseFloat(row.querySelector('.barrel-edit-velocityAdd')?.value) || 0;
       const rofMult = parseFloat(row.querySelector('.barrel-edit-rofMult')?.value) || 1.0;
       const damageBonus = parseFloat(row.querySelector('.barrel-edit-damageBonus')?.value) || 0;
@@ -278,7 +278,6 @@ export class BarrelEditor {
         name,
         rangeMult,
         rangeAdd,
-        velocityMult,
         velocityAdd,
         rofMult,
         damageBonus,
@@ -349,7 +348,6 @@ export class BarrelEditor {
     document.getElementById('newBarrelName').value = '';
     document.getElementById('newBarrelRangeMult').value = '1.0';
     document.getElementById('newBarrelRangeAdd').value = '0';
-    document.getElementById('newBarrelVelocityMult').value = '1.0';
     document.getElementById('newBarrelVelocityAdd').value = '0';
     document.getElementById('newBarrelRofMult').value = '1.0';
     document.getElementById('newBarrelDamageBonus').value = '0';
@@ -402,7 +400,6 @@ export class BarrelEditor {
       name: name,
       rangeMult: parseFloat(document.getElementById('newBarrelRangeMult').value) || 1.0,
       rangeAdd: parseFloat(document.getElementById('newBarrelRangeAdd').value) || 0,
-      velocityMult: parseFloat(document.getElementById('newBarrelVelocityMult').value) || 1.0,
       velocityAdd: parseFloat(document.getElementById('newBarrelVelocityAdd').value) || 0,
       rofMult: parseFloat(document.getElementById('newBarrelRofMult').value) || 1.0,
       damageBonus: parseFloat(document.getElementById('newBarrelDamageBonus').value) || 0,

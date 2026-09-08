@@ -16,7 +16,10 @@
  * 导出排序：
  * - weapons: 按类型 → 名称 排序
  * - bullets: 按口径 → 等级 排序
- * - prices: 按 enabled → 类型 → 武器名称 → 配置序号 排序
+ * - prices: 按类型 → 武器名称 → 配置序号 排序（不再按 enabled 排序，因为 UI 已支持用户自定义排序）
+ * 
+ * UI 排序（在 DOMController 中实现）：
+ * - priceRows: 按 enabled → 类型 → 武器名称 → 配置序号 排序（用户点击启用列切换）
  */
 import perf from '../utils/performance.js';
 
@@ -310,6 +313,10 @@ export class DataManager {
     });
   }
 
+  /**
+   * ⭐ 获取所有价格行数据（UI 使用）
+   * 注意：UI 排序由 DOMController 处理，这里只返回原始数据
+   */
   getPriceRows() {
     const rows = [];
     const prices = this.getPrices();
@@ -319,6 +326,7 @@ export class DataManager {
       rows.push(...weaponRows);
     }
     
+    // 注意：UI 排序由 DOMController 处理，这里不排序
     return rows;
   }
 
@@ -589,21 +597,30 @@ export class DataManager {
     const bullet = this.getBulletById(bulletId);
     if (!bullet) return false;
     
-    if (updates.armorMult !== undefined || updates.pen !== undefined) {
-      const newArmorMult = updates.armorMult ?? bullet.armorMult;
-      const newPen = updates.pen ?? bullet.pen;
+    if (updates.armorMult !== undefined && Array.isArray(updates.armorMult)) {
+      const values = updates.armorMult;
       if (bullet.armorData) {
         for (let i = 1; i <= 6; i++) {
           if (bullet.armorData[i]) {
-            if (updates.armorMult !== undefined) {
-              bullet.armorData[i].armorMult = newArmorMult;
-            }
-            if (updates.pen !== undefined) {
-              bullet.armorData[i].pen = newPen;
-            }
+            bullet.armorData[i].armorMult = values[i - 1] ?? 1.0;
           }
         }
       }
+      bullet.armorMult = values[0] ?? 1.0;
+      delete updates.armorMult;
+    }
+    
+    if (updates.pen !== undefined && Array.isArray(updates.pen)) {
+      const values = updates.pen;
+      if (bullet.armorData) {
+        for (let i = 1; i <= 6; i++) {
+          if (bullet.armorData[i]) {
+            bullet.armorData[i].pen = values[i - 1] ?? 0;
+          }
+        }
+      }
+      bullet.pen = values[0] ?? 0;
+      delete updates.pen;
     }
     
     Object.assign(bullet, updates);
@@ -638,7 +655,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 9. 数据更新 - 价格（含修改追踪）⭐ 增强版
+  // 9. 数据更新 - 价格
   // ============================================================
 
   updatePriceConfig(weaponId, configId, updates) {
@@ -654,13 +671,11 @@ export class DataManager {
       return false;
     }
     
-    // 判断哪些字段影响 TTK 计算
     const ttkAffectingKeys = ['barrelId', 'muzzleId', 'bullet', 'distance', 'hitRate'];
     const hasTtkAffectingChange = Object.keys(updates).some(key => 
       ttkAffectingKeys.includes(key)
     );
     
-    // ⭐ 如果更新了 barrelId，同步更新 barrel 字段
     if (updates.barrelId !== undefined) {
       const weapon = this.getWeaponById(weaponId);
       if (weapon && weapon.barrels && weapon.barrels[updates.barrelId]) {
@@ -670,13 +685,10 @@ export class DataManager {
       }
     }
     
-    // ⭐ 如果更新了 muzzleId，同步更新 muzzle 字段
     if (updates.muzzleId !== undefined) {
       const muzzle = this.getMuzzleById(updates.muzzleId);
       updates.muzzle = muzzle ? muzzle.name : '无';
     }
-    
-    // ⭐ 如果更新了 bullet，同步更新 bulletDisplay（由调用方处理）
     
     Object.assign(config, updates);
     
@@ -687,10 +699,6 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * ⭐ 增强版：添加价格配置
-   * 自动补全缺失字段，设置默认值
-   */
   addPriceConfig(weaponId, configData) {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price) {
@@ -698,12 +706,10 @@ export class DataManager {
       return false;
     }
     
-    // ⭐ 确保 enabled 字段存在
     if (configData.enabled === undefined) {
       configData.enabled = true;
     }
     
-    // ⭐ 确保 barrel 字段存在
     if (configData.barrel === undefined) {
       const weapon = this.getWeaponById(weaponId);
       if (configData.barrelId !== undefined && configData.barrelId >= 0 && 
@@ -714,27 +720,22 @@ export class DataManager {
       }
     }
     
-    // ⭐ 确保 barrelId 存在
     if (configData.barrelId === undefined) {
       configData.barrelId = -1;
     }
     
-    // ⭐ 确保 muzzle 字段存在
     if (configData.muzzle === undefined) {
       configData.muzzle = '无';
     }
     
-    // ⭐ 确保 muzzleId 存在
     if (configData.muzzleId === undefined) {
       configData.muzzleId = 0;
     }
     
-    // ⭐ 确保 bullet 字段存在
     if (configData.bullet === undefined) {
       configData.bullet = '';
     }
     
-    // ⭐ 确保 distance 和 hitRate 是数组
     if (!Array.isArray(configData.distance)) {
       configData.distance = [];
     }
@@ -742,18 +743,15 @@ export class DataManager {
       configData.hitRate = [];
     }
     
-    // ⭐ 如果配置没有命中率映射，设置默认值（30m 100%, 50m 90%, 100m 60%）
     if (configData.distance.length === 0) {
       configData.distance = [30, 50, 100];
       configData.hitRate = [1.0, 0.9, 0.6];
     }
     
-    // ⭐ 确保 buildCode 存在
     if (configData.buildCode === undefined) {
       configData.buildCode = '';
     }
     
-    // ⭐ 确保 price 存在
     if (configData.price === undefined) {
       configData.price = 0;
     }
@@ -908,10 +906,6 @@ export class DataManager {
   // 12. 导出排序方法（仅导出时使用，不影响内存数据）
   // ============================================================
 
-  /**
-   * 武器类型优先级映射（自定义顺序）
-   * 步枪 → 冲锋枪 → 轻机枪 → 精确射手步枪 → 手枪
-   */
   static get TYPE_ORDER() {
     return {
       '步枪': 0,
@@ -922,14 +916,9 @@ export class DataManager {
     };
   }
 
-  /**
-   * 获取子弹等级的排序权重
-   * 数字 1-5 按数值排序，特殊值按字母序排在后面
-   */
   static getLevelWeight(level) {
     if (level === undefined || level === null) return 999;
     
-    // 如果是数字（1-5），直接返回数值
     if (typeof level === 'number' && level >= 1 && level <= 5) {
       return level;
     }
@@ -937,8 +926,7 @@ export class DataManager {
       return parseInt(level);
     }
     
-    // 特殊值：按字母序映射到 100+ 
-    const specialLevels = ['AP', 'BT+P', 'CT', 'Double', 'M61', 'RIP', 'SUPER'];
+    const specialLevels = ['AP', 'BT+P', 'CT', 'Double', 'M61', 'RIP', 'ST4', 'ST5', 'SUPER'];
     const index = specialLevels.indexOf(String(level));
     if (index !== -1) {
       return 100 + index;
@@ -947,43 +935,29 @@ export class DataManager {
     return 999;
   }
 
-  /**
-   * 对武器进行排序（导出用）
-   * 排序规则：类型（自定义顺序）→ 名称字母序
-   * @param {Array} weapons - 武器数组（会被原地排序）
-   */
   _sortWeaponsForExport(weapons) {
     if (!weapons || weapons.length === 0) return;
     
     const typeOrder = DataManager.TYPE_ORDER;
     
     weapons.sort((a, b) => {
-      // 先按类型排序
       const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 99;
       const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 99;
       if (typeA !== typeB) return typeA - typeB;
       
-      // 再按名称字母序
       return (a.name || '').localeCompare(b.name || '', 'zh-CN');
     });
   }
 
-  /**
-   * 对子弹进行排序（导出用）
-   * 排序规则：口径字母序 → 等级（数字升序，特殊值按字母序）
-   * @param {Array} bullets - 子弹数组（会被原地排序）
-   */
   _sortBulletsForExport(bullets) {
     if (!bullets || bullets.length === 0) return;
     
     bullets.sort((a, b) => {
-      // 先按口径字母序
       const calA = a.caliber || '';
       const calB = b.caliber || '';
       const calCompare = calA.localeCompare(calB);
       if (calCompare !== 0) return calCompare;
       
-      // 再按等级权重
       const levelA = DataManager.getLevelWeight(a.level);
       const levelB = DataManager.getLevelWeight(b.level);
       return levelA - levelB;
@@ -992,9 +966,8 @@ export class DataManager {
 
   /**
    * 对价格配置进行排序（导出用）
-   * 排序规则：enabled（启用在前）→ 类型 → 武器名称 → 配置序号
-   * @param {Array} prices - 价格数组（会被原地排序）
-   * @param {Map} weaponsMap - 武器 ID 到武器对象的映射
+   * 排序规则：类型 → 武器名称 → 配置序号
+   * 注意：不再按 enabled 排序，因为 UI 已支持用户自定义排序
    */
   _sortPricesForExport(prices, weaponsMap) {
     if (!prices || prices.length === 0) return;
@@ -1002,28 +975,21 @@ export class DataManager {
     const typeOrder = DataManager.TYPE_ORDER;
     
     prices.sort((a, b) => {
-      // 1. 先按 enabled 排序（启用的在前）
-      const enabledA = a.enabled !== false ? 0 : 1;
-      const enabledB = b.enabled !== false ? 0 : 1;
-      if (enabledA !== enabledB) return enabledA - enabledB;
-      
-      // 获取对应的武器信息
+      // 1. 按武器类型排序
       const weaponA = weaponsMap.get(a.weaponId);
       const weaponB = weaponsMap.get(b.weaponId);
       
-      // 2. 按武器类型排序
       const typeA = weaponA ? (typeOrder[weaponA.type] !== undefined ? typeOrder[weaponA.type] : 99) : 99;
       const typeB = weaponB ? (typeOrder[weaponB.type] !== undefined ? typeOrder[weaponB.type] : 99) : 99;
       if (typeA !== typeB) return typeA - typeB;
       
-      // 3. 按武器名称排序
+      // 2. 按武器名称排序
       const nameA = weaponA ? weaponA.name || '' : '';
       const nameB = weaponB ? weaponB.name || '' : '';
       const nameCompare = nameA.localeCompare(nameB, 'zh-CN');
       if (nameCompare !== 0) return nameCompare;
       
-      // 4. 按配置序号排序 (#1, #2, #3...)
-      // 提取配置 ID 中的数字
+      // 3. 按配置序号排序 (#1, #2, #3...)
       const getConfigNum = (config) => {
         const id = config.id || '';
         const match = id.match(/#(\d+)/);
@@ -1039,9 +1005,6 @@ export class DataManager {
   // 13. 数据序列化
   // ============================================================
 
-  /**
-   * 序列化数据（将 Infinity 转为 "Infinity"）
-   */
   serializeData(data) {
     const serialized = JSON.parse(JSON.stringify(data));
     
@@ -1074,42 +1037,27 @@ export class DataManager {
   }
 
   // ============================================================
-  // 14. 数据导出/导入 ⭐ 核心修改：导出时排序
+  // 14. 数据导出/导入
   // ============================================================
 
-  /**
-   * 导出 JSON（含缓存）
-   * ⭐ 导出时对 weapons、bullets、prices 进行排序
-   * 
-   * @param {boolean} includeCache - 是否包含缓存数据
-   * @returns {string} JSON 字符串
-   */
   exportToJSON(includeCache = true) {
     try {
-      // ⭐ 深拷贝数据（避免影响内存数据）
       const dataToExport = JSON.parse(JSON.stringify(this.data));
       
-      // ⭐ 过滤掉临时武器（_isNewRow: true）
       if (Array.isArray(dataToExport.weapons)) {
         dataToExport.weapons = dataToExport.weapons.filter(w => !w._isNewRow);
       }
       
-      // ⭐ 排序：武器
       this._sortWeaponsForExport(dataToExport.weapons);
-      
-      // ⭐ 排序：子弹
       this._sortBulletsForExport(dataToExport.bullets);
       
-      // ⭐ 构建武器映射用于价格排序
       const weaponsMap = new Map();
       if (Array.isArray(dataToExport.weapons)) {
         dataToExport.weapons.forEach(w => weaponsMap.set(w.id, w));
       }
       
-      // ⭐ 排序：价格配置
       this._sortPricesForExport(dataToExport.prices, weaponsMap);
       
-      // 如果不包含缓存，清除所有 cache 字段
       if (!includeCache) {
         for (const price of dataToExport.prices || []) {
           for (const config of price.configs || []) {
@@ -1118,16 +1066,10 @@ export class DataManager {
         }
       }
       
-      // 序列化（处理 Infinity）
       const serialized = this.serializeData(dataToExport);
       
-      // 正常序列化
       let json = JSON.stringify(serialized, null, 2);
-      
-      // 压缩 armorData：将多行压缩为单行
       json = this._compressArmorData(json);
-      
-      // 压缩 keyPoints 数组
       json = this._compressKeyPoints(json);
       
       return json;
@@ -1138,12 +1080,7 @@ export class DataManager {
     }
   }
 
-  /**
-   * 压缩 armorData 格式
-   * 将多行压缩为单行：{ "armorMult": 0.6, "pen": 0.5 }
-   */
   _compressArmorData(json) {
-    // 匹配 armorData 对象中的所有等级条目
     return json.replace(
       /"(\d+)":\s*\{\s*\n\s*"armorMult":\s*([\d.]+),\s*\n\s*"pen":\s*([\d.]+)\s*\n\s*\}/g,
       (match, level, armorMult, pen) => {
@@ -1152,31 +1089,19 @@ export class DataManager {
     );
   }
 
-  /**
-   * 压缩 keyPoints 数组
-   * 将多行 keyPoints 压缩为单行：[{ "d": 0, "t": 123.45 }, { "d": 100, "t": 234.56 }]
-   */
   _compressKeyPoints(json) {
-    // 匹配 keyPoints 数组并压缩
     return json.replace(
       /"keyPoints":\s*\[\s*\n\s*((?:\{[^}]*\},\s*\n\s*)*\{[^}]*\})\s*\n\s*\]/g,
       (match, content) => {
-        // 提取所有点 {"d": 0, "t": 123.45}
         const points = content.match(/\{\s*"d":\s*([\d.]+),\s*"t":\s*([\d.]+)\s*\}/g);
         if (!points) return match;
         
-        // 压缩为单行数组
         const compressed = points.map(p => p.replace(/\s+/g, ' ').trim());
         return `"keyPoints": [${compressed.join(', ')}]`;
       }
     );
   }
 
-  /**
-   * 导出到文件
-   * @param {string} filename - 文件名
-   * @param {boolean} includeCache - 是否包含缓存
-   */
   exportToFile(filename = null, includeCache = true) {
     const jsonStr = this.exportToJSON(includeCache);
     const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
@@ -1193,9 +1118,6 @@ export class DataManager {
     console.log(`✅ 数据已导出到: ${a.download}${includeCache ? ' (含缓存)' : ' (不含缓存)'}`);
   }
 
-  /**
-   * 从 JSON 字符串导入数据
-   */
   importFromJSON(jsonStr) {
     try {
       const parsed = JSON.parse(jsonStr);
@@ -1208,7 +1130,6 @@ export class DataManager {
       this.originalData = JSON.parse(JSON.stringify(normalized));
       this.isLoaded = true;
       
-      // 导入后清空修改标记
       this.clearAllModified();
       
       console.log(`✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹`);
@@ -1220,9 +1141,6 @@ export class DataManager {
     }
   }
 
-  /**
-   * 从文件导入
-   */
   importFromFile(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -1288,24 +1206,17 @@ export class DataManager {
     };
   }
 
-  /**
-   * ⭐ 修复：根据显示字符串查找子弹 ID
-   * 支持 "5.56x45mm Lv.4" 格式，支持精确匹配和模糊匹配
-   */
   findBulletIdByDisplay(bulletDisplay) {
     if (!bulletDisplay || bulletDisplay === '-' || bulletDisplay === '') return null;
     
-    // 方法1：解析 "5.56x45mm Lv.4" 格式
     const match = bulletDisplay.match(/^(.+?)\s+Lv\.(.+)$/);
     if (match) {
       const caliber = match[1].trim();
       const level = match[2].trim();
       
-      // 精确匹配
       let bullet = this.getBulletByCaliberAndLevel(caliber, level);
       if (bullet) return bullet.id;
       
-      // 模糊匹配（去掉 mm 后缀，忽略大小写）
       const normalizedCaliber = caliber.replace(/mm$/, '').toLowerCase();
       for (const b of this.data.bullets) {
         const bCaliber = b.caliber.replace(/mm$/, '').toLowerCase();
@@ -1315,7 +1226,6 @@ export class DataManager {
       }
     }
     
-    // 方法2：直接匹配显示字符串
     for (const b of this.data.bullets) {
       const display = `${b.caliber} Lv.${b.level}`;
       if (display === bulletDisplay) {

@@ -10,6 +10,7 @@
  * - 支持从列配置的 getOptions 作为备用方案（当 dataset 不存在时）
  * - 支持 getEditValue 函数，用于编辑时获取自定义显示值
  * - ⭐ 支持 hitRateRaw 列编辑时显示原始格式
+ * - ⭐ 修复：编辑保存后重新从实例获取最新数据再渲染
  * 
  * 使用示例：
  * ```javascript
@@ -761,7 +762,8 @@ export class TableRenderer {
 
   /**
    * 退出编辑模式
-   * ⭐ 使用列配置的 render 函数来格式化显示值
+   * ⭐ 核心修复：在 onCellChange 后重新获取最新数据再渲染
+   * 
    * @param {HTMLElement} cell - 单元格
    * @param {Function} onCellChange - 变更回调
    * @param {boolean} save - 是否保存
@@ -802,40 +804,54 @@ export class TableRenderer {
       rowData = allData?.[rowIndex] || {};
     }
     
-    // 触发变更回调
+    // ⭐ 触发变更回调（数据保存）
     if (save && newValue !== originalValue) {
       if (typeof onCellChange === 'function') {
         onCellChange(rowIndex, colKey, newValue, rowData);
       }
     }
     
-    // ⭐ 使用列配置的 render 函数来显示值
+    // ⭐⭐⭐ 核心修复：重新获取最新数据
+    // 因为 onCellChange 可能已经更新了数据（通过 scheduleRefresh），
+    // 但 render 是同步执行的，需要使用最新的数据
+    let latestRowData = rowData;
+    if (tableId && window._tableInstances && window._tableInstances[tableId]) {
+      const instance = window._tableInstances[tableId];
+      const allData = instance.getData();
+      if (allData && allData[rowIndex]) {
+        latestRowData = allData[rowIndex];
+        // 同时更新 columns（可能已经变化）
+        columns = instance.getColumns();
+      }
+    }
+    
+    // ⭐ 使用列配置的 render 函数来显示值（使用最新数据）
     const col = columns.find(c => c.key === colKey);
     if (col && typeof col.render === 'function') {
-      // 更新 rowData 中的值（如果保存成功）
+      // 如果保存成功，更新 latestRowData 中的值
       if (save && newValue !== originalValue) {
         // 尝试转换类型（数字类型特殊处理）
         if (col.inputType === 'number') {
           const numValue = parseFloat(newValue);
           if (!isNaN(numValue)) {
-            rowData[colKey] = numValue;
+            latestRowData[colKey] = numValue;
           } else {
-            rowData[colKey] = newValue;
+            latestRowData[colKey] = newValue;
           }
         } else {
-          rowData[colKey] = newValue;
+          latestRowData[colKey] = newValue;
         }
       } else if (!save) {
         // 取消编辑，恢复原值
         const originalDisplayValue = originalValue;
         if (col.inputType === 'number') {
-          rowData[colKey] = parseFloat(originalDisplayValue) || 0;
+          latestRowData[colKey] = parseFloat(originalDisplayValue) || 0;
         } else {
-          rowData[colKey] = originalDisplayValue;
+          latestRowData[colKey] = originalDisplayValue;
         }
       }
       // 使用 render 函数重新渲染单元格
-      cell.innerHTML = col.render(rowData, rowIndex);
+      cell.innerHTML = col.render(latestRowData, rowIndex);
     } else {
       // 备用：直接设置文本
       const displayValue = save ? newValue : originalValue;

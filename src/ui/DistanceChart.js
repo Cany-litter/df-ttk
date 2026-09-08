@@ -40,40 +40,31 @@ const verticalLinePlugin = {
 /**
  * 距离折线图类
  * 
- * 使用快速模式（关键点模拟 + 插值）生成 0-100m 的 TTK 曲线
- * 支持缓存：从 data.json 读取预计算的关键点数据
- * 
- * 线条样式：
- * - 全距离加权平均 TTK 排名前 15% 的武器：实线 (borderDash: [])，粗线 (2.5px)，鲜艳颜色
- * - 其余 85% 的武器：虚线 (borderDash: [6, 4])，细线 (1.0px)，淡色
- * - 用户高亮的武器：红色实线，最粗 (4px)，带数据点
+ * 线条样式规则：
+ * - 用户高亮：红色实线，最粗 (4px)
+ * - 前 15%（至少 3 条）：实线，粗 (2.5px)，鲜艳颜色
+ * - 15%~40%：实线，中等 (1.5px)，中低饱和度颜色
+ * - 40% 以后：虚线 (6,4)，细 (1.0px)，淡色
  */
 export class DistanceChart {
   constructor() {
     this.chart = null;
-    this.showAllWeapons = true;  // 默认开启显示全部
+    this.showAllWeapons = true;
     this.lastStats = null;
     this.lastDistances = null;
     this.lastParams = null;
     this.lastArmed = null;
     this.lastAttachments = null;
     
-    // 控制台日志控制
     this._hitRateLogPrinted = false;
     this._keyDistancesLogged = false;
-    
-    // 防重入锁
     this._isUpdating = false;
-    
-    // 缓存管理器
     this.cacheManager = null;
     
-    // ⭐ 高亮武器相关
-    this.highlightWeapon = null;      // 当前高亮武器名称
-    this.highlightColor = '#ff0000';  // 高亮颜色（红色）
-    this.highlightBorderWidth = 4;    // 高亮线条宽度
+    this.highlightWeapon = null;
+    this.highlightColor = '#ff0000';
+    this.highlightBorderWidth = 4;
     
-    // ⭐ 缓存统计
     this._cacheHitCount = 0;
     this._cacheMissCount = 0;
   }
@@ -82,21 +73,9 @@ export class DistanceChart {
   // 1. 主更新方法
   // ============================================================
 
-  /**
-   * 更新距离图表
-   * 
-   * 流程：
-   * 1. 检查每个配置的缓存状态
-   * 2. 缓存命中 → 直接使用关键点数据
-   * 3. 缓存未命中 → 执行快速模式模拟 → 保存缓存
-   * 4. 插值生成完整曲线
-   * 5. 计算全距离加权平均 TTK，确定线条样式
-   * 6. ⭐ 计算哈弗币消耗并触发更新
-   */
   update(armed, attachments, params) {
     perf.mark('distanceChartUpdate', 'DistanceChart 更新开始');
     
-    // 防重入锁
     if (this._isUpdating) {
       console.log('⏳ 图表正在更新中，跳过本次请求');
       return;
@@ -106,7 +85,6 @@ export class DistanceChart {
     try {
       resetSeed();
       
-      // 默认开启显示全部
       const showAllCheckbox = document.getElementById('showAllWeapons');
       if (showAllCheckbox) {
         this.showAllWeapons = showAllCheckbox.checked;
@@ -116,22 +94,18 @@ export class DistanceChart {
       
       const distances = Array.from({ length: 101 }, (_, i) => i);
       
-      // 保存参数供导出使用
       this.lastParams = params;
       this.lastArmed = armed;
       this.lastAttachments = attachments;
       this.lastDistances = distances;
       
-      // 重置日志标记和统计
       this._hitRateLogPrinted = false;
       this._keyDistancesLogged = false;
       this._cacheHitCount = 0;
       this._cacheMissCount = 0;
       
-      // ⭐ 读取高亮武器选择
       this._readHighlightWeapon(armed);
       
-      // 获取 DataManager 和缓存管理器
       const dm = window.__app__?.dataManager;
       if (!dm) {
         console.error('DistanceChart: DataManager 未找到');
@@ -139,11 +113,9 @@ export class DistanceChart {
       }
       this.cacheManager = getConfigCacheManager(dm);
       
-      // 获取修改标记
       const modifiedWeaponIds = dm.getModifiedWeaponIds ? dm.getModifiedWeaponIds() : [];
       const modifiedSet = new Set(modifiedWeaponIds);
       
-      // 构建统计数据（含缓存）
       const stats = this._buildStatsWithCache(armed, attachments, params, distances, dm, modifiedSet);
       
       if (!stats || stats.length === 0) {
@@ -151,12 +123,9 @@ export class DistanceChart {
         return;
       }
       
-      // 计算每把武器的全距离加权平均 TTK 并排序
-      // 权重公式: 1.50 - (distance / 100) * 1.00
       const getWeight = (d) => 1.50 - (d / 100) * 1.00;
       
       const statsWithWeightedAvg = stats.map(s => {
-        // 计算加权平均 TTK
         let weightedSum = 0;
         let weightSum = 0;
         distances.forEach((d, i) => {
@@ -174,32 +143,28 @@ export class DistanceChart {
         };
       });
       
-      // 按加权平均 TTK 排序（升序）
       statsWithWeightedAvg.sort((a, b) => a.weightedAvg - b.weightedAvg);
       
-      // 计算前 15% 的阈值
-      const top15PercentCount = Math.max(1, Math.ceil(statsWithWeightedAvg.length * 0.15));
+      const totalCount = statsWithWeightedAvg.length;
+      // ⭐ 前 15% 至少 3 条
+      const top15PercentCount = Math.max(3, Math.ceil(totalCount * 0.15));
       const top15Weapons = statsWithWeightedAvg.slice(0, top15PercentCount);
       const top15Names = new Set(top15Weapons.map(s => s.displayName));
       
-      // 保存数据供导出使用
       this.lastStats = statsWithWeightedAvg;
       
-      // ⭐ 提取经济参数
       const economicParams = {
         kdRatio: params.kdRatio || 1.0,
         extractRate: params.extractRate || 0.5,
         extraCost: params.extraCost || 30
       };
       
-      // ⭐ 计算哈弗币消耗并触发更新
       const havocCosts = this._calculateHavocCosts(statsWithWeightedAvg, economicParams);
       this._emitHavocCostUpdate(havocCosts);
       
-      // 渲染图表（传入 top15Names 用于线条样式判断）
-      this.renderChart(distances, statsWithWeightedAvg, top15Names);
+      // ⭐ 传递 top15PercentCount 到 renderChart
+      this.renderChart(distances, statsWithWeightedAvg, top15Names, top15PercentCount);
       
-      // ⭐ 输出精简的缓存统计
       const cacheStats = this.cacheManager.getStats();
       console.log(`📊 缓存统计: ${cacheStats.cached}/${cacheStats.total} 已缓存, ${modifiedSet.size} 个武器待重新计算`);
       
@@ -210,18 +175,13 @@ export class DistanceChart {
   }
 
   // ============================================================
-  // 2. 缓存构建 ⭐ 精简日志
+  // 2. 缓存构建
   // ============================================================
 
-  /**
-   * 从缓存构建统计数据
-   * 优先使用缓存，未命中的执行模拟
-   */
   _buildStatsWithCache(armed, attachments, params, distances, dm, modifiedSet) {
     const stats = [];
     const itemsToCalculate = [];
 
-    // 第一遍：检查缓存状态
     for (let idx = 0; idx < armed.length; idx++) {
       const weapon = armed[idx];
       const attachment = attachments[idx] || {};
@@ -246,7 +206,6 @@ export class DistanceChart {
       );
       
       if (cacheStatus.needsRecalc) {
-        // ⭐ 只记录需要计算的配置，不打印详细日志
         this._cacheMissCount++;
         itemsToCalculate.push({
           idx,
@@ -275,7 +234,6 @@ export class DistanceChart {
       }
     }
 
-    // 第二遍：计算未命中的武器
     if (itemsToCalculate.length > 0) {
       console.log(`🔬 需要计算 ${itemsToCalculate.length} 个配置...`);
       
@@ -317,11 +275,9 @@ export class DistanceChart {
         dm.clearWeaponModified && dm.clearWeaponModified(id);
       }
       
-      // ⭐ 精简缓存保存日志
       console.log(`💾 保存了 ${savedCount} 个配置的缓存, 清除了 ${calculatedWeaponIds.length} 个修改标记`);
     }
 
-    // ⭐ 输出缓存命中率汇总
     const total = this._cacheHitCount + this._cacheMissCount;
     if (total > 0) {
       const hitRate = Math.round((this._cacheHitCount / total) * 100);
@@ -331,18 +287,12 @@ export class DistanceChart {
     return stats;
   }
 
-  /**
-   * 将关键点转换为完整的距离-TTK 数组
-   */
   _keyPointsToTimes(keyPoints, distances) {
     return distances.map(d => {
       return this.cacheManager.interpolateTTK(keyPoints, d);
     });
   }
 
-  /**
-   * 计算 35m 内的平均 TTK
-   */
   _calculateAvg35(times) {
     if (!times || times.length === 0) return 0;
     const cutoff = Math.min(35, times.length - 1);
@@ -351,15 +301,9 @@ export class DistanceChart {
   }
 
   // ============================================================
-  // 3. 快速模式模拟（单武器）⭐ 精简日志
+  // 3. 快速模式模拟
   // ============================================================
 
-  /**
-   * 计算单把武器的快速模式数据
-   * 返回关键点数据（含 avgShots 和 bulletPrice）
-   * 
-   * ⭐ 核心修改：使用配置自己的命中率映射，而不是全局的 params.hitRateMap
-   */
   _calculateFastModeForSingleWeapon(weapon, params, distances, attachment, dm) {
     const selectedBulletType = attachment.bulletType;
     
@@ -378,9 +322,7 @@ export class DistanceChart {
       return null;
     }
     
-    // ⭐ 获取子弹单价
     const bulletPrice = bulletData.price || 0;
-    
     const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
     
     const keyDistances = this.getKeyDistances(
@@ -394,14 +336,9 @@ export class DistanceChart {
     }
     
     const keyPoints = [];
-    
-    // ⭐⭐⭐ 核心修改：获取配置自己的命中率映射
-    // 优先使用 attachment.hitRateMap（来自价格配置）
-    // 如果没有，降级使用 params.hitRateMap（全局）
     const configHitRateMap = attachment.hitRateMap || params.hitRateMap || [];
     
     for (const distance of keyDistances) {
-      // ⭐ 使用配置自己的命中率映射
       const hitRateAtDistance = this.getHitRateForDistance(
         configHitRateMap,
         distance,
@@ -415,7 +352,6 @@ export class DistanceChart {
         bulletLevel: realBulletKey 
       };
       
-      // ⭐ 现在返回完整数据（包含 avgShots）
       const result = SimulationEngine.calculateSinglePoint(
         weapon, 
         simParams, 
@@ -430,7 +366,6 @@ export class DistanceChart {
       
       const totalTimeMs = (result.avgTime + trigger) * TIME_UNITS.SECONDS_TO_MS;
       
-      // ⭐ 存储：距离、TTK、平均枪数、子弹单价
       keyPoints.push({ 
         d: distance, 
         t: totalTimeMs,
@@ -449,22 +384,9 @@ export class DistanceChart {
   }
 
   // ============================================================
-  // 4. ⭐ 新增：哈弗币消耗计算（使用唯一 Key）
+  // 4. 哈弗币消耗计算
   // ============================================================
 
-  /**
-   * 计算所有配置的哈弗币消耗估算
-   * 
-   * 取所有关键点 shots 的平均值作为最终平均致死枪数
-   * ⭐ 使用 weaponId + configId 组合作为唯一 key
-   * 
-   * @param {Array} stats - 统计数据（包含 keyPoints 和 weapon）
-   * @param {Object} economicParams - 经济参数
-   * @param {number} economicParams.kdRatio - KD 比率
-   * @param {number} economicParams.extractRate - 撤离率 (0-1)
-   * @param {number} economicParams.extraCost - 其他消耗子弹数量（发）
-   * @returns {Object} { uniqueKey: { totalCost, weaponLossCost, bulletCost, weaponPrice, avgShots, bulletPrice, effectiveShots, kdRatio, extractRate, extraCost, displayName, configId } }
-   */
   _calculateHavocCosts(stats, economicParams = {}) {
     const {
       kdRatio = 1.0,
@@ -476,7 +398,6 @@ export class DistanceChart {
 
     for (const stat of stats) {
       const weapon = stat.weapon;
-      // ⭐ 使用 weaponId + configId 组合作为唯一 key
       const weaponId = weapon.id;
       const configId = weapon._configId || '#1';
       const uniqueKey = `${weaponId}_${configId}`;
@@ -503,7 +424,6 @@ export class DistanceChart {
         continue;
       }
 
-      // ⭐ 使用缓存管理器计算（取所有关键点的平均 shots）
       const costResult = this.cacheManager.calculateHavocCostAverage(
         keyPoints,
         {
@@ -526,9 +446,6 @@ export class DistanceChart {
     return havocCosts;
   }
 
-  /**
-   * 触发哈弗币消耗数据更新事件
-   */
   _emitHavocCostUpdate(havocCosts) {
     const event = new CustomEvent('havoc-cost-update', {
       detail: { havocCosts },
@@ -595,12 +512,9 @@ export class DistanceChart {
   }
 
   // ============================================================
-  // 6. ⭐ 高亮武器相关方法
+  // 6. 高亮武器相关
   // ============================================================
 
-  /**
-   * 读取高亮武器选择
-   */
   _readHighlightWeapon(armed) {
     const select = document.getElementById('highlightWeaponSelect');
     if (!select) {
@@ -614,7 +528,6 @@ export class DistanceChart {
       return;
     }
     
-    // 从 armed 中查找匹配的武器
     const matched = armed.find(w => {
       const displayName = w._displayName || w.name;
       return displayName === selectedValue;
@@ -623,20 +536,14 @@ export class DistanceChart {
     this.highlightWeapon = matched ? (matched._displayName || matched.name) : null;
   }
 
-  /**
-   * 更新高亮武器下拉选项
-   */
   updateHighlightOptions(armed) {
     const select = document.getElementById('highlightWeaponSelect');
     if (!select) return;
     
-    // 保存当前选中的值
     const currentValue = select.value;
     
-    // 清空并重新填充选项
     select.innerHTML = '<option value="">无</option>';
     
-    // 去重：使用 Set 存储显示名称
     const seen = new Set();
     for (const weapon of armed) {
       const displayName = weapon._displayName || weapon.name;
@@ -649,35 +556,65 @@ export class DistanceChart {
       }
     }
     
-    // 恢复选中的值
     if (currentValue && seen.has(currentValue)) {
       select.value = currentValue;
     }
   }
 
   // ============================================================
-  // 7. 渲染图表
+  // 7. 渲染图表 ⭐ 核心修改：三层线条样式，中间层饱和度降低
   // ============================================================
 
   /**
    * 渲染距离图表
+   * 
+   * 线条样式规则：
+   * - 用户高亮：红色实线，最粗 (4px)
+   * - 前 15%（至少 3 条）：实线，粗 (2.5px)，鲜艳颜色 (#e74c3c, #2ecc71, #3498db 等)
+   * - 15%~40%：实线，中等 (1.5px)，中低饱和度颜色 (rgba 0.6 透明度)
+   * - 40% 以后：虚线 (6,4)，细 (1.0px)，淡色 (rgba 0.35 透明度)
+   * 
    * @param {Array} distances - 距离数组
    * @param {Array} stats - 统计数据（已按加权平均排序）
-   * @param {Set} top15Names - 前 15% 武器的名称集合（实线）
+   * @param {Set} top15Names - 前 15% 武器的名称集合
+   * @param {number} top15Count - 前 15% 的数量（至少 3）
    */
-  renderChart(distances, stats, top15Names) {
+  renderChart(distances, stats, top15Names, top15Count) {
     // 显示全部默认开启
     const maxDisplay = this.showAllWeapons ? stats.length : stats.length;
     const displayCount = Math.min(maxDisplay, stats.length);
 
-    // 前15% 使用更鲜艳的颜色
+    // ⭐ 计算 40% 阈值
+    const totalCount = stats.length;
+    const top40Count = Math.ceil(totalCount * 0.40);
+
+    // 前 15% 使用鲜艳颜色
     const topColorPalette = [
       '#e74c3c', '#2ecc71', '#3498db', '#f39c12', '#9b59b6',
       '#1abc9c', '#e67e22', '#2c3e50', '#27ae60', '#8e44ad',
       '#16a085', '#d35400', '#2980b9', '#c0392b', '#f1c40f'
     ];
     
-    // 其余使用淡色（降低饱和度/透明度）
+    // ⭐ 15%-40% 使用中低饱和度颜色（0.6 透明度，比前15%淡但比40%后浓）
+    const midColorPalette = [
+      'rgba(231, 76, 60, 0.60)',
+      'rgba(46, 204, 113, 0.60)',
+      'rgba(52, 152, 219, 0.60)',
+      'rgba(243, 156, 18, 0.60)',
+      'rgba(155, 89, 182, 0.60)',
+      'rgba(26, 188, 156, 0.60)',
+      'rgba(230, 126, 34, 0.60)',
+      'rgba(44, 62, 80, 0.60)',
+      'rgba(39, 174, 96, 0.60)',
+      'rgba(142, 68, 173, 0.60)',
+      'rgba(22, 160, 133, 0.60)',
+      'rgba(211, 84, 0, 0.60)',
+      'rgba(41, 128, 185, 0.60)',
+      'rgba(192, 57, 43, 0.60)',
+      'rgba(241, 196, 15, 0.60)'
+    ];
+    
+    // 40% 以后使用淡色（0.35 透明度）
     const mutedColorPalette = [
       'rgba(231, 76, 60, 0.35)',
       'rgba(46, 204, 113, 0.35)',
@@ -699,49 +636,48 @@ export class DistanceChart {
     // 构建数据集
     const datasets = stats.map((s, i) => {
       const label = s.displayName || s.weapon.name;
-      const isTop15 = top15Names.has(label);
+      const isTop15 = i < top15Count;           // ⭐ 前 15%（至少 3 条）
+      const isTop40 = i < top40Count;           // ⭐ 前 40%
       const isHighlighted = this.highlightWeapon && label === this.highlightWeapon;
       
-      // 根据是否高亮/前15% 选择颜色和样式
-      let colorIndex;
       let color;
-      
-      if (isHighlighted) {
-        // ⭐ 高亮武器：使用鲜艳红色
-        color = this.highlightColor;
-      } else if (isTop15) {
-        // 前15% 使用鲜艳颜色
-        colorIndex = top15Names.size > 0 ? Array.from(top15Names).indexOf(label) % topColorPalette.length : i % topColorPalette.length;
-        color = topColorPalette[colorIndex % topColorPalette.length];
-      } else {
-        // 其余使用淡色
-        colorIndex = i % mutedColorPalette.length;
-        color = mutedColorPalette[colorIndex];
-      }
-      
-      // ⭐ 高亮武器使用最粗线条，前15%次之，其余最细
       let borderWidth;
-      if (isHighlighted) {
-        borderWidth = this.highlightBorderWidth; // 4px
-      } else if (isTop15) {
-        borderWidth = 2.5;
-      } else {
-        borderWidth = 1.0;
-      }
-      
-      // ⭐ 高亮武器使用实线（即使不在前15%）
       let borderDash;
-      if (isHighlighted) {
-        borderDash = [];
-      } else if (isTop15) {
-        borderDash = [];
-      } else {
-        borderDash = [6, 4];
-      }
+      let pointRadius;
+      let pointHoverRadius;
       
-      // ⭐ 高亮武器显示数据点
-      const pointRadius = isHighlighted ? 4 : 0;
-      const pointHoverRadius = isHighlighted ? 6 : (isTop15 ? 4 : 2);
+      if (isHighlighted) {
+        // ⭐ 用户高亮：红色粗实线，最粗
+        color = this.highlightColor;
+        borderWidth = this.highlightBorderWidth; // 4px
+        borderDash = [];
+        pointRadius = 4;
+        pointHoverRadius = 6;
+      } else if (isTop15) {
+        // ⭐ 前 15%：鲜艳颜色，粗实线
+        const colorIndex = i % topColorPalette.length;
+        color = topColorPalette[colorIndex];
+        borderWidth = 2.5;
+        borderDash = [];
+        pointRadius = 0;
+        pointHoverRadius = 4;
+      } else if (isTop40) {
+        // ⭐ 15%~40%：中低饱和度颜色，细实线
+        const colorIndex = i % midColorPalette.length;
+        color = midColorPalette[colorIndex];
+        borderWidth = 1.5;
+        borderDash = [];
+        pointRadius = 0;
+        pointHoverRadius = 3;
+      } else {
+        // ⭐ 40% 以后：淡色，细虚线
+        const colorIndex = i % mutedColorPalette.length;
+        color = mutedColorPalette[colorIndex];
+        borderWidth = 1.0;
+        borderDash = [6, 4];
+        pointRadius = 0;
+        pointHoverRadius = 2;
+      }
       
       return {
         label: label,
@@ -757,8 +693,8 @@ export class DistanceChart {
         pointStyle: 'circle',
         pointBackgroundColor: isHighlighted ? color : (isTop15 ? color : 'rgba(0,0,0,0.1)'),
         pointBorderColor: isHighlighted ? color : (isTop15 ? color : 'rgba(0,0,0,0.1)'),
-        // 保存排名信息，用于图例显示
         _isTop15: isTop15,
+        _isTop40: isTop40,
         _isHighlighted: isHighlighted,
         _rank: i + 1,
         _weightedAvg: s.weightedAvg
@@ -818,7 +754,6 @@ export class DistanceChart {
               usePointStyle: true,
               font: stats.length > 20 ? { size: 10 } : { size: 12 },
               padding: stats.length > 20 ? 4 : 8,
-              // 自定义图例标签
               generateLabels: function(chart) {
                 const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
                 return labels.map((label, index) => {
@@ -828,14 +763,11 @@ export class DistanceChart {
                     const isTop15 = dataset._isTop15 ? '⭐ ' : '';
                     const isHighlighted = dataset._isHighlighted ? '🔴 ' : '';
                     label.text = `${isHighlighted}${isTop15}#${rank} ${label.text}`;
-                    // 虚线样式在图例中显示
                     if (dataset.borderDash && dataset.borderDash.length > 0) {
                       label.lineDash = dataset.borderDash;
                     }
-                    // 图例颜色也使用对应的颜色
                     label.fillStyle = dataset.borderColor;
                     label.strokeStyle = dataset.borderColor;
-                    // 高亮武器的图例边框加粗
                     if (dataset._isHighlighted) {
                       label.borderWidth = 3;
                     }

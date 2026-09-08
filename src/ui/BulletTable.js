@@ -7,7 +7,7 @@
  * 
  * 列：
  * - 子弹口径（只读，新增行为输入框）
- * - 等级（只读，新增行为下拉选择，支持特殊子弹如 RIP, M61, BT+P, Double, SUPER, AP, CT）
+ * - 等级（只读，新增行为下拉选择，支持特殊子弹如 RIP, M61, BT+P, Double, SUPER, AP, CT, ST4, ST5）
  * - 基础伤害比例（数字编辑，新增行为输入框）
  * - 护甲伤害衰减 1-6级（文本编辑，新增行为输入框）
  * - 护甲穿透水平 1-6级（文本编辑，新增行为输入框）
@@ -53,7 +53,7 @@ export class BulletTable {
         headerAttrs: { style: 'min-width:60px;' },
         render: (row) => {
           if (row._isNewRow) {
-            const levelOptions = ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT'];
+            const levelOptions = ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5'];
             let html = `<select class="bullet-new-level">`;
             levelOptions.forEach(opt => {
               const selected = opt === String(row.level) ? ' selected' : '';
@@ -66,7 +66,7 @@ export class BulletTable {
           const level = row.level;
           if (level === undefined || level === null) return '-';
           
-          const specialLevels = ['RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT'];
+          const specialLevels = ['RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5'];
           if (typeof level === 'string' && specialLevels.includes(level)) {
             return `<span class="special-level-badge" data-level="${level}">${TableRenderer.escapeHtml(level)}</span>`;
           }
@@ -107,14 +107,13 @@ export class BulletTable {
             const values = row._armorMultValues || [1.0, 1.0, 1.0, 1.0, 1.0, 0.6];
             return `<input type="text" class="bullet-new-armorMult" value="${values.join(',')}" placeholder="1.0,1.0,1.0,1.0,1.0,0.6" />`;
           }
-          const armorData = row._armorData;
-          if (!armorData) return '-';
-          const values = [];
-          for (let i = 1; i <= 6; i++) {
-            const val = armorData[i]?.armorMult;
-            values.push(val !== undefined && val !== null ? val.toFixed(2) : '1.0');
-          }
-          return values.join(',');
+          // ⭐ 从 _armorMultValues 读取，确保显示最新数据
+          const values = row._armorMultValues || [];
+          if (values.length === 0) return '-';
+          return values.map(v => {
+            const num = typeof v === 'number' ? v : parseFloat(v);
+            return isNaN(num) ? '1.00' : num.toFixed(2);
+          }).join(',');
         }
       },
 
@@ -131,14 +130,13 @@ export class BulletTable {
             const values = row._penValues || [1.0, 1.0, 0.75, 0.5, 0, 0];
             return `<input type="text" class="bullet-new-pen" value="${values.join(',')}" placeholder="1.0,1.0,0.75,0.5,0,0" />`;
           }
-          const armorData = row._armorData;
-          if (!armorData) return '-';
-          const values = [];
-          for (let i = 1; i <= 6; i++) {
-            const val = armorData[i]?.pen;
-            values.push(val !== undefined && val !== null ? val.toFixed(2) : '0');
-          }
-          return values.join(',');
+          // ⭐ 从 _penValues 读取，确保显示最新数据
+          const values = row._penValues || [];
+          if (values.length === 0) return '-';
+          return values.map(v => {
+            const num = typeof v === 'number' ? v : parseFloat(v);
+            return isNaN(num) ? '0.00' : num.toFixed(2);
+          }).join(',');
         }
       },
 
@@ -190,7 +188,7 @@ export class BulletTable {
       onAddRow = null,
       onDeleteRow = null,
       caliberOptions = [],
-      levelOptions = ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT'],
+      levelOptions = ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5'],
       emptyText = '暂无子弹数据'
     } = config;
 
@@ -350,7 +348,7 @@ export class BulletTable {
       onAddRow,
       onDeleteRow,
       caliberOptions = [],
-      levelOptions = []
+      levelOptions = ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5']
     } = handlers;
 
     // 防止重复绑定
@@ -588,7 +586,7 @@ export class BulletTable {
     
     if (!target) {
       console.warn('BulletTable: 容器不存在');
-      return;
+      return data;
     }
 
     const {
@@ -596,14 +594,28 @@ export class BulletTable {
       onAddRow,
       onDeleteRow,
       caliberOptions = [],
-      levelOptions = ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT']
+      levelOptions = ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5']
     } = config;
 
-    const indexedData = data.map((row, index) => ({
-      ...row,
-      _rowIndex: index,
-      _isNewRow: row._isNewRow || false
-    }));
+    const indexedData = data.map((row, index) => {
+      // ⭐ 确保 _armorMultValues 和 _penValues 从 _armorData 同步更新
+      const armorData = row._armorData || {};
+      const armorMultValues = [];
+      const penValues = [];
+      for (let i = 1; i <= 6; i++) {
+        const levelData = armorData[i] || { armorMult: 1.0, pen: 0 };
+        armorMultValues.push(levelData.armorMult !== undefined ? levelData.armorMult : 1.0);
+        penValues.push(levelData.pen !== undefined ? levelData.pen : 0);
+      }
+      
+      return {
+        ...row,
+        _rowIndex: index,
+        _isNewRow: row._isNewRow || false,
+        _armorMultValues: armorMultValues,
+        _penValues: penValues
+      };
+    });
 
     const columns = this.getColumns({
       onCellChange,

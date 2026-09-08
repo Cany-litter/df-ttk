@@ -1,5 +1,5 @@
 import { SIMULATION_CONFIG } from './config.js';
-import { DistanceDecayCalculator } from './CombatUtils.js';
+import { DistanceDecayCalculator, HitPartSelector } from './CombatUtils.js';
 import { BulletStrategyFactory } from './BulletStrategy.js';
 import { seededRandom } from '../utils/rng.js';
 
@@ -30,7 +30,7 @@ export class SimulationEngine {
   }
 
   // ============================================================
-  // 1. 单次模拟（核心）⭐ 修改命中率取值逻辑
+  // 1. 单次模拟（核心）⭐ 修改命中率取值逻辑 + 连发部位偏置
   // ============================================================
 
   /**
@@ -42,8 +42,8 @@ export class SimulationEngine {
    * 3. 命中后根据部位计算伤害
    * 4. 连发模式下需要计算连发间隔
    * 
-   * ⭐ 核心修改：优先使用 params.hitRate（由调用方传入，包含不同距离的命中率）
-   * 而不是 weapon.hitRate（在构建时固定为 30m 的命中率）
+   * ⭐ 连发部位偏置：连发第一发完全随机，后续发以 70% 概率命中同一部位，
+   *    30% 概率偏移到相邻部位（头部→胸部→腹部→四肢）
    * 
    * @param {Object} weapon - 武器对象（已包含原始值和当前值）
    * @param {Object} params - 游戏参数（距离、命中率、护甲等级等）
@@ -64,9 +64,6 @@ export class SimulationEngine {
     const { distance, hitProb } = params;
     
     // ⭐⭐⭐ 核心修改：优先使用 params.hitRate（由调用方传入）
-    // 这样可以确保每个距离点使用对应的命中率
-    // 如果 params.hitRate 不存在，降级使用 weapon.hitRate
-    // 如果都没有，使用默认值 0.85
     const hitRate = (typeof params.hitRate === 'number') 
       ? params.hitRate 
       : (typeof weapon.hitRate === 'number' ? weapon.hitRate : 0.85);
@@ -85,9 +82,17 @@ export class SimulationEngine {
     let hits = 0;   // 命中次数
     let burstStats = { count: 0, totalTime: 0 };  // 连发统计
     
+    // ⭐ 连发部位偏置相关变量
+    let firstHitPartInBurst = null;  // 当前连发的第一发命中部位
+    let burstShots = 0;              // 当前连发内的射击计数
+    
+    // ⭐ 连发偏置强度（可配置，默认 70%）
+    const BURST_BIAS = 0.7;
+    
     // 主循环：射击直到目标死亡
     while (health > 0) {
       shots++;
+      burstShots++;
       
       // 连发模式：检查是否需要添加连发间隔
       if (isBurstMode) {
@@ -100,11 +105,39 @@ export class SimulationEngine {
         continue;
       }
       
-      // 命中：计算伤害
+      // 命中
       hits++;
       
-      const { damage, newArmorState } = bulletStrategy.calculateHitDamage(
-        weapon, params, bulletData, decay, hitProb, armorState, false
+      // ============================================================
+      // ⭐⭐⭐ 核心修改：连发武器部位偏置逻辑
+      // ============================================================
+      let hitPart;
+      
+      if (isBurstMode) {
+        // 检查是否是连发的第一发
+        // 每 burstCount 发为一个连发周期
+        const isBurstStart = (burstShots % weapon.burstCount === 1);
+        
+        if (isBurstStart) {
+          // 连发开始：第一发完全随机
+          firstHitPartInBurst = HitPartSelector.select(hitProb);
+          hitPart = firstHitPartInBurst;
+        } else {
+          // 后续发：以高概率命中同一部位，否则偏移到相邻部位
+          hitPart = HitPartSelector.selectWithBias(
+            firstHitPartInBurst,
+            hitProb,
+            BURST_BIAS
+          );
+        }
+      } else {
+        // 单发模式：每次完全随机
+        hitPart = HitPartSelector.select(hitProb);
+      }
+      
+      // 使用确定的 hitPart 计算伤害
+      const { damage, newArmorState } = bulletStrategy.calculateHitDamageWithPart(
+        weapon, params, bulletData, decay, hitPart, armorState, false
       );
       
       health -= damage;

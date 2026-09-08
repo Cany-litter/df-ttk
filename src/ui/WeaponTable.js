@@ -1080,6 +1080,7 @@ export class WeaponTable {
 
   /**
    * 计算当前值（应用附件加成）
+   * ⭐ 修改：移除了 velocityMult，因为没有任何枪管使用该字段
    */
   static calculateCurrentValues(weapon, barrel, muzzleId, precision) {
     let muzzleRangeMult = 0;
@@ -1117,7 +1118,8 @@ export class WeaponTable {
       rangeMult = 1.0;
     }
 
-    let velocityMult = rangeMult * muzzleVelocityMult * (1 + precision);
+    // ⭐ 修改：不再乘以 rangeMult，初速只受 muzzle 和 precision 影响
+    let velocityMult = muzzleVelocityMult * (1 + precision);
     if (!isFinite(velocityMult) || isNaN(velocityMult)) {
       velocityMult = 1.0;
     }

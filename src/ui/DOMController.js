@@ -15,6 +15,7 @@
  * 9. 更新哈弗币消耗数据
  * 10. 新增价格配置
  * 11. 新增枪械（新增行显示在第一行，包含口径字段）
+ * 12. ⭐ 价格表格排序功能（点击启用列排序）
  */
 import { getDataManager } from '../core/DataManager.js';
 import WeaponTable from './WeaponTable.js';
@@ -23,6 +24,15 @@ import BulletTable from './BulletTable.js';
 
 // 默认命中率映射（30米100%命中率）
 const DEFAULT_HIT_RATE_MAP = '30:1.0,50:0.9,100:0.6';
+
+// ⭐ 武器类型优先级映射（与 DataManager.TYPE_ORDER 保持一致）
+const TYPE_ORDER = {
+  '步枪': 0,
+  '冲锋枪': 1,
+  '轻机枪': 2,
+  '精确射手步枪': 3,
+  '手枪': 4
+};
 
 export default class DOMController {
   constructor() {
@@ -44,6 +54,10 @@ export default class DOMController {
     this._pendingHavocUpdate = false;
 
     this._handleAddConfig = this._handleAddConfig.bind(this);
+
+    // ⭐ 价格表格排序状态
+    this.priceSortConfig = { key: 'enabled', order: 'asc' };
+    this.priceSortActive = false; // false = 不排序（使用原始顺序）
   }
 
   // ============================================================
@@ -61,6 +75,7 @@ export default class DOMController {
     this.initBulletTable();
     this.bindControlEvents();
     this.bindImportExportEvents();
+    this.bindSortEvents();
 
     document.addEventListener('price-add-config', this._handleAddConfig);
 
@@ -224,7 +239,9 @@ export default class DOMController {
     }
 
     const priceRows = this.dataManager.getPriceRows();
-    const rowData = this.buildPriceRows(priceRows);
+    // ⭐ 应用排序
+    const sortedRows = this.sortPriceData(priceRows);
+    const rowData = this.buildPriceRows(sortedRows);
 
     const getBarrelOptions = (row) => {
       const weaponId = row._weaponId ?? row.weaponId;
@@ -258,12 +275,15 @@ export default class DOMController {
       return ['无', ...options];
     };
 
+    const sortConfig = this.priceSortActive ? this.priceSortConfig : null;
+
     this.priceTableInstance = PriceTable.render({
       data: rowData,
       muzzleOptions: this.muzzleOptions,
       getBarrelOptions: getBarrelOptions,
       getBulletOptions: getBulletOptions,
       havocCosts: this.havocCosts,
+      sortConfig: sortConfig,
       onCellChange: (rowIndex, key, value, row) => {
         this.handlePriceCellChange(rowIndex, key, value, row);
       },
@@ -851,7 +871,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 9. 刷新价格表格 ⭐ 确保 havocCosts 被传递
+  // 9. 刷新价格表格 ⭐ 支持排序
   // ============================================================
 
   refreshPriceTable() {
@@ -865,7 +885,9 @@ export default class DOMController {
       }
 
       const priceRows = this.dataManager.getPriceRows();
-      const rowData = this.buildPriceRows(priceRows);
+      // ⭐ 应用排序
+      const sortedRows = this.sortPriceData(priceRows);
+      const rowData = this.buildPriceRows(sortedRows);
 
       const getBarrelOptions = (row) => {
         const weaponId = row._weaponId ?? row.weaponId;
@@ -899,11 +921,14 @@ export default class DOMController {
         return ['无', ...options];
       };
 
+      const sortConfig = this.priceSortActive ? this.priceSortConfig : null;
+
       const processedData = PriceTable.update(container, rowData, {
         muzzleOptions: this.muzzleOptions,
         getBarrelOptions: getBarrelOptions,
         getBulletOptions: getBulletOptions,
         havocCosts: this.havocCosts,
+        sortConfig: sortConfig,
         onCellChange: (rowIndex, key, value, row) => {
           this.handlePriceCellChange(rowIndex, key, value, row);
         },
@@ -1093,20 +1118,70 @@ export default class DOMController {
     this.scheduleRefresh('price');
   }
 
+  /**
+   * 处理价格配置删除 - 修复版本
+   * @param {number} rowIndex - 行索引
+   * @param {number|string} weaponId - 武器 ID
+   * @param {string} configId - 配置 ID (如 '#1')
+   * @param {boolean} isCancelled - 是否为取消新增操作
+   */
   handlePriceDeleteRow(rowIndex, weaponId, configId, isCancelled) {
     if (isCancelled) {
       this.scheduleRefresh('price');
       return;
     }
 
-    if (weaponId && configId) {
-      this.dataManager.removePriceConfig(weaponId, configId);
+    if (!weaponId || !configId) {
+      console.warn('⚠️ 删除配置失败: weaponId 或 configId 缺失', { weaponId, configId });
       this.scheduleRefresh('price');
+      return;
+    }
+
+    // 确保 weaponId 是数字类型
+    const numericWeaponId = typeof weaponId === 'string' ? parseInt(weaponId, 10) : weaponId;
+    if (isNaN(numericWeaponId)) {
+      console.warn('⚠️ 删除配置失败: weaponId 无效', { weaponId });
+      this.scheduleRefresh('price');
+      return;
+    }
+
+    // 检查配置是否存在
+    const price = this.dataManager.getPriceByWeaponId(numericWeaponId);
+    if (!price) {
+      console.warn(`⚠️ 删除配置失败: 未找到武器 ${numericWeaponId}`);
+      this.scheduleRefresh('price');
+      return;
+    }
+
+    const configExists = price.configs.some(c => c.id === configId);
+    if (!configExists) {
+      console.warn(`⚠️ 配置 ${configId} 不存在，可能已被删除，刷新界面同步`);
+      this.scheduleRefresh('price');
+      return;
+    }
+
+    // 执行删除
+    const result = this.dataManager.removePriceConfig(numericWeaponId, configId);
+    
+    if (result) {
+      // 删除成功，刷新表格
+      this.scheduleRefresh('price');
+    } else {
+      // 删除失败（通常是每个武器至少保留一个配置）
+      const weapon = this.dataManager.getWeaponById(numericWeaponId);
+      const weaponName = weapon?.name || numericWeaponId;
+      const currentPrice = this.dataManager.getPriceByWeaponId(numericWeaponId);
+      if (currentPrice && currentPrice.configs && currentPrice.configs.length <= 1) {
+        alert(`⚠️ 每个武器至少保留一个价格配置，无法删除 "${weaponName}" 的最后一个配置`);
+      } else {
+        console.warn(`⚠️ 删除配置 ${configId} 失败 (武器 ${weaponName})`);
+        this.scheduleRefresh('price');
+      }
     }
   }
 
   // ============================================================
-  // 10. 子弹表格
+  // 10. 子弹表格 ⭐ 修复：正确处理 pen 和 armorMult 数组
   // ============================================================
 
   initBulletTable() {
@@ -1122,7 +1197,7 @@ export default class DOMController {
     this.bulletTableInstance = BulletTable.render({
       data: rowData,
       caliberOptions: this.getCaliberOptions(),
-      levelOptions: ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT'],
+      levelOptions: ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5'],
       onCellChange: (rowIndex, key, value, row) => {
         this.handleBulletCellChange(rowIndex, key, value, row);
       },
@@ -1153,7 +1228,7 @@ export default class DOMController {
 
       BulletTable.update(container, rowData, {
         caliberOptions: this.getCaliberOptions(),
-        levelOptions: ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT'],
+        levelOptions: ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5'],
         onCellChange: (rowIndex, key, value, row) => {
           this.handleBulletCellChange(rowIndex, key, value, row);
         },
@@ -1176,14 +1251,75 @@ export default class DOMController {
     }
   }
 
+  /**
+   * ⭐ 修复：处理子弹单元格变更，正确传递数组
+   */
   handleBulletCellChange(rowIndex, key, value, row) {
     const bulletId = row._bulletId;
     
-    if (key === 'base' || key === 'armorMult' || key === 'pen' || key === 'price') {
+    if (key === 'base' || key === 'price') {
+      // 数字字段
       this.dataManager.updateBullet(bulletId, { [key]: parseFloat(value) || 0 });
+    } else if (key === 'armorMult') {
+      // ⭐ armorMult 是数组 [6个值]
+      if (Array.isArray(value) && value.length === 6) {
+        this.dataManager.updateBullet(bulletId, { [key]: value });
+      }
+    } else if (key === 'pen') {
+      // ⭐ pen 是数组 [6个值]
+      if (Array.isArray(value) && value.length === 6) {
+        this.dataManager.updateBullet(bulletId, { [key]: value });
+      }
+    } else {
+      // 其他字段
+      this.dataManager.updateBullet(bulletId, { [key]: value });
     }
 
+    // ⭐ 立即同步更新表格实例数据，提升响应速度
+    this._syncBulletTableData(rowIndex, key, value, row);
+    
     this.scheduleRefresh('bullet');
+  }
+
+  /**
+   * ⭐ 立即同步更新表格实例中的数据
+   */
+  _syncBulletTableData(rowIndex, key, value, row) {
+    const tableInstance = this.bulletTableInstance;
+    if (!tableInstance) return;
+    
+    const tableData = tableInstance.getData();
+    if (!tableData || !tableData[rowIndex]) return;
+    
+    const targetRow = tableData[rowIndex];
+    
+    if (key === 'pen' && Array.isArray(value)) {
+      targetRow._penValues = value;
+      if (targetRow._armorData) {
+        for (let i = 1; i <= 6; i++) {
+          if (targetRow._armorData[i]) {
+            targetRow._armorData[i].pen = value[i - 1] ?? 0;
+          }
+        }
+      }
+      // 同时更新顶层的 pen（用于其他显示）
+      targetRow.pen = value[0] ?? 0;
+    } else if (key === 'armorMult' && Array.isArray(value)) {
+      targetRow._armorMultValues = value;
+      if (targetRow._armorData) {
+        for (let i = 1; i <= 6; i++) {
+          if (targetRow._armorData[i]) {
+            targetRow._armorData[i].armorMult = value[i - 1] ?? 1.0;
+          }
+        }
+      }
+      targetRow.armorMult = value[0] ?? 1.0;
+    } else if (key === 'base' || key === 'price') {
+      targetRow[key] = value;
+    }
+    
+    // 更新表格实例
+    tableInstance.setData(tableData);
   }
 
   handleBulletAddRow(rowIndex, rowData) {
@@ -1382,7 +1518,103 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 12. 新增配置功能
+  // 12. 价格表格排序功能 ⭐ 新增
+  // ============================================================
+
+  /**
+   * 对价格数据进行排序
+   * 排序规则：先按启用状态排序，再按武器类型→武器名称→配置序号排序
+   * @param {Array} data - 价格行数据
+   * @returns {Array} 排序后的数据
+   */
+  sortPriceData(data) {
+    if (!this.priceSortActive || !data || data.length === 0) {
+      return data;
+    }
+
+    // ⭐ 使用本地常量 TYPE_ORDER
+    const typeOrder = TYPE_ORDER;
+    const sortOrder = this.priceSortConfig.order;
+    const sortKey = this.priceSortConfig.key;
+
+    // 构建武器缓存
+    const weaponCache = new Map();
+    const weapons = this.dataManager.getWeapons();
+    weapons.forEach(w => weaponCache.set(w.id, w));
+
+    return [...data].sort((a, b) => {
+      // 1. 按启用状态排序
+      if (sortKey === 'enabled') {
+        const aEnabled = a.enabled !== false ? 1 : 0;
+        const bEnabled = b.enabled !== false ? 1 : 0;
+        const compare = sortOrder === 'asc' ? aEnabled - bEnabled : bEnabled - aEnabled;
+        if (compare !== 0) return compare;
+      }
+
+      // 2. 按武器类型排序（二级排序）
+      const weaponA = weaponCache.get(a._weaponId ?? a.weaponId);
+      const weaponB = weaponCache.get(b._weaponId ?? b.weaponId);
+      
+      const typeA = weaponA ? (typeOrder[weaponA.type] ?? 99) : 99;
+      const typeB = weaponB ? (typeOrder[weaponB.type] ?? 99) : 99;
+      if (typeA !== typeB) return typeA - typeB;
+
+      // 3. 按武器名称排序
+      const nameA = weaponA ? weaponA.name || '' : '';
+      const nameB = weaponB ? weaponB.name || '' : '';
+      const nameCompare = nameA.localeCompare(nameB, 'zh-CN');
+      if (nameCompare !== 0) return nameCompare;
+
+      // 4. 按配置序号排序
+      const getConfigNum = (configId) => {
+        const match = (configId || '').match(/#(\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      };
+      const numA = getConfigNum(a.configId);
+      const numB = getConfigNum(b.configId);
+      return numA - numB;
+    });
+  }
+
+  /**
+   * 切换价格表格排序
+   * 点击顺序：无排序 → 升序 → 降序 → 无排序
+   */
+  togglePriceSort() {
+    if (!this.priceSortActive) {
+      // 第一次点击：启用升序
+      this.priceSortActive = true;
+      this.priceSortConfig.order = 'asc';
+    } else if (this.priceSortConfig.order === 'asc') {
+      // 第二次点击：切换为降序
+      this.priceSortConfig.order = 'desc';
+    } else {
+      // 第三次点击：关闭排序
+      this.priceSortActive = false;
+    }
+    // 刷新表格
+    this.refreshPriceTable();
+  }
+
+  /**
+   * 获取当前排序配置（供 PriceTable 渲染使用）
+   */
+  getPriceSortConfig() {
+    return this.priceSortActive ? this.priceSortConfig : null;
+  }
+
+  /**
+   * 绑定排序事件
+   */
+  bindSortEvents() {
+    // 监听 PriceTable 发出的排序事件
+    document.addEventListener('price-sort-toggle', () => {
+      this.togglePriceSort();
+    });
+  }
+
+  // ============================================================
+  // 13. 新增配置功能
   // ============================================================
 
   _handleAddConfig(e) {
@@ -1544,7 +1776,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 13. 延迟刷新
+  // 14. 延迟刷新
   // ============================================================
 
   scheduleRefresh(tab) {
@@ -1564,7 +1796,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 14. 控制按钮事件
+  // 15. 控制按钮事件
   // ============================================================
 
   bindControlEvents() {
@@ -1601,7 +1833,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 15. 导入/导出事件
+  // 16. 导入/导出事件
   // ============================================================
 
   bindImportExportEvents() {
@@ -1691,7 +1923,7 @@ export default class DOMController {
   }
 
   // ============================================================
-  // 16. 公共方法
+  // 17. 公共方法
   // ============================================================
 
   getCurrentTab() {
