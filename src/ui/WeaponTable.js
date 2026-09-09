@@ -3,6 +3,12 @@
  * 
  * 显示武器数据表格，支持双列显示（原始值可编辑 + 当前值只读）
  * 当前值根据原始值 + 枪管/枪口附件自动计算
+ * 
+ * 列规划：
+ * - 射程（原始）：可编辑，格式 "40, 70, ∞, ∞"
+ * - 衰减（原始）：可编辑，格式 "1.00, 0.90, 0.75, 0.75, 0.75"
+ * - 当前射程：只读，应用枪管后的射程
+ * - 当前衰减：只读，应用枪管后的衰减（枪管自定义衰减覆盖）
  */
 import TableRenderer from './TableRenderer.js';
 
@@ -77,7 +83,7 @@ export class WeaponTable {
         }
       },
 
-      // ==================== ⭐ 口径（可编辑下拉选择） ====================
+      // ==================== 口径 ====================
       {
         key: 'allowedBullet',
         label: '口径',
@@ -98,7 +104,6 @@ export class WeaponTable {
           return TableRenderer.escapeHtml(row.allowedBullet || '-');
         },
         getOptions: (row) => {
-          // ⭐ 为 TableRenderer 的编辑模式提供选项
           if (row._isNewRow) {
             return getCaliberOptions();
           }
@@ -106,7 +111,7 @@ export class WeaponTable {
         }
       },
 
-      // ==================== 射速（原始 + 当前） ====================
+      // ==================== 射速 ====================
       {
         key: 'rof',
         label: '射速',
@@ -135,7 +140,7 @@ export class WeaponTable {
         }
       },
 
-      // ==================== 初速（原始 + 当前） ====================
+      // ==================== 初速 ====================
       {
         key: 'velocity',
         label: '初速',
@@ -164,14 +169,14 @@ export class WeaponTable {
         }
       },
 
-      // ==================== 射程（原始 + 当前） ====================
+      // ==================== 射程（原始）- 可编辑 ====================
       {
         key: 'ranges',
         label: '射程',
         editable: true,
         inputType: 'text',
         inputPlaceholder: '40,70,∞,∞',
-        headerAttrs: { style: 'min-width:80px;' },
+        headerAttrs: { style: 'min-width:100px;' },
         render: (row) => {
           if (row._isNewRow) {
             const ranges = row.ranges || [40, 70, Infinity, Infinity];
@@ -180,23 +185,60 @@ export class WeaponTable {
           }
           const ranges = row.ranges;
           if (!Array.isArray(ranges)) return '-';
-          return ranges.map(r => r === Infinity ? '∞' : r).join(',');
+          return ranges.map(r => r === Infinity ? '∞' : r).join(', ');
         }
       },
+
+      // ==================== 衰减（原始）- 可编辑（显示为小数） ====================
+      {
+        key: 'decays',
+        label: '衰减',
+        editable: true,
+        inputType: 'text',
+        inputPlaceholder: '1.0,0.9,0.75,0.75,0.75',
+        headerAttrs: { style: 'min-width:140px;' },
+        render: (row) => {
+          if (row._isNewRow) {
+            const decays = row.decays || [1, 0.9, 0.75, 0.75, 0.75];
+            return `<input type="text" class="weapon-new-decays" value="${decays.join(',')}" placeholder="1.0,0.9,0.75,0.75,0.75" />`;
+          }
+          const decays = row.decays;
+          if (!Array.isArray(decays)) return '-';
+          // ⭐ 显示为小数，保留两位小数
+          return decays.map(v => v.toFixed(2)).join(', ');
+        }
+      },
+
+      // ==================== 当前射程（只读） ====================
       {
         key: 'rangesCurrent',
         label: '当前射程',
         editable: false,
-        headerAttrs: { style: 'min-width:80px;background:#f0f4ff;' },
+        headerAttrs: { style: 'min-width:100px;background:#f0f4ff;' },
         render: (row) => {
           if (row._isNewRow) return '<span class="current-value ranges-current">-</span>';
           const ranges = row.rangesCurrent || row.ranges;
           if (!Array.isArray(ranges)) return '-';
-          return `<span class="current-value ranges-current">${ranges.map(r => r === Infinity ? '∞' : Math.round(r)).join(',')}</span>`;
+          return `<span class="current-value ranges-current">${ranges.map(r => r === Infinity ? '∞' : Math.round(r)).join(', ')}</span>`;
         }
       },
 
-      // ==================== 肉伤（原始 + 当前） ====================
+      // ==================== 当前衰减（只读）- 显示为小数 ====================
+      {
+        key: 'decaysCurrent',
+        label: '当前衰减',
+        editable: false,
+        headerAttrs: { style: 'min-width:100px;background:#f0f4ff;' },
+        render: (row) => {
+          if (row._isNewRow) return '<span class="current-value decays-current">-</span>';
+          const decays = row.decays || [1, 1, 1, 1, 1];
+          if (!Array.isArray(decays)) return '-';
+          // ⭐ 显示为小数，保留两位小数
+          return `<span class="current-value decays-current">${decays.map(v => v.toFixed(2)).join(', ')}</span>`;
+        }
+      },
+
+      // ==================== 肉伤 ====================
       {
         key: 'flesh',
         label: '肉伤',
@@ -225,7 +267,7 @@ export class WeaponTable {
         }
       },
 
-      // ==================== 甲伤（原始 + 当前） ====================
+      // ==================== 甲伤 ====================
       {
         key: 'armor',
         label: '甲伤',
@@ -254,7 +296,7 @@ export class WeaponTable {
         }
       },
 
-      // ==================== 部位倍率（原始 + 当前） ====================
+      // ==================== 部位倍率 ====================
       {
         key: 'mult',
         label: '部位倍率',
@@ -316,7 +358,7 @@ export class WeaponTable {
         }
       },
 
-      // ==================== 枪管选择（动态选项） ====================
+      // ==================== 枪管选择 ====================
       {
         key: 'barrel',
         label: '枪管',
@@ -342,7 +384,7 @@ export class WeaponTable {
         }
       },
 
-      // ==================== 枪口选择（动态选项） ====================
+      // ==================== 枪口选择 ====================
       {
         key: 'muzzle',
         label: '枪口',
@@ -494,7 +536,6 @@ export class WeaponTable {
             if (onAttachmentChange) onAttachmentChange(rowIndex, 'muzzle', muzzleIndex >= 0 ? muzzleIndex : 0);
             return;
           }
-          // ⭐ 口径变更直接触发 onCellChange
           if (onCellChange) {
             onCellChange(rowIndex, key, value, row);
           }
@@ -503,7 +544,6 @@ export class WeaponTable {
       tableHtml
     );
 
-    // ⭐ 使用全局事件委托
     this.bindGlobalEvents(table, {
       onAttachmentChange,
       onPrecisionChange,
@@ -589,7 +629,6 @@ export class WeaponTable {
           if (col.inputPlaceholder) cellAttrs['data-input-placeholder'] = col.inputPlaceholder;
         }
         
-        // ⭐ 口径列特殊处理：存储选项到 dataset
         if (colKey === 'allowedBullet' && !isNewRow) {
           const dm = typeof getDataManager === 'function' ? getDataManager() : null;
           if (dm) {
@@ -685,6 +724,7 @@ export class WeaponTable {
           flesh: parseFloat(row.querySelector('.weapon-new-flesh')?.value) || 30,
           armor: parseFloat(row.querySelector('.weapon-new-armor')?.value) || 35,
           ranges: row.querySelector('.weapon-new-ranges')?.value || '40,70,∞,∞',
+          decays: row.querySelector('.weapon-new-decays')?.value || '1.0,0.9,0.75,0.75,0.75',
           mult: row.querySelector('.weapon-new-mult')?.value || '1.9,1,0.9,0.4'
         };
         
@@ -695,6 +735,11 @@ export class WeaponTable {
           return parseFloat(trimmed) || 40;
         });
         rowData.ranges = ranges;
+        
+        const decaysStr = rowData.decays;
+        const decays = decaysStr.split(',').map(v => parseFloat(v.trim()) || 1.0);
+        while (decays.length < 5) decays.push(1.0);
+        rowData.decays = decays.slice(0, 5);
         
         const multParts = rowData.mult.split(',').map(v => parseFloat(v.trim()) || 1);
         rowData.mult = {
@@ -769,7 +814,6 @@ export class WeaponTable {
       const rowIndex = parseInt(row.dataset.index);
       if (isNaN(rowIndex)) return;
       
-      // 跳过新增行的变更（由确认按钮统一处理）
       if (row.classList.contains('new-weapon-row')) {
         return;
       }
@@ -778,12 +822,10 @@ export class WeaponTable {
       const tableInstance = window._tableInstances?.weaponTable;
       const rowData = tableInstance?.getData?.()[rowIndex];
       
-      // ⭐ 口径变更
       if (colKey === 'allowedBullet') {
         if (typeof onCellChange === 'function') {
           onCellChange(rowIndex, 'allowedBullet', value, rowData);
         }
-        // 触发武器修改标记
         if (rowData && rowData.id) {
           const dm = typeof getDataManager === 'function' ? getDataManager() : null;
           if (dm && typeof dm.markWeaponModified === 'function') {
@@ -970,12 +1012,14 @@ export class WeaponTable {
         rof: 600,
         velocity: 500,
         ranges: [40, 70, Infinity, Infinity],
+        decays: [1, 0.9, 0.75, 0.75, 0.75],
         flesh: 30,
         armor: 35,
         mult: { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 },
         rofCurrent: null,
         velocityCurrent: null,
         rangesCurrent: null,
+        decaysCurrent: null,
         fleshCurrent: null,
         armorCurrent: null,
         multCurrent: null,
@@ -1041,6 +1085,7 @@ export class WeaponTable {
       rof: weapon.rof,
       velocity: weapon.velocity,
       ranges: weapon.ranges || [40, 70, Infinity, Infinity],
+      decays: weapon.decays || [1, 0.9, 0.75, 0.75, 0.75],
       flesh: weapon.flesh,
       armor: weapon.armor,
       mult: weapon.mult || { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 },
@@ -1048,6 +1093,7 @@ export class WeaponTable {
       rofCurrent: current.rof,
       velocityCurrent: current.velocity,
       rangesCurrent: current.ranges,
+      decaysCurrent: current.decays || weapon.decays || [1, 0.9, 0.75, 0.75, 0.75],
       fleshCurrent: current.flesh,
       armorCurrent: current.armor,
       multCurrent: current.mult,
@@ -1080,7 +1126,6 @@ export class WeaponTable {
 
   /**
    * 计算当前值（应用附件加成）
-   * ⭐ 修改：移除了 velocityMult，因为没有任何枪管使用该字段
    */
   static calculateCurrentValues(weapon, barrel, muzzleId, precision) {
     let muzzleRangeMult = 0;
@@ -1118,7 +1163,6 @@ export class WeaponTable {
       rangeMult = 1.0;
     }
 
-    // ⭐ 修改：不再乘以 rangeMult，初速只受 muzzle 和 precision 影响
     let velocityMult = muzzleVelocityMult * (1 + precision);
     if (!isFinite(velocityMult) || isNaN(velocityMult)) {
       velocityMult = 1.0;
@@ -1172,10 +1216,19 @@ export class WeaponTable {
       armor = weapon.armor || 35;
     }
 
+    // ⭐ 计算当前衰减：如果枪管有自定义衰减则使用，否则使用武器默认衰减
+    let newDecays;
+    if (barrel && Array.isArray(barrel.decays) && barrel.decays.length > 0) {
+      newDecays = barrel.decays;
+    } else {
+      newDecays = weapon.decays || [1, 0.9, 0.75, 0.75, 0.75];
+    }
+
     return {
       rof: rof,
       velocity: newVelocity,
       ranges: newRanges,
+      decays: newDecays,
       flesh: flesh,
       armor: armor,
       mult: newMult

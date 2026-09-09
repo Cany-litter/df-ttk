@@ -531,6 +531,13 @@ export default class DOMController {
         return parseFloat(trimmed) || 40;
       });
       updateData.ranges = ranges;
+    } else if (key === 'decays') {
+      // ⭐ 处理衰减编辑
+      const decays = value.split(',').map(v => parseFloat(v.trim()) || 1.0);
+      // 确保至少有5个值
+      while (decays.length < 5) decays.push(1.0);
+      // 只取前5个
+      updateData.decays = decays.slice(0, 5);
     } else if (key === 'mult') {
       const parts = value.split(',').map(v => parseFloat(v.trim()) || 1);
       updateData.mult = {
@@ -698,7 +705,7 @@ export default class DOMController {
       type: rowData.type || '步枪',
       allowedBullet: rowData.allowedBullet,
       ranges: rowData.ranges || [40, 70, Infinity, Infinity],
-      decays: [1, 0.9, 0.75, 0.75, 0.75],
+      decays: rowData.decays || [1, 0.9, 0.75, 0.75, 0.75],
       velocity: rowData.velocity || 500,
       flesh: rowData.flesh || 30,
       armor: rowData.armor || 35,
