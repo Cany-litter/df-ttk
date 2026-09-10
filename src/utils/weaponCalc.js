@@ -11,10 +11,15 @@ import { getDataManager } from '@/core/DataManager'
  * - DamageDetailModal.vue（单次模拟弹窗）
  * - WeaponTable.vue（表格预览）
  * 
- * ⭐ 重要：连发字段（fireMode / burstCount / burstInternalROF / burstInterval）
- *    从枪管覆盖到武器上。优先级：枪管字段 > 武器字段。
- *    这样 AS Val + 刺客枪管 能正确识别为连发，
- *    MK4 + 深空镀铬枪管 能正确切回全自动。
+ * ⭐ 合并规则（所有"枪管可覆盖"的字段）：
+ *    枪管字段 > 武器字段 > null
+ *    涉及的字段包括：
+ *    - 连发字段：fireMode / burstCount / burstInternalROF / burstInterval
+ *    - 分段射速：rofStages
+ *    这样：
+ *    - AS Val + 刺客枪管 → 拿到 burst 配置
+ *    - MK4 + 深空镀铬枪管（fireMode: auto）→ 正确切回全自动
+ *    - SVCH + 全自动枪管-携带爆发枪机 → 拿到 rofStages 分段射速
  */
 
 /**
@@ -32,10 +37,11 @@ import { getDataManager } from '@/core/DataManager'
  *   flesh,             // 当前肉伤
  *   armor,             // 当前甲伤
  *   mult,              // 当前部位倍率对象
- *   fireMode,          // ⭐ 开火模式：'auto' | 'burst' | null
- *   burstCount,        // ⭐ 连发数（如 3、4）
- *   burstInternalROF,  // ⭐ 连发内射速
- *   burstInterval,     // ⭐ 连发间隔（秒）
+ *   fireMode,          // 开火模式：'auto' | 'burst' | null
+ *   burstCount,        // 连发数（如 3、4）
+ *   burstInternalROF,  // 连发内射速
+ *   burstInterval,     // 连发间隔（秒）
+ *   rofStages,         // ⭐ 分段射速：[{ untilShot, rofAdd }, ...] 或 null
  * }
  */
 export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
@@ -153,19 +159,29 @@ export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
   }
 
   // ============================================================
-  // 10. ⭐ 连发字段合并（枪管 > 武器）
+  // 10. 连发字段合并（枪管 > 武器）
   // ============================================================
   // 说明：连发相关字段可能出现在枪管上（如 AS Val 刺客枪管），
   //       也可能出现在武器对象上（如 MK4）。
   //       合并规则：枪管字段优先，没填则用武器字段。
-  //       这样：
-  //       - AS Val + 刺客枪管 → 拿到 burst 配置
-  //       - MK4 + 深空镀铬枪管（fireMode: auto）→ 正确切回全自动
-  //       - MK4 + 其它枪管 → 用武器上的 burst 配置
   const fireMode = barrel?.fireMode ?? weapon.fireMode ?? null
   const burstCount = barrel?.burstCount ?? weapon.burstCount ?? null
   const burstInternalROF = barrel?.burstInternalROF ?? weapon.burstInternalROF ?? null
   const burstInterval = barrel?.burstInterval ?? weapon.burstInterval ?? null
+
+  // ============================================================
+  // 11. ⭐ 分段射速合并（枪管 > 武器）
+  // ============================================================
+  // rofStages 形如：
+  //   [{ untilShot: 3, rofAdd: 100 }, { rofAdd: 0 }]
+  // 表示"第 1~3 个间隔射速 +100，之后 +0"
+  // 
+  // 合并规则：枪管字段优先，没填则用武器字段。
+  // 注意：需要做浅拷贝，避免多个武器/配置共享同一数组引用被误改。
+  const rawRofStages = barrel?.rofStages ?? weapon.rofStages ?? null
+  const rofStages = Array.isArray(rawRofStages)
+    ? rawRofStages.map(stage => ({ ...stage }))
+    : null
 
   return {
     rof,
@@ -179,6 +195,8 @@ export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
     fireMode,
     burstCount,
     burstInternalROF,
-    burstInterval
+    burstInterval,
+    // ⭐ 分段射速
+    rofStages
   }
 }

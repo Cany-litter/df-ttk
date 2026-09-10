@@ -1,5 +1,5 @@
 // src/stores/dataStore.js
-import { reactive, readonly } from 'vue'
+import { reactive } from 'vue'
 import { getDataManager } from '@/core/DataManager'
 
 const dm = getDataManager()
@@ -13,7 +13,11 @@ const state = reactive({
 })
 
 export const dataStore = {
-  state: readonly(state),
+  // ⭐ 对外暴露可写 state（配合 UI 层的 v-model）
+  // 说明：所有持久化写入仍走 dm.xxx + refreshXxx，
+  //      UI 的 v-model 只改"内存里的临时副本"，
+  //      最终由 DataManager 落库。
+  state,
 
   // ============================================================
   // 数据加载

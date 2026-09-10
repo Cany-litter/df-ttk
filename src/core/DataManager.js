@@ -16,10 +16,7 @@
  * 导出排序：
  * - weapons: 按类型 → 名称 排序
  * - bullets: 按口径 → 等级 排序
- * - prices: 按类型 → 武器名称 → 配置序号 排序（不再按 enabled 排序，因为 UI 已支持用户自定义排序）
- * 
- * UI 排序（在 DOMController 中实现）：
- * - priceRows: 按 enabled → 类型 → 武器名称 → 配置序号 排序（用户点击启用列切换）
+ * - prices: 按类型 → 武器名称 → 配置序号 排序
  */
 import perf from '../utils/performance.js';
 
@@ -45,7 +42,7 @@ export class DataManager {
     // 修改追踪
     this.modifiedWeaponIds = new Set();
     
-    // ⭐ 缓存管理器（由外部注入）
+    // 缓存管理器（由外部注入）
     this._cacheManager = null;
   }
 
@@ -53,18 +50,10 @@ export class DataManager {
   // 0. 缓存管理器注入
   // ============================================================
 
-  /**
-   * 设置缓存管理器实例
-   * @param {Object} cacheManager - ConfigCacheManager 实例
-   */
   setCacheManager(cacheManager) {
     this._cacheManager = cacheManager;
   }
 
-  /**
-   * 获取缓存管理器实例
-   * @returns {Object} ConfigCacheManager 实例
-   */
   getCacheManager() {
     return this._cacheManager;
   }
@@ -73,11 +62,6 @@ export class DataManager {
   // 1. 数据加载
   // ============================================================
 
-  /**
-   * 从 JSON 文件加载所有数据
-   * @param {string} url - data.json 的路径
-   * @returns {Promise<Object>} 加载的数据对象
-   */
   async loadFromJSON(url = './data.json') {
     perf.mark('dataLoadStart', '数据加载开始');
     
@@ -98,7 +82,6 @@ export class DataManager {
       this.originalMuzzles = JSON.parse(JSON.stringify(this.muzzles));
       this.isLoaded = true;
       
-      // 加载完成后清空修改标记
       this.modifiedWeaponIds.clear();
       
       perf.mark('dataLoadDone', '数据加载完成');
@@ -111,9 +94,6 @@ export class DataManager {
     }
   }
 
-  /**
-   * 验证数据格式
-   */
   validateData(data) {
     if (!data || typeof data !== 'object') return false;
     if (!Array.isArray(data.weapons) || data.weapons.length === 0) return false;
@@ -132,11 +112,17 @@ export class DataManager {
 
   /**
    * 规范化数据
-   * 将 JSON 中的 "Infinity" 和 null 转换为 Infinity
+   * 
+   * ⭐ 统一处理：
+   * 1. 武器 ranges：'Infinity' / null → Infinity
+   * 2. 子弹 level：数字型字符串 → 数字（如 "4" → 4，保留 "RIP" 等特殊等级为字符串）
+   * 
+   * 修复目标：避免 getBulletByCaliberAndLevel 因类型不匹配（"4" vs 4）而找不到子弹。
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
     
+    // ---------- 1. 武器 ranges 规范化 ----------
     if (Array.isArray(normalized.weapons)) {
       normalized.weapons.forEach(weapon => {
         if (Array.isArray(weapon.ranges)) {
@@ -158,6 +144,17 @@ export class DataManager {
               });
             }
           });
+        }
+      });
+    }
+    
+    // ---------- 2. ⭐ 子弹 level 规范化 ----------
+    // "4" / "5" 等纯数字字符串 → 数字
+    // "RIP" / "M61" 等特殊等级 → 保持字符串
+    if (Array.isArray(normalized.bullets)) {
+      normalized.bullets.forEach(bullet => {
+        if (typeof bullet.level === 'string' && /^\d+$/.test(bullet.level)) {
+          bullet.level = parseInt(bullet.level, 10);
         }
       });
     }
@@ -190,9 +187,15 @@ export class DataManager {
     return this.data.bullets.find(b => b.id === id) || null;
   }
 
+  /**
+   * 按口径 + 等级查找子弹
+   * 
+   * ⭐ 用 String() 比较，兼容 level 是字符串还是数字的情况
+   * （即使数据未经过 normalizeData，也能正确匹配）
+   */
   getBulletByCaliberAndLevel(caliber, level) {
     return this.data.bullets.find(b => 
-      b.caliber === caliber && b.level === level
+      b.caliber === caliber && String(b.level) === String(level)
     ) || null;
   }
 
@@ -267,7 +270,7 @@ export class DataManager {
 
   /**
    * 获取指定武器的价格行数据
-   * ⭐ 包含 enabled 字段和 cache 字段
+   * ⭐ 包含 enabled 字段、cache 字段、hitRateRaw 字段
    */
   getPriceRowsForWeapon(weaponId) {
     const weapon = this.getWeaponById(weaponId);
@@ -276,6 +279,7 @@ export class DataManager {
     if (!weapon || !price) return [];
     
     return price.configs.map(config => {
+      // ---------- 解析枪管 ----------
       let barrelId = config.barrelId !== undefined ? config.barrelId : -1;
       let barrelName = '无';
       
@@ -295,6 +299,7 @@ export class DataManager {
         barrelName = '无';
       }
       
+      // ---------- 解析枪口 ----------
       let muzzleName = '无';
       const muzzleId = config.muzzleId !== undefined ? config.muzzleId : 0;
       const muzzle = this.getMuzzleById(muzzleId);
@@ -305,6 +310,7 @@ export class DataManager {
         muzzleName = config.muzzle;
       }
       
+      // ---------- 解析子弹 ----------
       let bulletDisplay = '-';
       let bulletId = config.bullet || '';
       if (bulletId) {
@@ -312,6 +318,19 @@ export class DataManager {
         if (bullet) {
           bulletDisplay = `${bullet.caliber} Lv.${bullet.level}`;
         }
+      }
+      
+      // ---------- ⭐ 拼命中率字符串 ----------
+      let hitRateRaw = '';
+      const distances = Array.isArray(config.distance) ? config.distance : [];
+      const hitRates = Array.isArray(config.hitRate) ? config.hitRate : [];
+      if (distances.length > 0 && hitRates.length > 0) {
+        const len = Math.min(distances.length, hitRates.length);
+        const parts = [];
+        for (let i = 0; i < len; i++) {
+          parts.push(`${distances[i]}:${hitRates[i]}`);
+        }
+        hitRateRaw = parts.join(',');
       }
       
       return {
@@ -323,8 +342,9 @@ export class DataManager {
         muzzleId: muzzleId,
         buildCode: config.buildCode || '-',
         price: config.price || 0,
-        distance: config.distance || [],
-        hitRate: config.hitRate || [],
+        distance: distances,           // 原始数组
+        hitRate: hitRates,             // 原始数组
+        hitRateRaw: hitRateRaw,        // ⭐ 拼好的字符串
         bulletDisplay: bulletDisplay,
         bulletId: bulletId,
         enabled: config.enabled !== undefined ? config.enabled : true,
@@ -337,8 +357,7 @@ export class DataManager {
   }
 
   /**
-   * ⭐ 获取所有价格行数据（UI 使用）
-   * 注意：UI 排序由 DOMController 处理，这里只返回原始数据
+   * 获取所有价格行数据（UI 使用）
    */
   getPriceRows() {
     const rows = [];
@@ -430,7 +449,6 @@ export class DataManager {
 
     points.sort((a, b) => a.distance - b.distance);
 
-    // 距离小于最近的点
     if (distance <= points[0].distance) {
       if (distance <= 0) {
         return Math.min(1.0, points[0].rate);
@@ -442,7 +460,6 @@ export class DataManager {
       return Math.max(0, Math.min(1, rate));
     }
 
-    // 距离大于最远的点
     if (distance >= points[points.length - 1].distance) {
       const last = points[points.length - 1];
       const prev = points[points.length - 2] || last;
@@ -455,7 +472,6 @@ export class DataManager {
       return Math.max(0, Math.min(1, extrapolated));
     }
 
-    // 线性插值
     for (let i = 0; i < points.length - 1; i++) {
       const p1 = points[i];
       const p2 = points[i + 1];
@@ -473,9 +489,6 @@ export class DataManager {
     return Math.max(0, Math.min(1, points[points.length - 1].rate));
   }
 
-  /**
-   * 获取下一个配置 ID（使用 #1, #2, #3 格式）
-   */
   getNextConfigId(weaponId) {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price || !price.configs || price.configs.length === 0) {
@@ -986,18 +999,12 @@ export class DataManager {
     });
   }
 
-  /**
-   * 对价格配置进行排序（导出用）
-   * 排序规则：类型 → 武器名称 → 配置序号
-   * 注意：不再按 enabled 排序，因为 UI 已支持用户自定义排序
-   */
   _sortPricesForExport(prices, weaponsMap) {
     if (!prices || prices.length === 0) return;
     
     const typeOrder = DataManager.TYPE_ORDER;
     
     prices.sort((a, b) => {
-      // 1. 按武器类型排序
       const weaponA = weaponsMap.get(a.weaponId);
       const weaponB = weaponsMap.get(b.weaponId);
       
@@ -1005,13 +1012,11 @@ export class DataManager {
       const typeB = weaponB ? (typeOrder[weaponB.type] !== undefined ? typeOrder[weaponB.type] : 99) : 99;
       if (typeA !== typeB) return typeA - typeB;
       
-      // 2. 按武器名称排序
       const nameA = weaponA ? weaponA.name || '' : '';
       const nameB = weaponB ? weaponB.name || '' : '';
       const nameCompare = nameA.localeCompare(nameB, 'zh-CN');
       if (nameCompare !== 0) return nameCompare;
       
-      // 3. 按配置序号排序 (#1, #2, #3...)
       const getConfigNum = (config) => {
         const id = config.id || '';
         const match = id.match(/#(\d+)/);

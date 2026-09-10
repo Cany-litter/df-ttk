@@ -20,10 +20,11 @@
  *    - v1：初始版本
  *    - v2：连发字段纳入 hash（fireMode / burstCount / burstInternalROF / burstInterval）
  *    - v3：cache 对象新增 avgBurstInterval 字段（柱状图展示平均连发间隔）
+ *    - v4：分段射速字段纳入 hash（rofStages）
  */
 
 // ⭐ 缓存版本号（递增即强制所有旧缓存失效）
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 4;
 
 export class ConfigCacheManager {
     constructor(dataManager) {
@@ -41,6 +42,7 @@ export class ConfigCacheManager {
      * - ⭐ 缓存版本号（CACHE_VERSION）
      * - 武器基础属性（rof, velocity, flesh, armor, ranges, mult, decays, triggerDelay）
      * - 连发字段（fireMode, burstCount, burstInternalROF, burstInterval）
+     * - ⭐ 分段射速（rofStages）
      * - 枪管选择（barrelId，经过名字反查解析）
      * - 枪口选择（muzzleId，经过名字反查解析）
      * - 实际使用的子弹（包含口径 + 全局子弹等级）
@@ -60,6 +62,11 @@ export class ConfigCacheManager {
         // 提取武器关键属性（优先使用 _current 的当前值）
         const cur = weapon._current || weapon;
 
+        // ⭐ 分段射速：标准化后参与 hash（保证顺序无关）
+        const normalizedRofStages = this._normalizeRofStages(
+            cur.rofStages ?? weapon.rofStages
+        );
+
         const weaponKey = {
             id: weapon.id,
             rof: cur.rof,
@@ -75,7 +82,10 @@ export class ConfigCacheManager {
             fireMode: cur.fireMode ?? weapon.fireMode ?? null,
             burstCount: cur.burstCount ?? weapon.burstCount ?? null,
             burstInternalROF: cur.burstInternalROF ?? weapon.burstInternalROF ?? null,
-            burstInterval: cur.burstInterval ?? weapon.burstInterval ?? null
+            burstInterval: cur.burstInterval ?? weapon.burstInterval ?? null,
+
+            // ⭐ 分段射速（标准化后）
+            rofStages: normalizedRofStages
         };
 
         // ⭐ 获取实际使用的子弹 ID（包含全局子弹等级）
@@ -153,6 +163,9 @@ export class ConfigCacheManager {
             weaponKey.burstCount ?? '',
             weaponKey.burstInternalROF ?? '',
             weaponKey.burstInterval ?? '',
+
+            // ⭐ 分段射速（标准化后的 JSON）
+            JSON.stringify(weaponKey.rofStages),
             
             // 配置选择（用解析后的值，与 getPriceRowsForWeapon 一致）
             resolvedBarrelId,
@@ -181,6 +194,31 @@ export class ConfigCacheManager {
         ];
 
         return this._simpleHash(parts.join('|'));
+    }
+
+    /**
+     * ⭐ 标准化 rofStages（用于 hash，保证顺序无关 / 结构稳定）
+     * 
+     * 输入可能为 null、undefined、非数组、数组含非法项，
+     * 统一返回"规范化后的数组"或 null。
+     * 
+     * @param {any} rofStages
+     * @returns {Array|null} 标准化后的 rofStages
+     * @private
+     */
+    _normalizeRofStages(rofStages) {
+        if (!Array.isArray(rofStages) || rofStages.length === 0) {
+            return null;
+        }
+
+        return rofStages.map(stage => {
+            if (!stage || typeof stage !== 'object') return { rofAdd: 0 };
+            const normalized = { rofAdd: stage.rofAdd || 0 };
+            if (stage.untilShot !== undefined && stage.untilShot !== null) {
+                normalized.untilShot = stage.untilShot;
+            }
+            return normalized;
+        });
     }
 
     /**
@@ -467,8 +505,8 @@ export class ConfigCacheManager {
      * 公式：
      *   哈弗币消耗 = 整枪价格 × (1 - 撤离率) + (KD × 5 × 平均致死枪数 + 其他消耗) × 子弹单价
      * 
-     * @param {Array} keyPoints - 关键点数组 [{ d, t, shots, bulletPrice }, ...]
-     * @param {number} distance - 目标距离（用于插值计算该距离的 avgShots）
+     * @param {Array} keyPoints - 关键点数组
+     * @param {number} distance - 目标距离
      * @param {Object} economicParams - 经济参数
      * @returns {Object} 消耗明细
      */
@@ -480,21 +518,16 @@ export class ConfigCacheManager {
             extraCost = 30
         } = economicParams;
 
-        // 1. 插值计算当前距离的平均致死枪数
         const avgShots = this.interpolateShots(keyPoints, distance);
         const bulletPrice = this.getBulletPrice(keyPoints);
 
-        // 2. 计算整枪损失成本：整枪价格 × (1 - 撤离率)
         const weaponLossCost = weaponPrice * (1 - extractRate);
 
-        // 3. ⭐ 计算有效枪数：KD × 5 × 平均致死枪数 + 其他消耗
         const effectiveKd = kdRatio * 5;
         const effectiveShots = effectiveKd * avgShots + extraCost;
 
-        // 4. 计算子弹消耗成本：有效枪数 × 子弹单价
         const bulletCost = effectiveShots * bulletPrice;
 
-        // 5. 总消耗 = 整枪损失成本 + 子弹消耗成本
         const totalCost = weaponLossCost + bulletCost;
 
         return {
@@ -513,10 +546,6 @@ export class ConfigCacheManager {
 
     /**
      * 计算所有关键点平均的哈弗币消耗估算
-     * 
-     * 与 calculateHavocCost 的区别：
-     * - 不插值特定距离，而是取所有关键点 shots 的平均值
-     * - 用于价格表格展示（不依赖具体距离）
      * 
      * @param {Array} keyPoints - 关键点数组
      * @param {Object} economicParams - 经济参数

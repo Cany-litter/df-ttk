@@ -59,6 +59,7 @@
           <thead>
             <tr>
               <th>发数</th>
+              <th>间隔</th>
               <th>命中</th>
               <th>部位</th>
               <th>最终伤害</th>
@@ -72,7 +73,7 @@
             <template v-for="(s, idx) in simResult?.steps || []" :key="idx">
               <!-- ⭐ 连发间隔分隔行 -->
               <tr v-if="s.burstGapBefore > 0" class="burst-gap-row">
-                <td colspan="8">
+                <td colspan="9">
                   <span class="burst-gap-text">
                     ⏱ 连发间隔 +{{ (s.burstGapBefore * 1000).toFixed(0) }} ms
                   </span>
@@ -82,6 +83,8 @@
               <!-- 未命中行 -->
               <tr v-if="!s.hit" class="miss-row">
                 <td>{{ s.shot }}</td>
+                <!-- ⭐ 间隔列 -->
+                <td class="interval-cell">{{ formatInterval(s.shotIntervalBefore) }}</td>
                 <td>❌</td>
                 <td>-</td>
                 <td>-</td>
@@ -94,6 +97,8 @@
               <!-- 命中行 -->
               <tr v-else class="hit-row">
                 <td>{{ s.shot }}</td>
+                <!-- ⭐ 间隔列 -->
+                <td class="interval-cell">{{ formatInterval(s.shotIntervalBefore) }}</td>
                 <td>✅</td>
                 <td>
                   <span class="hit-part-badge" :class="partCls(s.hitPart)">
@@ -116,9 +121,27 @@
 
               <!-- 展开详情行 -->
               <tr v-if="s.hit && expandedSet.has(idx)" class="detail-row-wrap">
-                <td colspan="8" class="detail-cell">
+                <td colspan="9" class="detail-cell">
                   <div class="step-detail active">
                     <div class="detail-title">第 {{ s.shot }} 发详细计算</div>
+
+                    <!-- ⭐ 间隔/射速信息 -->
+                    <template v-if="s.shot > 1">
+                      <div class="detail-row">
+                        <span class="detail-label">射击间隔：</span>
+                        <span class="detail-value">
+                          {{ (s.shotIntervalBefore * 1000).toFixed(2) }} ms
+                          （射速 ≈ {{ intervalToRof(s.shotIntervalBefore).toFixed(0) }} RPM）
+                        </span>
+                      </div>
+                      <div v-if="s.burstGapBefore > 0" class="detail-row">
+                        <span class="detail-label">连发间隔：</span>
+                        <span class="detail-value">
+                          {{ (s.burstGapBefore * 1000).toFixed(0) }} ms
+                        </span>
+                      </div>
+                      <div class="detail-divider"></div>
+                    </template>
 
                     <div class="detail-row">
                       <span class="detail-label">命中部位：</span>
@@ -286,25 +309,21 @@ const totalDamage = computed(() => {
 // ⭐ TTK 分解（全部换算成毫秒）
 // ============================================================
 
-// 飞行延迟
 const flightMs = computed(() => {
   if (!simResult.value) return 0
   return simResult.value.flightTime * 1000
 })
 
-// 射击延迟（纯射击间隔部分）
 const shootingMs = computed(() => {
   if (!simResult.value) return 0
   return (simResult.value.shootingIntervalTime || 0) * 1000
 })
 
-// 扳机延迟
 const triggerMs = computed(() => {
   if (!simResult.value) return 0
   return triggerEnabled.value ? (triggerDelayRaw.value || 0) : 0
 })
 
-// 平均连发间隔（单次平均：总连发间隔 / 连发次数）
 const avgBurstMs = computed(() => {
   if (!simResult.value) return 0
   const count = simResult.value.burstIntervalCount || 0
@@ -312,7 +331,6 @@ const avgBurstMs = computed(() => {
   return (simResult.value.burstIntervalTotal / count) * 1000
 })
 
-// 总 TTK = 飞行 + 射击 + 连发间隔总时间 + 扳机延迟
 const totalTtkMs = computed(() => {
   if (!simResult.value) return 0
   const burstTotalMs = (simResult.value.burstIntervalTotal || 0) * 1000
@@ -336,6 +354,29 @@ const partLabel = (key) => PART_LABEL[key] || '-'
 const partCls = (key) => PART_CLS[key] || ''
 const isHelmetPart = (key) => key === 'head'
 
+// ============================================================
+// ⭐ 间隔显示辅助
+// ============================================================
+
+/**
+ * 格式化间隔（秒 → 展示字符串）
+ * - 0 → "-"（第 1 发无前置间隔）
+ * - > 0 → "xxx.x ms"
+ */
+const formatInterval = (intervalSec) => {
+  if (!intervalSec || intervalSec <= 0) return '-'
+  return `${(intervalSec * 1000).toFixed(1)} ms`
+}
+
+/**
+ * 间隔时长 → 等效射速（RPM）
+ * intervalSec = 60 / RPM  ⇒  RPM = 60 / intervalSec
+ */
+const intervalToRof = (intervalSec) => {
+  if (!intervalSec || intervalSec <= 0) return 0
+  return 60 / intervalSec
+}
+
 // ---------- 核心：跑一次记录模式模拟 ----------
 const runSimulation = (seed) => {
   simResult.value = null
@@ -350,8 +391,6 @@ const runSimulation = (seed) => {
 
   // ============================================================
   // ⭐ 1. 用 getPriceRowsForWeapon 拿"解析后"的行
-  //    这样 barrelId / muzzleId / bulletId 都是经过名字反查的，
-  //    不会因为原始 config 缺少 barrelId 而丢失枪管
   // ============================================================
   const rows = dm.getPriceRowsForWeapon(props.weaponId) || []
   const row = rows.find(r => r.configId === props.configId)
@@ -365,12 +404,12 @@ const runSimulation = (seed) => {
   const muzzleId = row.muzzleId ?? 0
   const bulletIdFromRow = row.bulletId || null
 
-  // 2. 应用枪管 / 枪口，得到当前武器属性（含连发字段）
+  // 2. 应用枪管 / 枪口，得到当前武器属性（含连发 + 分段射速）
   const barrel = (barrelId >= 0 && weapon.barrels?.[barrelId]) ? weapon.barrels[barrelId] : null
 
   const current = calculateCurrentValues(weapon, barrel, muzzleId, 0.09)
 
-  // 合并成带 _current 的武器对象（SimulationEngine 会优先读 _current）
+  // 合并成带 _current 的武器对象
   const armedWeapon = {
     ...weapon,
     ...current,
@@ -380,7 +419,7 @@ const runSimulation = (seed) => {
     triggerDelay: weapon.triggerDelay || 0
   }
 
-  // 3. 拿实际子弹（优先用 row.bulletId，否则走口径+等级推断）
+  // 3. 拿实际子弹
   const params = paramsStore.state
   const bulletKey = SimulationEngine.getRealBulletKey(
     bulletIdFromRow,
@@ -433,7 +472,8 @@ const runSimulation = (seed) => {
     `✅ 单次模拟完成: ${result.shots} 发, 命中 ${result.hits}, ` +
     `TTK ${result.totalTimeMs.toFixed(0)}ms, ` +
     `连发模式=${result.isBurstMode}, ` +
-    `连发次数=${result.burstIntervalCount}`
+    `连发次数=${result.burstIntervalCount}, ` +
+    `分段射速=${current.rofStages ? '有' : '无'}`
   )
 }
 
@@ -441,7 +481,6 @@ const runSimulation = (seed) => {
 const reroll = () => {
   if (isRolling.value) return
   isRolling.value = true
-  // 换一个基于时间的种子
   const newSeed = Date.now() % 2147483647
   runSimulation(newSeed)
   isRolling.value = false
@@ -465,7 +504,6 @@ watch(() => props.visible, (newVal) => {
   }
 })
 
-// 切换武器/配置/距离时，如果当前可见则重跑
 watch(
   () => [props.weaponId, props.configId, props.distance],
   () => {
@@ -490,7 +528,7 @@ watch(
 .modal-content {
   background: #fff;
   border-radius: 12px;
-  width: 860px;
+  width: 900px;
   max-width: 95vw;
   max-height: 90vh;
   display: flex;
@@ -654,6 +692,13 @@ watch(
 }
 .step-table tbody tr.hit-row { background: #f8fff8; }
 .step-table tbody tr.miss-row { background: #fff8f8; color: #999; }
+
+/* ⭐ 间隔列 */
+.interval-cell {
+  font-family: var(--font-mono, 'Courier New', monospace);
+  font-size: 11px;
+  color: #6a6a8e;
+}
 
 /* ⭐ 连发间隔分隔行 */
 .step-table tbody tr.burst-gap-row {

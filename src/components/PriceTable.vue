@@ -87,19 +87,22 @@
               />
             </td>
 
-            <!-- 命中率（输入框） -->
+            <!-- ⭐ 命中率（输入框）—— 修正：绑定 hitRateRaw，写回时解析成数组 -->
             <td class="control-cell">
               <input
-                v-model="row.hitRateRaw"
+                :value="row.hitRateRaw"
                 class="cell-input hitrate-cell"
                 placeholder="30:1.0,50:0.9,100:0.6"
-                @blur="onCellChange(row, 'hitRateRaw', row.hitRateRaw)"
+                @blur="onHitRateChange(row, $event)"
               />
             </td>
 
             <!-- 子弹（下拉选择） -->
             <td class="control-cell">
-              <select v-model="row.bulletDisplay" @change="onCellChange(row, 'bulletDisplay', row.bulletDisplay)">
+              <select
+                :value="row.bulletDisplay"
+                @change="onBulletChange(row, $event)"
+              >
                 <option v-for="opt in getBulletOptions(row)" :key="opt" :value="opt">
                   {{ opt }}
                 </option>
@@ -270,11 +273,88 @@ const getHavocTooltip = (cost) => {
   return lines.join('\n')
 }
 
+// ============================================================
+// ⭐ 命中率字符串解析
+// ============================================================
+
+/**
+ * 把 "30:1.0,50:0.9,100:0.6" 解析成
+ *   { distance: [30, 50, 100], hitRate: [1.0, 0.9, 0.6] }
+ * 
+ * 无效项会被跳过；全无有效项时返回 null。
+ */
+const parseHitRateString = (str) => {
+  if (!str || str.trim() === '') {
+    return { distance: [], hitRate: [] }
+  }
+
+  const parts = str.split(',').map(p => p.trim()).filter(Boolean)
+  const distance = []
+  const hitRate = []
+
+  for (const part of parts) {
+    const [distStr, rateStr] = part.split(':')
+    if (distStr === undefined || rateStr === undefined) continue
+
+    const d = parseFloat(distStr)
+    const r = parseFloat(rateStr)
+
+    if (isNaN(d) || d < 0) continue
+    if (isNaN(r) || r < 0 || r > 1) continue
+
+    distance.push(d)
+    hitRate.push(r)
+  }
+
+  // 按距离升序排序（数组内部要一致）
+  const pairs = distance.map((d, i) => ({ d, r: hitRate[i] }))
+  pairs.sort((a, b) => a.d - b.d)
+
+  return {
+    distance: pairs.map(p => p.d),
+    hitRate: pairs.map(p => p.r)
+  }
+}
+
 // ---------- 事件处理 ----------
-// ⭐ 改为传 row 对象，避免排序后 index 错位
+// 通用单元格变更（枪管、枪口、改枪码等）
 const onCellChange = (row, key, value) => {
   const dm = dataStore.getDataManager()
   dm.updatePriceConfig(row._weaponId, row.configId, { [key]: value })
+  dataStore.refreshPrices()
+  emit('update')
+}
+
+// ⭐ 命中率变更：把字符串解析成 distance + hitRate 数组
+const onHitRateChange = (row, event) => {
+  const str = event.target.value
+  const parsed = parseHitRateString(str)
+
+  const dm = dataStore.getDataManager()
+  dm.updatePriceConfig(row._weaponId, row.configId, {
+    distance: parsed.distance,
+    hitRate: parsed.hitRate
+  })
+  dataStore.refreshPrices()
+  emit('update')
+}
+
+// ⭐ 子弹变更：把显示串转成 bullet id，存 bullet 字段
+const onBulletChange = (row, event) => {
+  const display = event.target.value
+  const dm = dataStore.getDataManager()
+
+  if (display === '无' || display === '-' || !display) {
+    dm.updatePriceConfig(row._weaponId, row.configId, { bullet: '' })
+  } else {
+    const bulletId = dm.findBulletIdByDisplay(display)
+    if (!bulletId) {
+      console.warn('⚠️ 未找到子弹:', display)
+      return
+    }
+    dm.updatePriceConfig(row._weaponId, row.configId, { bullet: bulletId })
+  }
+
   dataStore.refreshPrices()
   emit('update')
 }

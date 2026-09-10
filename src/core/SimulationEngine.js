@@ -30,6 +30,97 @@ export class SimulationEngine {
   }
 
   // ============================================================
+  // 0. 射速间隔计算（支持分段射速）
+  // ============================================================
+
+  /**
+   * 计算"第 shot 发之后到第 shot+1 发之前"的间隔时长（秒）
+   * 
+   * 语义：间隔归属"起点发"。
+   *   - shot = 1 → 第 1→2 发之间的间隔
+   *   - shot = 3 → 第 3→4 发之间的间隔
+   *   - 最后一发没有后续间隔（不调用）
+   * 
+   * ⭐ 分段射速（rofStages）：
+   *   - 枪管可携带 rofStages 数组，形如：
+   *       [{ untilShot: 3, rofAdd: 100 }, { rofAdd: 0 }]
+   *     表示"第 1~3 个间隔射速 +100，之后 +0"
+   *   - 无 rofStages → 全程基础射速（向后兼容）
+   *   - 连发模式（burst）→ 用 burstInternalROF，忽略 rofStages
+   * 
+   * @param {Object} weapon - 武器对象（含 _current 或原始值）
+   * @param {number} shot - 当前起点发序号（从 1 开始）
+   * @param {boolean} isBurstMode - 是否连发模式
+   * @returns {number} 间隔时长（秒）
+   * @private
+   */
+  static _getIntervalAfterShot(weapon, shot, isBurstMode) {
+    // 连发模式：保持原逻辑（连发内部射速固定）
+    if (isBurstMode) {
+      return 60 / weapon.burstInternalROF;
+    }
+
+    // 基础射速（优先用应用附件后的当前值）
+    const baseRof = weapon._current?.rof ?? weapon.rof ?? 600;
+
+    // 分段射速（优先用应用附件后的当前值）
+    const stages = weapon._current?.rofStages ?? weapon.rofStages;
+
+    // 无分段 → 固定基础射速
+    if (!stages || !Array.isArray(stages) || stages.length === 0) {
+      return 60 / baseRof;
+    }
+
+    // 找到该发所属的阶段
+    let rofAdd = 0;
+    for (const stage of stages) {
+      // untilShot === undefined 表示"之后所有发"
+      if (stage.untilShot === undefined || stage.untilShot === null || shot <= stage.untilShot) {
+        rofAdd = stage.rofAdd || 0;
+        break;
+      }
+    }
+
+    const effectiveRof = baseRof + rofAdd;
+    // 防止除零/负值
+    if (!isFinite(effectiveRof) || effectiveRof <= 0) {
+      return 60 / baseRof;
+    }
+    return 60 / effectiveRof;
+  }
+
+  /**
+   * 计算"整个击杀过程中所有射击间隔之和"（秒）
+   * 
+   * 逐发累加：第 1 发之后到第 2 发之前…直到第 (shots-1) 发之后
+   * 
+   * @param {Object} weapon - 武器对象
+   * @param {number} totalShots - 总射击数（含未命中）
+   * @param {boolean} isBurstMode - 是否连发模式
+   * @param {Object} burstStats - 连发统计 { count, totalTime }
+   * @returns {number} 射击间隔总时间（秒）
+   * @private
+   */
+  static _calculateShootingIntervalTotal(weapon, totalShots, isBurstMode, burstStats) {
+    if (totalShots <= 1) return 0;
+
+    if (isBurstMode) {
+      // 连发模式：原逻辑
+      // 射击间隔时间 = 连发内部间隔 × (总射击数 - 1 - 连发间隔数)
+      const burstIntervalCount = burstStats.count;
+      const shotInterval = 60 / weapon.burstInternalROF;
+      return shotInterval * (totalShots - 1 - burstIntervalCount);
+    }
+
+    // 全自动/单发：逐发累加（支持分段射速）
+    let total = 0;
+    for (let shot = 1; shot < totalShots; shot++) {
+      total += this._getIntervalAfterShot(weapon, shot, false);
+    }
+    return total;
+  }
+
+  // ============================================================
   // 1. 单次模拟（核心）⭐ 修改命中率取值逻辑 + 连发部位偏置
   // ============================================================
 
@@ -41,6 +132,7 @@ export class SimulationEngine {
    * 2. 每次射击有命中率判断
    * 3. 命中后根据部位计算伤害
    * 4. 连发模式下需要计算连发间隔
+   * 5. ⭐ 支持分段射速（rofStages）
    * 
    * ⭐ 连发部位偏置：连发第一发完全随机，后续发以 70% 概率命中同一部位，
    *    30% 概率偏移到相邻部位（头部→胸部→腹部→四肢）
@@ -68,9 +160,8 @@ export class SimulationEngine {
       ? params.hitRate 
       : (typeof weapon.hitRate === 'number' ? weapon.hitRate : 0.85);
     
-    // 计算射击间隔（连发模式使用内部射速，全自动模式使用平均射速）
+    // 计算射击间隔相关
     const isBurstMode = weapon.fireMode === 'burst' && weapon.burstCount && weapon.burstInternalROF;
-    const shotInterval = this._calculateShotInterval(weapon, isBurstMode);
     const decay = DistanceDecayCalculator.calculate(distance, weapon);
     
     // ⭐ 优先使用 _current.velocity（应用枪管加成后的值）
@@ -144,14 +235,14 @@ export class SimulationEngine {
       armorState = newArmorState;
     }
     
-    // 计算总时间
-    const totalTime = this._calculateTotalTime(
-      flightTime, 
-      shotInterval, 
-      shots, 
-      isBurstMode, 
+    // ⭐ 计算总时间（逐发累加间隔，支持分段射速）
+    const shootingIntervalTime = this._calculateShootingIntervalTotal(
+      weapon,
+      shots,
+      isBurstMode,
       burstStats
     );
+    const totalTime = flightTime + shootingIntervalTime + burstStats.totalTime;
     
     return { 
       time: totalTime, 
@@ -172,6 +263,7 @@ export class SimulationEngine {
    * - 返回逐发明细数组 steps[]
    * - 每发携带 debug 中间值（纯伤害、穿透伤害、护甲变化等）
    * - 每发携带 burstGapBefore（该发之前插入的连发间隔时长，秒）
+   * - 每发携带 shotIntervalBefore（该发之前等待的射击间隔，秒）
    * - 调用策略时传 collectDebug = true
    * - 结果用于弹窗展示，不参与批量统计
    * 
@@ -181,30 +273,18 @@ export class SimulationEngine {
    *   - 该时长写入该发 step 的 burstGapBefore 字段
    *   - 非连发武器 / 连发周期内其他发 → burstGapBefore = 0
    * 
+   * ⭐ 射击间隔标记（分段射速）：
+   *   - 第 shot 发之前等待的射击间隔，由第 (shot-1) 发所属的射速阶段决定
+   *   - 写入 step 的 shotIntervalBefore 字段（秒）
+   *   - 第 1 发没有前置射击间隔 → 0
+   * 
    * ⭐ 种子控制：本方法不做种子处理，由调用方在调用前通过 setSeed() 控制。
    * 
    * @param {Object} weapon - 武器对象
    * @param {Object} params - 游戏参数
    * @param {Object} bulletStrategy - 子弹策略
    * @param {Object} bulletData - 子弹数据
-   * @returns {Object} {
-   *   steps: Array,               // 逐发明细
-   *   totalTime: number,          // 总时间（秒）
-   *   totalTimeMs: number,        // 总时间（毫秒）
-   *   shots: number,              // 总射击数
-   *   hits: number,               // 命中数
-   *   misses: number,             // 未命中数
-   *   finalHealth: number,        // 结束血量（0）
-   *   finalArmorVal: number,      // 结束护甲
-   *   finalHelmetVal: number,     // 结束头盔
-   *   isBurstMode: boolean,
-   *   flightTime: number,             // 飞行时间（秒）
-   *   shotInterval: number,           // 射击间隔（秒）
-   *   burstInterval: number,          // 单次连发间隔时长（秒）—— 保留兼容
-   *   burstIntervalCount: number,     // 连发次数
-   *   burstIntervalTotal: number,     // 连发间隔总时间（秒）
-   *   shootingIntervalTime: number,   // 射击延迟部分（秒）
-   * }
+   * @returns {Object} 完整模拟结果
    */
   static simulateOneTTKWithDetail(weapon, params, bulletStrategy, bulletData) {
     // 初始化状态
@@ -221,9 +301,8 @@ export class SimulationEngine {
       ? params.hitRate 
       : (typeof weapon.hitRate === 'number' ? weapon.hitRate : 0.85);
     
-    // 射击间隔
+    // 连发模式
     const isBurstMode = weapon.fireMode === 'burst' && weapon.burstCount && weapon.burstInternalROF;
-    const shotInterval = this._calculateShotInterval(weapon, isBurstMode);
     const decay = DistanceDecayCalculator.calculate(distance, weapon);
     
     // 飞行时间
@@ -243,6 +322,9 @@ export class SimulationEngine {
     // ⭐ 逐发明细数组
     const steps = [];
     
+    // ⭐ 逐发累加射击间隔总时间（用于最终校验）
+    let shootingIntervalTotal = 0;
+    
     // 主循环
     while (health > 0) {
       shots++;
@@ -251,9 +333,6 @@ export class SimulationEngine {
       // ============================================================
       // ⭐ 判断本发之前是否插入了连发间隔
       // ============================================================
-      // 连发间隔的判定与 _updateBurstInterval 保持一致：
-      // - 第 1 个连发（shots <= burstCount）不需要间隔
-      // - 之后的每个连发周期开始（shots % burstCount === 1）插入一个间隔
       let burstGapBefore = 0;
       if (isBurstMode) {
         const isNewBurstStart = (shots > weapon.burstCount) && (shots % weapon.burstCount === 1);
@@ -262,6 +341,19 @@ export class SimulationEngine {
         }
         // 累计到 burstStats（与 simulateOneTTK 一致）
         this._updateBurstInterval(weapon, shots, burstStats);
+      }
+      
+      // ============================================================
+      // ⭐ 计算本发之前的射击间隔（由上一发所属阶段决定）
+      // ============================================================
+      let shotIntervalBefore = 0;
+      if (shots > 1) {
+        // 第 shot 发之前的间隔 = 第 (shot-1) 发之后的间隔
+        shotIntervalBefore = this._getIntervalAfterShot(weapon, shots - 1, isBurstMode);
+        // 连发模式下，连发间隔已单独计算，不重复累加内部间隔
+        if (!isBurstMode) {
+          shootingIntervalTotal += shotIntervalBefore;
+        }
       }
       
       // ============================================================
@@ -278,6 +370,7 @@ export class SimulationEngine {
           armorVal: armorState.armorVal,
           helmetVal: armorState.helmetVal,
           burstGapBefore,
+          shotIntervalBefore,
           debug: null
         });
         continue;
@@ -323,21 +416,27 @@ export class SimulationEngine {
         armorVal: armorState.armorVal,
         helmetVal: armorState.helmetVal,
         burstGapBefore,
+        shotIntervalBefore,
         debug  // 中间计算值
       });
     }
     
     // 总时间
-    const totalTime = this._calculateTotalTime(
-      flightTime, 
-      shotInterval, 
-      shots, 
-      isBurstMode, 
-      burstStats
-    );
+    let shootingIntervalTime;
+    if (isBurstMode) {
+      // 连发模式：用原公式
+      shootingIntervalTime = this._calculateShootingIntervalTotal(
+        weapon,
+        shots,
+        true,
+        burstStats
+      );
+    } else {
+      // 非连发模式：用逐发累加值
+      shootingIntervalTime = shootingIntervalTotal;
+    }
     
-    // ⭐ 射击延迟部分 = 总时间 - 飞行时间 - 连发间隔总时间
-    const shootingIntervalTime = totalTime - flightTime - burstStats.totalTime;
+    const totalTime = flightTime + shootingIntervalTime + burstStats.totalTime;
     
     return {
       steps,
@@ -351,28 +450,12 @@ export class SimulationEngine {
       finalHelmetVal: armorState.helmetVal,
       isBurstMode,
       flightTime,
-      shotInterval,
+      shotInterval: shots > 1 ? shootingIntervalTime / (shots - 1) : 0,  // 平均间隔（兼容旧字段）
       burstInterval: isBurstMode ? weapon.burstInterval : 0,
-      burstIntervalCount: burstStats.count,        // ⭐ 连发次数
-      burstIntervalTotal: burstStats.totalTime,    // ⭐ 连发间隔总时间（秒）
-      shootingIntervalTime                         // ⭐ 射击延迟部分（秒）
+      burstIntervalCount: burstStats.count,
+      burstIntervalTotal: burstStats.totalTime,
+      shootingIntervalTime
     };
-  }
-
-  /**
-   * 计算射击间隔（秒）
-   * @private
-   */
-  static _calculateShotInterval(weapon, isBurstMode) {
-    if (isBurstMode) {
-      // 连发模式：使用内部射速（连发内部的射速）
-      return 60 / weapon.burstInternalROF;
-    } else {
-      // 全自动模式：使用平均射速
-      // ⭐ 优先使用 _current.rof（应用枪管加成后的值）
-      const rof = weapon._current?.rof ?? weapon.rof ?? 600;
-      return 60 / rof;
-    }
   }
 
   /**
@@ -397,22 +480,6 @@ export class SimulationEngine {
     }
   }
 
-  /**
-   * 计算总击杀时间
-   * 
-   * 公式：总时间 = 飞行时间 + 射击间隔时间 + 连发间隔时间
-   * 
-   * @private
-   */
-  static _calculateTotalTime(flightTime, shotInterval, totalShots, isBurstMode, burstStats) {
-    // 射击间隔时间 = 间隔 × (总射击数 - 1 - 连发间隔数)
-    // 说明：最后一发不需要等待间隔，连发间隔已单独计算
-    const burstIntervalCount = burstStats.count;
-    const shootingIntervalTime = shotInterval * (totalShots - 1 - burstIntervalCount);
-    
-    return flightTime + shootingIntervalTime + burstStats.totalTime;
-  }
-
   // ============================================================
   // 2. 批量模拟（多次求平均）
   // ============================================================
@@ -427,22 +494,14 @@ export class SimulationEngine {
    * @param {number} times - 模拟次数（默认使用配置值）
    * @param {Object} bulletStrategy - 子弹策略
    * @param {Object} bulletData - 子弹数据
-   * @returns {Object} {
-   *   weapon: 武器对象,
-   *   avgTime: 平均击杀时间(秒),
-   *   avgShots: 平均射击次数,
-   *   avgMisses: 平均未命中次数,
-   *   avgBurstInterval: 平均连发间隔时间(秒)
-   * }
+   * @returns {Object} 统计结果
    */
   static calculateAvgStats(weapon, params, times = SIMULATION_CONFIG.DEFAULT_SIM_COUNT, bulletStrategy, bulletData) {
-    // 累计所有模拟结果
     let totalTime = 0;
     let totalShots = 0;
     let totalMisses = 0;
     let totalBurstInterval = 0;
     
-    // 执行多次模拟
     for (let i = 0; i < times; i++) {
       const result = this.simulateOneTTK(
         weapon, 
@@ -458,7 +517,6 @@ export class SimulationEngine {
       totalBurstInterval += (result.burstIntervalTime || 0);
     }
     
-    // 计算平均值
     const avgTime = totalTime / times;
     const avgShots = totalShots / times;
     const avgMisses = totalMisses / times;
@@ -474,13 +532,7 @@ export class SimulationEngine {
   }
 
   /**
-   * ✅ 新增：计算单个距离点的 TTK 统计（用于折线图）
-   * 
-   * 与 calculateAvgStats 的区别：
-   * - 返回格式更简洁，包含 avgTime 和 avgShots
-   * - 用于折线图的逐点计算
-   * 
-   * ⭐ 修改：返回完整统计信息，而不仅仅是 avgTime
+   * 计算单个距离点的 TTK 统计（用于折线图）
    * 
    * @param {Object} weapon - 武器对象
    * @param {Object} params - 游戏参数
@@ -510,7 +562,6 @@ export class SimulationEngine {
       totalBurstInterval += (result.burstIntervalTime || 0);
     }
     
-    // ⭐ 返回完整统计数据，而不仅仅是平均时间
     return {
       avgTime: totalTime / times,
       avgShots: totalShots / times,
@@ -532,7 +583,6 @@ export class SimulationEngine {
    * @returns {Array} 按TTK排序的结果数组
    */
   static calculateWeaponsTTK(weapons, attachments, params, dataManager) {
-    // 确保 DataManager 已设置
     if (dataManager) {
       this.setDataManager(dataManager);
     }
@@ -549,14 +599,12 @@ export class SimulationEngine {
           return null;
         }
         
-        // 获取子弹数据
         const bulletData = dm.getBulletById(realBulletKey);
         if (!bulletData) {
           console.warn(`武器 ${weapon.name} 的子弹 ${realBulletKey} 不存在`);
           return null;
         }
         
-        // ⭐ 获取命中率（优先使用价格配置中的距离-命中率）
         let hitRate = params.hitRate;
         if (weapon.id && attachment.configId) {
           const priceHitRate = dm.getHitRateForDistance(
@@ -570,8 +618,6 @@ export class SimulationEngine {
           }
         }
         
-        // ⭐ 重要：将命中率放入 params 中，而不是 weapon 上
-        // 这样 simulateOneTTK 会优先使用 params.hitRate
         const simParams = { ...params, hitRate };
         const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
         
@@ -599,10 +645,8 @@ export class SimulationEngine {
   static getRealBulletKey(selectedBulletType, weapon, params, dataManager) {
     const dm = dataManager || this.getDataManager();
     
-    // 如果用户指定了子弹类型，直接使用
     if (selectedBulletType) return selectedBulletType;
     
-    // 否则根据武器口径和参数中的子弹等级查找
     const caliber = weapon.allowedBullet;
     if (!caliber) {
       console.warn(`武器 ${weapon.name} 没有指定口径 (allowedBullet)`);

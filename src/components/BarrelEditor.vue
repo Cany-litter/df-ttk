@@ -29,6 +29,7 @@
                 <th style="min-width:80px;">自定义射程</th>
                 <th style="min-width:140px;">自定义衰减</th>
                 <th style="min-width:120px;">部位倍率加成</th>
+                <th style="min-width:110px;" title="格式：前N个间隔+射速，逗号分隔。如 3:+100 表示前3个间隔射速+100">分段射速</th>
                 <th style="min-width:60px;">开火模式</th>
                 <th style="min-width:45px;">连发数</th>
                 <th style="min-width:50px;">内部射速</th>
@@ -86,7 +87,17 @@
                   />
                 </td>
                 <td>
-                  <select v-model="barrel.fireMode" class="cell-select" @change="onFireModeChange(index)">
+                  <!-- ⭐ 分段射速编辑（字符串格式） -->
+                  <input
+                    v-model="barrel.rofStagesDisplay"
+                    class="cell-input rof-stages-input"
+                    placeholder="如: 3:+100"
+                    title="格式：前N个间隔:+射速，逗号分隔。如 3:+100 表示前3个间隔射速+100，之后 +0。留空表示无分段"
+                    @blur="parseRofStages(index)"
+                  />
+                </td>
+                <td>
+                  <select v-model="barrel.fireMode" class="cell-select">
                     <option value="">默认</option>
                     <option value="auto">全自动</option>
                     <option value="burst">连发</option>
@@ -155,75 +166,120 @@ const emit = defineEmits(['update:visible', 'saved'])
 // 本地状态
 const barrels = ref([])
 const weaponName = ref('')
-const currentWeapon = ref(null)  // ⭐ 保存当前武器的原始数据
+const currentWeapon = ref(null)
 
 // ============================================================
-// ⭐ 武器原始值 → placeholder
+// 武器原始值 → placeholder
 // ============================================================
 
-// 武器射程的 placeholder（如 "40,70,∞,∞"）
 const weaponRangesPlaceholder = computed(() => {
   if (!currentWeapon.value) return '40,70,∞,∞'
   const ranges = currentWeapon.value.ranges || []
   return ranges.map(r => r === Infinity ? '∞' : r).join(',')
 })
 
-// 武器衰减的 placeholder（如 "1.00,0.90,0.75,0.75,0.75"）
 const weaponDecaysPlaceholder = computed(() => {
   if (!currentWeapon.value) return '1.00,0.90,0.75,0.75,0.75'
   const decays = currentWeapon.value.decays || []
   return decays.map(v => v.toFixed(2)).join(',')
 })
 
-// 部位倍率加成的 placeholder（全为 0，因为枪管默认无加成）
 const partMultAddPlaceholder = computed(() => {
   return '0,0,0,0'
 })
 
 // ============================================================
-// ⭐ 部位倍率加成：格式化 & 解析
+// 部位倍率加成：格式化 & 解析
 // ============================================================
 
-/**
- * 将 partMultAdd 对象转换为显示字符串
- * { head: 0.15, chest: 0, stomach: -0.2, limbs: -0.2 } → "0.15,0,-0.2,-0.2"
- */
 const formatPartMultAdd = (partMultAdd) => {
   if (!partMultAdd || typeof partMultAdd !== 'object') return ''
-  
   const keys = ['head', 'chest', 'stomach', 'limbs']
   const values = keys.map(k => {
     const v = partMultAdd[k]
     return typeof v === 'number' ? v : 0
   })
-  
-  // 如果全部为 0，返回空字符串
   if (values.every(v => v === 0)) return ''
-  
   return values.join(',')
 }
 
-/**
- * 将显示字符串解析为 partMultAdd 对象
- * "0.15,0,-0.2,-0.2" → { head: 0.15, chest: 0, stomach: -0.2, limbs: -0.2 }
- * 返回 null 表示无加成
- */
 const parsePartMultAdd = (str) => {
   if (!str || str.trim() === '') return null
-  
   const parts = str.split(',').map(p => p.trim())
   const keys = ['head', 'chest', 'stomach', 'limbs']
   const result = {}
-  
   for (let i = 0; i < 4; i++) {
     const value = parts[i] !== undefined ? parseFloat(parts[i]) : 0
     result[keys[i]] = isNaN(value) ? 0 : value
   }
-  
-  // 如果全部为 0，返回 null
   if (Object.values(result).every(v => v === 0)) return null
-  
   return result
+}
+
+// ============================================================
+// ⭐ 分段射速：格式化 & 解析
+// ============================================================
+
+/**
+ * 将 rofStages 数组转为显示字符串
+ * 
+ * 输入：[{ untilShot: 3, rofAdd: 100 }, { rofAdd: 0 }]
+ * 输出："3:+100"
+ * 
+ * 规则：只显示"有 untilShot 且 rofAdd != 0"的阶段
+ */
+const formatRofStages = (rofStages) => {
+  if (!Array.isArray(rofStages) || rofStages.length === 0) return ''
+
+  const parts = []
+  for (const stage of rofStages) {
+    if (stage.untilShot === undefined || stage.untilShot === null) continue
+    if (!stage.rofAdd) continue
+    const sign = stage.rofAdd > 0 ? '+' : ''
+    parts.push(`${stage.untilShot}:${sign}${stage.rofAdd}`)
+  }
+
+  return parts.join(',')
+}
+
+/**
+ * 将显示字符串解析为 rofStages 数组
+ * 
+ * 输入："3:+100" 或 "3:+100,6:+50" 或空
+ * 输出：
+ *   [{ untilShot: 3, rofAdd: 100 }, { rofAdd: 0 }]
+ *   [{ untilShot: 3, rofAdd: 100 }, { untilShot: 6, rofAdd: 50 }, { rofAdd: 0 }]
+ *   null（空字符串）
+ */
+const parseRofStagesFromString = (str) => {
+  if (!str || str.trim() === '') return null
+
+  const segments = str.split(',').map(s => s.trim()).filter(Boolean)
+  const stages = []
+
+  for (const seg of segments) {
+    // 匹配 "N:+X" 或 "N:-X" 或 "N:X"
+    const match = seg.match(/^(\d+)\s*:\s*([+-]?\d+(?:\.\d+)?)$/)
+    if (!match) continue
+
+    const untilShot = parseInt(match[1], 10)
+    const rofAdd = parseFloat(match[2])
+
+    if (isNaN(untilShot) || untilShot <= 0) continue
+    if (isNaN(rofAdd)) continue
+
+    stages.push({ untilShot, rofAdd })
+  }
+
+  if (stages.length === 0) return null
+
+  // 按 untilShot 升序排序
+  stages.sort((a, b) => a.untilShot - b.untilShot)
+
+  // 自动补"之后所有发"阶段
+  stages.push({ rofAdd: 0 })
+
+  return stages
 }
 
 // ============================================================
@@ -242,14 +298,15 @@ const loadWeapon = () => {
   }
 
   weaponName.value = weapon.name || '未命名武器'
-  currentWeapon.value = weapon  // ⭐ 保存武器原始数据供 placeholder 使用
+  currentWeapon.value = weapon
 
   // 复制枪管数据
   barrels.value = (weapon.barrels || []).map(b => ({
     ...b,
     rangesDisplay: b.ranges ? b.ranges.map(r => r === Infinity ? '∞' : r).join(',') : '',
     decaysDisplay: b.decays ? b.decays.join(',') : '',
-    partMultAddDisplay: formatPartMultAdd(b.partMultAdd),  // ⭐ 部位倍率加成
+    partMultAddDisplay: formatPartMultAdd(b.partMultAdd),
+    rofStagesDisplay: formatRofStages(b.rofStages),   // ⭐ 分段射速
     fireMode: b.fireMode || '',
     burstCount: b.burstCount || 3,
     burstInternalROF: b.burstInternalROF || 800,
@@ -281,9 +338,11 @@ const parseRanges = (index) => {
   barrel.ranges = ranges
 }
 
-// 开火模式切换
-const onFireModeChange = (index) => {
-  // 自动禁用/启用连发字段
+// ⭐ 解析分段射速（唯一的 parseRofStages，写回 barrel.rofStages）
+const parseRofStages = (index) => {
+  const barrel = barrels.value[index]
+  if (!barrel) return
+  barrel.rofStages = parseRofStagesFromString(barrel.rofStagesDisplay)
 }
 
 // ============================================================
@@ -304,7 +363,9 @@ const addBarrel = () => {
     rangesDisplay: '',
     decays: [],
     decaysDisplay: '',
-    partMultAddDisplay: '',  // ⭐ 部位倍率加成
+    partMultAddDisplay: '',
+    rofStagesDisplay: '',   // ⭐ 分段射速
+    rofStages: null,
     fireMode: '',
     burstCount: 3,
     burstInternalROF: 800,
@@ -354,10 +415,20 @@ const save = () => {
       result.decays = b.decaysDisplay.split(',').map(v => parseFloat(v.trim()) || 1.0)
     }
 
-    // ⭐ 部位倍率加成（仅当用户填写且非全 0 时才写入）
+    // 部位倍率加成（仅当用户填写且非全 0 时才写入）
     const partMultAdd = parsePartMultAdd(b.partMultAddDisplay)
     if (partMultAdd) {
       result.partMultAdd = partMultAdd
+    }
+
+    // ⭐ 分段射速（仅当用户填写时才写入）
+    // 优先用 b.rofStages（如果 parse 过），否则从 display 重新解析
+    let rofStages = b.rofStages
+    if (rofStages === undefined || rofStages === null) {
+      rofStages = parseRofStagesFromString(b.rofStagesDisplay || '')
+    }
+    if (rofStages && Array.isArray(rofStages) && rofStages.length > 0) {
+      result.rofStages = rofStages
     }
 
     // 开火模式
@@ -411,7 +482,7 @@ const close = () => {
   border-radius: var(--radius-xl);
   max-width: 95vw;
   max-height: 90vh;
-  width: 1300px;
+  width: 1420px;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
@@ -486,7 +557,7 @@ const close = () => {
   border-collapse: collapse;
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
-  min-width: 1250px;
+  min-width: 1380px;
 }
 
 .barrel-table thead th {
@@ -540,6 +611,12 @@ const close = () => {
   letter-spacing: -0.3px;
 }
 
+/* ⭐ 分段射速输入框 - 等宽字体 */
+.rof-stages-input {
+  font-family: var(--font-mono);
+  letter-spacing: -0.3px;
+}
+
 .cell-select {
   padding: 2px 4px;
   border: 1px solid var(--color-border);
@@ -565,7 +642,7 @@ const close = () => {
   }
   
   .barrel-table {
-    min-width: 1100px;
+    min-width: 1200px;
     font-size: var(--font-size-xs);
   }
   

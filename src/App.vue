@@ -550,10 +550,9 @@ const handleCalculate = async () => {
       const flight = (params.distance / velocity) * 1000
 
       // ⭐ 计算"无空枪射击延迟"和"空枪延迟"，从总时间里扣除飞行/连发/扳机后的部分
-      // 让柱状图堆叠项之和 ≈ totalTime（视觉一致）
       const nonShotPart = flight + triggerDelay + burstIntervalMs
       const remaining = Math.max(0, totalTimeMs - nonShotPart)
-      const noMissFireDelay = remaining * (0.5 / 0.7)   // 保持原来的 50/20 比例
+      const noMissFireDelay = remaining * (0.5 / 0.7)
       const emptyDelay = remaining * (0.2 / 0.7)
 
       results.push({
@@ -561,7 +560,7 @@ const handleCalculate = async () => {
         weapon,
         totalTime: totalTimeMs || 0,
         noMissFireDelay: noMissFireDelay || 0,
-        burstInterval: burstIntervalMs,             // ⭐ 真实平均连发间隔
+        burstInterval: burstIntervalMs,
         emptyDelay: emptyDelay || 0,
         flight: flight || 0,
         triggerDelay: triggerDelay || 0,
@@ -569,10 +568,7 @@ const handleCalculate = async () => {
         fromCache
       })
 
-      // ⭐ 更新进度
       appStore.updateCalcProgress(i + 1)
-
-      // ⭐ 让浏览器有机会渲染进度条
       await new Promise(resolve => setTimeout(resolve, 0))
     }
 
@@ -581,7 +577,6 @@ const handleCalculate = async () => {
 
     console.log(`✅ TTK 计算完成: ${results.length} 个配置 (缓存命中 ${cacheHits}, 失效重算 ${cacheMisses})`)
 
-    // ⭐ 折线图计算（内部也有进度 + 缓存校验）
     await handleDistanceChart()
   } catch (error) {
     console.error('计算失败:', error)
@@ -602,7 +597,6 @@ const handleDistanceChart = async () => {
 
     const { armed, attachments } = buildArmedWeapons(enabledConfigs)
 
-    // ⭐ 显示进度遮罩
     appStore.showCalcProgress('生成折线图数据中...', armed.length)
 
     const stats = await buildDistanceStats(armed, attachments)
@@ -657,7 +651,6 @@ const buildArmedWeapons = (configs) => {
 
     const displayName = `${weapon.name} ${config.configId || ''}`.trim()
 
-    // ⭐ 从配置读取枪管（config.barrelId 已由 getPriceRowsForWeapon 解析）
     let barrel = null
     let barrelIndex = -1
     if (config.barrelId !== undefined && config.barrelId >= 0 && weapon.barrels && weapon.barrels[config.barrelId]) {
@@ -665,7 +658,6 @@ const buildArmedWeapons = (configs) => {
       barrelIndex = config.barrelId
     }
 
-    // ⭐ 计算当前值（含连发字段）
     const current = calculateCurrentValues(weapon, barrel, config.muzzleId || 0, 0.09)
 
     const armedWeapon = {
@@ -680,7 +672,6 @@ const buildArmedWeapons = (configs) => {
 
     armed.push(armedWeapon)
 
-    // ⭐ 构建配置自己的命中率映射
     let hitRateMap = []
     if (config.distance && config.hitRate &&
         Array.isArray(config.distance) && Array.isArray(config.hitRate) &&
@@ -716,7 +707,6 @@ const getKeyDistances = (ranges, maxDistance) => {
   
   const keyDistances = [0]
   
-  // ⭐ 1. 添加射程分段点前后 1m
   for (const range of validRanges) {
     const before = Math.max(0, range - 1)
     if (before > 0 && !keyDistances.includes(before)) {
@@ -727,14 +717,12 @@ const getKeyDistances = (ranges, maxDistance) => {
     }
   }
   
-  // ⭐ 2. 添加 10m 间隔的点（补充采样）
   for (let d = 10; d <= maxDistance; d += 10) {
     if (!keyDistances.includes(d)) {
       keyDistances.push(d)
     }
   }
   
-  // ⭐ 3. 添加最大距离
   if (!keyDistances.includes(maxDistance)) {
     keyDistances.push(maxDistance)
   }
@@ -762,9 +750,7 @@ const buildDistanceStats = async (armed, attachments) => {
     let times = []
     let keyPoints = []
 
-    // ============================================================
-    // ⭐ 1. 尝试从缓存读取（先校验 hash）
-    // ============================================================
+    // 1. 尝试从缓存读取（先校验 hash）
     if (price && cacheManager) {
       const config = price.configs.find(c => c.id === configId)
       if (config && config.cache && config.cache.keyPoints) {
@@ -782,9 +768,7 @@ const buildDistanceStats = async (armed, attachments) => {
       }
     }
 
-    // ============================================================
     // 2. 缓存未命中或失效，执行模拟
-    // ============================================================
     if (times.length === 0) {
       const result = calculateSingleWeapon(weapon, params, distances.value, attachment, dm)
       if (result) {
@@ -805,7 +789,7 @@ const buildDistanceStats = async (armed, attachments) => {
               config.cache = {
                 keyPoints: keyPoints,
                 hash: hash,
-                avgBurstInterval: result.avgBurstInterval || 0,   // ⭐ 写入平均连发间隔（秒）
+                avgBurstInterval: result.avgBurstInterval || 0,
                 cachedAt: new Date().toISOString()
               }
               console.log(`💾 已缓存: ${displayName} (${keyPoints.length} 个关键点, 平均连发间隔 ${(config.cache.avgBurstInterval * 1000).toFixed(1)}ms)`)
@@ -840,10 +824,7 @@ const buildDistanceStats = async (armed, attachments) => {
       })
     }
 
-    // ⭐ 更新进度
     appStore.updateCalcProgress(idx + 1)
-
-    // ⭐ 让浏览器有机会渲染进度条
     await new Promise(resolve => setTimeout(resolve, 0))
   }
 
@@ -867,7 +848,6 @@ const calculateSingleWeapon = (weapon, params, distances, attachment, dm) => {
 
   const strategy = BulletStrategyFactory.getStrategy(realBulletKey)
   
-  // ⭐ 使用关键点生成方法（对齐射程分段 + 10m 间隔）
   const keyDistances = getKeyDistances(
     weapon.ranges || [40, 70, Infinity, Infinity],
     CHART_CONFIG.MAX_DISTANCE || 100
@@ -876,15 +856,13 @@ const calculateSingleWeapon = (weapon, params, distances, attachment, dm) => {
   console.log(`📊 ${weapon._displayName || weapon.name} 关键点:`, keyDistances)
   
   const keyPoints = []
-  let burstIntervalSum = 0   // ⭐ 累加每个关键点的平均连发间隔
+  let burstIntervalSum = 0
 
   const cacheManager = dm.getCacheManager?.() || null
 
-  // ⭐ 优先使用配置的命中率映射
   const configHitRateMap = attachment.hitRateMap || params.hitRateMap || []
 
   for (const distance of keyDistances) {
-    // ⭐ 使用配置的命中率映射插值
     const hitRate = dm.getHitRateFromMap(
       configHitRateMap,
       distance,
@@ -912,11 +890,9 @@ const calculateSingleWeapon = (weapon, params, distances, attachment, dm) => {
       bulletPrice: bulletData.price || 0
     })
 
-    // ⭐ 累加连发间隔（秒）
     burstIntervalSum += (result.avgBurstInterval || 0)
   }
 
-  // ⭐ 平均连发间隔（所有关键点的平均，单位秒）
   const avgBurstInterval = keyDistances.length > 0 ? burstIntervalSum / keyDistances.length : 0
 
   const times = distances.map(d => {
@@ -1131,10 +1107,18 @@ const onDeleteWeapon = (index, weaponId, isCancelled) => {
 // ============================================================
 // ⭐ 子弹管理
 // ============================================================
+
+/**
+ * 新增 / 确认新增子弹
+ * 
+ * @param {number|null} index - 保留兼容（新逻辑用 bulletData 判断）
+ * @param {Object|null} bulletData - 子弹数据（确认时传入，新增按钮时为 null）
+ */
 const onAddBullet = (index, bulletData) => {
   const dm = dataStore.getDataManager()
   
-  if (index === -1 || bulletData === undefined || bulletData === null) {
+  // ⭐ 新增按钮：bulletData 为 null → 插入临时行
+  if (bulletData === undefined || bulletData === null) {
     const existing = dm.data.bullets.find(b => b._isNewRow === true)
     if (existing) {
       alert('⚠️ 已有新增行，请先完成或取消当前新增操作')
@@ -1165,6 +1149,8 @@ const onAddBullet = (index, bulletData) => {
     return
   }
   
+  // ⭐ 确认按钮：用真实数据替换临时行
+  // 不依赖 index（可能为 null），改用 findIndex
   const existing = dm.getBulletById(bulletData.id)
   if (existing && !existing._isNewRow) {
     alert(`子弹 ${bulletData.id} 已存在`)
@@ -1183,6 +1169,13 @@ const onAddBullet = (index, bulletData) => {
   console.log(`✅ 新增子弹: ${bulletData.id}`)
 }
 
+/**
+ * 删除子弹 / 取消新增
+ * 
+ * @param {number|null} index - 保留兼容
+ * @param {string|null} bulletId - 子弹 id（删除时传入）
+ * @param {boolean} isCancelled - 是否取消新增
+ */
 const onDeleteBullet = (index, bulletId, isCancelled) => {
   if (isCancelled) {
     const dm = dataStore.getDataManager()

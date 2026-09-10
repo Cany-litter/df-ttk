@@ -25,7 +25,7 @@
         <tbody>
           <tr
             v-for="(row, index) in data"
-            :key="row._bulletId || row.id || index"
+            :key="row.id || row._bulletId || index"
             :class="{ 'new-row': row._isNewRow }"
           >
             <!-- 子弹口径 -->
@@ -69,7 +69,7 @@
                 type="number"
                 step="0.01"
                 min="0"
-                @blur="onBaseChange(index, $event)"
+                @blur="onBaseChange(row, $event)"
               />
             </td>
 
@@ -77,10 +77,10 @@
             <td :class="row._isNewRow ? 'new-row-cell' : 'control-cell'">
               <input
                 v-if="row._isNewRow"
-                v-model="armorMultDisplay"
+                v-model="newRowArmorMultDisplay"
                 class="new-row-input"
                 placeholder="1.0,1.0,1.0,1.0,1.0,0.6"
-                @blur="parseArmorMult(row)"
+                @blur="parseNewRowArmorMult(row)"
               />
               <input
                 v-else
@@ -88,7 +88,7 @@
                 class="cell-input armor-cell"
                 type="text"
                 placeholder="1.0,1.0,1.0,1.0,1.0,0.6"
-                @blur="onArmorMultChange(index, $event)"
+                @blur="onArmorMultChange(row, $event)"
               />
             </td>
 
@@ -96,10 +96,10 @@
             <td :class="row._isNewRow ? 'new-row-cell' : 'control-cell'">
               <input
                 v-if="row._isNewRow"
-                v-model="penDisplay"
+                v-model="newRowPenDisplay"
                 class="new-row-input"
                 placeholder="1.0,1.0,0.75,0.5,0,0"
-                @blur="parsePen(row)"
+                @blur="parseNewRowPen(row)"
               />
               <input
                 v-else
@@ -107,7 +107,7 @@
                 class="cell-input armor-cell"
                 type="text"
                 placeholder="1.0,1.0,0.75,0.5,0,0"
-                @blur="onPenChange(index, $event)"
+                @blur="onPenChange(row, $event)"
               />
             </td>
 
@@ -128,17 +128,17 @@
                 type="number"
                 step="1"
                 min="0"
-                @blur="onPriceChange(index, $event)"
+                @blur="onPriceChange(row, $event)"
               />
             </td>
 
             <!-- 操作 -->
             <td class="readonly-cell">
               <template v-if="row._isNewRow">
-                <button class="btn-confirm" @click="confirmAdd(index)">✅</button>
-                <button class="btn-cancel" @click="cancelAdd(index)">❌</button>
+                <button class="btn-confirm" @click="confirmAdd(row)">✅</button>
+                <button class="btn-cancel" @click="cancelAdd(row)">❌</button>
               </template>
-              <button v-else class="btn-delete" @click="deleteRow(index)">🗑️</button>
+              <button v-else class="btn-delete" @click="deleteRow(row)">🗑️</button>
             </td>
           </tr>
         </tbody>
@@ -171,9 +171,9 @@ const emit = defineEmits(['update', 'add-bullet', 'delete-bullet'])
 // 特殊等级列表
 const specialLevels = ['RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5']
 
-// 新增行临时显示字段
-const armorMultDisplay = ref('')
-const penDisplay = ref('')
+// ⭐ 新增行的临时输入状态（不依赖 row 字段，避免响应式读写问题）
+const newRowArmorMultDisplay = ref('')
+const newRowPenDisplay = ref('')
 
 // ---------- 调试：监听 data 变化 ----------
 watch(() => props.data, (newData, oldData) => {
@@ -183,101 +183,141 @@ watch(() => props.data, (newData, oldData) => {
   }
 }, { deep: true, immediate: true })
 
-// ---------- 辅助方法 ----------
+// ============================================================
+// 辅助方法
+// ============================================================
+
 const isSpecialLevel = (level) => {
   return specialLevels.includes(String(level))
 }
 
+/**
+ * ⭐ 获取护甲衰减字符串
+ * - 新增临时行：用组件内临时状态 newRowArmorMultDisplay
+ * - 已有子弹：从 row.armorData 拼
+ */
 const getArmorMultString = (row) => {
-  const values = row._armorMultValues || []
-  if (values.length === 0) return ''
-  return values.map(v => {
-    const num = typeof v === 'number' ? v : parseFloat(v)
-    return isNaN(num) ? '1.00' : num.toFixed(2)
-  }).join(',')
+  if (row._isNewRow) {
+    return newRowArmorMultDisplay.value || ''
+  }
+
+  // 已有子弹：从 armorData 拼
+  if (!row.armorData) return ''
+  const values = []
+  for (let i = 1; i <= 6; i++) {
+    const v = row.armorData[i]?.armorMult
+    values.push(typeof v === 'number' ? v : 1.0)
+  }
+  return values.map(v => v.toFixed(2)).join(',')
 }
 
+/**
+ * ⭐ 获取穿透字符串
+ * - 新增临时行：用组件内临时状态 newRowPenDisplay
+ * - 已有子弹：从 row.armorData 拼
+ */
 const getPenString = (row) => {
-  const values = row._penValues || []
-  if (values.length === 0) return ''
-  return values.map(v => {
-    const num = typeof v === 'number' ? v : parseFloat(v)
-    return isNaN(num) ? '0.00' : num.toFixed(2)
-  }).join(',')
+  if (row._isNewRow) {
+    return newRowPenDisplay.value || ''
+  }
+
+  if (!row.armorData) return ''
+  const values = []
+  for (let i = 1; i <= 6; i++) {
+    const v = row.armorData[i]?.pen
+    values.push(typeof v === 'number' ? v : 0)
+  }
+  return values.map(v => v.toFixed(2)).join(',')
 }
 
-// ---------- 新增行解析 ----------
-const parseArmorMult = (row) => {
+/**
+ * 把 "1.0,1.0,0.75,0.5,0,0" 解析成数字数组（长度补到 6）
+ */
+const parseNumberArray = (str, defaultValue, length = 6) => {
+  if (!str || str.trim() === '') return null
+
+  const values = str.split(',').map(v => {
+    const num = parseFloat(v.trim())
+    return isNaN(num) ? defaultValue : num
+  })
+
+  while (values.length < length) values.push(defaultValue)
+  return values.slice(0, length)
+}
+
+// ============================================================
+// 新增行的解析（把临时状态写入 row 的临时字段）
+// ============================================================
+
+const parseNewRowArmorMult = (row) => {
   if (!row._isNewRow) return
-  const str = armorMultDisplay.value
-  const values = str.split(',').map(v => parseFloat(v.trim()) || 1.0)
-  while (values.length < 6) values.push(1.0)
-  row._armorMultValues = values.slice(0, 6)
-  row.armorMult = values[0] || 1.0
+  const values = parseNumberArray(newRowArmorMultDisplay.value, 1.0)
+  if (values) {
+    row._armorMultValues = values
+  }
 }
 
-const parsePen = (row) => {
+const parseNewRowPen = (row) => {
   if (!row._isNewRow) return
-  const str = penDisplay.value
-  const values = str.split(',').map(v => parseFloat(v.trim()) || 0)
-  while (values.length < 6) values.push(0)
-  row._penValues = values.slice(0, 6)
-  row.pen = values[0] || 0
+  const values = parseNumberArray(newRowPenDisplay.value, 0)
+  if (values) {
+    row._penValues = values
+  }
 }
 
-// ---------- 单元格编辑事件 ----------
-const onBaseChange = (index, event) => {
+// ============================================================
+// 已有子弹的编辑（走 DataManager）
+// ============================================================
+
+const onBaseChange = (row, event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 0) {
-    const row = props.data[index]
     const dm = dataStore.getDataManager()
-    dm.updateBullet(row._bulletId, { base: value })
+    dm.updateBullet(row.id, { base: value })   // ⭐ 用 row.id
     dataStore.refreshBullets()
     emit('update')
   }
 }
 
-const onArmorMultChange = (index, event) => {
+const onArmorMultChange = (row, event) => {
   const str = event.target.value
-  const values = str.split(',').map(v => parseFloat(v.trim()) || 1.0)
-  if (values.length === 6 && values.every(v => !isNaN(v) && v >= 0)) {
-    const row = props.data[index]
+  const values = parseNumberArray(str, 1.0)
+  if (values && values.every(v => !isNaN(v) && v >= 0)) {
     const dm = dataStore.getDataManager()
-    dm.updateBullet(row._bulletId, { armorMult: values })
+    dm.updateBullet(row.id, { armorMult: values })   // ⭐ 用 row.id
     dataStore.refreshBullets()
     emit('update')
   } else {
-    event.target.value = getArmorMultString(props.data[index])
+    // 解析失败：还原显示
+    event.target.value = getArmorMultString(row)
   }
 }
 
-const onPenChange = (index, event) => {
+const onPenChange = (row, event) => {
   const str = event.target.value
-  const values = str.split(',').map(v => parseFloat(v.trim()) || 0)
-  if (values.length === 6 && values.every(v => !isNaN(v) && v >= 0 && v <= 1)) {
-    const row = props.data[index]
+  const values = parseNumberArray(str, 0)
+  if (values && values.every(v => !isNaN(v) && v >= 0 && v <= 1)) {
     const dm = dataStore.getDataManager()
-    dm.updateBullet(row._bulletId, { pen: values })
+    dm.updateBullet(row.id, { pen: values })   // ⭐ 用 row.id
     dataStore.refreshBullets()
     emit('update')
   } else {
-    event.target.value = getPenString(props.data[index])
+    event.target.value = getPenString(row)
   }
 }
 
-const onPriceChange = (index, event) => {
+const onPriceChange = (row, event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 0) {
-    const row = props.data[index]
     const dm = dataStore.getDataManager()
-    dm.updateBullet(row._bulletId, { price: value })
+    dm.updateBullet(row.id, { price: value })   // ⭐ 用 row.id
     dataStore.refreshBullets()
     emit('update')
   }
 }
 
 // ============================================================
-// ⭐ 新增子弹（关键修复）
+// ⭐ 新增子弹
 // ============================================================
 
 /**
@@ -285,18 +325,21 @@ const onPriceChange = (index, event) => {
  * 传递 index = -1，明确告知父组件是"新增按钮"事件
  */
 const addBullet = () => {
+  // 重置临时输入状态
+  newRowArmorMultDisplay.value = ''
+  newRowPenDisplay.value = ''
   emit('add-bullet', -1, null)
 }
 
 /**
  * 点击"✅ 确认"按钮
- * 传递 index 和 bulletData，父组件创建真实子弹
+ * 传 row 对象，父组件创建真实子弹
  */
-const confirmAdd = (index) => {
-  const row = props.data[index]
+const confirmAdd = (row) => {
   if (!row) return
-  
-  if (!row.caliber || row.caliber.trim() === '') {
+
+  // ⭐ 校验：读 row.caliber（现在能通过 v-model 正确写入）
+  if (!row.caliber || String(row.caliber).trim() === '') {
     alert('⚠️ 请输入子弹口径')
     return
   }
@@ -304,40 +347,50 @@ const confirmAdd = (index) => {
     alert('⚠️ 请选择子弹等级')
     return
   }
-  
+
   const bulletData = {
     id: `${row.caliber}_${row.level}`,
-    caliber: row.caliber,
+    caliber: String(row.caliber).trim(),
     level: row.level,
     base: row.base || 1.0,
     price: row.price || 0,
     armorData: {}
   }
 
-  const armorValues = row._armorMultValues || [1.0, 1.0, 1.0, 1.0, 1.0, 0.6]
-  const penValues = row._penValues || [1.0, 1.0, 0.75, 0.5, 0, 0]
+  // ⭐ 优先用组件内临时状态解析出的值，其次用 row._armorMultValues
+  const armorValues = row._armorMultValues
+    || parseNumberArray(newRowArmorMultDisplay.value, 1.0)
+    || [1.0, 1.0, 1.0, 1.0, 1.0, 0.6]
+
+  const penValues = row._penValues
+    || parseNumberArray(newRowPenDisplay.value, 0)
+    || [1.0, 1.0, 0.75, 0.5, 0, 0]
+
   for (let i = 1; i <= 6; i++) {
     bulletData.armorData[i] = {
-      armorMult: armorValues[i - 1] || 1.0,
-      pen: penValues[i - 1] || 0
+      armorMult: armorValues[i - 1] ?? 1.0,
+      pen: penValues[i - 1] ?? 0
     }
   }
 
-  emit('add-bullet', index, bulletData)
+  emit('add-bullet', null, bulletData)
 }
 
 /**
  * 点击"❌ 取消"按钮
- * 传递 isCancelled = true，父组件移除临时行
+ * 告知父组件移除临时行
  */
-const cancelAdd = (index) => {
-  emit('delete-bullet', index, null, true)
+const cancelAdd = (row) => {
+  emit('delete-bullet', null, null, true)
 }
 
-const deleteRow = (index) => {
-  const row = props.data[index]
+// ============================================================
+// 删除已有子弹
+// ============================================================
+
+const deleteRow = (row) => {
   if (!confirm(`确定要删除子弹 "${row.caliber} Lv.${row.level}" 吗？`)) return
-  emit('delete-bullet', index, row._bulletId, false)
+  emit('delete-bullet', null, row.id, false)   // ⭐ 用 row.id
 }
 </script>
 
