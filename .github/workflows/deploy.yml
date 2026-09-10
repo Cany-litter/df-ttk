@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ vue3-refactor ]    # ⭐ 改成你的 Vue 分支
+    branches: [ vue3-refactor ]
   workflow_dispatch:
 
 permissions:
@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '24'      # ⭐ 改成 24
           cache: 'npm'
           
       - name: Install dependencies
