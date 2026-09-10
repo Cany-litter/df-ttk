@@ -44,6 +44,29 @@ export class DataManager {
     
     // 修改追踪
     this.modifiedWeaponIds = new Set();
+    
+    // ⭐ 缓存管理器（由外部注入）
+    this._cacheManager = null;
+  }
+
+  // ============================================================
+  // 0. 缓存管理器注入
+  // ============================================================
+
+  /**
+   * 设置缓存管理器实例
+   * @param {Object} cacheManager - ConfigCacheManager 实例
+   */
+  setCacheManager(cacheManager) {
+    this._cacheManager = cacheManager;
+  }
+
+  /**
+   * 获取缓存管理器实例
+   * @returns {Object} ConfigCacheManager 实例
+   */
+  getCacheManager() {
+    return this._cacheManager;
   }
 
   // ============================================================
@@ -326,7 +349,6 @@ export class DataManager {
       rows.push(...weaponRows);
     }
     
-    // 注意：UI 排序由 DOMController 处理，这里不排序
     return rows;
   }
 

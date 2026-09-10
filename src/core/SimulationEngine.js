@@ -161,6 +161,204 @@ export class SimulationEngine {
     };
   }
 
+  // ============================================================
+  // ⭐ 1.5 单次模拟（记录模式）—— 供伤害详情弹窗使用
+  // ============================================================
+
+  /**
+   * 模拟一次击杀过程，并记录每一发的详细状态
+   * 
+   * 与 simulateOneTTK 的区别：
+   * - 返回逐发明细数组 steps[]
+   * - 每发携带 debug 中间值（纯伤害、穿透伤害、护甲变化等）
+   * - 每发携带 burstGapBefore（该发之前插入的连发间隔时长，秒）
+   * - 调用策略时传 collectDebug = true
+   * - 结果用于弹窗展示，不参与批量统计
+   * 
+   * ⭐ 连发间隔标记：
+   *   - 每个连发周期第一发（shot % burstCount === 1 且 shot > 1）之前，
+   *     插入一个连发间隔，时长 = weapon.burstInterval（秒）
+   *   - 该时长写入该发 step 的 burstGapBefore 字段
+   *   - 非连发武器 / 连发周期内其他发 → burstGapBefore = 0
+   * 
+   * ⭐ 种子控制：本方法不做种子处理，由调用方在调用前通过 setSeed() 控制。
+   * 
+   * @param {Object} weapon - 武器对象
+   * @param {Object} params - 游戏参数
+   * @param {Object} bulletStrategy - 子弹策略
+   * @param {Object} bulletData - 子弹数据
+   * @returns {Object} {
+   *   steps: Array,               // 逐发明细
+   *   totalTime: number,          // 总时间（秒）
+   *   totalTimeMs: number,        // 总时间（毫秒）
+   *   shots: number,              // 总射击数
+   *   hits: number,               // 命中数
+   *   misses: number,             // 未命中数
+   *   finalHealth: number,        // 结束血量（0）
+   *   finalArmorVal: number,      // 结束护甲
+   *   finalHelmetVal: number,     // 结束头盔
+   *   isBurstMode: boolean,
+   *   flightTime: number,             // 飞行时间（秒）
+   *   shotInterval: number,           // 射击间隔（秒）
+   *   burstInterval: number,          // 单次连发间隔时长（秒）—— 保留兼容
+   *   burstIntervalCount: number,     // 连发次数
+   *   burstIntervalTotal: number,     // 连发间隔总时间（秒）
+   *   shootingIntervalTime: number,   // 射击延迟部分（秒）
+   * }
+   */
+  static simulateOneTTKWithDetail(weapon, params, bulletStrategy, bulletData) {
+    // 初始化状态
+    let health = params.healthValue || 100;
+    let armorState = {
+      armorVal: params.armorValue,
+      helmetVal: params.helmetValue
+    };
+    
+    const { distance, hitProb } = params;
+    
+    // 命中率（与 simulateOneTTK 一致）
+    const hitRate = (typeof params.hitRate === 'number') 
+      ? params.hitRate 
+      : (typeof weapon.hitRate === 'number' ? weapon.hitRate : 0.85);
+    
+    // 射击间隔
+    const isBurstMode = weapon.fireMode === 'burst' && weapon.burstCount && weapon.burstInternalROF;
+    const shotInterval = this._calculateShotInterval(weapon, isBurstMode);
+    const decay = DistanceDecayCalculator.calculate(distance, weapon);
+    
+    // 飞行时间
+    const velocity = weapon._current?.velocity ?? weapon.velocity ?? 575;
+    const flightTime = distance / velocity;
+    
+    // 统计变量
+    let shots = 0;
+    let hits = 0;
+    let burstStats = { count: 0, totalTime: 0 };
+    
+    // 连发部位偏置
+    let firstHitPartInBurst = null;
+    let burstShots = 0;
+    const BURST_BIAS = 0.7;
+    
+    // ⭐ 逐发明细数组
+    const steps = [];
+    
+    // 主循环
+    while (health > 0) {
+      shots++;
+      burstShots++;
+      
+      // ============================================================
+      // ⭐ 判断本发之前是否插入了连发间隔
+      // ============================================================
+      // 连发间隔的判定与 _updateBurstInterval 保持一致：
+      // - 第 1 个连发（shots <= burstCount）不需要间隔
+      // - 之后的每个连发周期开始（shots % burstCount === 1）插入一个间隔
+      let burstGapBefore = 0;
+      if (isBurstMode) {
+        const isNewBurstStart = (shots > weapon.burstCount) && (shots % weapon.burstCount === 1);
+        if (isNewBurstStart) {
+          burstGapBefore = weapon.burstInterval;
+        }
+        // 累计到 burstStats（与 simulateOneTTK 一致）
+        this._updateBurstInterval(weapon, shots, burstStats);
+      }
+      
+      // ============================================================
+      // 命中率判断
+      // ============================================================
+      if (seededRandom() > hitRate) {
+        // 未命中：记录一行
+        steps.push({
+          shot: shots,
+          hit: false,
+          hitPart: null,
+          finalDamage: 0,
+          health,
+          armorVal: armorState.armorVal,
+          helmetVal: armorState.helmetVal,
+          burstGapBefore,
+          debug: null
+        });
+        continue;
+      }
+      
+      // 命中
+      hits++;
+      
+      // 部位选择（与 simulateOneTTK 一致）
+      let hitPart;
+      if (isBurstMode) {
+        const isBurstStart = (burstShots % weapon.burstCount === 1);
+        if (isBurstStart) {
+          firstHitPartInBurst = HitPartSelector.select(hitProb);
+          hitPart = firstHitPartInBurst;
+        } else {
+          hitPart = HitPartSelector.selectWithBias(
+            firstHitPartInBurst,
+            hitProb,
+            BURST_BIAS
+          );
+        }
+      } else {
+        hitPart = HitPartSelector.select(hitProb);
+      }
+      
+      // ⭐ 调用策略时传 collectDebug = true
+      const { damage, newArmorState, debug } = bulletStrategy.calculateHitDamageWithPart(
+        weapon, params, bulletData, decay, hitPart, armorState, true
+      );
+      
+      health -= damage;
+      if (health < 0) health = 0;
+      armorState = newArmorState;
+      
+      // ⭐ 记录这一发
+      steps.push({
+        shot: shots,
+        hit: true,
+        hitPart,
+        finalDamage: damage,
+        health,
+        armorVal: armorState.armorVal,
+        helmetVal: armorState.helmetVal,
+        burstGapBefore,
+        debug  // 中间计算值
+      });
+    }
+    
+    // 总时间
+    const totalTime = this._calculateTotalTime(
+      flightTime, 
+      shotInterval, 
+      shots, 
+      isBurstMode, 
+      burstStats
+    );
+    
+    // ⭐ 射击延迟部分 = 总时间 - 飞行时间 - 连发间隔总时间
+    const shootingIntervalTime = totalTime - flightTime - burstStats.totalTime;
+    
+    return {
+      steps,
+      totalTime,
+      totalTimeMs: totalTime * 1000,
+      shots,
+      hits,
+      misses: shots - hits,
+      finalHealth: health,
+      finalArmorVal: armorState.armorVal,
+      finalHelmetVal: armorState.helmetVal,
+      isBurstMode,
+      flightTime,
+      shotInterval,
+      burstInterval: isBurstMode ? weapon.burstInterval : 0,
+      burstIntervalCount: burstStats.count,        // ⭐ 连发次数
+      burstIntervalTotal: burstStats.totalTime,    // ⭐ 连发间隔总时间（秒）
+      shootingIntervalTime                         // ⭐ 射击延迟部分（秒）
+    };
+  }
+
   /**
    * 计算射击间隔（秒）
    * @private

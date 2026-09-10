@@ -1,21 +1,5 @@
-# TTK计算器
+# Vue 3 + Vite
 
-三角洲行动TTK（Time To Kill）计算器
-使用大量AI辅助修改代码
+This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
 
-## 功能特性
-- ✅ 跑刀
-- ✅ 跑刀
-- ✅ 猛攻
-- ✅ 破产
-
-![鼠鼠](./assets/ss.avif)
-
-## LICENSE
-
-本项目采用 [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](LICENSE) 许可证。
-
-**允许：** 分享、修改、分发  
-**禁止：** 商业使用  
-**要求：** 注明原作者、保持相同许可证
-
+Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).

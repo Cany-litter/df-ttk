@@ -21,7 +21,7 @@ INCLUDE_DIRS = {
 
 # 文件扩展名
 INCLUDE_EXTENSIONS = {
-    '.ts', '.js', '.html', '.css', '.json', '.md', '.txt',
+    '.ts', '.js', '.html', '.css', '.json', '.md', '.txt', '.vue',
     '.yaml', '.yml', '.toml',
 }
 

@@ -1,17 +1,19 @@
 {
-  "name": "ttk",
-  "version": "1.0.0",
-  "description": "三角洲行动TTK（Time To Kill）计算器",
+  "name": "df-ttk",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "build": "node esbuild.config.js",
-    "clean": "rimraf dist",
-    "deploy": "npm run build && echo 'Build completed! Ready for deployment to GitHub Pages.'"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
-  "keywords": ["三角洲行动", "ttk计算器", "ttk", "delta-force", "weapon-calculator", "game-tools"],
-  "author": "B站@中毒的AI",
-  "license": "CC-BY-NC-SA-4.0",
+  "dependencies": {
+    "echarts": "^6.1.0",
+    "vue": "^3.5.41"
+  },
   "devDependencies": {
-    "esbuild": "^0.25.8",
-    "rimraf": "^5.0.0"
+    "@vitejs/plugin-vue": "^6.0.8",
+    "vite": "^8.2.2"
   }
 }

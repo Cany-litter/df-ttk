@@ -1,0 +1,644 @@
+<!-- src/components/PriceTable.vue -->
+<template>
+  <div class="price-table-wrapper">
+    <!-- 工具栏 -->
+    <div class="table-controls">
+      <span class="control-label">☑ 启用配置：</span>
+      <button class="btn-sm btn-outline" @click="selectAll">全选</button>
+      <button class="btn-sm btn-outline" @click="selectNone">全不选</button>
+      <span class="control-hint">（取消勾选不参与 TTK 计算）</span>
+      <span class="enabled-count">已选: {{ enabledCount }}/{{ totalCount }}</span>
+      <button class="btn-sm btn-primary" @click="addConfig">➕ 新增配置</button>
+    </div>
+
+    <!-- 表格 -->
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:80px;">武器</th>
+            <th style="min-width:50px;">序号</th>
+            <th style="min-width:110px;">枪管</th>
+            <th style="min-width:80px;">枪口</th>
+            <th style="min-width:110px;">改枪码</th>
+            <th style="min-width:90px;cursor:pointer;" @click="toggleSort('price')">
+              整枪价格 <span class="sort-icon">{{ getSortIcon('price') }}</span>
+            </th>
+            <th style="min-width:150px;">命中率</th>
+            <th style="min-width:120px;">子弹</th>
+            <th style="min-width:110px;background:#fff3e0;cursor:pointer;" @click="toggleSort('havocCost')">
+              哈弗币消耗 <span class="sort-icon">{{ getSortIcon('havocCost') }}</span>
+            </th>
+            <th style="min-width:120px;">操作</th>
+            <th style="min-width:55px;cursor:pointer;" @click="toggleSort('enabled')">
+              启用 <span class="sort-icon">{{ getSortIcon('enabled') }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(row, index) in sortedRows"
+            :key="row._uniqueId || index"
+            :class="{ 'new-row': row._isNewRow }"
+          >
+            <!-- 武器名称（只读） -->
+            <td class="readonly-cell">{{ row.weaponName }}</td>
+
+            <!-- 序号（只读） -->
+            <td class="readonly-cell">{{ row.configId }}</td>
+
+            <!-- 枪管（下拉选择） -->
+            <td class="control-cell">
+              <select v-model="row.barrel" @change="onCellChange(row, 'barrel', row.barrel)">
+                <option v-for="opt in getBarrelOptions(row)" :key="opt" :value="opt">
+                  {{ opt }}
+                </option>
+              </select>
+            </td>
+
+            <!-- 枪口（下拉选择） -->
+            <td class="control-cell">
+              <select v-model="row.muzzle" @change="onCellChange(row, 'muzzle', row.muzzle)">
+                <option v-for="opt in muzzleOptions" :key="opt" :value="opt">
+                  {{ opt }}
+                </option>
+              </select>
+            </td>
+
+            <!-- 改枪码（输入框） -->
+            <td class="control-cell">
+              <input
+                v-model="row.buildCode"
+                class="cell-input"
+                placeholder="输入改枪码"
+                @blur="onCellChange(row, 'buildCode', row.buildCode)"
+              />
+            </td>
+
+            <!-- 整枪价格（输入框） -->
+            <td class="control-cell">
+              <input
+                :value="getPriceDisplay(row)"
+                class="cell-input"
+                type="number"
+                step="1"
+                placeholder="价格"
+                @blur="onPriceChange(row, $event)"
+              />
+            </td>
+
+            <!-- 命中率（输入框） -->
+            <td class="control-cell">
+              <input
+                v-model="row.hitRateRaw"
+                class="cell-input hitrate-cell"
+                placeholder="30:1.0,50:0.9,100:0.6"
+                @blur="onCellChange(row, 'hitRateRaw', row.hitRateRaw)"
+              />
+            </td>
+
+            <!-- 子弹（下拉选择） -->
+            <td class="control-cell">
+              <select v-model="row.bulletDisplay" @change="onCellChange(row, 'bulletDisplay', row.bulletDisplay)">
+                <option v-for="opt in getBulletOptions(row)" :key="opt" :value="opt">
+                  {{ opt }}
+                </option>
+              </select>
+            </td>
+
+            <!-- 哈弗币消耗（只读） -->
+            <td class="readonly-cell havoc-cell">
+              <span
+                v-if="row._havocCost"
+                class="havoc-cost"
+                :style="{ color: getHavocColor(row._havocCost.totalCost) }"
+                :title="getHavocTooltip(row._havocCost)"
+              >
+                ¥{{ (row._havocCost.totalCost / 10000).toFixed(1) }}W
+              </span>
+              <span v-else class="text-muted">-</span>
+            </td>
+
+            <!-- 操作（只读） -->
+            <td class="readonly-cell">
+              <template v-if="row._isNewRow">
+                <button class="btn-confirm" @click="confirmAdd(index)">✅</button>
+                <button class="btn-cancel" @click="cancelAdd(index)">❌</button>
+              </template>
+              <template v-else>
+                <button class="btn-detail" @click="openDamageDetail(row)" title="单次伤害模拟">📊 详情</button>
+                <button class="btn-delete" @click="deleteRow(row)" title="删除配置">🗑️</button>
+              </template>
+            </td>
+
+            <!-- 启用（复选框） -->
+            <td class="readonly-cell enabled-cell">
+              <input
+                type="checkbox"
+                :checked="row.enabled !== false"
+                @change="onEnabledChange(row, $event)"
+                class="enabled-checkbox"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch } from 'vue'
+import { dataStore } from '@/stores/dataStore'
+
+const props = defineProps({
+  data: {
+    type: Array,
+    required: true
+  },
+  muzzleOptions: {
+    type: Array,
+    default: () => ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器']
+  },
+  getBarrelOptions: {
+    type: Function,
+    required: true
+  },
+  getBulletOptions: {
+    type: Function,
+    required: true
+  },
+  havocCosts: {
+    type: Object,
+    default: () => ({})
+  }
+})
+
+const emit = defineEmits(['update', 'add-config', 'show-damage-detail'])
+
+// ---------- 调试：监听 data 变化 ----------
+watch(() => props.data, (newData, oldData) => {
+  if (newData && newData.length > 0) {
+    const enabled = newData.filter(r => r.enabled !== false).length
+    console.log('🔍 PriceTable data 变化:', oldData?.length, '->', newData?.length, '启用:', enabled)
+  }
+}, { deep: true, immediate: true })
+
+// ---------- 排序 ----------
+const sortKey = ref(null)
+const sortOrder = ref('asc')
+
+const toggleSort = (key) => {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortOrder.value = 'asc'
+  }
+}
+
+const getSortIcon = (key) => {
+  if (sortKey.value !== key) return '⇅'
+  return sortOrder.value === 'asc' ? '↑' : '↓'
+}
+
+// ---------- 计算属性 ----------
+const totalCount = computed(() => props.data.length)
+
+const enabledCount = computed(() => {
+  return props.data.filter(row => row.enabled !== false).length
+})
+
+// 带 HavocCost 的数据
+const dataWithCost = computed(() => {
+  return props.data.map(row => {
+    const weaponId = row._weaponId
+    const configId = row.configId || '#1'
+    const key = `${weaponId}_${configId}`
+    return {
+      ...row,
+      _havocCost: props.havocCosts[key] || null
+    }
+  })
+})
+
+// 排序后的数据
+const sortedRows = computed(() => {
+  if (!sortKey.value) return dataWithCost.value
+
+  return [...dataWithCost.value].sort((a, b) => {
+    let valA = a[sortKey.value] ?? ''
+    let valB = b[sortKey.value] ?? ''
+
+    if (typeof valA === 'number' && typeof valB === 'number') {
+      return sortOrder.value === 'asc' ? valA - valB : valB - valA
+    }
+
+    valA = String(valA)
+    valB = String(valB)
+    const compare = valA.localeCompare(valB, 'zh-CN')
+    return sortOrder.value === 'asc' ? compare : -compare
+  })
+})
+
+// ---------- 辅助方法 ----------
+const getPriceDisplay = (row) => {
+  const price = row.price
+  if (!price || price === 0) return ''
+  return (price / 10000).toFixed(1)
+}
+
+const getHavocColor = (totalCost) => {
+  const costInW = totalCost / 10000
+  if (costInW > 60) return '#f44336'
+  if (costInW > 30) return '#ff9800'
+  return '#4caf50'
+}
+
+const getHavocTooltip = (cost) => {
+  if (!cost) return ''
+  const lines = [
+    `═══════════════════════════════`,
+    `💰 哈弗币消耗: ¥${(cost.totalCost / 10000).toFixed(1)}W`,
+    `═══════════════════════════════`,
+    `整枪损失: ¥${(cost.weaponLossCost / 10000).toFixed(1)}W`,
+    `子弹消耗: ¥${(cost.bulletCost / 10000).toFixed(1)}W`,
+    `平均致死枪数: ${cost.avgShots.toFixed(1)}发`,
+    `KD放大: ${(cost.kdRatio * 5).toFixed(1)}x`,
+    `子弹单价: ¥${cost.bulletPrice}`
+  ]
+  return lines.join('\n')
+}
+
+// ---------- 事件处理 ----------
+// ⭐ 改为传 row 对象，避免排序后 index 错位
+const onCellChange = (row, key, value) => {
+  const dm = dataStore.getDataManager()
+  dm.updatePriceConfig(row._weaponId, row.configId, { [key]: value })
+  dataStore.refreshPrices()
+  emit('update')
+}
+
+const onPriceChange = (row, event) => {
+  const value = parseFloat(event.target.value)
+  if (!isNaN(value) && value >= 0) {
+    const dm = dataStore.getDataManager()
+    dm.updatePriceConfig(row._weaponId, row.configId, { price: value * 10000 })
+    dataStore.refreshPrices()
+    emit('update')
+  }
+}
+
+// 启用/禁用复选框
+const onEnabledChange = (row, event) => {
+  const checked = event.target.checked
+  const dm = dataStore.getDataManager()
+  row.enabled = checked
+  dm.updatePriceConfig(row._weaponId, row.configId, { enabled: checked })
+  dataStore.refreshPrices()
+  emit('update')
+}
+
+// 全选
+const selectAll = () => {
+  const dm = dataStore.getDataManager()
+  props.data.forEach((row) => {
+    if (row._weaponId && row.configId) {
+      row.enabled = true
+      dm.updatePriceConfig(row._weaponId, row.configId, { enabled: true })
+    }
+  })
+  dataStore.refreshPrices()
+  emit('update')
+}
+
+// 全不选
+const selectNone = () => {
+  const dm = dataStore.getDataManager()
+  props.data.forEach((row) => {
+    if (row._weaponId && row.configId) {
+      row.enabled = false
+      dm.updatePriceConfig(row._weaponId, row.configId, { enabled: false })
+    }
+  })
+  dataStore.refreshPrices()
+  emit('update')
+}
+
+// 新增配置
+const addConfig = () => {
+  emit('add-config')
+}
+
+// ⭐ 打开单次伤害模拟弹窗
+const openDamageDetail = (row) => {
+  emit('show-damage-detail', {
+    weaponId: row._weaponId,
+    configId: row.configId || '#1'
+  })
+}
+
+// 删除配置
+const deleteRow = (row) => {
+  if (!confirm(`确定要删除 ${row.weaponName} 的配置吗？`)) return
+
+  const dm = dataStore.getDataManager()
+  dm.removePriceConfig(row._weaponId, row.configId)
+  dataStore.refreshPrices()
+  emit('update')
+}
+
+// 确认新增（新增行）
+const confirmAdd = (index) => {
+  const row = sortedRows.value[index]
+  emit('add-config', index, row)
+}
+
+// 取消新增
+const cancelAdd = (index) => {
+  const row = sortedRows.value[index]
+  const dm = dataStore.getDataManager()
+  if (row._weaponId && row.configId) {
+    dm.removePriceConfig(row._weaponId, row.configId)
+  }
+  dataStore.refreshPrices()
+  emit('update')
+}
+</script>
+
+<style scoped>
+.price-table-wrapper {
+  width: 100%;
+}
+
+/* ============ 工具栏 ============ */
+.table-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border-radius: var(--radius-md);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  border: 1px solid var(--color-border-light);
+}
+
+.control-label {
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.control-hint {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.enabled-count {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: #666;
+  margin-left: auto;
+  background: var(--color-secondary);
+  padding: 0 8px;
+  border-radius: 10px;
+  font-weight: var(--font-weight-medium);
+}
+
+/* ============ 表格 ============ */
+.table-scroll {
+  overflow: auto;
+  max-height: 500px;
+  border: 1px solid #eee;
+  border-radius: var(--radius-md);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  min-width: 700px;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f7f8fa;
+  padding: 6px 6px;
+  border: 1px solid #e0e0e0;
+  text-align: center;
+  white-space: nowrap;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  height: 34px;
+}
+
+/* 单元格：默认无内边距 */
+tbody td {
+  padding: 0;
+  border: 1px solid var(--color-border-light);
+  text-align: center;
+  vertical-align: middle;
+  font-size: var(--font-size-sm);
+  height: 32px;
+  overflow: hidden;
+}
+
+tbody tr:hover {
+  background: var(--color-bg-hover);
+}
+
+tbody tr.new-row td {
+  background: #fff8e1;
+  border-top: 2px solid var(--color-warning);
+}
+
+/* 只读单元格保留内边距 */
+.readonly-cell {
+  padding: 4px 6px;
+}
+
+/* 控件单元格：无内边距 */
+.control-cell {
+  padding: 0;
+  position: relative;
+}
+
+/* ============ 输入框（填满单元格） ============ */
+.cell-input,
+.control-cell input,
+.control-cell select {
+  width: 100%;
+  height: 100%;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: inherit;
+  box-sizing: border-box;
+  outline: none;
+  text-align: center;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+/* 聚焦时：白色背景 + 内部蓝色描边 */
+.cell-input:focus,
+.control-cell input:focus,
+.control-cell select:focus {
+  background: var(--color-bg-white);
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+/* 悬停时：浅色背景 */
+.cell-input:hover:not(:focus),
+.control-cell input:hover:not(:focus),
+.control-cell select:hover:not(:focus) {
+  background: rgba(74, 108, 247, 0.06);
+}
+
+/* ============ 下拉框 ============ */
+.control-cell select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23999' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 20px;
+  cursor: pointer;
+}
+
+/* ============ 特殊列 ============ */
+/* 命中率输入框使用等宽字体 */
+.hitrate-cell {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* 哈弗币消耗 */
+.havoc-cell {
+  background: #fffbf5;
+}
+
+.havoc-cost {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-semibold);
+  cursor: help;
+  padding: 0 4px;
+  border-radius: 2px;
+  border-bottom: 1px dashed #ccc;
+}
+
+.havoc-cost:hover {
+  background: #fff3e0;
+}
+
+/* 启用复选框 */
+.enabled-cell {
+  text-align: center;
+}
+
+.enabled-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+/* 排序图标 */
+.sort-icon {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  margin-left: 2px;
+}
+
+/* ⭐ 详情按钮 */
+.btn-detail {
+  height: var(--btn-height-sm);
+  padding: 2px 8px;
+  border: none;
+  border-radius: var(--btn-radius-sm);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  white-space: nowrap;
+  background: var(--color-primary);
+  color: #fff;
+  margin-right: 3px;
+}
+
+.btn-detail:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-detail:active {
+  transform: translateY(1px);
+}
+
+/* 文本工具类 */
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+/* ============ 移动端适配 ============ */
+@media (max-width: 768px) {
+  .table-controls {
+    gap: 4px;
+    padding: 4px 8px;
+  }
+  
+  .control-hint {
+    width: 100%;
+    margin-left: 0;
+  }
+  
+  .enabled-count {
+    margin-left: 0;
+  }
+  
+  table {
+    font-size: var(--font-size-sm);
+    min-width: 700px;
+  }
+  
+  thead th {
+    padding: 4px 3px;
+    height: 30px;
+  }
+  
+  tbody td {
+    height: 30px;
+  }
+  
+  .cell-input,
+  .control-cell input,
+  .control-cell select {
+    font-size: var(--font-size-sm);
+    min-height: 28px;
+    padding: 3px 6px;
+  }
+  
+  .hitrate-cell {
+    font-size: var(--font-size-xs);
+  }
+
+  .btn-detail {
+    font-size: var(--font-size-xs);
+    padding: 2px 6px;
+  }
+}
+</style>

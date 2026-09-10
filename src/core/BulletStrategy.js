@@ -14,13 +14,42 @@ export class RIPBulletStrategy {
 
   /**
    * ⭐ 新增：使用指定的 hitPart 计算伤害
+   * 
+   * @param {boolean} collectDebug - 是否收集中间计算值（供伤害详情弹窗使用）
    */
-  static calculateHitDamageWithPart(weapon, params, bulletData, decay, hitPart, armorState, debug = false) {
+  static calculateHitDamageWithPart(weapon, params, bulletData, decay, hitPart, armorState, collectDebug = false) {
     // RIP子弹固定命中四肢，忽略传入的 hitPart
     const fixedHitPart = 'limbs';
-    const pureDamage = BaseDamageCalculator.calculate(weapon, bulletData, fixedHitPart, decay);
-    
-    return { damage: pureDamage, newArmorState: { ...armorState }, hitPart: fixedHitPart };
+    const mult = weapon.mult[fixedHitPart] || 1;
+    const baseF = weapon.flesh * bulletData.base * mult;
+    const pureDamage = baseF * decay;
+
+    const result = {
+      damage: pureDamage,
+      newArmorState: { ...armorState },
+      hitPart: fixedHitPart
+    };
+
+    if (collectDebug) {
+      result.debug = {
+        hitPart: fixedHitPart,
+        mult,
+        bulletBase: bulletData.base,
+        weaponFlesh: weapon.flesh,
+        baseDamage: baseF,
+        decay,
+        pureDamage,
+        pen: null,
+        penDamage: null,
+        armorDamage: null,
+        armorBefore: null,
+        armorAfter: null,
+        armorBroken: false,
+        ignoreArmor: true
+      };
+    }
+
+    return result;
   }
 }
 
@@ -38,8 +67,10 @@ export class DoubleBulletStrategy {
 
   /**
    * ⭐ 新增：使用指定的 hitPart 计算伤害
+   * 
+   * @param {boolean} collectDebug - 是否收集中间计算值
    */
-  static calculateHitDamageWithPart(weapon, params, bulletData, decay, hitPart, armorState, debug = false) {
+  static calculateHitDamageWithPart(weapon, params, bulletData, decay, hitPart, armorState, collectDebug = false) {
     const { armorLevel, helmetLevel } = params;
     const { armorVal, helmetVal } = armorState;
     
@@ -47,7 +78,8 @@ export class DoubleBulletStrategy {
     const fixedArmorDamage = 11;
     
     const mult = weapon.mult[hitPart] || 1;
-    const pureDamage = fixedFleshDamage * mult * decay;
+    const baseF = fixedFleshDamage * mult;
+    const pureDamage = baseF * decay;
     
     const armorData = bulletData?.armorData || {};
     const armorLevelStr = String(armorLevel);
@@ -61,32 +93,69 @@ export class DoubleBulletStrategy {
     
     let finalDamage;
     let newArmorState = { ...armorState };
+    let armorBefore = null;
+    let armorAfter = null;
+    let armorBroken = false;
+    let armorDamage = null;
     
     if (hitPart === 'limbs') {
       finalDamage = pureDamage;
     } else if (hitPart === 'head') {
       if (helmetVal <= 0) {
         finalDamage = pureDamage;
+        armorBefore = helmetVal;
+        armorAfter = 0;
       } else {
         const aMultHelmet = armorMult || 1;
         const helmetD = fixedArmorDamage * aMultHelmet;
+        armorBefore = helmetVal;
+        armorDamage = helmetD;
         const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, helmetD, helmetVal, false);
         finalDamage = result.finalDamage;
         newArmorState.helmetVal = result.remainingArmor;
+        armorAfter = result.remainingArmor;
+        armorBroken = result.remainingArmor <= 0 && helmetD >= helmetVal;
       }
     } else {
       if (armorVal <= 0) {
         finalDamage = pureDamage;
+        armorBefore = armorVal;
+        armorAfter = 0;
       } else {
         const aMultArmor = armorMult || 1;
         const armorD = fixedArmorDamage * aMultArmor;
+        armorBefore = armorVal;
+        armorDamage = armorD;
         const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, armorD, armorVal, false);
         finalDamage = result.finalDamage;
         newArmorState.armorVal = result.remainingArmor;
+        armorAfter = result.remainingArmor;
+        armorBroken = result.remainingArmor <= 0 && armorD >= armorVal;
       }
     }
     
-    return { damage: finalDamage, newArmorState, hitPart };
+    const response = { damage: finalDamage, newArmorState, hitPart };
+
+    if (collectDebug) {
+      response.debug = {
+        hitPart,
+        mult,
+        bulletBase: null,
+        weaponFlesh: fixedFleshDamage,
+        baseDamage: baseF,
+        decay,
+        pureDamage,
+        pen,
+        penDamage,
+        armorDamage,
+        armorBefore,
+        armorAfter,
+        armorBroken,
+        ignoreArmor: hitPart === 'limbs'
+      };
+    }
+
+    return response;
   }
 }
 
@@ -107,8 +176,10 @@ export class STBulletStrategy {
 
   /**
    * ⭐ 新增：使用指定的 hitPart 计算伤害
+   * 
+   * @param {boolean} collectDebug - 是否收集中间计算值
    */
-  static calculateHitDamageWithPart(weapon, params, bulletData, decay, hitPart, armorState, debug = false) {
+  static calculateHitDamageWithPart(weapon, params, bulletData, decay, hitPart, armorState, collectDebug = false) {
     const { armorLevel, helmetLevel } = params;
     const { armorVal, helmetVal } = armorState;
     
@@ -139,6 +210,10 @@ export class STBulletStrategy {
     
     let finalDamage;
     let newArmorState = { ...armorState };
+    let armorBefore = null;
+    let armorAfter = null;
+    let armorBroken = false;
+    let armorDamage = null;
     
     if (hitPart === 'limbs') {
       // 四肢：无护甲减伤
@@ -146,25 +221,59 @@ export class STBulletStrategy {
     } else if (hitPart === 'head') {
       if (helmetVal <= 0) {
         finalDamage = pureDamage;
+        armorBefore = helmetVal;
+        armorAfter = 0;
       } else {
         const helmetD = weapon.armor * (armorMult || 1);
+        armorBefore = helmetVal;
+        armorDamage = helmetD;
         const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, helmetD, helmetVal, false);
         finalDamage = result.finalDamage;
         newArmorState.helmetVal = result.remainingArmor;
+        armorAfter = result.remainingArmor;
+        armorBroken = result.remainingArmor <= 0 && helmetD >= helmetVal;
       }
     } else {
       // 胸部或腹部
       if (armorVal <= 0) {
         finalDamage = pureDamage;
+        armorBefore = armorVal;
+        armorAfter = 0;
       } else {
         const armorD = weapon.armor * (armorMult || 1);
+        armorBefore = armorVal;
+        armorDamage = armorD;
         const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, armorD, armorVal, false);
         finalDamage = result.finalDamage;
         newArmorState.armorVal = result.remainingArmor;
+        armorAfter = result.remainingArmor;
+        armorBroken = result.remainingArmor <= 0 && armorD >= armorVal;
       }
     }
     
-    return { damage: finalDamage, newArmorState, hitPart };
+    const response = { damage: finalDamage, newArmorState, hitPart };
+
+    if (collectDebug) {
+      response.debug = {
+        hitPart,
+        mult: weaponMult,
+        stPartMult,
+        bulletBase: bulletData.base,
+        weaponFlesh: weapon.flesh,
+        baseDamage: baseF,
+        decay,
+        pureDamage,
+        pen,
+        penDamage,
+        armorDamage,
+        armorBefore,
+        armorAfter,
+        armorBroken,
+        ignoreArmor: hitPart === 'limbs'
+      };
+    }
+
+    return response;
   }
 }
 
@@ -182,12 +291,16 @@ export class StandardBulletStrategy {
 
   /**
    * ⭐ 新增：使用指定的 hitPart 计算伤害
+   * 
+   * @param {boolean} collectDebug - 是否收集中间计算值
    */
-  static calculateHitDamageWithPart(weapon, params, bulletData, decay, hitPart, armorState, debug = false) {
+  static calculateHitDamageWithPart(weapon, params, bulletData, decay, hitPart, armorState, collectDebug = false) {
     const { armorLevel, helmetLevel } = params;
     const { armorVal, helmetVal } = armorState;
     
-    const pureDamage = BaseDamageCalculator.calculate(weapon, bulletData, hitPart, decay);
+    const mult = weapon.mult[hitPart] || 1;
+    const baseF = weapon.flesh * bulletData.base * mult;
+    const pureDamage = baseF * decay;
     
     const armorData = bulletData?.armorData || {};
     const armorLevelStr = String(armorLevel);
@@ -201,6 +314,10 @@ export class StandardBulletStrategy {
     
     let finalDamage;
     let newArmorState = { ...armorState };
+    let armorBefore = null;
+    let armorAfter = null;
+    let armorBroken = false;
+    let armorDamage = null;
     
     if (hitPart === 'limbs') {
       // 四肢：无护甲减伤
@@ -208,25 +325,58 @@ export class StandardBulletStrategy {
     } else if (hitPart === 'head') {
       if (helmetVal <= 0) {
         finalDamage = pureDamage;
+        armorBefore = helmetVal;
+        armorAfter = 0;
       } else {
         const helmetD = weapon.armor * (armorMult || 1);
+        armorBefore = helmetVal;
+        armorDamage = helmetD;
         const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, helmetD, helmetVal, false);
         finalDamage = result.finalDamage;
         newArmorState.helmetVal = result.remainingArmor;
+        armorAfter = result.remainingArmor;
+        armorBroken = result.remainingArmor <= 0 && helmetD >= helmetVal;
       }
     } else {
       // 胸部或腹部
       if (armorVal <= 0) {
         finalDamage = pureDamage;
+        armorBefore = armorVal;
+        armorAfter = 0;
       } else {
         const armorD = weapon.armor * (armorMult || 1);
+        armorBefore = armorVal;
+        armorDamage = armorD;
         const result = ArmorDamageCalculator.calculate(pureDamage, penDamage, armorD, armorVal, false);
         finalDamage = result.finalDamage;
         newArmorState.armorVal = result.remainingArmor;
+        armorAfter = result.remainingArmor;
+        armorBroken = result.remainingArmor <= 0 && armorD >= armorVal;
       }
     }
     
-    return { damage: finalDamage, newArmorState, hitPart };
+    const response = { damage: finalDamage, newArmorState, hitPart };
+
+    if (collectDebug) {
+      response.debug = {
+        hitPart,
+        mult,
+        bulletBase: bulletData.base,
+        weaponFlesh: weapon.flesh,
+        baseDamage: baseF,
+        decay,
+        pureDamage,
+        pen,
+        penDamage,
+        armorDamage,
+        armorBefore,
+        armorAfter,
+        armorBroken,
+        ignoreArmor: hitPart === 'limbs'
+      };
+    }
+
+    return response;
   }
 }
 

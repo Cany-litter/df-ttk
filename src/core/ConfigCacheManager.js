@@ -5,19 +5,26 @@
  * 1. 生成影响 TTK 计算的参数哈希
  * 2. 检查缓存有效性
  * 3. 关键点线性插值（供柱状图和折线图共用）
- * 4. ⭐ 新增：插值计算平均致死枪数
- * 5. ⭐ 新增：计算哈弗币消耗估算
+ * 4. 插值计算平均致死枪数
+ * 5. 计算哈弗币消耗估算
  * 
  * 不负责：
  * - 缓存的读写（由 DataManager 负责）
  * - 模拟计算（由 SimulationEngine 负责）
  * 
- * 使用方式：
- *   const cacheMgr = getConfigCacheManager(dataManager);
- *   const isValid = cacheMgr.isCacheValid(weapon, config, params, attachment);
- *   const ttk = cacheMgr.interpolateTTK(cacheData.keyPoints, distance);
- *   const shots = cacheMgr.interpolateShots(cacheData.keyPoints, distance);
+ * ⭐ CACHE_VERSION：缓存结构版本号。
+ *    任何影响"缓存内容含义/结构"的改动都应递增此版本号，
+ *    从而让所有旧缓存立即失效（无需手动清理）。
+ * 
+ *    版本历史：
+ *    - v1：初始版本
+ *    - v2：连发字段纳入 hash（fireMode / burstCount / burstInternalROF / burstInterval）
+ *    - v3：cache 对象新增 avgBurstInterval 字段（柱状图展示平均连发间隔）
  */
+
+// ⭐ 缓存版本号（递增即强制所有旧缓存失效）
+const CACHE_VERSION = 3;
+
 export class ConfigCacheManager {
     constructor(dataManager) {
         this.dataManager = dataManager;
@@ -31,9 +38,11 @@ export class ConfigCacheManager {
      * 生成影响 TTK 计算的参数哈希
      * 
      * 包含所有影响 TTK 计算结果的参数：
-     * - 武器基础属性（rof, velocity, flesh, armor, ranges, mult, decays）
-     * - 枪管选择（barrelId）
-     * - 枪口选择（muzzleId）
+     * - ⭐ 缓存版本号（CACHE_VERSION）
+     * - 武器基础属性（rof, velocity, flesh, armor, ranges, mult, decays, triggerDelay）
+     * - 连发字段（fireMode, burstCount, burstInternalROF, burstInterval）
+     * - 枪管选择（barrelId，经过名字反查解析）
+     * - 枪口选择（muzzleId，经过名字反查解析）
      * - 实际使用的子弹（包含口径 + 全局子弹等级）
      * - 战斗参数（护甲等级/值、头盔等级/值、生命值）
      * - 命中率映射（hitRateMap）
@@ -41,24 +50,32 @@ export class ConfigCacheManager {
      * - 扳机延迟开关（triggerDelayEnable）
      * - 精校值（precision）
      * 
-     * @param {Object} weapon - 武器对象
+     * @param {Object} weapon - 武器对象（已应用附件的"武装后"武器）
      * @param {Object} config - 价格配置
      * @param {Object} params - 战斗参数
      * @param {Object} attachment - 附件信息 { precision }
      * @returns {string} 参数哈希
      */
     generateParamsHash(weapon, config, params, attachment = {}) {
-        // 提取武器关键属性
+        // 提取武器关键属性（优先使用 _current 的当前值）
+        const cur = weapon._current || weapon;
+
         const weaponKey = {
             id: weapon.id,
-            rof: weapon.rof,
-            velocity: weapon.velocity,
-            flesh: weapon.flesh,
-            armor: weapon.armor,
-            ranges: weapon.ranges || [],
-            mult: weapon.mult || { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 },
-            decays: weapon.decays || [1, 0.9, 0.7, 0.7, 0.7],
-            triggerDelay: weapon.triggerDelay || 0
+            rof: cur.rof,
+            velocity: cur.velocity,
+            flesh: cur.flesh,
+            armor: cur.armor,
+            ranges: cur.ranges || weapon.ranges || [],
+            mult: cur.mult || weapon.mult || { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 },
+            decays: cur.decays || weapon.decays || [1, 0.9, 0.7, 0.7, 0.7],
+            triggerDelay: weapon.triggerDelay || 0,
+
+            // ⭐ 连发字段（优先读 _current，其次读 weapon 本身）
+            fireMode: cur.fireMode ?? weapon.fireMode ?? null,
+            burstCount: cur.burstCount ?? weapon.burstCount ?? null,
+            burstInternalROF: cur.burstInternalROF ?? weapon.burstInternalROF ?? null,
+            burstInterval: cur.burstInterval ?? weapon.burstInterval ?? null
         };
 
         // ⭐ 获取实际使用的子弹 ID（包含全局子弹等级）
@@ -73,6 +90,30 @@ export class ConfigCacheManager {
             if (bullet) {
                 actualBulletId = bullet.id;
             }
+        }
+
+        // ⭐ 解析 config 的 barrelId（兼容"只有 barrel 名字、没有 barrelId"的历史配置）
+        let resolvedBarrelId = config.barrelId;
+        if ((resolvedBarrelId === undefined || resolvedBarrelId === null || resolvedBarrelId < 0)
+            && config.barrel && config.barrel !== '无' && this.dataManager) {
+            const idx = this.dataManager.findBarrelIdByName(weapon.id, config.barrel);
+            if (idx >= 0) resolvedBarrelId = idx;
+        }
+        if (resolvedBarrelId === undefined || resolvedBarrelId === null) {
+            resolvedBarrelId = -1;
+        }
+
+        // ⭐ 解析 config 的 muzzleId（兼容只有 muzzle 名字的配置）
+        let resolvedMuzzleId = config.muzzleId;
+        if (resolvedMuzzleId === undefined || resolvedMuzzleId === null) {
+            if (config.muzzle && config.muzzle !== '无' && this.dataManager) {
+                const muzzles = this.dataManager.getMuzzles ? this.dataManager.getMuzzles() : [];
+                const found = muzzles.find(m => m.name === config.muzzle);
+                if (found) resolvedMuzzleId = found.id;
+            }
+        }
+        if (resolvedMuzzleId === undefined || resolvedMuzzleId === null) {
+            resolvedMuzzleId = 0;
         }
 
         // 命中概率排序（确保顺序不影响哈希）
@@ -93,6 +134,9 @@ export class ConfigCacheManager {
 
         // 构建哈希字符串
         const parts = [
+            // ⭐ 缓存版本号（版本变更 → 所有旧缓存失效）
+            `v${CACHE_VERSION}`,
+
             // 武器属性
             weaponKey.id,
             weaponKey.rof,
@@ -103,10 +147,16 @@ export class ConfigCacheManager {
             JSON.stringify(weaponKey.mult),
             JSON.stringify(weaponKey.decays),
             weaponKey.triggerDelay,
+
+            // ⭐ 连发字段
+            weaponKey.fireMode ?? '',
+            weaponKey.burstCount ?? '',
+            weaponKey.burstInternalROF ?? '',
+            weaponKey.burstInterval ?? '',
             
-            // 配置选择
-            config.barrelId !== undefined ? config.barrelId : -1,
-            config.muzzleId !== undefined ? config.muzzleId : 0,
+            // 配置选择（用解析后的值，与 getPriceRowsForWeapon 一致）
+            resolvedBarrelId,
+            resolvedMuzzleId,
             // ⭐ 关键修复：使用实际子弹 ID（包含全局子弹等级）
             actualBulletId || '',
             // ⭐ 额外包含子弹等级作为双重保险
@@ -154,7 +204,11 @@ export class ConfigCacheManager {
 
     /**
      * 检查缓存是否有效
-     * @param {Object} weapon - 武器对象
+     * 
+     * ⭐ 除 hash 匹配外，还要求缓存里必须有 avgBurstInterval 字段
+     *    （旧版本 v2 缓存没有这个字段，即使 hash 碰巧匹配也应视为失效）
+     * 
+     * @param {Object} weapon - 武器对象（已应用附件的"武装后"武器）
      * @param {Object} config - 价格配置
      * @param {Object} params - 战斗参数
      * @param {Object} attachment - 附件信息 { precision }
@@ -165,6 +219,10 @@ export class ConfigCacheManager {
         if (!config.cache) return false;
         if (!config.cache.keyPoints || config.cache.keyPoints.length === 0) return false;
         if (!config.cache.hash) return false;
+
+        // ⭐ 缓存结构完整性校验：必须有 avgBurstInterval 字段
+        // （即使 hash 匹配，若字段缺失也视为旧缓存，需重算）
+        if (config.cache.avgBurstInterval === undefined) return false;
 
         // 计算当前哈希
         const currentHash = this.generateParamsHash(weapon, config, params, attachment);
@@ -312,7 +370,7 @@ export class ConfigCacheManager {
     }
 
     // ============================================================
-    // 4. ⭐ 新增：插值计算 - 平均致死枪数
+    // 4. 插值计算 - 平均致死枪数
     // ============================================================
 
     /**
@@ -400,7 +458,7 @@ export class ConfigCacheManager {
     }
 
     // ============================================================
-    // 5. ⭐ 哈弗币消耗估算（KD 放大 5 倍）
+    // 5. 哈弗币消耗估算（KD 放大 5 倍）
     // ============================================================
 
     /**
@@ -412,22 +470,7 @@ export class ConfigCacheManager {
      * @param {Array} keyPoints - 关键点数组 [{ d, t, shots, bulletPrice }, ...]
      * @param {number} distance - 目标距离（用于插值计算该距离的 avgShots）
      * @param {Object} economicParams - 经济参数
-     * @param {number} economicParams.weaponPrice - 整枪价格（元）
-     * @param {number} economicParams.kdRatio - KD 比率（同时也是消耗倍率）
-     * @param {number} economicParams.extractRate - 撤离率 (0-1)
-     * @param {number} economicParams.extraCost - 其他消耗子弹数量（发）
-     * @returns {Object} { 
-     *   totalCost,        // 总消耗（元）
-     *   weaponLossCost,   // 整枪损失成本（元）
-     *   bulletCost,       // 子弹消耗成本（元）
-     *   weaponPrice,      // 整枪价格（元）
-     *   avgShots,         // 该距离的平均致死枪数（插值）
-     *   bulletPrice,      // 子弹单价（元）
-     *   effectiveShots,   // 有效枪数 = KD × 5 × avgShots + extraCost
-     *   kdRatio,          // KD 比率
-     *   extractRate,      // 撤离率
-     *   extraCost         // 其他消耗
-     * }
+     * @returns {Object} 消耗明细
      */
     calculateHavocCost(keyPoints, distance, economicParams = {}) {
         const {
@@ -455,16 +498,16 @@ export class ConfigCacheManager {
         const totalCost = weaponLossCost + bulletCost;
 
         return {
-            totalCost: totalCost,              // 总消耗（元）
-            weaponLossCost: weaponLossCost,    // 整枪损失成本（元）
-            bulletCost: bulletCost,            // 子弹消耗成本（元）
-            weaponPrice: weaponPrice,          // 整枪价格（元）
-            avgShots: avgShots,                // 该距离的平均致死枪数（插值）
-            bulletPrice: bulletPrice,          // 子弹单价（元）
-            effectiveShots: effectiveShots,    // 有效枪数
-            kdRatio: kdRatio,                  // KD 比率
-            extractRate: extractRate,          // 撤离率
-            extraCost: extraCost               // 其他消耗
+            totalCost: totalCost,
+            weaponLossCost: weaponLossCost,
+            bulletCost: bulletCost,
+            weaponPrice: weaponPrice,
+            avgShots: avgShots,
+            bulletPrice: bulletPrice,
+            effectiveShots: effectiveShots,
+            kdRatio: kdRatio,
+            extractRate: extractRate,
+            extraCost: extraCost
         };
     }
 
@@ -475,24 +518,9 @@ export class ConfigCacheManager {
      * - 不插值特定距离，而是取所有关键点 shots 的平均值
      * - 用于价格表格展示（不依赖具体距离）
      * 
-     * @param {Array} keyPoints - 关键点数组 [{ d, t, shots, bulletPrice }, ...]
+     * @param {Array} keyPoints - 关键点数组
      * @param {Object} economicParams - 经济参数
-     * @param {number} economicParams.weaponPrice - 整枪价格（元）
-     * @param {number} economicParams.kdRatio - KD 比率
-     * @param {number} economicParams.extractRate - 撤离率 (0-1)
-     * @param {number} economicParams.extraCost - 其他消耗子弹数量（发）
-     * @returns {Object} { 
-     *   totalCost,        // 总消耗（元）
-     *   weaponLossCost,   // 整枪损失成本（元）
-     *   bulletCost,       // 子弹消耗成本（元）
-     *   weaponPrice,      // 整枪价格（元）
-     *   avgShots,         // 所有关键点的平均致死枪数
-     *   bulletPrice,      // 子弹单价（元）
-     *   effectiveShots,   // 有效枪数 = KD × 5 × avgShots + extraCost
-     *   kdRatio,          // KD 比率
-     *   extractRate,      // 撤离率
-     *   extraCost         // 其他消耗
-     * }
+     * @returns {Object} 消耗明细
      */
     calculateHavocCostAverage(keyPoints, economicParams = {}) {
         const {
@@ -502,21 +530,16 @@ export class ConfigCacheManager {
             extraCost = 30
         } = economicParams;
 
-        // 1. 计算所有关键点的平均致死枪数
         const avgShots = this.averageShots(keyPoints);
         const bulletPrice = this.getBulletPrice(keyPoints);
 
-        // 2. 计算整枪损失成本
         const weaponLossCost = weaponPrice * (1 - extractRate);
 
-        // 3. ⭐ 计算有效枪数：KD × 5 × 平均致死枪数 + 其他消耗
         const effectiveKd = kdRatio * 5;
         const effectiveShots = effectiveKd * avgShots + extraCost;
 
-        // 4. 计算子弹消耗成本
         const bulletCost = effectiveShots * bulletPrice;
 
-        // 5. 总消耗
         const totalCost = weaponLossCost + bulletCost;
 
         return {
