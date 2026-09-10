@@ -8,6 +8,7 @@ const __dirname = dirname(__filename)
 
 export default defineConfig({
   plugins: [vue()],
+  base: '/df-ttk/',          // ⭐ 新增：GitHub Pages 部署路径
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
