@@ -8,8 +8,8 @@
       <span class="count-badge">共 {{ data.length }} 把武器</span>
     </div>
 
-    <!-- 表格 -->
-    <div class="table-scroll">
+    <!-- ============ ⭐ 桌面：表格 ============ -->
+    <div v-if="!isMobile" class="table-scroll">
       <table>
         <thead>
           <tr>
@@ -34,7 +34,6 @@
             <th style="min-width:110px;">枪管</th>
             <th style="min-width:80px;">枪口</th>
             <th style="min-width:90px;">精校</th>
-            <!-- ⭐ 操作列（冻结） -->
             <th class="sticky-action" style="min-width:90px;">操作</th>
           </tr>
         </thead>
@@ -44,7 +43,6 @@
             :key="row.id || index"
             :class="{ 'new-row': row._isNewRow }"
           >
-            <!-- 武器名称 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <input
                 v-if="row._isNewRow"
@@ -55,7 +53,6 @@
               <span v-else>{{ row.name }}</span>
             </td>
 
-            <!-- 类型 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <select v-if="row._isNewRow" v-model="row.type" class="new-row-select">
                 <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
@@ -63,7 +60,6 @@
               <span v-else>{{ row.type }}</span>
             </td>
 
-            <!-- 口径 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <select v-if="row._isNewRow" v-model="row.allowedBullet" class="new-row-select">
                 <option v-for="cal in caliberOptions" :key="cal" :value="cal">{{ cal }}</option>
@@ -71,7 +67,6 @@
               <span v-else>{{ row.allowedBullet || '-' }}</span>
             </td>
 
-            <!-- 射速 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <input
                 v-if="row._isNewRow"
@@ -84,12 +79,10 @@
               <span v-else>{{ row.rof }}</span>
             </td>
 
-            <!-- 当前射速（计算值） -->
             <td class="readonly-cell current-value">
               {{ row.rofCurrent !== undefined && row.rofCurrent !== null ? Math.round(row.rofCurrent) : '-' }}
             </td>
 
-            <!-- 初速 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <input
                 v-if="row._isNewRow"
@@ -102,12 +95,10 @@
               <span v-else>{{ row.velocity }}</span>
             </td>
 
-            <!-- 当前初速（计算值） -->
             <td class="readonly-cell current-value">
               {{ row.velocityCurrent !== undefined && row.velocityCurrent !== null ? Math.round(row.velocityCurrent) : '-' }}
             </td>
 
-            <!-- 射程 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <input
                 v-if="row._isNewRow"
@@ -119,12 +110,10 @@
               <span v-else>{{ formatRanges(row.ranges) }}</span>
             </td>
 
-            <!-- 当前射程（计算值） -->
             <td class="readonly-cell current-value">
               {{ row.rangesCurrent ? formatRanges(row.rangesCurrent) : '-' }}
             </td>
 
-            <!-- 衰减 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <input
                 v-if="row._isNewRow"
@@ -136,12 +125,10 @@
               <span v-else>{{ formatDecays(row.decays) }}</span>
             </td>
 
-            <!-- 当前衰减（计算值） -->
             <td class="readonly-cell current-value">
               {{ row.decaysCurrent ? formatDecays(row.decaysCurrent) : '-' }}
             </td>
 
-            <!-- 肉伤 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <input
                 v-if="row._isNewRow"
@@ -154,12 +141,10 @@
               <span v-else>{{ row.flesh }}</span>
             </td>
 
-            <!-- 当前肉伤（计算值） -->
             <td class="readonly-cell current-value">
               {{ row.fleshCurrent !== undefined && row.fleshCurrent !== null ? Math.round(row.fleshCurrent) : '-' }}
             </td>
 
-            <!-- 甲伤 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <input
                 v-if="row._isNewRow"
@@ -172,12 +157,10 @@
               <span v-else>{{ row.armor }}</span>
             </td>
 
-            <!-- 当前甲伤（计算值） -->
             <td class="readonly-cell current-value">
               {{ row.armorCurrent !== undefined && row.armorCurrent !== null ? Math.round(row.armorCurrent) : '-' }}
             </td>
 
-            <!-- 部位倍率 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <input
                 v-if="row._isNewRow"
@@ -189,15 +172,12 @@
               <span v-else>{{ formatMult(row.mult) }}</span>
             </td>
 
-            <!-- 当前倍率（计算值） -->
             <td class="readonly-cell current-value">
               {{ row.multCurrent ? formatMult(row.multCurrent) : '-' }}
             </td>
 
-            <!-- 部位伤害（计算值） -->
             <td class="readonly-cell part-damage">{{ row.partDamage || '-' }}</td>
 
-            <!-- 枪管 -->
             <td v-if="!row._isNewRow" class="control-cell">
               <select
                 :value="row.barrelName || '无'"
@@ -210,7 +190,6 @@
             </td>
             <td v-else class="readonly-cell">无</td>
 
-            <!-- 枪口 -->
             <td v-if="!row._isNewRow" class="control-cell">
               <select
                 :value="row.muzzleName || '无'"
@@ -223,7 +202,6 @@
             </td>
             <td v-else class="readonly-cell">无</td>
 
-            <!-- 精校 -->
             <td v-if="!row._isNewRow" class="precision-cell">
               <div class="precision-container">
                 <input
@@ -240,7 +218,6 @@
             </td>
             <td v-else class="readonly-cell">-</td>
 
-            <!-- ⭐ 操作（冻结） -->
             <td class="readonly-cell sticky-action">
               <template v-if="row._isNewRow">
                 <button class="btn-confirm" @click="confirmAdd(index)">✅ 确认</button>
@@ -252,14 +229,171 @@
         </tbody>
       </table>
     </div>
+
+    <!-- ============ ⭐ 移动端：卡片 ============ -->
+    <div v-else class="card-list">
+      <div
+        v-for="(row, index) in rowsWithCurrent"
+        :key="row.id || index"
+        class="card-item"
+      >
+        <!-- 卡片头部 -->
+        <div class="card-header-row">
+          <template v-if="row._isNewRow">
+            <input
+              v-model="row.name"
+              class="card-title-input"
+              placeholder="武器名称"
+            />
+          </template>
+          <template v-else>
+            <span class="card-title-text">{{ row.name }}</span>
+            <span class="card-config-tag">{{ row.type }}</span>
+          </template>
+
+          <div class="card-actions">
+            <template v-if="row._isNewRow">
+              <button class="btn-icon btn-confirm" @click="confirmAdd(index)" title="确认">✅</button>
+              <button class="btn-icon btn-cancel" @click="cancelAdd(index)" title="取消">❌</button>
+            </template>
+            <template v-else>
+              <button class="btn-icon btn-edit btn-with-text" @click="editBarrel(index)" title="编辑枪管">🔧 枪管</button>
+            </template>
+          </div>
+        </div>
+
+        <!-- 卡片主体 -->
+        <div class="card-body">
+          <!-- ⭐ 新增行：基础字段可编辑 -->
+          <template v-if="row._isNewRow">
+            <div class="card-group-title">基础信息</div>
+            <div class="card-field editable">
+              <span class="field-label">类型</span>
+              <select v-model="row.type">
+                <option v-for="t in typeOptions" :key="t" :value="t">{{ t }}</option>
+              </select>
+            </div>
+            <div class="card-field editable">
+              <span class="field-label">口径</span>
+              <select v-model="row.allowedBullet">
+                <option v-for="cal in caliberOptions" :key="cal" :value="cal">{{ cal }}</option>
+              </select>
+            </div>
+            <div class="card-field editable">
+              <span class="field-label">射速</span>
+              <input v-model.number="row.rof" type="number" step="1" min="0" />
+            </div>
+            <div class="card-field editable">
+              <span class="field-label">初速</span>
+              <input v-model.number="row.velocity" type="number" step="1" min="0" />
+            </div>
+            <div class="card-field editable">
+              <span class="field-label">射程</span>
+              <input v-model="rangesDisplay" placeholder="40,70,∞,∞" @blur="parseRanges(row)" />
+            </div>
+            <div class="card-field editable">
+              <span class="field-label">衰减</span>
+              <input v-model="decaysDisplay" placeholder="1.0,0.9,0.75,0.75,0.75" @blur="parseDecays(row)" />
+            </div>
+            <div class="card-field editable">
+              <span class="field-label">肉伤</span>
+              <input v-model.number="row.flesh" type="number" step="0.1" min="0" />
+            </div>
+            <div class="card-field editable">
+              <span class="field-label">甲伤</span>
+              <input v-model.number="row.armor" type="number" step="0.1" min="0" />
+            </div>
+            <div class="card-field editable">
+              <span class="field-label">部位倍率</span>
+              <input v-model="multDisplay" placeholder="1.9,1,0.9,0.4" @blur="parseMult(row)" />
+            </div>
+          </template>
+
+          <!-- ⭐ 已有武器：分组展示 -->
+          <template v-else>
+            <div class="card-group-title">基础属性 / 当前值</div>
+            <div class="card-field">
+              <span class="field-label">射速</span>
+              <span v-html="dualValue(row.rof, Math.round(row.rofCurrent), ' RPM')"></span>
+            </div>
+            <div class="card-field">
+              <span class="field-label">初速</span>
+              <span v-html="dualValue(row.velocity, Math.round(row.velocityCurrent), ' m/s')"></span>
+            </div>
+            <div class="card-field">
+              <span class="field-label">肉伤</span>
+              <span v-html="dualValue(row.flesh, Math.round(row.fleshCurrent))"></span>
+            </div>
+            <div class="card-field">
+              <span class="field-label">甲伤</span>
+              <span v-html="dualValue(row.armor, Math.round(row.armorCurrent))"></span>
+            </div>
+            <div class="card-field">
+              <span class="field-label">射程</span>
+              <span class="field-value mono">{{ formatRanges(row.ranges) }}</span>
+            </div>
+            <div class="card-field">
+              <span class="field-label">衰减</span>
+              <span class="field-value mono">{{ formatDecays(row.decays) }}</span>
+            </div>
+            <div class="card-field">
+              <span class="field-label">倍率</span>
+              <span class="field-value mono">{{ formatMult(row.mult) }}</span>
+            </div>
+            <div class="card-field">
+              <span class="field-label">部位伤害</span>
+              <span class="field-value mono">{{ row.partDamage || '-' }}</span>
+            </div>
+
+            <div class="card-group-title">附件</div>
+            <div class="card-field editable">
+              <span class="field-label">枪管</span>
+              <select
+                :value="row.barrelName || '无'"
+                @change="onBarrelChange(index, $event)"
+              >
+                <option v-for="opt in getBarrelOptions(row)" :key="opt" :value="opt">
+                  {{ opt }}
+                </option>
+              </select>
+            </div>
+            <div class="card-field editable">
+              <span class="field-label">枪口</span>
+              <select
+                :value="row.muzzleName || '无'"
+                @change="onMuzzleChange(index, $event)"
+              >
+                <option v-for="opt in muzzleOptions" :key="opt" :value="opt">
+                  {{ opt }}
+                </option>
+              </select>
+            </div>
+            <div class="card-field">
+              <span class="field-label">精校</span>
+              <div class="precision-container">
+                <input
+                  type="range"
+                  :min="-0.09"
+                  :max="0.09"
+                  :step="0.01"
+                  :value="row.precision || 0.09"
+                  @input="onPrecisionChange(index, $event)"
+                  class="precision-slider"
+                />
+                <span class="precision-value">{{ Math.round((row.precision || 0.09) * 100) }}%</span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 import { formatRanges, formatMultipliers } from '@/utils/formatters'
-// ⭐ 引入抽出的武器属性计算函数
 import { calculateCurrentValues } from '@/utils/weaponCalc'
 
 const props = defineProps({
@@ -291,6 +425,41 @@ const emit = defineEmits(['update', 'edit-barrel', 'add-weapon', 'delete-weapon'
 
 const typeOptions = ['步枪', '冲锋枪', '轻机枪', '精确射手步枪', '手枪']
 
+// ⭐ 是否为移动端（视口宽度 <= 768）
+const isMobile = ref(false)
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+onMounted(() => {
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateIsMobile)
+})
+
+// ============================================================
+// ⭐ 双值显示（原值 → 当前值）
+// ============================================================
+const dualValue = (orig, cur, suffix = '') => {
+  // 容错
+  if (cur === undefined || cur === null || isNaN(cur)) {
+    return `<span class="field-value">${orig}${suffix}</span>`
+  }
+
+  const same = String(orig) === String(cur)
+  if (same) {
+    return `<span class="field-value dual"><span class="cur same">${cur}${suffix}</span></span>`
+  }
+  return `<span class="field-value dual">
+    <span class="orig">${orig}${suffix}</span>
+    <span class="arrow">→</span>
+    <span class="cur">${cur}${suffix}</span>
+  </span>`
+}
+
 // ============================================================
 // ⭐ 附件管理（内部维护）
 // ============================================================
@@ -317,7 +486,6 @@ const initWeaponAttachments = (weapons) => {
   })
 }
 
-// ⭐ 在 watch 中初始化附件（不在 computed 中，避免修改响应式数据导致循环）
 watch(() => props.data, (newData) => {
   initWeaponAttachments(newData)
 }, { immediate: true })
@@ -345,7 +513,6 @@ const getMuzzleName = (muzzleId) => {
 
 const rowsWithCurrent = computed(() => {
   return props.data.map(weapon => {
-    // ⭐ 新增行直接返回，不做任何转换
     if (weapon._isNewRow) {
       return {
         ...weapon,
@@ -365,7 +532,6 @@ const rowsWithCurrent = computed(() => {
       barrelName = barrel.name || '无'
     }
     
-    // ⭐ 使用抽出的 calculateCurrentValues（含连发字段）
     const current = calculateCurrentValues(weapon, barrel, muzzleId, precision)
     
     const multCurrent = current.mult || weapon.mult
@@ -517,17 +683,10 @@ const editBarrel = (index) => {
 // ⭐ 新增武器
 // ============================================================
 
-/**
- * 点击"新增枪械"按钮
- * 传递 index = -1，明确告知父组件是"新增按钮"事件
- */
 const addWeapon = () => {
   emit('add-weapon', -1, null)
 }
 
-/**
- * 点击"✅ 确认"按钮
- */
 const confirmAdd = (index) => {
   const row = rowsWithCurrent.value[index]
   if (!row) return
@@ -544,9 +703,6 @@ const confirmAdd = (index) => {
   emit('add-weapon', index, row)
 }
 
-/**
- * 点击"❌ 取消"按钮
- */
 const cancelAdd = (index) => {
   emit('delete-weapon', index, null, true)
 }
@@ -658,18 +814,15 @@ tbody tr.new-row td {
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.06);
 }
 
-/* 表头的冻结列需要更高层级（盖住表头） */
 thead th.sticky-action {
   z-index: 15;
   background: #f0f4f8;
 }
 
-/* 悬停时保持背景一致 */
 tbody tr:hover .sticky-action {
   background: var(--color-bg-hover);
 }
 
-/* 新增行时保持背景一致 */
 tbody tr.new-row .sticky-action {
   background: #fff8e1;
 }
@@ -777,7 +930,31 @@ tbody tr.new-row .sticky-action {
   text-align: center;
 }
 
-/* ============ 移动端适配 ============ */
+/* ⭐ 卡片模式：新增行的武器名输入框 */
+.card-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-size: 13px;
+  background: var(--color-bg-white);
+  color: var(--color-text);
+  outline: none;
+}
+
+.card-title-input:focus {
+  border-color: var(--color-primary);
+}
+
+/* ⭐ 卡片模式下，精校滑条居中 */
+.card-field .precision-container {
+  justify-content: flex-start;
+  flex: 1;
+}
+
+/* ============ 移动端适配（表格模式下的微调） ============ */
 @media (max-width: 768px) {
   table {
     font-size: var(--font-size-xs);

@@ -405,3 +405,335 @@ table {
 .mb-8 {
   margin-bottom: var(--spacing-md);
 }
+
+/* ============================================================
+   9. 卡片式表格（移动端）
+   
+   用途：三个表格组件（价格/武器/子弹）在移动端切换为卡片布局
+   触发：由组件内部的 isMobile 判断（window.innerWidth <= 768）
+   
+   注意：这些样式是全局的（不在 scoped 里），
+        三个表格组件直接使用这些 class 即可。
+   ============================================================ */
+
+/* ---------- 卡片列表容器 ---------- */
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- 单张卡片 ---------- */
+.card-item {
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.card-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 未启用卡片（价格表用） */
+.card-item.disabled {
+  opacity: 0.6;
+}
+
+/* ---------- 卡片头部 ---------- */
+.card-header-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #f8faff;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.card-title-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-config-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: #e8eeff;
+  padding: 2px 7px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.card-enabled-label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  cursor: pointer;
+  font-size: 11px;
+  color: #666;
+}
+
+.card-enabled-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+  margin: 0;
+}
+
+/* 卡片头部右侧的操作按钮组 */
+.card-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ---------- 卡片内的图标按钮 ---------- */
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-family);
+}
+
+.btn-icon.btn-detail {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn-icon.btn-detail:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-icon.btn-edit {
+  background: var(--color-warning);
+  color: #fff;
+}
+
+.btn-icon.btn-edit:hover {
+  background: var(--color-warning-hover);
+}
+
+.btn-icon.btn-delete {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.btn-icon.btn-delete:hover {
+  background: #e0e0e0;
+  color: var(--color-danger);
+}
+
+.btn-icon.btn-confirm {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.btn-icon.btn-confirm:hover {
+  background: var(--color-success-hover);
+}
+
+.btn-icon.btn-cancel {
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.btn-icon.btn-cancel:hover {
+  background: var(--color-danger-hover);
+}
+
+/* 带文字的图标按钮（如"🔧 枪管"） */
+.btn-icon.btn-with-text {
+  width: auto;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 4px;
+}
+
+/* ---------- 卡片主体 ---------- */
+.card-body {
+  padding: 2px 0;
+}
+
+/* 分组标题 */
+.card-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+  padding: 6px 12px 4px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+  border-top: 1px solid #f0f0f0;
+  letter-spacing: 0.5px;
+}
+
+.card-group-title:first-child {
+  border-top: none;
+}
+
+/* ---------- 卡片字段行 ---------- */
+.card-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px dashed #f0f0f0;
+}
+
+.card-field:last-child {
+  border-bottom: none;
+}
+
+.card-field .field-label {
+  font-size: 12px;
+  color: #888;
+  flex-shrink: 0;
+  width: 68px;
+}
+
+.card-field .field-value {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--color-text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 可编辑字段：输入框/下拉框 */
+.card-field.editable input,
+.card-field.editable select {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--color-bg-light);
+  color: var(--color-text);
+  outline: none;
+}
+
+.card-field.editable input:focus,
+.card-field.editable select:focus {
+  border-color: var(--color-primary);
+  background: #fff;
+}
+
+/* ---------- 字段值特殊样式 ---------- */
+
+/* 等宽字体 */
+.field-value.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* 双值显示（原值 → 当前值） */
+.field-value.dual {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.field-value.dual .orig {
+  color: #999;
+  font-weight: 400;
+}
+
+.field-value.dual .arrow {
+  color: #ccc;
+  font-size: 11px;
+}
+
+.field-value.dual .cur {
+  color: var(--color-primary);
+  font-weight: 600;
+  background: #f5f7fb;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+/* 当前值与原值相同：只显示一个，不高亮 */
+.field-value.dual .cur.same {
+  color: #666;
+  font-weight: 500;
+  background: transparent;
+  padding: 2px 0;
+}
+
+/* 哈弗币消耗颜色（复用颜色变量） */
+.field-value.havoc-green {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.field-value.havoc-orange {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.field-value.havoc-red {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+/* 特殊等级徽章（子弹表用） */
+.level-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--color-warning);
+  color: #fff;
+}
+
+/* ---------- 卡片底部操作栏（可选，暂不使用） ---------- */
+/* 
+  注：现在操作按钮放在卡片头部，这里保留供未来扩展
+*/
+.card-footer-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.card-footer-row .btn-card {
+  flex: 1;
+  height: 32px;
+  border: none;
+  border-radius: 5px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}

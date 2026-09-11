@@ -11,8 +11,8 @@
       <button class="btn-sm btn-primary" @click="addConfig">➕ 新增配置</button>
     </div>
 
-    <!-- 表格 -->
-    <div class="table-scroll">
+    <!-- ============ ⭐ 桌面：表格 ============ -->
+    <div v-if="!isMobile" class="table-scroll">
       <table>
         <thead>
           <tr>
@@ -32,7 +32,6 @@
             <th style="min-width:110px;background:#fff3e0;cursor:pointer;" @click="toggleSort('havocCost')">
               哈弗币消耗 <span class="sort-icon">{{ getSortIcon('havocCost') }}</span>
             </th>
-            <!-- ⭐ 操作列（冻结） -->
             <th class="sticky-action" style="min-width:120px;">操作</th>
           </tr>
         </thead>
@@ -42,7 +41,6 @@
             :key="row._uniqueId || index"
             :class="{ 'new-row': row._isNewRow }"
           >
-            <!-- 启用（复选框） -->
             <td class="readonly-cell enabled-cell">
               <input
                 type="checkbox"
@@ -51,14 +49,8 @@
                 class="enabled-checkbox"
               />
             </td>
-
-            <!-- 武器名称（只读） -->
             <td class="readonly-cell">{{ row.weaponName }}</td>
-
-            <!-- 序号（只读） -->
             <td class="readonly-cell">{{ row.configId }}</td>
-
-            <!-- 枪管（下拉选择） -->
             <td class="control-cell">
               <select v-model="row.barrel" @change="onCellChange(row, 'barrel', row.barrel)">
                 <option v-for="opt in getBarrelOptions(row)" :key="opt" :value="opt">
@@ -66,8 +58,6 @@
                 </option>
               </select>
             </td>
-
-            <!-- 枪口（下拉选择） -->
             <td class="control-cell">
               <select v-model="row.muzzle" @change="onCellChange(row, 'muzzle', row.muzzle)">
                 <option v-for="opt in muzzleOptions" :key="opt" :value="opt">
@@ -75,8 +65,6 @@
                 </option>
               </select>
             </td>
-
-            <!-- 改枪码（输入框） -->
             <td class="control-cell">
               <input
                 v-model="row.buildCode"
@@ -85,8 +73,6 @@
                 @blur="onCellChange(row, 'buildCode', row.buildCode)"
               />
             </td>
-
-            <!-- 整枪价格（输入框） -->
             <td class="control-cell">
               <input
                 :value="getPriceDisplay(row)"
@@ -97,8 +83,6 @@
                 @blur="onPriceChange(row, $event)"
               />
             </td>
-
-            <!-- 命中率（输入框） -->
             <td class="control-cell">
               <input
                 :value="row.hitRateRaw"
@@ -107,8 +91,6 @@
                 @blur="onHitRateChange(row, $event)"
               />
             </td>
-
-            <!-- 子弹（下拉选择） -->
             <td class="control-cell">
               <select
                 :value="row.bulletDisplay"
@@ -119,8 +101,6 @@
                 </option>
               </select>
             </td>
-
-            <!-- 哈弗币消耗（只读） -->
             <td class="readonly-cell havoc-cell">
               <span
                 v-if="row._havocCost"
@@ -132,8 +112,6 @@
               </span>
               <span v-else class="text-muted">-</span>
             </td>
-
-            <!-- ⭐ 操作（冻结） -->
             <td class="readonly-cell sticky-action">
               <template v-if="row._isNewRow">
                 <button class="btn-confirm" @click="confirmAdd(index)">✅</button>
@@ -148,11 +126,137 @@
         </tbody>
       </table>
     </div>
+
+    <!-- ============ ⭐ 移动端：卡片 ============ -->
+    <div v-else class="card-list">
+      <div
+        v-for="(row, index) in sortedRows"
+        :key="row._uniqueId || index"
+        class="card-item"
+        :class="{ disabled: row.enabled === false }"
+      >
+        <!-- 卡片头部：武器名 + 序号 + 启用 + 哈弗币 + 操作 -->
+        <div class="card-header-row">
+          <span class="card-title-text">{{ row.weaponName }}</span>
+          <span class="card-config-tag">{{ row.configId }}</span>
+
+          <!-- 启用复选框 -->
+          <label class="card-enabled-label">
+            <input
+              type="checkbox"
+              :checked="row.enabled !== false"
+              @change="onEnabledChange(row, $event)"
+            />
+          </label>
+
+          <!-- ⭐ 哈弗币消耗（放在启用和操作之间） -->
+          <span
+            v-if="row._havocCost"
+            class="card-havoc-cost"
+            :style="{ color: getHavocColor(row._havocCost.totalCost) }"
+            :title="getHavocTooltip(row._havocCost)"
+          >
+            ¥{{ (row._havocCost.totalCost / 10000).toFixed(1) }}W
+          </span>
+          <span v-else class="card-havoc-cost text-muted">-</span>
+
+          <!-- 操作按钮 -->
+          <div class="card-actions">
+            <template v-if="row._isNewRow">
+              <button class="btn-icon btn-confirm" @click="confirmAdd(index)" title="确认">✅</button>
+              <button class="btn-icon btn-cancel" @click="cancelAdd(index)" title="取消">❌</button>
+            </template>
+            <template v-else>
+              <button class="btn-icon btn-detail" @click="openDamageDetail(row)" title="详情">📊</button>
+              <button class="btn-icon btn-delete" @click="deleteRow(row)" title="删除">🗑️</button>
+            </template>
+          </div>
+        </div>
+
+        <!-- 卡片主体 -->
+        <div class="card-body">
+          <!-- 枪管 -->
+          <div class="card-field editable">
+            <span class="field-label">枪管</span>
+            <select
+              :value="row.barrel"
+              @change="onCellChange(row, 'barrel', $event.target.value)"
+            >
+              <option v-for="opt in getBarrelOptions(row)" :key="opt" :value="opt">
+                {{ opt }}
+              </option>
+            </select>
+          </div>
+
+          <!-- 枪口 -->
+          <div class="card-field editable">
+            <span class="field-label">枪口</span>
+            <select
+              :value="row.muzzle"
+              @change="onCellChange(row, 'muzzle', $event.target.value)"
+            >
+              <option v-for="opt in muzzleOptions" :key="opt" :value="opt">
+                {{ opt }}
+              </option>
+            </select>
+          </div>
+
+          <!-- 改枪码 -->
+          <div class="card-field editable">
+            <span class="field-label">改枪码</span>
+            <input
+              type="text"
+              :value="row.buildCode"
+              placeholder="输入改枪码"
+              @blur="onCellChange(row, 'buildCode', $event.target.value)"
+            />
+          </div>
+
+          <!-- 整枪价格 -->
+          <div class="card-field editable">
+            <span class="field-label">整枪价格</span>
+            <input
+              type="number"
+              :value="getPriceDisplay(row)"
+              step="0.1"
+              placeholder="价格"
+              @blur="onPriceChange(row, $event)"
+            />
+            <span style="color:#888;font-size:11px;">W</span>
+          </div>
+
+          <!-- 命中率 -->
+          <div class="card-field editable">
+            <span class="field-label">命中率</span>
+            <input
+              type="text"
+              class="mono"
+              :value="row.hitRateRaw"
+              placeholder="30:1.0,50:0.9,100:0.6"
+              @blur="onHitRateChange(row, $event)"
+            />
+          </div>
+
+          <!-- 子弹 -->
+          <div class="card-field editable">
+            <span class="field-label">子弹</span>
+            <select
+              :value="row.bulletDisplay"
+              @change="onBulletChange(row, $event)"
+            >
+              <option v-for="opt in getBulletOptions(row)" :key="opt" :value="opt">
+                {{ opt }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 
 const props = defineProps({
@@ -179,6 +283,21 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update', 'add-config', 'show-damage-detail'])
+
+// ⭐ 是否为移动端（视口宽度 <= 768）
+const isMobile = ref(false)
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+onMounted(() => {
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateIsMobile)
+})
 
 // ---------- 调试：监听 data 变化 ----------
 watch(() => props.data, (newData, oldData) => {
@@ -277,11 +396,6 @@ const getHavocTooltip = (cost) => {
 // ============================================================
 // ⭐ 命中率字符串解析
 // ============================================================
-
-/**
- * 把 "30:1.0,50:0.9,100:0.6" 解析成
- *   { distance: [30, 50, 100], hitRate: [1.0, 0.9, 0.6] }
- */
 const parseHitRateString = (str) => {
   if (!str || str.trim() === '') {
     return { distance: [], hitRate: [] }
@@ -505,7 +619,6 @@ thead th {
   height: 34px;
 }
 
-/* 单元格：默认无内边距 */
 tbody td {
   padding: 0;
   border: 1px solid var(--color-border-light);
@@ -525,12 +638,10 @@ tbody tr.new-row td {
   border-top: 2px solid var(--color-warning);
 }
 
-/* 只读单元格保留内边距 */
 .readonly-cell {
   padding: 4px 6px;
 }
 
-/* 控件单元格：无内边距 */
 .control-cell {
   padding: 0;
   position: relative;
@@ -545,18 +656,15 @@ tbody tr.new-row td {
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.06);
 }
 
-/* 表头的冻结列需要更高层级（盖住表头） */
 thead th.sticky-action {
   z-index: 15;
   background: #f7f8fa;
 }
 
-/* 悬停时保持背景一致 */
 tbody tr:hover .sticky-action {
   background: var(--color-bg-hover);
 }
 
-/* 新增行时保持背景一致 */
 tbody tr.new-row .sticky-action {
   background: #fff8e1;
 }
@@ -581,7 +689,6 @@ tbody tr.new-row .sticky-action {
   transition: background 0.15s, box-shadow 0.15s;
 }
 
-/* 聚焦时：白色背景 + 内部蓝色描边 */
 .cell-input:focus,
 .control-cell input:focus,
 .control-cell select:focus {
@@ -589,7 +696,6 @@ tbody tr.new-row .sticky-action {
   box-shadow: inset 0 0 0 2px var(--color-primary);
 }
 
-/* 悬停时：浅色背景 */
 .cell-input:hover:not(:focus),
 .control-cell input:hover:not(:focus),
 .control-cell select:hover:not(:focus) {
@@ -609,13 +715,11 @@ tbody tr.new-row .sticky-action {
 }
 
 /* ============ 特殊列 ============ */
-/* 命中率输入框使用等宽字体 */
 .hitrate-cell {
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
 }
 
-/* 哈弗币消耗 */
 .havoc-cell {
   background: #fffbf5;
 }
@@ -633,7 +737,6 @@ tbody tr.new-row .sticky-action {
   background: #fff3e0;
 }
 
-/* 启用复选框 */
 .enabled-cell {
   text-align: center;
 }
@@ -645,14 +748,12 @@ tbody tr.new-row .sticky-action {
   accent-color: var(--color-primary);
 }
 
-/* 排序图标 */
 .sort-icon {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   margin-left: 2px;
 }
 
-/* ⭐ 详情按钮 */
 .btn-detail {
   height: var(--btn-height-sm);
   padding: 2px 8px;
@@ -681,12 +782,28 @@ tbody tr.new-row .sticky-action {
   transform: translateY(1px);
 }
 
-/* 文本工具类 */
 .text-muted {
   color: var(--color-text-muted);
 }
 
-/* ============ 移动端适配 ============ */
+/* ⭐ 卡片模式下，让卡片内的等宽输入框生效 */
+.card-field.editable input.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* ============ ⭐ 卡片头部的哈弗币消耗 ============ */
+.card-havoc-cost {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+  padding: 0 4px;
+  white-space: nowrap;
+  cursor: help;
+}
+
+/* ============ 移动端适配（表格模式下的微调） ============ */
 @media (max-width: 768px) {
   .table-controls {
     gap: 4px;
@@ -702,35 +819,9 @@ tbody tr.new-row .sticky-action {
     margin-left: 0;
   }
   
-  table {
-    font-size: var(--font-size-sm);
-    min-width: 700px;
-  }
-  
-  thead th {
-    padding: 4px 3px;
-    height: 30px;
-  }
-  
-  tbody td {
-    height: 30px;
-  }
-  
-  .cell-input,
-  .control-cell input,
-  .control-cell select {
-    font-size: var(--font-size-sm);
-    min-height: 28px;
-    padding: 3px 6px;
-  }
-  
-  .hitrate-cell {
-    font-size: var(--font-size-xs);
-  }
-
-  .btn-detail {
-    font-size: var(--font-size-xs);
-    padding: 2px 6px;
+  .tab-btn {
+    padding: 4px 10px;
+    font-size: var(--font-size-md);
   }
 }
 </style>

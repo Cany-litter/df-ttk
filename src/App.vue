@@ -244,21 +244,6 @@
       </div>
     </div>
   </Teleport>
-
-  <!-- ============ ⭐ 移动端竖屏提示 ============ -->
-  <Teleport to="body">
-    <div
-      v-if="!rotateHintDismissed"
-      class="rotate-hint"
-      @click="closeRotateHint"
-    >
-      <div class="rotate-hint-card" @click.stop>
-        <div class="rotate-hint-icon">📱</div>
-        <div class="rotate-hint-text">请横屏使用</div>
-        <button class="rotate-hint-btn" @click="closeRotateHint">知道了</button>
-      </div>
-    </div>
-  </Teleport>
 </template>
 
 <script setup>
@@ -308,13 +293,6 @@ const addConfigId = ref('')
 const showDamageDetail = ref(false)
 const detailWeaponId = ref(null)
 const detailConfigId = ref('#1')
-
-// ⭐ 移动端竖屏提示：是否已被用户关闭
-const rotateHintDismissed = ref(false)
-
-const closeRotateHint = () => {
-  rotateHintDismissed.value = true
-}
 
 // ---------- 计算属性 ----------
 const priceRows = computed(() => {
@@ -534,7 +512,6 @@ const handleCalculate = async () => {
     const cacheManager = dm.getCacheManager?.() || null
     const params = paramsStore.state
 
-    // ⭐ 显示进度遮罩
     const total = armed.length
     appStore.showCalcProgress('计算 TTK 中...', total)
 
@@ -550,17 +527,13 @@ const handleCalculate = async () => {
 
       let totalTimeMs = 0
       let avgShots = 0
-      let burstIntervalMs = 0     // ⭐ 平均连发间隔（毫秒）
+      let burstIntervalMs = 0
       let fromCache = false
 
-      // ============================================================
-      // ⭐ 缓存读取前先校验 hash 有效性
-      // ============================================================
       const price = dm.getPriceByWeaponId(weaponId)
       if (price && cacheManager) {
         const config = price.configs.find(c => c.id === configId)
         if (config && config.cache && config.cache.keyPoints) {
-          // ⭐ 校验 hash（参数变化 → 缓存失效）
           const isValid = cacheManager.isCacheValid(weapon, config, params, attachment)
 
           if (isValid) {
@@ -577,12 +550,10 @@ const handleCalculate = async () => {
               }
             }
             avgShots = shotCount > 0 ? totalShots / shotCount : 0
-            // ⭐ 从缓存读连发间隔（秒 → 毫秒）
             burstIntervalMs = (config.cache.avgBurstInterval || 0) * 1000
             fromCache = true
             cacheHits++
           } else {
-            // 缓存失效：删除旧缓存，走重新模拟
             console.log(`🔄 缓存失效: ${weapon._displayName || weapon.name} (hash 不匹配)`)
             delete config.cache
             cacheMisses++
@@ -602,7 +573,6 @@ const handleCalculate = async () => {
           if (bulletData) {
             const strategy = BulletStrategyFactory.getStrategy(realBulletKey)
 
-            // ⭐ 使用配置的命中率映射
             const configHitRateMap = attachment.hitRateMap || params.hitRateMap || []
             const hitRate = dm.getHitRateFromMap(
               configHitRateMap,
@@ -623,7 +593,6 @@ const handleCalculate = async () => {
               : 0
             totalTimeMs = (result.avgTime + trigger) * 1000
             avgShots = result.avgShots || 0
-            // ⭐ 平均连发间隔（秒 → 毫秒）
             burstIntervalMs = (result.avgBurstInterval || 0) * 1000
           }
         }
@@ -633,7 +602,6 @@ const handleCalculate = async () => {
       const velocity = weapon.velocity || 500
       const flight = (params.distance / velocity) * 1000
 
-      // ⭐ 计算"无空枪射击延迟"和"空枪延迟"，从总时间里扣除飞行/连发/扳机后的部分
       const nonShotPart = flight + triggerDelay + burstIntervalMs
       const remaining = Math.max(0, totalTimeMs - nonShotPart)
       const noMissFireDelay = remaining * (0.5 / 0.7)
@@ -834,7 +802,6 @@ const buildDistanceStats = async (armed, attachments) => {
     let times = []
     let keyPoints = []
 
-    // 1. 尝试从缓存读取（先校验 hash）
     if (price && cacheManager) {
       const config = price.configs.find(c => c.id === configId)
       if (config && config.cache && config.cache.keyPoints) {
@@ -852,14 +819,12 @@ const buildDistanceStats = async (armed, attachments) => {
       }
     }
 
-    // 2. 缓存未命中或失效，执行模拟
     if (times.length === 0) {
       const result = calculateSingleWeapon(weapon, params, distances.value, attachment, dm)
       if (result) {
         times = result.times
         keyPoints = result.keyPoints
 
-        // ⭐⭐⭐ 写入缓存（用新 hash + 连发间隔）
         if (price && cacheManager) {
           const config = price.configs.find(c => c.id === configId)
           if (config) {
@@ -885,7 +850,6 @@ const buildDistanceStats = async (armed, attachments) => {
       }
     }
 
-    // 3. 计算加权平均
     if (times.length > 0) {
       let weightedSum = 0
       let weightSum = 0
@@ -1191,10 +1155,6 @@ const onDeleteWeapon = (index, weaponId, isCancelled) => {
 // ============================================================
 // ⭐ 子弹管理
 // ============================================================
-
-/**
- * 新增 / 确认新增子弹
- */
 const onAddBullet = (index, bulletData) => {
   const dm = dataStore.getDataManager()
   
@@ -1247,9 +1207,6 @@ const onAddBullet = (index, bulletData) => {
   console.log(`✅ 新增子弹: ${bulletData.id}`)
 }
 
-/**
- * 删除子弹 / 取消新增
- */
 const onDeleteBullet = (index, bulletId, isCancelled) => {
   if (isCancelled) {
     const dm = dataStore.getDataManager()
@@ -1699,93 +1656,6 @@ body {
   font-size: 18px;
   font-weight: 600;
   color: #4a6cf7;
-}
-
-/* ============================================================
-   ⭐ 移动端竖屏提示
-   ============================================================ */
-.rotate-hint {
-  display: none;   /* 默认隐藏 */
-}
-
-/* 手机竖屏时才显示 */
-@media (orientation: portrait) and (max-width: 768px) {
-  .rotate-hint {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 999999;
-  }
-}
-
-.rotate-hint-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 32px 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  text-align: center;
-  max-width: 80vw;
-  animation: rotateHintSlideIn 0.3s ease;
-}
-
-@keyframes rotateHintSlideIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.rotate-hint-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  display: inline-block;
-  animation: rotateHintPulse 2s ease-in-out infinite;
-}
-
-@keyframes rotateHintPulse {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(90deg); }
-}
-
-.rotate-hint-text {
-  font-family: var(--font-family);
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a2e;
-  margin-bottom: 20px;
-  letter-spacing: 1px;
-}
-
-.rotate-hint-btn {
-  padding: 8px 28px;
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-family: var(--font-family);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.rotate-hint-btn:hover {
-  background: var(--color-primary-hover);
-}
-
-.rotate-hint-btn:active {
-  transform: scale(0.96);
 }
 
 /* ============ 移动端适配 ============ */

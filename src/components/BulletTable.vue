@@ -8,8 +8,8 @@
       <span class="count-badge">共 {{ data.length }} 种子弹</span>
     </div>
 
-    <!-- 表格 -->
-    <div class="table-scroll">
+    <!-- ============ ⭐ 桌面：表格 ============ -->
+    <div v-if="!isMobile" class="table-scroll">
       <table>
         <thead>
           <tr>
@@ -19,7 +19,6 @@
             <th style="min-width:180px;">护甲衰减 (1-6级)</th>
             <th style="min-width:180px;">穿透 (1-6级)</th>
             <th style="min-width:80px;">价格</th>
-            <!-- ⭐ 操作列（冻结） -->
             <th class="sticky-action" style="min-width:80px;">操作</th>
           </tr>
         </thead>
@@ -133,7 +132,7 @@
               />
             </td>
 
-            <!-- ⭐ 操作（冻结） -->
+            <!-- 操作 -->
             <td class="readonly-cell sticky-action">
               <template v-if="row._isNewRow">
                 <button class="btn-confirm" @click="confirmAdd(row)">✅</button>
@@ -145,11 +144,137 @@
         </tbody>
       </table>
     </div>
+
+    <!-- ============ ⭐ 移动端：卡片 ============ -->
+    <div v-else class="card-list">
+      <div
+        v-for="(row, index) in data"
+        :key="row.id || row._bulletId || index"
+        class="card-item"
+      >
+        <!-- 卡片头部 -->
+        <div class="card-header-row">
+          <template v-if="row._isNewRow">
+            <input
+              v-model="row.caliber"
+              class="card-title-input"
+              placeholder="如: 5.56x45mm"
+            />
+            <select v-model="row.level" class="card-level-select">
+              <option v-for="opt in levelOptions" :key="opt" :value="opt">
+                {{ opt }}
+              </option>
+            </select>
+          </template>
+          <template v-else>
+            <span class="card-title-text">{{ row.caliber || '-' }}</span>
+            <span v-if="isSpecialLevel(row.level)" class="level-badge">
+              Lv.{{ row.level }}
+            </span>
+            <span v-else class="card-config-tag">Lv.{{ row.level }}</span>
+          </template>
+
+          <div class="card-actions">
+            <template v-if="row._isNewRow">
+              <button class="btn-icon btn-confirm" @click="confirmAdd(row)" title="确认">✅</button>
+              <button class="btn-icon btn-cancel" @click="cancelAdd(row)" title="取消">❌</button>
+            </template>
+            <template v-else>
+              <button class="btn-icon btn-delete" @click="deleteRow(row)" title="删除">🗑️</button>
+            </template>
+          </div>
+        </div>
+
+        <!-- 卡片主体 -->
+        <div class="card-body">
+          <!-- 基础伤害比例 -->
+          <div class="card-field editable">
+            <span class="field-label">基础伤害</span>
+            <input
+              v-if="row._isNewRow"
+              v-model.number="row.base"
+              type="number"
+              step="0.01"
+              min="0"
+            />
+            <input
+              v-else
+              type="number"
+              step="0.01"
+              min="0"
+              :value="row.base !== undefined ? row.base.toFixed(2) : '1.00'"
+              @blur="onBaseChange(row, $event)"
+            />
+          </div>
+
+          <!-- 护甲衰减 -->
+          <div class="card-field editable">
+            <span class="field-label">护甲衰减</span>
+            <input
+              v-if="row._isNewRow"
+              v-model="newRowArmorMultDisplay"
+              class="mono"
+              placeholder="1.0,1.0,1.0,1.0,1.0,0.6"
+              @blur="parseNewRowArmorMult(row)"
+            />
+            <input
+              v-else
+              class="mono"
+              type="text"
+              :value="getArmorMultString(row)"
+              placeholder="1.0,1.0,1.0,1.0,1.0,0.6"
+              @blur="onArmorMultChange(row, $event)"
+            />
+          </div>
+
+          <!-- 穿透 -->
+          <div class="card-field editable">
+            <span class="field-label">穿透</span>
+            <input
+              v-if="row._isNewRow"
+              v-model="newRowPenDisplay"
+              class="mono"
+              placeholder="1.0,1.0,0.75,0.5,0,0"
+              @blur="parseNewRowPen(row)"
+            />
+            <input
+              v-else
+              class="mono"
+              type="text"
+              :value="getPenString(row)"
+              placeholder="1.0,1.0,0.75,0.5,0,0"
+              @blur="onPenChange(row, $event)"
+            />
+          </div>
+
+          <!-- 价格 -->
+          <div class="card-field editable">
+            <span class="field-label">价格</span>
+            <input
+              v-if="row._isNewRow"
+              v-model.number="row.price"
+              type="number"
+              step="1"
+              min="0"
+            />
+            <input
+              v-else
+              type="number"
+              step="1"
+              min="0"
+              :value="row.price || 0"
+              @blur="onPriceChange(row, $event)"
+            />
+            <span style="color:#888;font-size:11px;">¥</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 
 const props = defineProps({
@@ -168,6 +293,21 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update', 'add-bullet', 'delete-bullet'])
+
+// ⭐ 是否为移动端（视口宽度 <= 768）
+const isMobile = ref(false)
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+onMounted(() => {
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateIsMobile)
+})
 
 // 特殊等级列表
 const specialLevels = ['RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5']
@@ -193,7 +333,7 @@ const isSpecialLevel = (level) => {
 }
 
 /**
- * ⭐ 获取护甲衰减字符串
+ * 获取护甲衰减字符串
  * - 新增临时行：用组件内临时状态 newRowArmorMultDisplay
  * - 已有子弹：从 row.armorData 拼
  */
@@ -202,7 +342,6 @@ const getArmorMultString = (row) => {
     return newRowArmorMultDisplay.value || ''
   }
 
-  // 已有子弹：从 armorData 拼
   if (!row.armorData) return ''
   const values = []
   for (let i = 1; i <= 6; i++) {
@@ -213,9 +352,7 @@ const getArmorMultString = (row) => {
 }
 
 /**
- * ⭐ 获取穿透字符串
- * - 新增临时行：用组件内临时状态 newRowPenDisplay
- * - 已有子弹：从 row.armorData 拼
+ * 获取穿透字符串
  */
 const getPenString = (row) => {
   if (row._isNewRow) {
@@ -289,7 +426,6 @@ const onArmorMultChange = (row, event) => {
     dataStore.refreshBullets()
     emit('update')
   } else {
-    // 解析失败：还原显示
     event.target.value = getArmorMultString(row)
   }
 }
@@ -321,25 +457,15 @@ const onPriceChange = (row, event) => {
 // ⭐ 新增子弹
 // ============================================================
 
-/**
- * 点击"新增子弹"按钮
- * 传递 index = -1，明确告知父组件是"新增按钮"事件
- */
 const addBullet = () => {
-  // 重置临时输入状态
   newRowArmorMultDisplay.value = ''
   newRowPenDisplay.value = ''
   emit('add-bullet', -1, null)
 }
 
-/**
- * 点击"✅ 确认"按钮
- * 传 row 对象，父组件创建真实子弹
- */
 const confirmAdd = (row) => {
   if (!row) return
 
-  // ⭐ 校验：读 row.caliber
   if (!row.caliber || String(row.caliber).trim() === '') {
     alert('⚠️ 请输入子弹口径')
     return
@@ -358,7 +484,6 @@ const confirmAdd = (row) => {
     armorData: {}
   }
 
-  // ⭐ 优先用组件内临时状态解析出的值，其次用 row._armorMultValues
   const armorValues = row._armorMultValues
     || parseNumberArray(newRowArmorMultDisplay.value, 1.0)
     || [1.0, 1.0, 1.0, 1.0, 1.0, 0.6]
@@ -377,10 +502,6 @@ const confirmAdd = (row) => {
   emit('add-bullet', null, bulletData)
 }
 
-/**
- * 点击"❌ 取消"按钮
- * 告知父组件移除临时行
- */
 const cancelAdd = (row) => {
   emit('delete-bullet', null, null, true)
 }
@@ -501,18 +622,15 @@ tbody tr.new-row td {
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.06);
 }
 
-/* 表头的冻结列需要更高层级（盖住表头） */
 thead th.sticky-action {
   z-index: 15;
-  background: #f0fff4;   /* ⭐ 子弹表表头背景色 */
+  background: #f0fff4;
 }
 
-/* 悬停时保持背景一致 */
 tbody tr:hover .sticky-action {
-  background: #f8fffa;   /* ⭐ 子弹表的 hover 背景色 */
+  background: #f8fffa;
 }
 
-/* 新增行时保持背景一致 */
 tbody tr.new-row .sticky-action {
   background: #fff8e1;
 }
@@ -584,7 +702,50 @@ tbody tr.new-row .sticky-action {
   color: #fff;
 }
 
-/* ============ 移动端适配 ============ */
+/* ⭐ 卡片模式：新增行的标题输入框 */
+.card-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-size: 13px;
+  background: var(--color-bg-white);
+  color: var(--color-text);
+  outline: none;
+}
+
+.card-title-input:focus {
+  border-color: var(--color-primary);
+}
+
+/* ⭐ 卡片模式：新增行的等级下拉 */
+.card-level-select {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-size: 12px;
+  background: var(--color-bg-white);
+  color: var(--color-text);
+  outline: none;
+  cursor: pointer;
+}
+
+.card-level-select:focus {
+  border-color: var(--color-primary);
+}
+
+/* ⭐ 卡片模式：等宽输入框 */
+.card-field.editable input.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: -0.3px;
+}
+
+/* ============ 移动端适配（表格模式下的微调） ============ */
 @media (max-width: 768px) {
   table {
     font-size: var(--font-size-sm);
