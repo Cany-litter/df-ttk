@@ -19,7 +19,8 @@
             <th style="min-width:180px;">护甲衰减 (1-6级)</th>
             <th style="min-width:180px;">穿透 (1-6级)</th>
             <th style="min-width:80px;">价格</th>
-            <th style="min-width:80px;">操作</th>
+            <!-- ⭐ 操作列（冻结） -->
+            <th class="sticky-action" style="min-width:80px;">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -132,8 +133,8 @@
               />
             </td>
 
-            <!-- 操作 -->
-            <td class="readonly-cell">
+            <!-- ⭐ 操作（冻结） -->
+            <td class="readonly-cell sticky-action">
               <template v-if="row._isNewRow">
                 <button class="btn-confirm" @click="confirmAdd(row)">✅</button>
                 <button class="btn-cancel" @click="cancelAdd(row)">❌</button>
@@ -273,7 +274,7 @@ const onBaseChange = (row, event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 0) {
     const dm = dataStore.getDataManager()
-    dm.updateBullet(row.id, { base: value })   // ⭐ 用 row.id
+    dm.updateBullet(row.id, { base: value })
     dataStore.refreshBullets()
     emit('update')
   }
@@ -284,7 +285,7 @@ const onArmorMultChange = (row, event) => {
   const values = parseNumberArray(str, 1.0)
   if (values && values.every(v => !isNaN(v) && v >= 0)) {
     const dm = dataStore.getDataManager()
-    dm.updateBullet(row.id, { armorMult: values })   // ⭐ 用 row.id
+    dm.updateBullet(row.id, { armorMult: values })
     dataStore.refreshBullets()
     emit('update')
   } else {
@@ -298,7 +299,7 @@ const onPenChange = (row, event) => {
   const values = parseNumberArray(str, 0)
   if (values && values.every(v => !isNaN(v) && v >= 0 && v <= 1)) {
     const dm = dataStore.getDataManager()
-    dm.updateBullet(row.id, { pen: values })   // ⭐ 用 row.id
+    dm.updateBullet(row.id, { pen: values })
     dataStore.refreshBullets()
     emit('update')
   } else {
@@ -310,7 +311,7 @@ const onPriceChange = (row, event) => {
   const value = parseFloat(event.target.value)
   if (!isNaN(value) && value >= 0) {
     const dm = dataStore.getDataManager()
-    dm.updateBullet(row.id, { price: value })   // ⭐ 用 row.id
+    dm.updateBullet(row.id, { price: value })
     dataStore.refreshBullets()
     emit('update')
   }
@@ -338,7 +339,7 @@ const addBullet = () => {
 const confirmAdd = (row) => {
   if (!row) return
 
-  // ⭐ 校验：读 row.caliber（现在能通过 v-model 正确写入）
+  // ⭐ 校验：读 row.caliber
   if (!row.caliber || String(row.caliber).trim() === '') {
     alert('⚠️ 请输入子弹口径')
     return
@@ -390,7 +391,7 @@ const cancelAdd = (row) => {
 
 const deleteRow = (row) => {
   if (!confirm(`确定要删除子弹 "${row.caliber} Lv.${row.level}" 吗？`)) return
-  emit('delete-bullet', null, row.id, false)   // ⭐ 用 row.id
+  emit('delete-bullet', null, row.id, false)
 }
 </script>
 
@@ -489,6 +490,31 @@ tbody tr.new-row td {
 
 .new-row-cell {
   padding: 2px 4px;
+}
+
+/* ============ ⭐ 冻结「操作」列 ============ */
+.sticky-action {
+  position: sticky;
+  right: 0;
+  z-index: 5;
+  background: #fff;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.06);
+}
+
+/* 表头的冻结列需要更高层级（盖住表头） */
+thead th.sticky-action {
+  z-index: 15;
+  background: #f0fff4;   /* ⭐ 子弹表表头背景色 */
+}
+
+/* 悬停时保持背景一致 */
+tbody tr:hover .sticky-action {
+  background: #f8fffa;   /* ⭐ 子弹表的 hover 背景色 */
+}
+
+/* 新增行时保持背景一致 */
+tbody tr.new-row .sticky-action {
+  background: #fff8e1;
 }
 
 /* ============ 输入框（填满单元格） ============ */

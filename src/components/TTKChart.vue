@@ -15,6 +15,11 @@ const props = defineProps({
   params: {
     type: Object,
     default: () => ({})
+  },
+  // ⭐ 显示数量：0 或负数 = 全部
+  displayCount: {
+    type: Number,
+    default: 10
   }
 })
 
@@ -66,13 +71,27 @@ const calculateVisibleTotal = (item) => {
   return total
 }
 
+// ⭐ 截断 results（按传入顺序取前 N 条，0 或负数 = 全部）
+const getDisplayedResults = () => {
+  const all = props.results || []
+  const count = props.displayCount
+
+  if (!count || count <= 0 || count >= all.length) {
+    return all
+  }
+  return all.slice(0, count)
+}
+
 // 构建 ECharts 配置
 const buildChartOption = () => {
-  const results = props.results || []
+  const results = getDisplayedResults()
+
   if (results.length === 0) {
     return {
       title: {
-        text: '暂无数据，请点击 "计算 TTK"',
+        text: props.results?.length > 0
+          ? '显示数量为 0 或超出范围'
+          : '暂无数据，请点击 "计算 TTK"',
         left: 'center',
         top: 'center',
         textStyle: { color: '#999', fontSize: 14, fontWeight: 400 }
@@ -94,7 +113,6 @@ const buildChartOption = () => {
   // ⭐ 始终构建 5 个系列，隐藏的部分数据设为 0
   const series = ALL_KEYS.map(key => {
     const isVisible = visibleMap.value[key]
-    // 如果可见，使用实际数据；否则全部为 0
     const data = dataWithVisibleTotal.map(r => isVisible ? (r[key] || 0) : 0)
     const name = LEGEND_MAP[key] || key
     return {
@@ -111,7 +129,6 @@ const buildChartOption = () => {
   const totals = dataWithVisibleTotal.map(r => r.visibleTotal)
 
   // ⭐ 在最后一个可见的系列上显示总 TTK 标签
-  // 找到最后一个可见的 key
   let lastVisibleKey = null
   for (let i = ALL_KEYS.length - 1; i >= 0; i--) {
     if (visibleMap.value[ALL_KEYS[i]]) {
@@ -251,6 +268,17 @@ watch(() => props.results, () => {
   })
 }, { deep: true })
 
+// ⭐ 监听显示数量变化
+watch(() => props.displayCount, () => {
+  nextTick(() => {
+    if (chartInstance) {
+      updateChart()
+    } else {
+      initChart()
+    }
+  })
+})
+
 // 生命周期
 onMounted(() => {
   nextTick(() => {
@@ -281,5 +309,11 @@ defineExpose({
   height: auto;
   aspect-ratio: 2 / 1;
   min-height: 420px;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    min-height: 320px;
+  }
 }
 </style>

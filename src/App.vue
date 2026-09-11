@@ -15,11 +15,36 @@
 
     <!-- 图表区域 -->
     <div class="charts-area">
+      <!-- ⭐ 柱状图（TTK 对比） -->
       <div class="chart-wrapper">
-        <h3 class="chart-title">📊 TTK 对比</h3>
-        <TTKChart :results="appStore.state.ttkResults" :params="paramsStore.state" />
+        <div class="chart-header">
+          <h3 class="chart-title">📊 TTK 对比</h3>
+          <div class="chart-controls">
+            <label class="display-count-label">
+              <span>显示数量:</span>
+              <input
+                type="number"
+                v-model.number="barDisplayCount"
+                @blur="onBarDisplayCountBlur"
+                @keydown.enter="onDisplayCountEnter"
+                min="0"
+                step="1"
+                class="display-count-input"
+                title="输入 0 或留空表示显示全部"
+              />
+              <span>条</span>
+              <span class="hint">(0 = 全部)</span>
+            </label>
+          </div>
+        </div>
+        <TTKChart
+          :results="appStore.state.ttkResults"
+          :params="paramsStore.state"
+          :display-count="barDisplayCount"
+        />
       </div>
 
+      <!-- ⭐ 折线图（距离 - TTK） -->
       <div class="chart-wrapper">
         <div class="chart-header">
           <h3 class="chart-title">📈 距离 - TTK 折线图</h3>
@@ -199,6 +224,21 @@
       </div>
     </div>
   </Teleport>
+
+  <!-- ============ ⭐ 移动端竖屏提示 ============ -->
+  <Teleport to="body">
+    <div
+      v-if="!rotateHintDismissed"
+      class="rotate-hint"
+      @click="closeRotateHint"
+    >
+      <div class="rotate-hint-card" @click.stop>
+        <div class="rotate-hint-icon">📱</div>
+        <div class="rotate-hint-text">请横屏使用</div>
+        <button class="rotate-hint-btn" @click="closeRotateHint">知道了</button>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -230,8 +270,11 @@ const highlightWeapon = ref(null)
 const distances = ref(Array.from({ length: 101 }, (_, i) => i))
 const caliberOptions = ref([])
 
-// ⭐ 显示数量（默认 10，0 或负数表示全部）
+// ⭐ 折线图显示数量（默认 10，0 或负数表示全部）
 const displayCount = ref(10)
+
+// ⭐ 柱状图显示数量（默认 10，独立于折线图）
+const barDisplayCount = ref(10)
 
 // 新增配置弹窗状态
 const showAddConfigModal = ref(false)
@@ -242,6 +285,13 @@ const addConfigId = ref('')
 const showDamageDetail = ref(false)
 const detailWeaponId = ref(null)
 const detailConfigId = ref('#1')
+
+// ⭐ 移动端竖屏提示：是否已被用户关闭
+const rotateHintDismissed = ref(false)
+
+const closeRotateHint = () => {
+  rotateHintDismissed.value = true
+}
 
 // ---------- 计算属性 ----------
 const priceRows = computed(() => {
@@ -308,7 +358,7 @@ const getBulletOptions = (row) => {
   return ['无', ...options]
 }
 
-// ⭐ 显示数量输入框处理
+// ⭐ 折线图：显示数量输入框处理
 const onDisplayCountBlur = () => {
   if (typeof displayCount.value !== 'number' || isNaN(displayCount.value)) {
     displayCount.value = 10
@@ -318,6 +368,17 @@ const onDisplayCountBlur = () => {
   }
 }
 
+// ⭐ 柱状图：显示数量输入框处理
+const onBarDisplayCountBlur = () => {
+  if (typeof barDisplayCount.value !== 'number' || isNaN(barDisplayCount.value)) {
+    barDisplayCount.value = 10
+  }
+  if (barDisplayCount.value < 0) {
+    barDisplayCount.value = 0
+  }
+}
+
+// 回车时失焦（两个输入框共用）
 const onDisplayCountEnter = (e) => {
   e.target.blur()
 }
@@ -1110,14 +1171,10 @@ const onDeleteWeapon = (index, weaponId, isCancelled) => {
 
 /**
  * 新增 / 确认新增子弹
- * 
- * @param {number|null} index - 保留兼容（新逻辑用 bulletData 判断）
- * @param {Object|null} bulletData - 子弹数据（确认时传入，新增按钮时为 null）
  */
 const onAddBullet = (index, bulletData) => {
   const dm = dataStore.getDataManager()
   
-  // ⭐ 新增按钮：bulletData 为 null → 插入临时行
   if (bulletData === undefined || bulletData === null) {
     const existing = dm.data.bullets.find(b => b._isNewRow === true)
     if (existing) {
@@ -1149,8 +1206,6 @@ const onAddBullet = (index, bulletData) => {
     return
   }
   
-  // ⭐ 确认按钮：用真实数据替换临时行
-  // 不依赖 index（可能为 null），改用 findIndex
   const existing = dm.getBulletById(bulletData.id)
   if (existing && !existing._isNewRow) {
     alert(`子弹 ${bulletData.id} 已存在`)
@@ -1171,10 +1226,6 @@ const onAddBullet = (index, bulletData) => {
 
 /**
  * 删除子弹 / 取消新增
- * 
- * @param {number|null} index - 保留兼容
- * @param {string|null} bulletId - 子弹 id（删除时传入）
- * @param {boolean} isCancelled - 是否取消新增
  */
 const onDeleteBullet = (index, bulletId, isCancelled) => {
   if (isCancelled) {
@@ -1588,6 +1639,93 @@ body {
   font-size: 18px;
   font-weight: 600;
   color: #4a6cf7;
+}
+
+/* ============================================================
+   ⭐ 移动端竖屏提示
+   ============================================================ */
+.rotate-hint {
+  display: none;   /* 默认隐藏 */
+}
+
+/* 手机竖屏时才显示 */
+@media (orientation: portrait) and (max-width: 768px) {
+  .rotate-hint {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+  }
+}
+
+.rotate-hint-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 40px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 80vw;
+  animation: rotateHintSlideIn 0.3s ease;
+}
+
+@keyframes rotateHintSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.rotate-hint-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  display: inline-block;
+  animation: rotateHintPulse 2s ease-in-out infinite;
+}
+
+@keyframes rotateHintPulse {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+}
+
+.rotate-hint-text {
+  font-family: var(--font-family);
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+
+.rotate-hint-btn {
+  padding: 8px 28px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rotate-hint-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.rotate-hint-btn:active {
+  transform: scale(0.96);
 }
 
 /* ============ 移动端适配 ============ */

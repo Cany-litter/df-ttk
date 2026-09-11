@@ -16,10 +16,20 @@ import { getDataManager } from '@/core/DataManager'
  *    涉及的字段包括：
  *    - 连发字段：fireMode / burstCount / burstInternalROF / burstInterval
  *    - 分段射速：rofStages
- *    这样：
- *    - AS Val + 刺客枪管 → 拿到 burst 配置
- *    - MK4 + 深空镀铬枪管（fireMode: auto）→ 正确切回全自动
- *    - SVCH + 全自动枪管-携带爆发枪机 → 拿到 rofStages 分段射速
+ * 
+ * ⭐ 初速公式（对齐旧版本口径）：
+ *    初速 = (原始初速 + velocityAdd) × rangeMult × (1 + 枪口mult) × (1 + 精校)
+ *    其中 rangeMult = 枪管射程倍率 + 枪口射程加成
+ * 
+ *    示例：AS Val + VSS海啸长枪管组合 + 无枪口 + 精校9%
+ *      原始初速 330，rangeMult 1.3
+ *      velocityMult = 1.3 × 1.0 × 1.09 = 1.417
+ *      初速 = 330 × 1.417 = 467.61 → 468
+ * 
+ *    示例：AS Val + 刺客高级枪管（velocityAdd: 120）+ 无枪口 + 精校9%
+ *      原始初速 330，rangeMult 1.0，velocityAdd 120
+ *      velocityMult = 1.0 × 1.0 × 1.09 = 1.09
+ *      初速 = (330 + 120) × 1.09 = 490.5 → 491
  */
 
 /**
@@ -41,7 +51,7 @@ import { getDataManager } from '@/core/DataManager'
  *   burstCount,        // 连发数（如 3、4）
  *   burstInternalROF,  // 连发内射速
  *   burstInterval,     // 连发间隔（秒）
- *   rofStages,         // ⭐ 分段射速：[{ untilShot, rofAdd }, ...] 或 null
+ *   rofStages,         // 分段射速：[{ untilShot, rofAdd }, ...] 或 null
  * }
  */
 export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
@@ -60,7 +70,7 @@ export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
   }
 
   // ============================================================
-  // 2. 计算射程倍率
+  // 2. 计算射程倍率（枪管射程倍率 + 枪口射程加成）
   // ============================================================
   let rangeMult = 1.0
   if (barrel) {
@@ -78,9 +88,10 @@ export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
   }
 
   // ============================================================
-  // 3. 计算初速倍率（包含精校和枪口）
+  // 3. ⭐ 计算初速倍率
+  //    = rangeMult × 枪口初速倍率 × (1 + 精校)
   // ============================================================
-  let velocityMult = muzzleVelocityMult * (1 + precision)
+  let velocityMult = rangeMult * muzzleVelocityMult * (1 + precision)
   if (!isFinite(velocityMult) || isNaN(velocityMult)) {
     velocityMult = 1.0
   }
@@ -120,6 +131,8 @@ export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
 
   // ============================================================
   // 7. 计算当前初速
+  //    初速 = (原始初速 + velocityAdd) × velocityMult
+  //    其中 velocityMult 已包含 rangeMult
   // ============================================================
   const hasVelocityAdd = barrel && typeof barrel.velocityAdd === 'number'
   let newVelocity = hasVelocityAdd
@@ -161,23 +174,14 @@ export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
   // ============================================================
   // 10. 连发字段合并（枪管 > 武器）
   // ============================================================
-  // 说明：连发相关字段可能出现在枪管上（如 AS Val 刺客枪管），
-  //       也可能出现在武器对象上（如 MK4）。
-  //       合并规则：枪管字段优先，没填则用武器字段。
   const fireMode = barrel?.fireMode ?? weapon.fireMode ?? null
   const burstCount = barrel?.burstCount ?? weapon.burstCount ?? null
   const burstInternalROF = barrel?.burstInternalROF ?? weapon.burstInternalROF ?? null
   const burstInterval = barrel?.burstInterval ?? weapon.burstInterval ?? null
 
   // ============================================================
-  // 11. ⭐ 分段射速合并（枪管 > 武器）
+  // 11. 分段射速合并（枪管 > 武器）
   // ============================================================
-  // rofStages 形如：
-  //   [{ untilShot: 3, rofAdd: 100 }, { rofAdd: 0 }]
-  // 表示"第 1~3 个间隔射速 +100，之后 +0"
-  // 
-  // 合并规则：枪管字段优先，没填则用武器字段。
-  // 注意：需要做浅拷贝，避免多个武器/配置共享同一数组引用被误改。
   const rawRofStages = barrel?.rofStages ?? weapon.rofStages ?? null
   const rofStages = Array.isArray(rawRofStages)
     ? rawRofStages.map(stage => ({ ...stage }))
@@ -191,12 +195,12 @@ export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
     flesh,
     armor,
     mult: newMult,
-    // ⭐ 连发字段
+    // 连发字段
     fireMode,
     burstCount,
     burstInternalROF,
     burstInterval,
-    // ⭐ 分段射速
+    // 分段射速
     rofStages
   }
 }

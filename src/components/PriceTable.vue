@@ -16,6 +16,9 @@
       <table>
         <thead>
           <tr>
+            <th style="min-width:55px;cursor:pointer;" @click="toggleSort('enabled')">
+              启用 <span class="sort-icon">{{ getSortIcon('enabled') }}</span>
+            </th>
             <th style="min-width:80px;">武器</th>
             <th style="min-width:50px;">序号</th>
             <th style="min-width:110px;">枪管</th>
@@ -29,10 +32,8 @@
             <th style="min-width:110px;background:#fff3e0;cursor:pointer;" @click="toggleSort('havocCost')">
               哈弗币消耗 <span class="sort-icon">{{ getSortIcon('havocCost') }}</span>
             </th>
-            <th style="min-width:120px;">操作</th>
-            <th style="min-width:55px;cursor:pointer;" @click="toggleSort('enabled')">
-              启用 <span class="sort-icon">{{ getSortIcon('enabled') }}</span>
-            </th>
+            <!-- ⭐ 操作列（冻结） -->
+            <th class="sticky-action" style="min-width:120px;">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -41,6 +42,16 @@
             :key="row._uniqueId || index"
             :class="{ 'new-row': row._isNewRow }"
           >
+            <!-- 启用（复选框） -->
+            <td class="readonly-cell enabled-cell">
+              <input
+                type="checkbox"
+                :checked="row.enabled !== false"
+                @change="onEnabledChange(row, $event)"
+                class="enabled-checkbox"
+              />
+            </td>
+
             <!-- 武器名称（只读） -->
             <td class="readonly-cell">{{ row.weaponName }}</td>
 
@@ -87,7 +98,7 @@
               />
             </td>
 
-            <!-- ⭐ 命中率（输入框）—— 修正：绑定 hitRateRaw，写回时解析成数组 -->
+            <!-- 命中率（输入框） -->
             <td class="control-cell">
               <input
                 :value="row.hitRateRaw"
@@ -122,8 +133,8 @@
               <span v-else class="text-muted">-</span>
             </td>
 
-            <!-- 操作（只读） -->
-            <td class="readonly-cell">
+            <!-- ⭐ 操作（冻结） -->
+            <td class="readonly-cell sticky-action">
               <template v-if="row._isNewRow">
                 <button class="btn-confirm" @click="confirmAdd(index)">✅</button>
                 <button class="btn-cancel" @click="cancelAdd(index)">❌</button>
@@ -132,16 +143,6 @@
                 <button class="btn-detail" @click="openDamageDetail(row)" title="单次伤害模拟">📊 详情</button>
                 <button class="btn-delete" @click="deleteRow(row)" title="删除配置">🗑️</button>
               </template>
-            </td>
-
-            <!-- 启用（复选框） -->
-            <td class="readonly-cell enabled-cell">
-              <input
-                type="checkbox"
-                :checked="row.enabled !== false"
-                @change="onEnabledChange(row, $event)"
-                class="enabled-checkbox"
-              />
             </td>
           </tr>
         </tbody>
@@ -280,8 +281,6 @@ const getHavocTooltip = (cost) => {
 /**
  * 把 "30:1.0,50:0.9,100:0.6" 解析成
  *   { distance: [30, 50, 100], hitRate: [1.0, 0.9, 0.6] }
- * 
- * 无效项会被跳过；全无有效项时返回 null。
  */
 const parseHitRateString = (str) => {
   if (!str || str.trim() === '') {
@@ -306,7 +305,6 @@ const parseHitRateString = (str) => {
     hitRate.push(r)
   }
 
-  // 按距离升序排序（数组内部要一致）
   const pairs = distance.map((d, i) => ({ d, r: hitRate[i] }))
   pairs.sort((a, b) => a.d - b.d)
 
@@ -317,7 +315,6 @@ const parseHitRateString = (str) => {
 }
 
 // ---------- 事件处理 ----------
-// 通用单元格变更（枪管、枪口、改枪码等）
 const onCellChange = (row, key, value) => {
   const dm = dataStore.getDataManager()
   dm.updatePriceConfig(row._weaponId, row.configId, { [key]: value })
@@ -325,7 +322,6 @@ const onCellChange = (row, key, value) => {
   emit('update')
 }
 
-// ⭐ 命中率变更：把字符串解析成 distance + hitRate 数组
 const onHitRateChange = (row, event) => {
   const str = event.target.value
   const parsed = parseHitRateString(str)
@@ -339,7 +335,6 @@ const onHitRateChange = (row, event) => {
   emit('update')
 }
 
-// ⭐ 子弹变更：把显示串转成 bullet id，存 bullet 字段
 const onBulletChange = (row, event) => {
   const display = event.target.value
   const dm = dataStore.getDataManager()
@@ -369,7 +364,6 @@ const onPriceChange = (row, event) => {
   }
 }
 
-// 启用/禁用复选框
 const onEnabledChange = (row, event) => {
   const checked = event.target.checked
   const dm = dataStore.getDataManager()
@@ -379,7 +373,6 @@ const onEnabledChange = (row, event) => {
   emit('update')
 }
 
-// 全选
 const selectAll = () => {
   const dm = dataStore.getDataManager()
   props.data.forEach((row) => {
@@ -392,7 +385,6 @@ const selectAll = () => {
   emit('update')
 }
 
-// 全不选
 const selectNone = () => {
   const dm = dataStore.getDataManager()
   props.data.forEach((row) => {
@@ -405,12 +397,10 @@ const selectNone = () => {
   emit('update')
 }
 
-// 新增配置
 const addConfig = () => {
   emit('add-config')
 }
 
-// ⭐ 打开单次伤害模拟弹窗
 const openDamageDetail = (row) => {
   emit('show-damage-detail', {
     weaponId: row._weaponId,
@@ -418,7 +408,6 @@ const openDamageDetail = (row) => {
   })
 }
 
-// 删除配置
 const deleteRow = (row) => {
   if (!confirm(`确定要删除 ${row.weaponName} 的配置吗？`)) return
 
@@ -428,13 +417,11 @@ const deleteRow = (row) => {
   emit('update')
 }
 
-// 确认新增（新增行）
 const confirmAdd = (index) => {
   const row = sortedRows.value[index]
   emit('add-config', index, row)
 }
 
-// 取消新增
 const cancelAdd = (index) => {
   const row = sortedRows.value[index]
   const dm = dataStore.getDataManager()
@@ -547,6 +534,31 @@ tbody tr.new-row td {
 .control-cell {
   padding: 0;
   position: relative;
+}
+
+/* ============ ⭐ 冻结「操作」列 ============ */
+.sticky-action {
+  position: sticky;
+  right: 0;
+  z-index: 5;
+  background: #fff;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.06);
+}
+
+/* 表头的冻结列需要更高层级（盖住表头） */
+thead th.sticky-action {
+  z-index: 15;
+  background: #f7f8fa;
+}
+
+/* 悬停时保持背景一致 */
+tbody tr:hover .sticky-action {
+  background: var(--color-bg-hover);
+}
+
+/* 新增行时保持背景一致 */
+tbody tr.new-row .sticky-action {
+  background: #fff8e1;
 }
 
 /* ============ 输入框（填满单元格） ============ */

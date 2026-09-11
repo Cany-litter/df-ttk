@@ -34,7 +34,8 @@
             <th style="min-width:110px;">枪管</th>
             <th style="min-width:80px;">枪口</th>
             <th style="min-width:90px;">精校</th>
-            <th style="min-width:80px;">操作</th>
+            <!-- ⭐ 操作列（冻结） -->
+            <th class="sticky-action" style="min-width:90px;">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -239,8 +240,8 @@
             </td>
             <td v-else class="readonly-cell">-</td>
 
-            <!-- 操作 -->
-            <td class="readonly-cell">
+            <!-- ⭐ 操作（冻结） -->
+            <td class="readonly-cell sticky-action">
               <template v-if="row._isNewRow">
                 <button class="btn-confirm" @click="confirmAdd(index)">✅ 确认</button>
                 <button class="btn-cancel" @click="cancelAdd(index)">❌ 取消</button>
@@ -257,7 +258,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { dataStore } from '@/stores/dataStore'
-import { appStore } from '@/stores/appStore'
 import { formatRanges, formatMultipliers } from '@/utils/formatters'
 // ⭐ 引入抽出的武器属性计算函数
 import { calculateCurrentValues } from '@/utils/weaponCalc'
@@ -514,7 +514,7 @@ const editBarrel = (index) => {
 }
 
 // ============================================================
-// ⭐ 新增武器（关键修复）
+// ⭐ 新增武器
 // ============================================================
 
 /**
@@ -647,6 +647,31 @@ tbody tr.new-row td {
 
 .new-row-cell {
   padding: 2px 3px;
+}
+
+/* ============ ⭐ 冻结「操作」列 ============ */
+.sticky-action {
+  position: sticky;
+  right: 0;
+  z-index: 5;
+  background: #fff;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.06);
+}
+
+/* 表头的冻结列需要更高层级（盖住表头） */
+thead th.sticky-action {
+  z-index: 15;
+  background: #f0f4f8;
+}
+
+/* 悬停时保持背景一致 */
+tbody tr:hover .sticky-action {
+  background: var(--color-bg-hover);
+}
+
+/* 新增行时保持背景一致 */
+tbody tr.new-row .sticky-action {
+  background: #fff8e1;
 }
 
 /* ============ 输入框（填满单元格） ============ */
