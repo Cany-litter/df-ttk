@@ -54,8 +54,10 @@
           </div>
         </div>
 
-        <!-- 明细表 -->
-        <table class="step-table">
+        <!-- ============================================================ -->
+        <!-- ⭐ 桌面：9 列明细表 -->
+        <!-- ============================================================ -->
+        <table v-if="!isMobile" class="step-table">
           <thead>
             <tr>
               <th>发数</th>
@@ -71,7 +73,7 @@
           </thead>
           <tbody>
             <template v-for="(s, idx) in simResult?.steps || []" :key="idx">
-              <!-- ⭐ 连发间隔分隔行 -->
+              <!-- 连发间隔分隔行 -->
               <tr v-if="s.burstGapBefore > 0" class="burst-gap-row">
                 <td colspan="9">
                   <span class="burst-gap-text">
@@ -83,7 +85,6 @@
               <!-- 未命中行 -->
               <tr v-if="!s.hit" class="miss-row">
                 <td>{{ s.shot }}</td>
-                <!-- ⭐ 间隔列 -->
                 <td class="interval-cell">{{ formatInterval(s.shotIntervalBefore) }}</td>
                 <td>❌</td>
                 <td>-</td>
@@ -97,7 +98,6 @@
               <!-- 命中行 -->
               <tr v-else class="hit-row">
                 <td>{{ s.shot }}</td>
-                <!-- ⭐ 间隔列 -->
                 <td class="interval-cell">{{ formatInterval(s.shotIntervalBefore) }}</td>
                 <td>✅</td>
                 <td>
@@ -125,7 +125,6 @@
                   <div class="step-detail active">
                     <div class="detail-title">第 {{ s.shot }} 发详细计算</div>
 
-                    <!-- ⭐ 间隔/射速信息 -->
                     <template v-if="s.shot > 1">
                       <div class="detail-row">
                         <span class="detail-label">射击间隔：</span>
@@ -183,7 +182,6 @@
 
                     <div class="detail-divider"></div>
 
-                    <!-- 四肢：无视护甲 -->
                     <template v-if="s.debug.ignoreArmor">
                       <div class="detail-row">
                         <span class="detail-label">{{ partLabel(s.hitPart) }}：</span>
@@ -195,7 +193,6 @@
                       </div>
                     </template>
 
-                    <!-- 有护甲减伤 -->
                     <template v-else>
                       <div class="detail-row">
                         <span class="detail-label">
@@ -250,6 +247,182 @@
             </template>
           </tbody>
         </table>
+
+        <!-- ============================================================ -->
+        <!-- ⭐ 移动端：每发一个紧凑块（两行制） -->
+        <!-- ============================================================ -->
+        <div v-else class="step-list">
+          <template v-for="(s, idx) in simResult?.steps || []" :key="idx">
+            <!-- 连发间隔分隔行 -->
+            <div v-if="s.burstGapBefore > 0" class="burst-gap-divider">
+              ⏱ 连发间隔 +{{ (s.burstGapBefore * 1000).toFixed(0) }} ms
+            </div>
+
+            <!-- 未命中的发 -->
+            <div v-if="!s.hit" class="step-item miss-item">
+              <div class="step-line-1">
+                <span class="step-shot">#{{ s.shot }}</span>
+                <span class="step-hit">❌</span>
+                <span class="step-part">未命中</span>
+                <span class="step-damage">-</span>
+                <span class="step-health">{{ s.health.toFixed(2) }}</span>
+              </div>
+              <div class="step-line-2">
+                <span class="step-meta">间隔 {{ formatInterval(s.shotIntervalBefore) }}</span>
+                <span class="step-meta">甲 {{ s.armorVal.toFixed(0) }}</span>
+                <span class="step-meta">头 {{ s.helmetVal.toFixed(0) }}</span>
+              </div>
+            </div>
+
+            <!-- 命中的发 -->
+            <template v-else>
+              <div class="step-item hit-item">
+                <div class="step-line-1">
+                  <span class="step-shot">#{{ s.shot }}</span>
+                  <span class="step-hit">✅</span>
+                  <span class="hit-part-badge" :class="partCls(s.hitPart)">
+                    {{ partLabel(s.hitPart) }}
+                  </span>
+                  <span class="step-damage">-{{ s.finalDamage.toFixed(2) }}</span>
+                  <span class="step-health">
+                    {{ s.health.toFixed(2) }}
+                    <span v-if="idx === (simResult.steps.length - 1)">💀</span>
+                  </span>
+                </div>
+                <div class="step-line-2">
+                  <span class="step-meta">间隔 {{ formatInterval(s.shotIntervalBefore) }}</span>
+                  <span class="step-meta">甲 {{ s.armorVal.toFixed(0) }}</span>
+                  <span class="step-meta">头 {{ s.helmetVal.toFixed(0) }}</span>
+                  <span class="step-toggle" @click="toggleDetail(idx)">
+                    {{ expandedSet.has(idx) ? '收起 ▲' : '展开 ▼' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- 展开详情 -->
+              <div v-if="expandedSet.has(idx)" class="step-detail active mobile-detail">
+                <div class="detail-title">第 {{ s.shot }} 发详细计算</div>
+
+                <template v-if="s.shot > 1">
+                  <div class="detail-row">
+                    <span class="detail-label">射击间隔：</span>
+                    <span class="detail-value">
+                      {{ (s.shotIntervalBefore * 1000).toFixed(2) }} ms
+                      （射速 ≈ {{ intervalToRof(s.shotIntervalBefore).toFixed(0) }} RPM）
+                    </span>
+                  </div>
+                  <div v-if="s.burstGapBefore > 0" class="detail-row">
+                    <span class="detail-label">连发间隔：</span>
+                    <span class="detail-value">
+                      {{ (s.burstGapBefore * 1000).toFixed(0) }} ms
+                    </span>
+                  </div>
+                  <div class="detail-divider"></div>
+                </template>
+
+                <div class="detail-row">
+                  <span class="detail-label">命中部位：</span>
+                  <span class="detail-value">
+                    {{ partLabel(s.hitPart) }}（mult = {{ s.debug.mult }}）
+                    <template v-if="s.debug.stPartMult !== undefined">
+                      × ST修正 {{ s.debug.stPartMult }}
+                    </template>
+                  </span>
+                </div>
+
+                <div class="detail-row">
+                  <span class="detail-label">基础伤害：</span>
+                  <span class="detail-value">
+                    {{ s.debug.weaponFlesh }}（肉伤）
+                    <template v-if="s.debug.bulletBase !== null">
+                      × {{ s.debug.bulletBase }}（子弹）
+                    </template>
+                    × {{ s.debug.mult }}（部位）
+                    <template v-if="s.debug.stPartMult !== undefined">
+                      × {{ s.debug.stPartMult }}（ST）
+                    </template>
+                    = {{ s.debug.baseDamage.toFixed(2) }}
+                  </span>
+                </div>
+
+                <div class="detail-row">
+                  <span class="detail-label">距离衰减：</span>
+                  <span class="detail-value">× {{ s.debug.decay.toFixed(2) }}</span>
+                </div>
+
+                <div class="detail-row">
+                  <span class="detail-label">纯伤害：</span>
+                  <span class="detail-value">
+                    {{ s.debug.baseDamage.toFixed(2) }} × {{ s.debug.decay.toFixed(2) }}
+                    = {{ s.debug.pureDamage.toFixed(2) }}
+                  </span>
+                </div>
+
+                <div class="detail-divider"></div>
+
+                <template v-if="s.debug.ignoreArmor">
+                  <div class="detail-row">
+                    <span class="detail-label">{{ partLabel(s.hitPart) }}：</span>
+                    <span class="detail-value">无视护甲减伤</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">最终伤害：</span>
+                    <span class="detail-value dmg-final">{{ s.finalDamage.toFixed(2) }}</span>
+                  </div>
+                </template>
+
+                <template v-else>
+                  <div class="detail-row">
+                    <span class="detail-label">
+                      {{ isHelmetPart(s.hitPart) ? '头盔' : '护甲' }}穿透：
+                    </span>
+                    <span class="detail-value">{{ s.debug.pen }}（Lv.{{ armorLevel }}）</span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">穿透伤害：</span>
+                    <span class="detail-value">
+                      {{ s.debug.pureDamage.toFixed(2) }} × {{ s.debug.pen }}
+                      = {{ s.debug.penDamage.toFixed(2) }}
+                    </span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">
+                      {{ isHelmetPart(s.hitPart) ? '头盔' : '护甲' }}伤害：
+                    </span>
+                    <span class="detail-value">
+                      {{ s.debug.armorDamage !== null ? s.debug.armorDamage.toFixed(2) : '-' }}
+                    </span>
+                  </div>
+                  <div class="detail-divider"></div>
+                  <div class="detail-row">
+                    <span class="detail-label">
+                      {{ isHelmetPart(s.hitPart) ? '头盔' : '护甲' }}判定：
+                    </span>
+                    <span class="detail-value">
+                      {{ s.debug.armorBefore?.toFixed(0) }} -
+                      {{ s.debug.armorDamage?.toFixed(0) }} =
+                      {{ s.debug.armorAfter?.toFixed(0) }}
+                      <template v-if="s.debug.armorBroken">（已击穿 💥）</template>
+                      <template v-else>（未击穿）</template>
+                    </span>
+                  </div>
+                  <div class="detail-row">
+                    <span class="detail-label">最终伤害：</span>
+                    <span class="detail-value dmg-final">{{ s.finalDamage.toFixed(2) }}</span>
+                  </div>
+                </template>
+
+                <div class="detail-divider"></div>
+                <div class="detail-row">
+                  <span class="detail-label">血量变化：</span>
+                  <span class="detail-value">
+                    {{ (s.health + s.finalDamage).toFixed(2) }} → {{ s.health.toFixed(2) }}
+                  </span>
+                </div>
+              </div>
+            </template>
+          </template>
+        </div>
       </div>
 
       <!-- 底部 -->
@@ -261,7 +434,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 import { paramsStore } from '@/stores/paramsStore'
 import { SimulationEngine } from '@/core/SimulationEngine'
@@ -283,12 +456,27 @@ const simResult = ref(null)
 const expandedSet = ref(new Set())
 const isRolling = ref(false)
 
-// 当前模拟使用的扳机延迟快照（避免弹窗展示时被全局 params 变化影响）
+// 当前模拟使用的扳机延迟快照
 const triggerEnabled = ref(true)
-const triggerDelayRaw = ref(0)  // 武器原始扳机延迟（毫秒）
+const triggerDelayRaw = ref(0)
 
-// 固定的"首次打开"种子（保证第一次打开可复现）
+// 固定的"首次打开"种子
 const INITIAL_SEED = 12345
+
+// ⭐ 是否为移动端（视口宽度 <= 768）
+const isMobile = ref(false)
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+onMounted(() => {
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateIsMobile)
+})
 
 // ---------- 计算属性 ----------
 const weaponName = computed(() => {
@@ -305,10 +493,7 @@ const totalDamage = computed(() => {
     .reduce((sum, s) => sum + s.finalDamage, 0)
 })
 
-// ============================================================
-// ⭐ TTK 分解（全部换算成毫秒）
-// ============================================================
-
+// TTK 分解
 const flightMs = computed(() => {
   if (!simResult.value) return 0
   return simResult.value.flightTime * 1000
@@ -354,24 +539,12 @@ const partLabel = (key) => PART_LABEL[key] || '-'
 const partCls = (key) => PART_CLS[key] || ''
 const isHelmetPart = (key) => key === 'head'
 
-// ============================================================
-// ⭐ 间隔显示辅助
-// ============================================================
-
-/**
- * 格式化间隔（秒 → 展示字符串）
- * - 0 → "-"（第 1 发无前置间隔）
- * - > 0 → "xxx.x ms"
- */
+// 间隔显示辅助
 const formatInterval = (intervalSec) => {
   if (!intervalSec || intervalSec <= 0) return '-'
   return `${(intervalSec * 1000).toFixed(1)} ms`
 }
 
-/**
- * 间隔时长 → 等效射速（RPM）
- * intervalSec = 60 / RPM  ⇒  RPM = 60 / intervalSec
- */
 const intervalToRof = (intervalSec) => {
   if (!intervalSec || intervalSec <= 0) return 0
   return 60 / intervalSec
@@ -389,9 +562,6 @@ const runSimulation = (seed) => {
     return
   }
 
-  // ============================================================
-  // ⭐ 1. 用 getPriceRowsForWeapon 拿"解析后"的行
-  // ============================================================
   const rows = dm.getPriceRowsForWeapon(props.weaponId) || []
   const row = rows.find(r => r.configId === props.configId)
 
@@ -404,12 +574,10 @@ const runSimulation = (seed) => {
   const muzzleId = row.muzzleId ?? 0
   const bulletIdFromRow = row.bulletId || null
 
-  // 2. 应用枪管 / 枪口，得到当前武器属性（含连发 + 分段射速）
   const barrel = (barrelId >= 0 && weapon.barrels?.[barrelId]) ? weapon.barrels[barrelId] : null
 
   const current = calculateCurrentValues(weapon, barrel, muzzleId, 0.09)
 
-  // 合并成带 _current 的武器对象
   const armedWeapon = {
     ...weapon,
     ...current,
@@ -419,7 +587,6 @@ const runSimulation = (seed) => {
     triggerDelay: weapon.triggerDelay || 0
   }
 
-  // 3. 拿实际子弹
   const params = paramsStore.state
   const bulletKey = SimulationEngine.getRealBulletKey(
     bulletIdFromRow,
@@ -437,7 +604,6 @@ const runSimulation = (seed) => {
     return
   }
 
-  // 4. 命中率（优先用配置的 distance/hitRate 映射）
   let hitRate = params.hitRate
   const rawConfig = row._rawConfig
   if (rawConfig?.distance?.length && rawConfig?.hitRate?.length) {
@@ -445,18 +611,15 @@ const runSimulation = (seed) => {
     hitRate = dm.getHitRateFromMap(map, props.distance, params.hitRate ?? 0.85)
   }
 
-  // 5. 快照扳机延迟（供展示）
   triggerEnabled.value = params.triggerDelayEnable !== false
   triggerDelayRaw.value = weapon.triggerDelay || 0
 
-  // 6. 组装模拟参数
   const simParams = {
     ...params,
     distance: props.distance,
     hitRate
   }
 
-  // 7. 设置种子 + 运行
   setSeed(seed)
   const strategy = BulletStrategyFactory.getStrategy(bulletKey)
   const result = SimulationEngine.simulateOneTTKWithDetail(
@@ -497,7 +660,6 @@ const close = () => {
   emit('update:visible', false)
 }
 
-// ---------- 监听打开 ----------
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     runSimulation(INITIAL_SEED)
@@ -618,7 +780,7 @@ watch(
 .reroll-btn:active { transform: scale(0.96); }
 .reroll-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* ⭐ TTK 分解 */
+/* TTK 分解 */
 .ttk-breakdown {
   display: flex;
   flex-wrap: wrap;
@@ -667,7 +829,9 @@ watch(
   margin-left: 2px;
 }
 
-/* 明细表 */
+/* ============================================================
+   桌面：9 列明细表
+   ============================================================ */
 .step-table {
   width: 100%;
   border-collapse: collapse;
@@ -693,14 +857,13 @@ watch(
 .step-table tbody tr.hit-row { background: #f8fff8; }
 .step-table tbody tr.miss-row { background: #fff8f8; color: #999; }
 
-/* ⭐ 间隔列 */
 .interval-cell {
   font-family: var(--font-mono, 'Courier New', monospace);
   font-size: 11px;
   color: #6a6a8e;
 }
 
-/* ⭐ 连发间隔分隔行 */
+/* 连发间隔分隔行 */
 .step-table tbody tr.burst-gap-row {
   background: #f0f4ff;
 }
@@ -791,7 +954,136 @@ watch(
   margin: 6px 0;
 }
 
-/* 底部 */
+/* ============================================================
+   移动端：每发一个紧凑块（两行制）
+   ============================================================ */
+.step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 连发间隔分隔条 */
+.burst-gap-divider {
+  text-align: center;
+  padding: 3px 8px;
+  background: #f0f4ff;
+  border-radius: 4px;
+  border: 1px dashed #a8b8f0;
+  font-family: var(--font-mono, 'Courier New', monospace);
+  font-size: 11px;
+  font-weight: 600;
+  color: #4a6cf7;
+  letter-spacing: 0.3px;
+}
+
+/* 单发块 */
+.step-item {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #e8e8e8;
+  background: #fff;
+  font-size: 12px;
+}
+
+.step-item.hit-item {
+  background: #f8fff8;
+}
+
+.step-item.miss-item {
+  background: #fff8f8;
+  color: #999;
+}
+
+/* 第一行：核心信息 */
+.step-line-1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.step-shot {
+  font-family: var(--font-mono, 'Courier New', monospace);
+  font-weight: 600;
+  color: #4a6cf7;
+  font-size: 12px;
+  flex-shrink: 0;
+  min-width: 26px;
+}
+
+.step-hit {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.step-part {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.step-damage {
+  color: #f44336;
+  font-weight: 600;
+  font-family: var(--font-mono, 'Courier New', monospace);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.step-health {
+  margin-left: auto;
+  font-family: var(--font-mono, 'Courier New', monospace);
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* 第二行：次要信息 */
+.step-line-2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed #f0f0f0;
+  font-size: 11px;
+  color: #888;
+}
+
+.step-meta {
+  font-family: var(--font-mono, 'Courier New', monospace);
+  white-space: nowrap;
+}
+
+.step-toggle {
+  margin-left: auto;
+  color: #4a6cf7;
+  cursor: pointer;
+  font-size: 11px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.step-toggle:hover {
+  text-decoration: underline;
+}
+
+/* 移动端展开详情 */
+.mobile-detail {
+  margin: 4px 0 4px 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #4a6cf7;
+}
+
+.mobile-detail .detail-label {
+  min-width: 110px;
+}
+
+/* ============================================================
+   页脚
+   ============================================================ */
 .modal-footer {
   padding: 12px 20px;
   border-top: 1px solid #e8e8e8;
@@ -810,13 +1102,88 @@ watch(
 }
 .btn-secondary:hover { background: #d5d5d5; }
 
-/* 移动端 */
+/* ============================================================
+   ⭐ 移动端适配
+   ============================================================ */
 @media (max-width: 768px) {
-  .modal-content { width: 98vw; max-height: 95vh; }
-  .step-table { font-size: 11px; }
-  .step-table thead th,
-  .step-table tbody td { padding: 5px 4px; }
-  .step-detail .detail-label { min-width: 110px; }
-  .breakdown-item { flex: 1 1 45%; }
+  .modal-content {
+    width: 98vw;
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 10px 14px;
+  }
+
+  .modal-header h3 {
+    font-size: 14px;
+  }
+
+  .modal-header .sub {
+    display: block;
+    margin-left: 0;
+    margin-top: 2px;
+    font-size: 11px;
+  }
+
+  .modal-body {
+    padding: 12px 14px;
+  }
+
+  /* ⭐ TTK 分解：压缩 */
+  .ttk-breakdown {
+    gap: 6px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+
+  .breakdown-item {
+    flex: 1 1 70px;
+    padding: 4px 6px;
+    min-width: 60px;
+    border-radius: 4px;
+  }
+
+  .breakdown-label {
+    font-size: 9px;
+    margin-bottom: 2px;
+  }
+
+  .breakdown-value {
+    font-size: 13px;
+  }
+
+  .breakdown-value small {
+    font-size: 8px;
+  }
+
+  /* 摘要行 */
+  .sim-toolbar {
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  .sim-summary {
+    font-size: 11px;
+  }
+
+  .reroll-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+
+  /* 移动端详情：更紧凑 */
+  .mobile-detail .detail-label {
+    min-width: 100px;
+    font-size: 10px;
+  }
+
+  .mobile-detail .detail-value {
+    font-size: 10px;
+  }
+
+  .mobile-detail .detail-row {
+    font-size: 10px;
+  }
 }
 </style>

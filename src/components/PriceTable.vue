@@ -23,7 +23,7 @@
             <th style="min-width:50px;">序号</th>
             <th style="min-width:110px;">枪管</th>
             <th style="min-width:80px;">枪口</th>
-            <th style="min-width:110px;">改枪码</th>
+            <th style="min-width:150px;">改枪码</th>
             <th style="min-width:90px;cursor:pointer;" @click="toggleSort('price')">
               整枪价格 <span class="sort-icon">{{ getSortIcon('price') }}</span>
             </th>
@@ -65,14 +65,26 @@
                 </option>
               </select>
             </td>
-            <td class="control-cell">
+
+            <!-- ⭐ 改枪码 + 复制按钮 -->
+            <td class="control-cell build-code-cell">
               <input
                 v-model="row.buildCode"
-                class="cell-input"
+                class="cell-input build-code-input"
                 placeholder="输入改枪码"
                 @blur="onCellChange(row, 'buildCode', row.buildCode)"
               />
+              <button
+                class="btn-copy-code"
+                :disabled="!row.buildCode || row.buildCode.trim() === ''"
+                :class="{ copied: copiedRowKey === getRowKey(row) }"
+                @click="copyBuildCode(row)"
+                :title="copiedRowKey === getRowKey(row) ? '已复制' : '复制改枪码'"
+              >
+                {{ copiedRowKey === getRowKey(row) ? '✅' : '📋' }}
+              </button>
             </td>
+
             <td class="control-cell">
               <input
                 :value="getPriceDisplay(row)"
@@ -135,12 +147,11 @@
         class="card-item"
         :class="{ disabled: row.enabled === false }"
       >
-        <!-- 卡片头部：武器名 + 序号 + 启用 + 哈弗币 + 操作 -->
+        <!-- 卡片头部 -->
         <div class="card-header-row">
           <span class="card-title-text">{{ row.weaponName }}</span>
           <span class="card-config-tag">{{ row.configId }}</span>
 
-          <!-- 启用复选框 -->
           <label class="card-enabled-label">
             <input
               type="checkbox"
@@ -149,7 +160,7 @@
             />
           </label>
 
-          <!-- ⭐ 哈弗币消耗（放在启用和操作之间） -->
+          <!-- 哈弗币消耗 -->
           <span
             v-if="row._havocCost"
             class="card-havoc-cost"
@@ -160,7 +171,6 @@
           </span>
           <span v-else class="card-havoc-cost text-muted">-</span>
 
-          <!-- 操作按钮 -->
           <div class="card-actions">
             <template v-if="row._isNewRow">
               <button class="btn-icon btn-confirm" @click="confirmAdd(index)" title="确认">✅</button>
@@ -201,8 +211,8 @@
             </select>
           </div>
 
-          <!-- 改枪码 -->
-          <div class="card-field editable">
+          <!-- ⭐ 改枪码 + 复制按钮 -->
+          <div class="card-field editable build-code-field">
             <span class="field-label">改枪码</span>
             <input
               type="text"
@@ -210,6 +220,15 @@
               placeholder="输入改枪码"
               @blur="onCellChange(row, 'buildCode', $event.target.value)"
             />
+            <button
+              class="btn-copy-code card-copy-btn"
+              :disabled="!row.buildCode || row.buildCode.trim() === ''"
+              :class="{ copied: copiedRowKey === getRowKey(row) }"
+              @click="copyBuildCode(row)"
+              :title="copiedRowKey === getRowKey(row) ? '已复制' : '复制改枪码'"
+            >
+              {{ copiedRowKey === getRowKey(row) ? '✅' : '📋' }}
+            </button>
           </div>
 
           <!-- 整枪价格 -->
@@ -391,6 +410,82 @@ const getHavocTooltip = (cost) => {
     `子弹单价: ¥${cost.bulletPrice}`
   ]
   return lines.join('\n')
+}
+
+// ============================================================
+// ⭐ 改枪码复制
+// ============================================================
+
+/**
+ * 生成行唯一 key（用于判断"哪一行刚被复制"）
+ */
+const getRowKey = (row) => {
+  return `${row._weaponId}_${row.configId || '#1'}`
+}
+
+// 刚被复制的行 key（1.5 秒后清空）
+const copiedRowKey = ref(null)
+let copiedTimer = null
+
+/**
+ * 复制改枪码到剪贴板
+ */
+const copyBuildCode = async (row) => {
+  const code = row.buildCode
+  if (!code || code.trim() === '') return
+
+  const textToCopy = code.trim()
+
+  // ⭐ 优先用现代 Clipboard API
+  let success = false
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(textToCopy)
+      success = true
+    } catch (e) {
+      console.warn('⚠️ navigator.clipboard 复制失败，尝试 fallback:', e)
+    }
+  }
+
+  // ⭐ fallback：用临时 textarea + execCommand
+  if (!success) {
+    success = fallbackCopy(textToCopy)
+  }
+
+  if (!success) {
+    console.warn('⚠️ 复制失败')
+    return
+  }
+
+  // ⭐ 显示"已复制"反馈（1.5 秒）
+  copiedRowKey.value = getRowKey(row)
+  clearTimeout(copiedTimer)
+  copiedTimer = setTimeout(() => {
+    copiedRowKey.value = null
+  }, 1500)
+}
+
+/**
+ * fallback 复制（兼容非 HTTPS / 老浏览器）
+ */
+const fallbackCopy = (text) => {
+  try {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.position = 'fixed'
+    textarea.style.top = '-9999px'
+    textarea.style.left = '-9999px'
+    textarea.setAttribute('readonly', '')
+    document.body.appendChild(textarea)
+    textarea.select()
+    textarea.setSelectionRange(0, text.length)
+    const ok = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return ok
+  } catch (e) {
+    console.warn('⚠️ fallback 复制失败:', e)
+    return false
+  }
 }
 
 // ============================================================
@@ -602,7 +697,7 @@ table {
   border-collapse: collapse;
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
-  min-width: 700px;
+  min-width: 760px;
 }
 
 thead th {
@@ -714,6 +809,54 @@ tbody tr.new-row .sticky-action {
   cursor: pointer;
 }
 
+/* ============ ⭐ 改枪码单元格（输入框 + 复制按钮） ============ */
+.build-code-cell {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.build-code-cell .build-code-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-copy-code {
+  flex-shrink: 0;
+  width: 28px;
+  min-height: 30px;
+  padding: 0;
+  border: none;
+  border-left: 1px solid var(--color-border-light);
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+}
+
+.btn-copy-code:hover:not(:disabled) {
+  background: #f0f4ff;
+  color: var(--color-primary);
+}
+
+.btn-copy-code:active:not(:disabled) {
+  background: #e0e8ff;
+}
+
+.btn-copy-code:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-copy-code.copied {
+  background: #e8f5e9;
+  color: var(--color-success);
+}
+
 /* ============ 特殊列 ============ */
 .hitrate-cell {
   font-family: var(--font-mono);
@@ -801,6 +944,37 @@ tbody tr.new-row .sticky-action {
   padding: 0 4px;
   white-space: nowrap;
   cursor: help;
+}
+
+/* ============ ⭐ 卡片模式下的复制按钮 ============ */
+.build-code-field {
+  /* 让 input 和 button 并排 */
+}
+
+.build-code-field input {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-copy-btn {
+  width: 34px;
+  min-height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-light);
+  margin-left: 4px;
+}
+
+.card-copy-btn:hover:not(:disabled) {
+  background: #f0f4ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.card-copy-btn.copied {
+  background: #e8f5e9;
+  border-color: var(--color-success);
+  color: var(--color-success);
 }
 
 /* ============ 移动端适配（表格模式下的微调） ============ */
