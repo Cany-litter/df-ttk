@@ -49,6 +49,25 @@
         <div class="chart-header">
           <h3 class="chart-title">📈 距离 - TTK 折线图</h3>
           <div class="chart-controls">
+            <!-- ⭐ 分段切换（0~50m / 50~100m） -->
+            <div class="segment-switch">
+              <button
+                class="segment-btn"
+                :class="{ active: currentSegment === '0-50' }"
+                @click="currentSegment = '0-50'"
+              >
+                0~50m
+              </button>
+              <button
+                class="segment-btn"
+                :class="{ active: currentSegment === '50-100' }"
+                @click="currentSegment = '50-100'"
+              >
+                50~100m
+              </button>
+            </div>
+
+            <!-- 显示数量 -->
             <label class="display-count-label">
               <span>显示数量:</span>
               <input
@@ -71,6 +90,7 @@
           :distances="distances"
           :highlight-weapon="highlightWeapon"
           :display-count="displayCount"
+          :segment="currentSegment"
         />
       </div>
     </div>
@@ -275,6 +295,9 @@ const displayCount = ref(10)
 
 // ⭐ 柱状图显示数量（默认 10，独立于折线图）
 const barDisplayCount = ref(10)
+
+// ⭐ 折线图分段：'0-50' | '50-100'（默认近战段）
+const currentSegment = ref('0-50')
 
 // 新增配置弹窗状态
 const showAddConfigModal = ref(false)
@@ -1357,6 +1380,7 @@ body {
   display: flex;
   align-items: center;
   gap: var(--spacing-lg);
+  flex-wrap: wrap;
 }
 
 /* ⭐ 显示数量选择器 */
@@ -1392,6 +1416,42 @@ body {
 .display-count-label .hint {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+/* ⭐ 分段切换（0~50m / 50~100m） */
+.segment-switch {
+  display: inline-flex;
+  gap: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.segment-btn {
+  padding: 4px 14px;
+  border: none;
+  background: var(--color-bg-white);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.segment-btn:not(:last-child) {
+  border-right: 1px solid var(--color-border);
+}
+
+.segment-btn:hover:not(.active) {
+  background: #f0f4ff;
+  color: var(--color-primary);
+}
+
+.segment-btn.active {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 /* ============ 表格区域 ============ */
@@ -1748,8 +1808,18 @@ body {
     gap: var(--spacing-sm);
   }
   
+  .chart-controls {
+    width: 100%;
+    gap: var(--spacing-md);
+  }
+  
   .display-count-input {
     width: 50px;
+  }
+  
+  .segment-btn {
+    padding: 3px 10px;
+    font-size: var(--font-size-sm);
   }
   
   .table-section {

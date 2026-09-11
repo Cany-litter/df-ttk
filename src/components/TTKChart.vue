@@ -56,6 +56,13 @@ const visibleMap = ref({
   triggerDelay: true
 })
 
+// ⭐ 是否为移动端（视口宽度 <= 768）
+const isMobile = ref(false)
+
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
 // ⭐ 获取可见部分的键列表（用于计算总TTK）
 const getVisibleKeys = () => {
   return ALL_KEYS.filter(key => visibleMap.value[key])
@@ -146,7 +153,7 @@ const buildChartOption = () => {
         formatter: function(params) {
           return Math.round(totals[params.dataIndex]) + 'ms'
         },
-        fontSize: 9,
+        fontSize: isMobile.value ? 8 : 9,
         color: '#666'
       }
     }
@@ -160,6 +167,17 @@ const buildChartOption = () => {
   ALL_KEYS.forEach(key => {
     selected[LEGEND_MAP[key]] = visibleMap.value[key]
   })
+
+  // ⭐ 移动端：Y 轴刻度精简
+  const yAxisSplitNumber = isMobile.value ? 4 : 6
+
+  // ⭐ 移动端：grid 微调（给图例留空间）
+  const gridConfig = isMobile.value
+    ? { left: 40, right: 12, top: 12, bottom: 75 }
+    : { left: 45, right: 20, top: 15, bottom: 55 }
+
+  // ⭐ 移动端：图例文字更小
+  const legendTextStyle = isMobile.value ? { fontSize: 9 } : { fontSize: 11 }
 
   return {
     tooltip: {
@@ -184,23 +202,20 @@ const buildChartOption = () => {
     legend: {
       data: legendData,
       bottom: 0,
-      textStyle: { fontSize: 11 },
-      itemWidth: 14,
-      itemHeight: 10,
+      textStyle: legendTextStyle,
+      itemWidth: isMobile.value ? 12 : 14,
+      itemHeight: isMobile.value ? 8 : 10,
       selected: selected
     },
-    grid: {
-      left: 45,
-      right: 20,
-      top: 15,
-      bottom: 55
-    },
+    grid: gridConfig,
     xAxis: {
       type: 'category',
       data: labels,
       axisLabel: {
         rotate: labels.length > 15 ? 45 : 0,
-        fontSize: labels.length > 20 ? 9 : 11,
+        fontSize: isMobile.value
+          ? (labels.length > 20 ? 8 : 9)
+          : (labels.length > 20 ? 9 : 11),
         interval: 0
       },
       axisLine: { lineStyle: { color: '#ccc' } }
@@ -208,8 +223,9 @@ const buildChartOption = () => {
     yAxis: {
       type: 'value',
       name: 'TTK (ms)',
-      nameTextStyle: { fontSize: 11 },
-      axisLabel: { fontSize: 10 },
+      nameTextStyle: { fontSize: isMobile.value ? 10 : 11 },
+      axisLabel: { fontSize: isMobile.value ? 9 : 10 },
+      splitNumber: yAxisSplitNumber,
       splitLine: { lineStyle: { color: '#f0f0f0', type: 'dashed' } }
     },
     series: series,
@@ -246,7 +262,10 @@ const initChart = () => {
 
   chartInstance.on('legendselectchanged', handleLegendSelectChanged)
 
-  const resize = () => chartInstance?.resize()
+  const resize = () => {
+    updateIsMobile()
+    chartInstance?.resize()
+  }
   window.addEventListener('resize', resize)
   chartInstance._resizeHandler = resize
 }
@@ -279,8 +298,18 @@ watch(() => props.displayCount, () => {
   })
 })
 
+// ⭐ 监听移动端状态变化（视口宽度跨过 768 时更新图表配置）
+watch(isMobile, () => {
+  nextTick(() => {
+    if (chartInstance) {
+      updateChart()
+    }
+  })
+})
+
 // 生命周期
 onMounted(() => {
+  updateIsMobile()
   nextTick(() => {
     initChart()
   })
@@ -311,9 +340,19 @@ defineExpose({
   min-height: 420px;
 }
 
-@media (max-width: 768px) {
+/* ⭐ 手机竖屏：降低高度（有纵向空间） */
+@media (orientation: portrait) and (max-width: 768px) {
   .chart-container {
-    min-height: 320px;
+    min-height: 260px;
+  }
+}
+
+/* ⭐ 手机横屏：进一步降低高度（纵向空间紧张） */
+@media (orientation: landscape) and (max-height: 500px) {
+  .chart-container {
+    height: 200px;
+    min-height: 0;
+    aspect-ratio: auto;
   }
 }
 </style>

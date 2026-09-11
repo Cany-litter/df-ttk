@@ -23,6 +23,11 @@ const props = defineProps({
   displayCount: {
     type: Number,
     default: 10
+  },
+  // ⭐ 分段：'0-50' | '50-100'
+  segment: {
+    type: String,
+    default: '0-50'
   }
 })
 
@@ -36,21 +41,63 @@ const colors = [
   '#16a085', '#d35400', '#2980b9', '#c0392b', '#f1c40f'
 ]
 
+// ⭐ 是否为移动端（视口宽度 <= 768）
+const isMobile = ref(false)
+
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+// ============================================================
+// ⭐ 根据 segment 计算切片范围
+// ============================================================
+const segmentRange = computed(() => {
+  const fullDistances = props.distances || []
+
+  let rangeStart = 0
+  let rangeEnd = 50
+
+  if (props.segment === '50-100') {
+    rangeStart = 50
+    rangeEnd = 100
+  } else {
+    rangeStart = 0
+    rangeEnd = 50
+  }
+
+  const startIndex = fullDistances.indexOf(rangeStart)
+  let endIndex = fullDistances.indexOf(rangeEnd)
+
+  if (startIndex === -1 || endIndex === -1) {
+    return {
+      startIndex: 0,
+      endIndex: fullDistances.length - 1,
+      visibleDistances: fullDistances
+    }
+  }
+
+  const visibleDistances = fullDistances.slice(startIndex, endIndex + 1)
+
+  return {
+    startIndex,
+    endIndex,
+    visibleDistances
+  }
+})
+
 // ============================================================
 // 处理统计数据（排序 + 排名 + 截断）
 // ============================================================
 const processedStats = computed(() => {
   const stats = props.stats || []
-  console.log('🔄 processedStats 重新计算, stats 长度:', stats.length, 'displayCount:', props.displayCount)
+  console.log('🔄 processedStats 重新计算, stats 长度:', stats.length, 'displayCount:', props.displayCount, 'segment:', props.segment)
 
   if (stats.length === 0) return []
 
-  // ⭐ 1. 先浅拷贝每个对象，避免修改 props 传入的数据
   const sortedWithMeta = stats
     .map(s => ({ ...s }))
     .sort((a, b) => (a.weightedAvg || Infinity) - (b.weightedAvg || Infinity))
 
-  // 2. 分配排名
   const totalCount = sortedWithMeta.length
   const top15Count = Math.max(3, Math.ceil(totalCount * 0.15))
   const top40Count = Math.ceil(totalCount * 0.40)
@@ -62,7 +109,6 @@ const processedStats = computed(() => {
     s._isTop40 = i < top40Count
   })
 
-  // 3. 截断
   const displayCount = props.displayCount
   let displayStats
 
@@ -72,7 +118,6 @@ const processedStats = computed(() => {
     displayStats = sortedWithMeta.slice(0, displayCount)
   }
 
-  // 4. 高亮武器追加
   if (props.highlightWeapon) {
     const highlightIndex = displayStats.findIndex(
       s => s.displayName === props.highlightWeapon
@@ -92,13 +137,66 @@ const processedStats = computed(() => {
 })
 
 // ============================================================
+// ⭐ 计算 Y 轴范围（压缩空白区）
+// ============================================================
+/**
+ * 根据当前段的所有数据，计算 Y 轴的 min / max
+ * 
+ * 策略：
+ * - 下界：数据最小值 × 0.92（往下留 8% 余量），取整到 10 的倍数，不低于 0
+ * - 上界：数据最大值 × 1.08（往上留 8% 余量），取整到 10 的倍数
+ * - 最小跨度：100ms（数据波动小时兜底，避免 Y 轴缩太窄）
+ * 
+ * @param {Array} series - ECharts 系列数组（每项有 data 字段）
+ * @returns {Object} { min, max }
+ */
+const calculateYAxisRange = (series) => {
+  // 收集所有 > 0 的值
+  const allValues = []
+  series.forEach(s => {
+    (s.data || []).forEach(v => {
+      if (typeof v === 'number' && v > 0 && isFinite(v)) {
+        allValues.push(v)
+      }
+    })
+  })
+
+  // 没有有效数据：回退到默认 0~1000
+  if (allValues.length === 0) {
+    return { min: 0, max: 1000 }
+  }
+
+  const dataMin = Math.min(...allValues)
+  const dataMax = Math.max(...allValues)
+
+  // 下界：往下留 8% 余量
+  let yMin = Math.max(0, dataMin * 0.92)
+  // 上界：往上留 8% 余量
+  let yMax = dataMax * 1.08
+
+  // ⭐ 最小跨度：100ms
+  if (yMax - yMin < 100) {
+    const mid = (yMax + yMin) / 2
+    yMin = Math.max(0, mid - 50)
+    yMax = mid + 50
+  }
+
+  // ⭐ 下界取整到 10 的倍数（向下取整）
+  yMin = Math.floor(yMin / 10) * 10
+  // ⭐ 上界取整到 10 的倍数（向上取整）
+  yMax = Math.ceil(yMax / 10) * 10
+
+  return { min: yMin, max: yMax }
+}
+
+// ============================================================
 // 构建 ECharts 配置
 // ============================================================
 const buildChartOption = () => {
   const stats = processedStats.value
-  const distances = props.distances || []
+  const { startIndex, endIndex, visibleDistances } = segmentRange.value
 
-  if (stats.length === 0 || distances.length === 0) {
+  if (stats.length === 0 || visibleDistances.length === 0) {
     return {
       title: {
         text: '暂无数据，请点击 "生成折线图"',
@@ -109,7 +207,7 @@ const buildChartOption = () => {
     }
   }
 
-  // 构建系列数据
+  // 构建系列数据（⭐ times 按 segment 切片）
   const series = stats.map((s, index) => {
     const label = s.displayName || s.weapon?.name || '未知武器'
     const isHighlighted = props.highlightWeapon && label === props.highlightWeapon
@@ -117,6 +215,10 @@ const buildChartOption = () => {
     const totalCount = s._totalCount || stats.length
     const isTop15 = s._isTop15
     const isTop40 = s._isTop40
+
+    // ⭐ 切片 times
+    const fullTimes = s.times || []
+    const slicedTimes = fullTimes.slice(startIndex, endIndex + 1)
 
     let lineWidth = 1.0
     let lineType = 'solid'
@@ -144,7 +246,7 @@ const buildChartOption = () => {
     return {
       name: label,
       type: 'line',
-      data: s.times || [],
+      data: slicedTimes,
       smooth: false,
       lineStyle: {
         width: lineWidth,
@@ -179,8 +281,28 @@ const buildChartOption = () => {
     }
   }
 
+  // ⭐ 计算 Y 轴范围（压缩空白区）
+  const yRange = calculateYAxisRange(series)
+
   // 图例数据
   const legendData = series.map(s => s.name)
+
+  // ⭐ 移动端配置调整
+  const axisLabelFontSize = isMobile.value ? 9 : 10
+  const axisNameFontSize = isMobile.value ? 10 : 11
+  const gridConfig = isMobile.value
+    ? { left: 50, right: 12, top: 12, bottom: 55 }
+    : { left: 60, right: 20, top: 15, bottom: 60 }
+
+  // ⭐ X 轴刻度：每 5m 一个
+  const xAxisLabelConfig = {
+    fontSize: axisLabelFontSize,
+    formatter: (value) => {
+      const num = Number(value)
+      return num % 5 === 0 ? num : ''
+    },
+    interval: 0
+  }
 
   return {
     tooltip: {
@@ -204,9 +326,9 @@ const buildChartOption = () => {
       orient: 'horizontal',
       left: 'center',
       top: 'bottom',
-      itemWidth: 14,
-      itemHeight: 10,
-      textStyle: { fontSize: 10 },
+      itemWidth: isMobile.value ? 12 : 14,
+      itemHeight: isMobile.value ? 8 : 10,
+      textStyle: { fontSize: isMobile.value ? 9 : 10 },
       pageButtonItemGap: 5,
       pageButtonGap: 10,
       pageIconColor: '#4a6cf7',
@@ -223,32 +345,27 @@ const buildChartOption = () => {
         return `${isHighlighted}${isTop15}#${rank}/${total} ${name}`
       }
     },
-    grid: {
-      left: 55,
-      right: 20,
-      top: 15,
-      bottom: 60
-    },
+    grid: gridConfig,
     xAxis: {
       type: 'category',
-      data: distances,
+      data: visibleDistances,
       name: '距离 (m)',
       nameLocation: 'center',
-      nameGap: 30,
-      nameTextStyle: { fontSize: 11 },
-      axisLabel: {
-        fontSize: 10,
-        interval: Math.max(1, Math.floor(distances.length / 30))
-      },
+      nameGap: isMobile.value ? 24 : 30,
+      nameTextStyle: { fontSize: axisNameFontSize },
+      axisLabel: xAxisLabelConfig,
       splitLine: { show: false },
       axisLine: { lineStyle: { color: '#ccc' } }
     },
     yAxis: {
       type: 'value',
       name: 'TTK',
-      nameTextStyle: { fontSize: 11 },
+      nameTextStyle: { fontSize: axisNameFontSize },
+      // ⭐ 动态 Y 轴范围（压缩空白区）
+      min: yRange.min,
+      max: yRange.max,
       axisLabel: {
-        fontSize: 10,
+        fontSize: axisLabelFontSize,
         formatter: function(value) {
           if (value >= 1000) {
             return (value / 1000).toFixed(1) + 's'
@@ -279,7 +396,10 @@ const initChart = () => {
   chartInstance = echarts.init(chartRef.value)
   chartInstance.setOption(buildChartOption())
 
-  const resize = () => chartInstance?.resize()
+  const resize = () => {
+    updateIsMobile()
+    chartInstance?.resize()
+  }
   window.addEventListener('resize', resize)
   chartInstance._resizeHandler = resize
 }
@@ -290,7 +410,7 @@ const updateChart = () => {
   chartInstance.setOption(buildChartOption(), true)
 }
 
-// ⭐ 分别监听每个依赖，确保 displayCount 变化时触发更新
+// ⭐ 分别监听每个依赖，确保变化时触发更新
 watch(() => props.stats, () => {
   console.log('👁️ watch: stats 变化')
   nextTick(() => {
@@ -322,8 +442,27 @@ watch(() => props.displayCount, (newVal, oldVal) => {
   })
 })
 
+// ⭐ 监听分段变化
+watch(() => props.segment, (newVal, oldVal) => {
+  console.log('👁️ watch: segment 变化', oldVal, '->', newVal)
+  nextTick(() => {
+    if (chartInstance) updateChart()
+    else initChart()
+  })
+})
+
+// ⭐ 监听移动端状态变化（视口宽度跨过 768 时更新图表配置）
+watch(isMobile, () => {
+  nextTick(() => {
+    if (chartInstance) {
+      updateChart()
+    }
+  })
+})
+
 // 生命周期
 onMounted(() => {
+  updateIsMobile()
   nextTick(() => {
     initChart()
   })
@@ -353,9 +492,19 @@ defineExpose({
   min-height: 420px;
 }
 
-@media (max-width: 768px) {
+/* ⭐ 手机竖屏：降低高度（有纵向空间） */
+@media (orientation: portrait) and (max-width: 768px) {
   .chart-container {
-    min-height: 320px;
+    min-height: 260px;
+  }
+}
+
+/* ⭐ 手机横屏：进一步降低高度（纵向空间紧张） */
+@media (orientation: landscape) and (max-height: 500px) {
+  .chart-container {
+    height: 200px;
+    min-height: 0;
+    aspect-ratio: auto;
   }
 }
 </style>
