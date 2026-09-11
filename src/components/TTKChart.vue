@@ -171,13 +171,31 @@ const buildChartOption = () => {
   // ⭐ 移动端：Y 轴刻度精简
   const yAxisSplitNumber = isMobile.value ? 4 : 6
 
-  // ⭐ 移动端：grid 微调（给图例留空间）
+  // ⭐ 判断是否需要旋转 X 轴标签
+  // - 移动端：永远旋转（屏窄，标签容易重叠）
+  // - 桌面：标签数 > 8 才旋转
+  const shouldRotateLabel = isMobile.value || labels.length > 8
+
+  // ⭐ grid 配置
+  // 旋转标签时，底部需要更多空间容纳倾斜的文字
   const gridConfig = isMobile.value
-    ? { left: 40, right: 12, top: 12, bottom: 75 }
-    : { left: 45, right: 20, top: 15, bottom: 55 }
+    ? { left: 40, right: 12, top: 12, bottom: shouldRotateLabel ? 85 : 75 }
+    : { left: 45, right: 20, top: 15, bottom: shouldRotateLabel ? 65 : 55 }
 
   // ⭐ 移动端：图例文字更小
   const legendTextStyle = isMobile.value ? { fontSize: 9 } : { fontSize: 11 }
+
+  // ⭐ X 轴标签配置
+  const xAxisLabelConfig = {
+    rotate: shouldRotateLabel ? 45 : 0,
+    fontSize: isMobile.value
+      ? (labels.length > 20 ? 8 : 9)
+      : (labels.length > 20 ? 9 : 11),
+    interval: 0,
+    // ⭐ 旋转时右对齐，让标签从刻度线向上延伸
+    align: shouldRotateLabel ? 'right' : 'center',
+    verticalAlign: shouldRotateLabel ? 'top' : 'middle'
+  }
 
   return {
     tooltip: {
@@ -211,13 +229,7 @@ const buildChartOption = () => {
     xAxis: {
       type: 'category',
       data: labels,
-      axisLabel: {
-        rotate: labels.length > 15 ? 45 : 0,
-        fontSize: isMobile.value
-          ? (labels.length > 20 ? 8 : 9)
-          : (labels.length > 20 ? 9 : 11),
-        interval: 0
-      },
+      axisLabel: xAxisLabelConfig,
       axisLine: { lineStyle: { color: '#ccc' } }
     },
     yAxis: {
