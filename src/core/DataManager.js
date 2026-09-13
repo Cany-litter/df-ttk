@@ -17,6 +17,7 @@
  * - weapons: 按类型 → 名称 排序
  * - bullets: 按口径 → 等级 排序
  * - prices: 按类型 → 武器名称 → 配置序号 排序
+ * - ⭐ armors: 按 type → level 排序
  */
 import perf from '../utils/performance.js';
 
@@ -25,7 +26,8 @@ export class DataManager {
     this.data = {
       weapons: [],
       bullets: [],
-      prices: []
+      prices: [],
+      armors: []   // ⭐ 新增：护甲/头盔数据
     };
     this.originalData = null;
     this.isLoaded = false;
@@ -85,7 +87,7 @@ export class DataManager {
       this.modifiedWeaponIds.clear();
       
       perf.mark('dataLoadDone', '数据加载完成');
-      console.log(`✅ DataManager: 加载了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹, ${this.data.prices.length} 条价格配置`);
+      console.log(`✅ DataManager: 加载了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹, ${this.data.prices.length} 条价格配置, ${this.data.armors.length} 条护甲数据`);
       return this.data;
       
     } catch (error) {
@@ -99,6 +101,7 @@ export class DataManager {
     if (!Array.isArray(data.weapons) || data.weapons.length === 0) return false;
     if (!Array.isArray(data.bullets) || data.bullets.length === 0) return false;
     if (!Array.isArray(data.prices)) return false;
+    // armors 可以为空数组或不存在
     
     for (const weapon of data.weapons) {
       if (!weapon.id || !weapon.name || !weapon.allowedBullet) {
@@ -116,8 +119,8 @@ export class DataManager {
    * ⭐ 统一处理：
    * 1. 武器 ranges：'Infinity' / null → Infinity
    * 2. 子弹 level：数字型字符串 → 数字（如 "4" → 4，保留 "RIP" 等特殊等级为字符串）
-   * 
-   * 修复目标：避免 getBulletByCaliberAndLevel 因类型不匹配（"4" vs 4）而找不到子弹。
+   * 3. 配置 precision：缺失时补默认值 0.09
+   * 4. ⭐ 护甲 armors：缺失时补空数组
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
@@ -149,12 +152,45 @@ export class DataManager {
     }
     
     // ---------- 2. ⭐ 子弹 level 规范化 ----------
-    // "4" / "5" 等纯数字字符串 → 数字
-    // "RIP" / "M61" 等特殊等级 → 保持字符串
     if (Array.isArray(normalized.bullets)) {
       normalized.bullets.forEach(bullet => {
         if (typeof bullet.level === 'string' && /^\d+$/.test(bullet.level)) {
           bullet.level = parseInt(bullet.level, 10);
+        }
+      });
+    }
+
+    // ---------- 3. ⭐ 配置 precision 规范化 ----------
+    if (Array.isArray(normalized.prices)) {
+      normalized.prices.forEach(price => {
+        if (Array.isArray(price.configs)) {
+          price.configs.forEach(config => {
+            if (typeof config.precision !== 'number' || isNaN(config.precision)) {
+              config.precision = 0.09;
+            }
+          });
+        }
+      });
+    }
+
+    // ---------- 4. ⭐ 护甲 armors 规范化 ----------
+    // 缺失时补空数组；确保每条有 type 字段
+    if (!Array.isArray(normalized.armors)) {
+      normalized.armors = [];
+    } else {
+      normalized.armors.forEach(armor => {
+        if (!armor.type) {
+          armor.type = 'armor';   // 默认护甲
+        }
+        // 数值字段类型规范化
+        if (typeof armor.level === 'string') {
+          armor.level = parseInt(armor.level, 10) || 1;
+        }
+        if (typeof armor.value === 'string') {
+          armor.value = parseFloat(armor.value) || 0;
+        }
+        if (typeof armor.price === 'string') {
+          armor.price = parseFloat(armor.price) || 0;
         }
       });
     }
@@ -187,12 +223,6 @@ export class DataManager {
     return this.data.bullets.find(b => b.id === id) || null;
   }
 
-  /**
-   * 按口径 + 等级查找子弹
-   * 
-   * ⭐ 用 String() 比较，兼容 level 是字符串还是数字的情况
-   * （即使数据未经过 normalizeData，也能正确匹配）
-   */
   getBulletByCaliberAndLevel(caliber, level) {
     return this.data.bullets.find(b => 
       b.caliber === caliber && String(b.level) === String(level)
@@ -213,6 +243,89 @@ export class DataManager {
       price: bullet.price || 0,
       _bulletId: bullet.id || ''
     }));
+  }
+
+  // ============================================================
+  // 3.5. ⭐ 数据获取 - 护甲 / 头盔
+  // ============================================================
+
+  /**
+   * 获取所有护甲/头盔
+   */
+  getArmors() {
+    return this.data.armors || [];
+  }
+
+  /**
+   * 按类型获取（'armor' | 'helmet'）
+   */
+  getArmorsByType(type) {
+    return (this.data.armors || []).filter(a => a.type === type);
+  }
+
+  /**
+   * 按 ID 获取
+   */
+  getArmorById(id) {
+    return (this.data.armors || []).find(a => a.id === id) || null;
+  }
+
+  /**
+   * 新增护甲/头盔
+   * @param {Object} armorData - { id, type, name, level, value, price }
+   */
+  addArmor(armorData) {
+    if (!armorData || !armorData.id) {
+      console.warn('⚠️ addArmor: 缺少 id');
+      return false;
+    }
+    const existing = this.getArmorById(armorData.id);
+    if (existing) {
+      console.warn(`⚠️ 护甲 ${armorData.id} 已存在`);
+      return false;
+    }
+
+    // 补默认值
+    const armor = {
+      id: armorData.id,
+      type: armorData.type || 'armor',
+      name: armorData.name || '未命名',
+      level: armorData.level || 1,
+      value: armorData.value || 0,
+      price: armorData.price || 0
+    };
+
+    if (!Array.isArray(this.data.armors)) {
+      this.data.armors = [];
+    }
+    this.data.armors.push(armor);
+    return true;
+  }
+
+  /**
+   * 更新护甲/头盔
+   * @param {string} id
+   * @param {Object} updates
+   */
+  updateArmor(id, updates) {
+    const armor = this.getArmorById(id);
+    if (!armor) {
+      console.warn(`⚠️ 未找到护甲 ${id}`);
+      return false;
+    }
+    Object.assign(armor, updates);
+    return true;
+  }
+
+  /**
+   * 删除护甲/头盔
+   * @param {string} id
+   */
+  removeArmor(id) {
+    const idx = (this.data.armors || []).findIndex(a => a.id === id);
+    if (idx === -1) return false;
+    this.data.armors.splice(idx, 1);
+    return true;
   }
 
   // ============================================================
@@ -268,10 +381,6 @@ export class DataManager {
     return weapon.barrels.findIndex(b => b.name === barrelName);
   }
 
-  /**
-   * 获取指定武器的价格行数据
-   * ⭐ 包含 enabled 字段、cache 字段、hitRateRaw 字段
-   */
   getPriceRowsForWeapon(weaponId) {
     const weapon = this.getWeaponById(weaponId);
     const price = this.getPriceByWeaponId(weaponId);
@@ -320,7 +429,7 @@ export class DataManager {
         }
       }
       
-      // ---------- ⭐ 拼命中率字符串 ----------
+      // ---------- 拼命中率字符串 ----------
       let hitRateRaw = '';
       const distances = Array.isArray(config.distance) ? config.distance : [];
       const hitRates = Array.isArray(config.hitRate) ? config.hitRate : [];
@@ -333,6 +442,11 @@ export class DataManager {
         hitRateRaw = parts.join(',');
       }
       
+      // ---------- 精校 ----------
+      const precision = (typeof config.precision === 'number' && !isNaN(config.precision))
+        ? config.precision
+        : 0.09;
+      
       return {
         weaponName: weapon.name,
         configId: config.id || '#1',
@@ -340,11 +454,12 @@ export class DataManager {
         barrelId: barrelId,
         muzzle: muzzleName,
         muzzleId: muzzleId,
+        precision: precision,
         buildCode: config.buildCode || '-',
         price: config.price || 0,
-        distance: distances,           // 原始数组
-        hitRate: hitRates,             // 原始数组
-        hitRateRaw: hitRateRaw,        // ⭐ 拼好的字符串
+        distance: distances,
+        hitRate: hitRates,
+        hitRateRaw: hitRateRaw,
         bulletDisplay: bulletDisplay,
         bulletId: bulletId,
         enabled: config.enabled !== undefined ? config.enabled : true,
@@ -356,9 +471,6 @@ export class DataManager {
     });
   }
 
-  /**
-   * 获取所有价格行数据（UI 使用）
-   */
   getPriceRows() {
     const rows = [];
     const prices = this.getPrices();
@@ -405,9 +517,6 @@ export class DataManager {
     return this.getHitRateFromMap(points, distance, 0.85);
   }
 
-  /**
-   * 从命中率映射中获取指定距离的命中率（支持插值和外推）
-   */
   getHitRateFromMap(hitRateMap, distance, fallback = 0.85) {
     if (!hitRateMap || hitRateMap.length === 0) {
       return typeof fallback === 'number' ? fallback : 0.85;
@@ -428,7 +537,6 @@ export class DataManager {
       return typeof fallback === 'number' ? fallback : 0.85;
     }
 
-    // 强制在10米处确保100%命中率
     const hasNearPoint = validPoints.some(p => p.distance <= 10);
     let points = [...validPoints];
     if (!hasNearPoint) {
@@ -706,7 +814,7 @@ export class DataManager {
       return false;
     }
     
-    const ttkAffectingKeys = ['barrelId', 'muzzleId', 'bullet', 'distance', 'hitRate'];
+    const ttkAffectingKeys = ['barrelId', 'muzzleId', 'precision', 'bullet', 'distance', 'hitRate'];
     const hasTtkAffectingChange = Object.keys(updates).some(key => 
       ttkAffectingKeys.includes(key)
     );
@@ -765,6 +873,10 @@ export class DataManager {
     
     if (configData.muzzleId === undefined) {
       configData.muzzleId = 0;
+    }
+
+    if (configData.precision === undefined) {
+      configData.precision = 0.09;
     }
     
     if (configData.bullet === undefined) {
@@ -938,7 +1050,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 12. 导出排序方法（仅导出时使用，不影响内存数据）
+  // 12. 导出排序方法（仅导出时使用）
   // ============================================================
 
   static get TYPE_ORDER() {
@@ -996,6 +1108,27 @@ export class DataManager {
       const levelA = DataManager.getLevelWeight(a.level);
       const levelB = DataManager.getLevelWeight(b.level);
       return levelA - levelB;
+    });
+  }
+
+  /**
+   * ⭐ 护甲排序：type → level
+   */
+  _sortArmorsForExport(armors) {
+    if (!armors || armors.length === 0) return;
+    
+    const typeOrder = { 'armor': 0, 'helmet': 1 };
+    
+    armors.sort((a, b) => {
+      const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 99;
+      const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 99;
+      if (typeA !== typeB) return typeA - typeB;
+      
+      const levelA = typeof a.level === 'number' ? a.level : parseInt(a.level) || 0;
+      const levelB = typeof b.level === 'number' ? b.level : parseInt(b.level) || 0;
+      if (levelA !== levelB) return levelB - levelA;   // 等级高的在前
+      
+      return (a.name || '').localeCompare(b.name || '', 'zh-CN');
     });
   }
 
@@ -1077,6 +1210,7 @@ export class DataManager {
       
       this._sortWeaponsForExport(dataToExport.weapons);
       this._sortBulletsForExport(dataToExport.bullets);
+      this._sortArmorsForExport(dataToExport.armors);   // ⭐ 新增
       
       const weaponsMap = new Map();
       if (Array.isArray(dataToExport.weapons)) {
@@ -1159,7 +1293,7 @@ export class DataManager {
       
       this.clearAllModified();
       
-      console.log(`✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹`);
+      console.log(`✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹, ${this.data.armors.length} 条护甲数据`);
       return this.data;
       
     } catch (error) {
@@ -1224,6 +1358,7 @@ export class DataManager {
       weaponCount: this.data.weapons.length,
       bulletCount: this.data.bullets.length,
       priceCount: this.data.prices.length,
+      armorCount: this.data.armors.length,   // ⭐ 新增
       muzzleCount: this.muzzles.length,
       isLoaded: this.isLoaded,
       hasUnsavedChanges: this.hasUnsavedChanges(),

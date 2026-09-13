@@ -356,7 +356,7 @@ table {
 }
 
 /* ============================================================
-   7. 移动端适配
+   7. 移动端适配（基础）
    ============================================================ */
 @media (max-width: 768px) {
   :root {
@@ -711,9 +711,6 @@ table {
 }
 
 /* ---------- 卡片底部操作栏（可选，暂不使用） ---------- */
-/* 
-  注：现在操作按钮放在卡片头部，这里保留供未来扩展
-*/
 .card-footer-row {
   display: flex;
   gap: 8px;
@@ -736,4 +733,98 @@ table {
   align-items: center;
   justify-content: center;
   gap: 4px;
+}
+
+/* ============================================================
+   10. ⭐ 移动端：卡片紧凑样式
+   
+   目的：移动端屏小，压缩卡片的字号和间距，让内容更紧凑
+   触发：@media (max-width: 768px)
+   影响：.card-list / .card-item / .card-header-row / .card-field 等
+   ============================================================ */
+@media (max-width: 768px) {
+  /* ---------- 卡片列表：间距减小 ---------- */
+  .card-list {
+    gap: 6px;
+  }
+
+  /* ---------- 卡片头部：padding 减小 ---------- */
+  .card-header-row {
+    padding: 5px 10px;
+    gap: 5px;
+  }
+
+  /* ---------- 卡片标题：字号减小 ---------- */
+  .card-title-text {
+    font-size: 13px;
+  }
+
+  /* ---------- 配置标签：更紧凑 ---------- */
+  .card-config-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+  }
+
+  /* ---------- 卡片头部图标按钮：缩小 ---------- */
+  .btn-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+  }
+
+  .btn-icon.btn-with-text {
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  /* ---------- 卡片分组标题：更紧凑 ---------- */
+  .card-group-title {
+    font-size: 10px;
+    padding: 4px 10px 3px;
+  }
+
+  /* ---------- 卡片字段：padding / gap 减小 ---------- */
+  .card-field {
+    padding: 4px 10px;
+    gap: 6px;
+  }
+
+  /* ---------- 字段标签：字号 / 宽度减小 ---------- */
+  .card-field .field-label {
+    font-size: 11px;
+    width: 58px;
+  }
+
+  /* ---------- 字段值：字号减小 ---------- */
+  .card-field .field-value {
+    font-size: 12px;
+  }
+
+  /* ---------- 卡片内输入框：padding / 字号减小 ---------- */
+  .card-field.editable input,
+  .card-field.editable select {
+    padding: 3px 6px;
+    font-size: 12px;
+  }
+
+  /* ---------- 字段值的等宽字体：字号减小 ---------- */
+  .field-value.mono {
+    font-size: 11px;
+  }
+
+  /* ---------- 双值显示：字号减小 ---------- */
+  .field-value.dual {
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .field-value.dual .cur {
+    padding: 1px 6px;
+  }
+
+  /* ---------- 等级徽章：更紧凑 ---------- */
+  .level-badge {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
 }

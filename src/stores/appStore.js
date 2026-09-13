@@ -2,16 +2,28 @@
 import { reactive, readonly } from 'vue'
 
 const state = reactive({
-  currentTab: 'price',
+  // ⭐ 主 Tab：'weapon'（枪械数据） | 'items'（弹甲数据）
+  currentTab: 'weapon',
+
+  // ⭐ 子 Tab（仅用于 items）：'bullet' | 'armor' | 'helmet'
+  currentSubTab: 'bullet',
+
   ttkResults: [],
   havocCosts: {},
   isLoading: false,
+
+  // 枪管编辑器
   showBarrelEditor: false,
   editingWeaponId: null,
+
+  // 基础属性编辑器
+  showBaseEditor: false,
+  editingBaseWeaponId: null,
+
   showAllWeapons: true,
   highlightWeapon: null,
 
-  // ⭐ 计算进度状态
+  // 计算进度状态
   calcProgress: {
     visible: false,
     percent: 0,
@@ -25,11 +37,22 @@ export const appStore = {
   state: readonly(state),
 
   // ============================================================
-  // Tab 切换
+  // 主 Tab 切换
+  // ⭐ 白名单：'weapon' | 'items'
   // ============================================================
   switchTab(tab) {
-    if (['price', 'weapon', 'bullet'].includes(tab)) {
+    if (['weapon', 'items'].includes(tab)) {
       state.currentTab = tab
+    }
+  },
+
+  // ============================================================
+  // ⭐ 子 Tab 切换（弹甲数据内部）
+  // 白名单：'bullet' | 'armor' | 'helmet'
+  // ============================================================
+  switchSubTab(sub) {
+    if (['bullet', 'armor', 'helmet'].includes(sub)) {
+      state.currentSubTab = sub
     }
   },
 
@@ -68,6 +91,19 @@ export const appStore = {
   },
 
   // ============================================================
+  // 基础属性编辑器
+  // ============================================================
+  openBaseEditor(weaponId) {
+    state.editingBaseWeaponId = weaponId
+    state.showBaseEditor = true
+  },
+
+  closeBaseEditor() {
+    state.showBaseEditor = false
+    state.editingBaseWeaponId = null
+  },
+
+  // ============================================================
   // 显示全部武器
   // ============================================================
   toggleShowAllWeapons() {
@@ -90,7 +126,7 @@ export const appStore = {
   },
 
   // ============================================================
-  // ⭐ 计算进度管理
+  // 计算进度管理
   // ============================================================
 
   /**

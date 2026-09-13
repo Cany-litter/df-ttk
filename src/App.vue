@@ -49,7 +49,6 @@
         <div class="chart-header">
           <h3 class="chart-title">📈 距离 - TTK 折线图</h3>
           <div class="chart-controls">
-            <!-- ⭐ 分段切换（0~50m / 50~100m） -->
             <div class="segment-switch">
               <button
                 class="segment-btn"
@@ -67,7 +66,6 @@
               </button>
             </div>
 
-            <!-- 显示数量 -->
             <label class="display-count-label">
               <span>显示数量:</span>
               <input
@@ -97,15 +95,8 @@
 
     <!-- ============ 表格区域 ============ -->
     <div class="table-section">
-      <!-- Tab 导航 -->
+      <!-- ⭐ 主 Tab 导航（枪械 / 弹甲） -->
       <div class="table-tabs">
-        <button
-          class="tab-btn"
-          :class="{ active: appStore.state.currentTab === 'price' }"
-          @click="switchTab('price')"
-        >
-          💰 价格数据
-        </button>
         <button
           class="tab-btn"
           :class="{ active: appStore.state.currentTab === 'weapon' }"
@@ -115,34 +106,16 @@
         </button>
         <button
           class="tab-btn"
-          :class="{ active: appStore.state.currentTab === 'bullet' }"
-          @click="switchTab('bullet')"
+          :class="{ active: appStore.state.currentTab === 'items' }"
+          @click="switchTab('items')"
         >
-          💊 子弹数据
+          🛡️ 弹甲数据
         </button>
       </div>
 
       <!-- Tab 内容 -->
       <div class="tab-content">
-        <!-- 价格表格容器 -->
-        <div
-          id="tab-price"
-          v-show="appStore.state.currentTab === 'price'"
-          class="tab-pane"
-        >
-          <PriceTable
-            :data="priceRows"
-            :muzzle-options="muzzleOptions"
-            :get-barrel-options="getBarrelOptions"
-            :get-bullet-options="getBulletOptions"
-            :havoc-costs="appStore.state.havocCosts"
-            @update="onDataUpdate"
-            @add-config="onAddConfig"
-            @show-damage-detail="onShowDamageDetail"
-          />
-        </div>
-
-        <!-- 武器表格容器 -->
+        <!-- 枪械 Tab -->
         <div
           id="tab-weapon"
           v-show="appStore.state.currentTab === 'weapon'"
@@ -157,21 +130,19 @@
             @edit-barrel="openBarrelEditor"
             @add-weapon="onAddWeapon"
             @delete-weapon="onDeleteWeapon"
+            @show-damage-detail="onShowDamageDetail"
           />
         </div>
 
-        <!-- 子弹表格容器 -->
+        <!-- ⭐ 弹甲 Tab（含子弹/护甲/头盔三个子 Tab） -->
         <div
-          id="tab-bullet"
-          v-show="appStore.state.currentTab === 'bullet'"
+          id="tab-items"
+          v-show="appStore.state.currentTab === 'items'"
           class="tab-pane"
         >
-          <BulletTable
-            :data="bulletRows"
+          <ItemsPanel
             :caliber-options="caliberOptions"
-            @update="onBulletUpdate"
-            @add-bullet="onAddBullet"
-            @delete-bullet="onDeleteBullet"
+            @update="onItemsUpdate"
           />
         </div>
       </div>
@@ -179,34 +150,6 @@
 
     <!-- 页脚 -->
     <AppFooter />
-
-    <!-- ============ 新增配置弹窗 ============ -->
-    <div v-if="showAddConfigModal" class="modal-overlay" @click.self="closeAddConfigModal">
-      <div class="modal-content modal-small">
-        <div class="modal-header">
-          <h3>➕ 新增价格配置</h3>
-          <button class="modal-close" @click="closeAddConfigModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>选择武器</label>
-            <select v-model="addConfigWeaponId" class="form-select">
-              <option v-for="w in addConfigWeaponList" :key="w.id" :value="w.id">
-                {{ w.name }}（已有 {{ getConfigCount(w.id) }} 个配置）
-              </option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>配置 ID</label>
-            <input v-model="addConfigId" class="form-input" placeholder="如: #1, #2" />
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="closeAddConfigModal">取消</button>
-          <button class="btn-primary" @click="confirmAddConfig">✅ 确认添加</button>
-        </div>
-      </div>
-    </div>
 
     <!-- ============ 枪管编辑器弹窗 ============ -->
     <BarrelEditor
@@ -216,7 +159,16 @@
       @saved="onBarrelSaved"
     />
 
-    <!-- ============ ⭐ 单次伤害模拟弹窗 ============ -->
+    <!-- ============ 基础属性编辑器弹窗 ============ -->
+    <WeaponBaseEditor
+      :visible="appStore.state.showBaseEditor"
+      :weapon-id="appStore.state.editingBaseWeaponId"
+      :caliber-options="caliberOptions"
+      @update:visible="onBaseVisibleChange"
+      @saved="onBaseSaved"
+    />
+
+    <!-- ============ 单次伤害模拟弹窗 ============ -->
     <DamageDetailModal
       v-model:visible="showDamageDetail"
       :weapon-id="detailWeaponId"
@@ -225,7 +177,7 @@
     />
   </div>
 
-  <!-- ============ ⭐ 计算进度遮罩 ============ -->
+  <!-- ============ 计算进度遮罩 ============ -->
   <Teleport to="body">
     <div v-if="appStore.state.calcProgress.visible" class="calc-progress-overlay">
       <div class="calc-progress-box">
@@ -255,7 +207,6 @@ import { SimulationEngine } from '@/core/SimulationEngine'
 import { BulletStrategyFactory } from '@/core/BulletStrategy'
 import { SIMULATION_CONFIG, CHART_CONFIG } from '@/core/config'
 
-// ⭐ 从 weaponCalc 引入抽出的函数
 import { calculateCurrentValues } from '@/utils/weaponCalc'
 
 // 导入组件
@@ -264,83 +215,38 @@ import AppFooter from '@/components/AppFooter.vue'
 import ParamsPanel from '@/components/ParamsPanel.vue'
 import TTKChart from '@/components/TTKChart.vue'
 import DistanceChart from '@/components/DistanceChart.vue'
-import PriceTable from '@/components/PriceTable.vue'
 import WeaponTable from '@/components/WeaponTable.vue'
-import BulletTable from '@/components/BulletTable.vue'
+import ItemsPanel from '@/components/ItemsPanel.vue'   // ⭐ 新增
 import BarrelEditor from '@/components/BarrelEditor.vue'
+import WeaponBaseEditor from '@/components/WeaponBaseEditor.vue'
 import DamageDetailModal from '@/components/DamageDetailModal.vue'
+
+// 注意：不再直接导入 BulletTable（已并入 ItemsPanel）
 
 // ---------- 状态 ----------
 const highlightWeapon = ref(null)
 const distances = ref(Array.from({ length: 101 }, (_, i) => i))
 const caliberOptions = ref([])
 
-// ⭐ 折线图显示数量（默认 10，0 或负数表示全部）
 const displayCount = ref(10)
-
-// ⭐ 柱状图显示数量（默认 10，独立于折线图）
 const barDisplayCount = ref(10)
-
-// ⭐ 折线图分段：'0-50' | '50-100'（默认近战段）
 const currentSegment = ref('0-50')
 
-// 新增配置弹窗状态
-const showAddConfigModal = ref(false)
-const addConfigWeaponId = ref(null)
-const addConfigId = ref('')
-
-// ⭐ 单次伤害模拟弹窗状态
 const showDamageDetail = ref(false)
 const detailWeaponId = ref(null)
 const detailConfigId = ref('#1')
 
 // ---------- 计算属性 ----------
-const priceRows = computed(() => {
-  const prices = dataStore.state.prices
-  if (!prices || prices.length === 0) {
-    return []
-  }
-  const rows = dataStore.getPriceRows()
-  return rows || []
-})
-
 const weaponRows = computed(() => {
   return dataStore.state.weapons || []
 })
 
-const bulletRows = computed(() => {
-  return dataStore.state.bullets || []
-})
-
 const muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器']
-
-// 新增配置弹窗 - 武器列表
-const addConfigWeaponList = computed(() => {
-  const weapons = dataStore.state.weapons || []
-  return weapons.filter(w => {
-    const price = dataStore.getPriceByWeaponId(w.id)
-    return price && price.configs && price.configs.length > 0
-  })
-})
 
 // ---------- 距离图表数据 ----------
 const distanceStats = ref([])
 
 // ---------- 辅助函数 ----------
-const getConfigCount = (weaponId) => {
-  const price = dataStore.getPriceByWeaponId(weaponId)
-  return price?.configs?.length || 0
-}
-
-const getBarrelOptions = (row) => {
-  const weaponId = row._weaponId
-  if (!weaponId) return ['无']
-  const weapon = dataStore.getWeaponById(weaponId)
-  if (!weapon || !weapon.barrels || weapon.barrels.length === 0) return ['无']
-  const options = weapon.barrels.map(b => b.name)
-  return ['无', ...options]
-}
-
 const getWeaponBarrelOptions = (row) => {
   const weapon = dataStore.getWeaponById(row.id)
   if (!weapon || !weapon.barrels || weapon.barrels.length === 0) return ['无']
@@ -348,18 +254,6 @@ const getWeaponBarrelOptions = (row) => {
   return ['无', ...options]
 }
 
-const getBulletOptions = (row) => {
-  const weaponId = row._weaponId
-  if (!weaponId) return ['无']
-  const weapon = dataStore.getWeaponById(weaponId)
-  if (!weapon || !weapon.allowedBullet) return ['无']
-  const bullets = dataStore.getDataManager().getBulletsByCaliber(weapon.allowedBullet)
-  if (!bullets || bullets.length === 0) return ['无']
-  const options = bullets.map(b => `${b.caliber} Lv.${b.level}`)
-  return ['无', ...options]
-}
-
-// ⭐ 折线图：显示数量输入框处理
 const onDisplayCountBlur = () => {
   if (typeof displayCount.value !== 'number' || isNaN(displayCount.value)) {
     displayCount.value = 10
@@ -369,7 +263,6 @@ const onDisplayCountBlur = () => {
   }
 }
 
-// ⭐ 柱状图：显示数量输入框处理
 const onBarDisplayCountBlur = () => {
   if (typeof barDisplayCount.value !== 'number' || isNaN(barDisplayCount.value)) {
     barDisplayCount.value = 10
@@ -379,7 +272,6 @@ const onBarDisplayCountBlur = () => {
   }
 }
 
-// 回车时失焦（两个输入框共用）
 const onDisplayCountEnter = (e) => {
   e.target.blur()
 }
@@ -389,114 +281,24 @@ const switchTab = (tab) => {
   appStore.switchTab(tab)
 }
 
-// ⭐ 打开单次伤害模拟弹窗
 const onShowDamageDetail = ({ weaponId, configId }) => {
   detailWeaponId.value = weaponId
   detailConfigId.value = configId || '#1'
   showDamageDetail.value = true
 }
 
-// ---------- 新增配置弹窗 ----------
-const onAddConfig = () => {
-  const weapons = dataStore.state.weapons || []
-  const available = weapons.filter(w => {
-    const price = dataStore.getPriceByWeaponId(w.id)
-    return price && price.configs && price.configs.length > 0
-  })
-  
-  if (available.length === 0) {
-    alert('⚠️ 没有可用的武器价格配置，请先为武器创建价格配置')
-    return
-  }
-  
-  addConfigWeaponId.value = available[0].id
-  addConfigId.value = ''
-  showAddConfigModal.value = true
-}
-
-const closeAddConfigModal = () => {
-  showAddConfigModal.value = false
-  addConfigWeaponId.value = null
-  addConfigId.value = ''
-}
-
-const confirmAddConfig = () => {
-  const weaponId = addConfigWeaponId.value
-  if (!weaponId) {
-    alert('请选择武器')
-    return
-  }
-  
-  const weapon = dataStore.getWeaponById(weaponId)
-  if (!weapon) {
-    alert('武器不存在')
-    return
-  }
-  
-  let configId = addConfigId.value.trim()
-  if (!configId) {
-    const price = dataStore.getPriceByWeaponId(weaponId)
-    const ids = price?.configs?.map(c => {
-      const num = parseInt(c.id.replace('#', ''))
-      return isNaN(num) ? 0 : num
-    }) || [0]
-    const maxId = Math.max(...ids)
-    configId = `#${maxId + 1}`
-  }
-  
-  const price = dataStore.getPriceByWeaponId(weaponId)
-  if (price?.configs?.some(c => c.id === configId)) {
-    alert(`配置 ${configId} 已存在，请使用不同的 ID`)
-    return
-  }
-  
-  const bestBarrelIndex = dataStore.findBestBarrelIndex(weaponId)
-  let barrelName = '无'
-  let barrelId = -1
-  if (bestBarrelIndex >= 0 && weapon.barrels && weapon.barrels[bestBarrelIndex]) {
-    barrelName = weapon.barrels[bestBarrelIndex].name || '无'
-    barrelId = bestBarrelIndex
-  }
-  
-  let bulletId = ''
-  if (weapon.allowedBullet) {
-    const defaultBullet = dataStore.getBulletByCaliberAndLevel(weapon.allowedBullet, 4)
-    if (defaultBullet) {
-      bulletId = defaultBullet.id
-    } else {
-      const bullets = dataStore.getBulletsByCaliber(weapon.allowedBullet)
-      if (bullets && bullets.length > 0) {
-        bulletId = bullets[0].id
-      }
-    }
-  }
-  
-  const newConfig = {
-    id: configId,
-    barrelId: barrelId,
-    barrel: barrelName,
-    muzzleId: 0,
-    muzzle: '无',
-    buildCode: '',
-    price: 0,
-    distance: [30, 50, 100],
-    hitRate: [1.0, 0.9, 0.6],
-    bullet: bulletId || '',
-    enabled: true
-  }
-  
-  const result = dataStore.getDataManager().addPriceConfig(weaponId, newConfig)
-  if (result) {
-    dataStore.refreshPrices()
-    closeAddConfigModal()
-    console.log(`✅ 已为 ${weapon.name} 添加配置 ${configId}`)
-  } else {
-    alert('添加配置失败，请检查控制台错误信息')
-  }
+// ============================================================
+// ⭐ 弹甲数据更新事件
+// ============================================================
+const onItemsUpdate = () => {
+  // 弹甲数据的变更不影响 TTK 计算（护甲参数由 paramsStore 独立控制），
+  // 所以这里只需要刷新对应的 store 即可（ArmorTable/BulletTable 内部已处理）
+  dataStore.refreshBullets()
+  dataStore.refreshArmors()
 }
 
 // ============================================================
-// ⭐ TTK 计算（含进度条 + 缓存 hash 校验 + 连发间隔）
+// ⭐ TTK 计算
 // ============================================================
 const handleCalculate = async () => {
   appStore.setLoading(true)
@@ -640,7 +442,7 @@ const handleCalculate = async () => {
 }
 
 // ============================================================
-// ⭐ 折线图（含进度条 + 缓存 hash 校验）
+// ⭐ 折线图
 // ============================================================
 const handleDistanceChart = async () => {
   try {
@@ -691,7 +493,7 @@ const getEnabledConfigs = () => {
 }
 
 // ============================================================
-// ⭐ 构建武装武器（含附件、命中率映射）
+// ⭐ 构建武装武器
 // ============================================================
 const buildArmedWeapons = (configs) => {
   const armed = []
@@ -710,7 +512,11 @@ const buildArmedWeapons = (configs) => {
       barrelIndex = config.barrelId
     }
 
-    const current = calculateCurrentValues(weapon, barrel, config.muzzleId || 0, 0.09)
+    const precision = (typeof config.precision === 'number' && !isNaN(config.precision))
+      ? config.precision
+      : 0.09
+
+    const current = calculateCurrentValues(weapon, barrel, config.muzzleId || 0, precision)
 
     const armedWeapon = {
       ...weapon,
@@ -742,6 +548,7 @@ const buildArmedWeapons = (configs) => {
       configId: config.configId || '#1',
       barrelIndex,
       muzzleIndex: config.muzzleId || 0,
+      precision,
       bulletType: config.bulletId || null,
       hitRateMap: hitRateMap,
       displayName
@@ -752,7 +559,7 @@ const buildArmedWeapons = (configs) => {
 }
 
 // ============================================================
-// ⭐ 关键点生成（对齐射程分段 + 10m 间隔）
+// ⭐ 关键点生成
 // ============================================================
 const getKeyDistances = (ranges, maxDistance) => {
   const validRanges = (ranges || []).filter(r => r !== Infinity && r <= maxDistance)
@@ -783,7 +590,7 @@ const getKeyDistances = (ranges, maxDistance) => {
 }
 
 // ============================================================
-// ⭐ 折线图数据构建（异步 + 进度 + 缓存 hash 校验 + 写缓存）
+// ⭐ 折线图数据构建
 // ============================================================
 const buildDistanceStats = async (armed, attachments) => {
   const params = paramsStore.state
@@ -881,7 +688,7 @@ const buildDistanceStats = async (armed, attachments) => {
 }
 
 // ============================================================
-// ⭐ 计算单个武器（用于折线图）
+// ⭐ 计算单个武器
 // ============================================================
 const calculateSingleWeapon = (weapon, params, distances, attachment, dm) => {
   const selectedBulletType = attachment.bulletType
@@ -901,13 +708,10 @@ const calculateSingleWeapon = (weapon, params, distances, attachment, dm) => {
     CHART_CONFIG.MAX_DISTANCE || 100
   )
   
-  console.log(`📊 ${weapon._displayName || weapon.name} 关键点:`, keyDistances)
-  
   const keyPoints = []
   let burstIntervalSum = 0
 
   const cacheManager = dm.getCacheManager?.() || null
-
   const configHitRateMap = attachment.hitRateMap || params.hitRateMap || []
 
   for (const distance of keyDistances) {
@@ -951,19 +755,12 @@ const calculateSingleWeapon = (weapon, params, distances, attachment, dm) => {
 }
 
 // ---------- 数据更新事件 ----------
-const onDataUpdate = () => {
-  dataStore.refreshPrices()
-}
-
 const onWeaponUpdate = (payload) => {
   dataStore.refreshWeapons()
+  dataStore.refreshPrices()
   if (payload?.weaponId) {
     dataStore.markWeaponModified(payload.weaponId)
   }
-}
-
-const onBulletUpdate = () => {
-  dataStore.refreshBullets()
 }
 
 // ---------- 数据管理 ----------
@@ -996,6 +793,7 @@ const importData = () => {
           dataStore.refreshWeapons()
           dataStore.refreshBullets()
           dataStore.refreshPrices()
+          dataStore.refreshArmors()
           alert('✅ 数据导入成功！')
         } catch (error) {
           console.error('导入失败:', error)
@@ -1024,6 +822,7 @@ const resetData = () => {
     dataStore.refreshWeapons()
     dataStore.refreshBullets()
     dataStore.refreshPrices()
+    dataStore.refreshArmors()
     
     setTimeout(() => {
       handleCalculate()
@@ -1112,6 +911,7 @@ const onAddWeapon = (index, rowData) => {
     barrel: '无',
     muzzleId: 0,
     muzzle: '无',
+    precision: 0.09,
     buildCode: '',
     price: 0,
     distance: [30, 50, 100],
@@ -1153,79 +953,6 @@ const onDeleteWeapon = (index, weaponId, isCancelled) => {
 }
 
 // ============================================================
-// ⭐ 子弹管理
-// ============================================================
-const onAddBullet = (index, bulletData) => {
-  const dm = dataStore.getDataManager()
-  
-  if (bulletData === undefined || bulletData === null) {
-    const existing = dm.data.bullets.find(b => b._isNewRow === true)
-    if (existing) {
-      alert('⚠️ 已有新增行，请先完成或取消当前新增操作')
-      return
-    }
-    
-    const defaultArmorData = {}
-    for (let i = 1; i <= 6; i++) {
-      defaultArmorData[i] = { armorMult: 1.0, pen: 0.5 }
-    }
-    
-    const tempBullet = {
-      id: `temp_bullet_${Date.now()}`,
-      caliber: '',
-      level: '1',
-      base: 1.0,
-      price: 0,
-      armorData: defaultArmorData,
-      _armorMultValues: [1.0, 1.0, 1.0, 1.0, 1.0, 0.6],
-      _penValues: [1.0, 1.0, 0.75, 0.5, 0, 0],
-      _isNewRow: true
-    }
-    
-    dm.data.bullets.unshift(tempBullet)
-    dataStore.refreshBullets()
-    
-    console.log('✅ 已插入临时占位子弹')
-    return
-  }
-  
-  const existing = dm.getBulletById(bulletData.id)
-  if (existing && !existing._isNewRow) {
-    alert(`子弹 ${bulletData.id} 已存在`)
-    return
-  }
-  
-  const bulletList = dm.data.bullets
-  const tempIndex = bulletList.findIndex(b => b._isNewRow === true)
-  if (tempIndex !== -1) {
-    bulletList.splice(tempIndex, 1, bulletData)
-  } else {
-    bulletList.push(bulletData)
-  }
-  
-  dataStore.refreshBullets()
-  console.log(`✅ 新增子弹: ${bulletData.id}`)
-}
-
-const onDeleteBullet = (index, bulletId, isCancelled) => {
-  if (isCancelled) {
-    const dm = dataStore.getDataManager()
-    const bulletList = dm.data.bullets
-    const tempIndex = bulletList.findIndex(b => b._isNewRow === true)
-    if (tempIndex !== -1) {
-      bulletList.splice(tempIndex, 1)
-    }
-    dataStore.refreshBullets()
-    console.log('✅ 已取消新增子弹')
-    return
-  }
-  
-  const dm = dataStore.getDataManager()
-  dm.removeBullet(bulletId)
-  dataStore.refreshBullets()
-}
-
-// ============================================================
 // ⭐ 枪管编辑器
 // ============================================================
 const openBarrelEditor = (weaponId) => {
@@ -1244,10 +971,30 @@ const onBarrelSaved = () => {
 
 const onBarrelVisibleChange = (visible) => {
   if (visible) {
-    // 打开时由 openBarrelEditor 触发，无需处理
+    // 打开时由 openBarrelEditor 触发
   } else {
     appStore.closeBarrelEditor()
   }
+}
+
+// ============================================================
+// ⭐ 基础属性编辑器
+// ============================================================
+const onBaseVisibleChange = (visible) => {
+  if (!visible) {
+    appStore.closeBaseEditor()
+  }
+}
+
+const onBaseSaved = () => {
+  dataStore.refreshWeapons()
+  dataStore.refreshPrices()
+  const weaponId = appStore.state.editingBaseWeaponId
+  if (weaponId) {
+    dataStore.markWeaponModified(weaponId)
+  }
+  appStore.closeBaseEditor()
+  console.log('✅ 基础属性已保存，武器数据已刷新')
 }
 
 // ---------- 初始化 ----------
@@ -1263,9 +1010,9 @@ onMounted(async () => {
     caliberOptions.value = Array.from(calibers).sort()
 
     console.log('=== 初始化调试 ===')
-    console.log('priceRows 长度:', priceRows.value?.length)
     console.log('weaponRows 长度:', weaponRows.value?.length)
-    console.log('bulletRows 长度:', bulletRows.value?.length)
+    console.log('bullets 长度:', dataStore.state.bullets?.length)
+    console.log('armors 长度:', dataStore.state.armors?.length)
     console.log('=== 调试结束 ===')
 
     setTimeout(() => {
@@ -1280,7 +1027,7 @@ onMounted(async () => {
 
 <style>
 /* ============================================================
-   App 组件专用样式（全局样式已在 main.css 中定义）
+   App 组件专用样式
    ============================================================ */
 * {
   margin: 0;
@@ -1340,7 +1087,6 @@ body {
   flex-wrap: wrap;
 }
 
-/* ⭐ 显示数量选择器 */
 .display-count-label {
   display: flex;
   align-items: center;
@@ -1375,7 +1121,7 @@ body {
   color: var(--color-text-muted);
 }
 
-/* ⭐ 分段切换（0~50m / 50~100m） */
+/* 分段切换 */
 .segment-switch {
   display: inline-flex;
   gap: 0;
@@ -1428,7 +1174,7 @@ body {
 }
 
 .tab-btn {
-  padding: 4px 14px;
+  padding: 6px 18px;
   border: none;
   background: transparent;
   font-family: var(--font-family);
@@ -1459,127 +1205,6 @@ body {
 .tab-pane {
   display: block;
   width: 100%;
-}
-
-/* ============ 新增配置弹窗 ============ */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  backdrop-filter: blur(4px);
-}
-
-.modal-content.modal-small {
-  max-width: 480px;
-  width: 90%;
-  background: var(--color-bg-white);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-  animation: modalSlideIn 0.25s ease;
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--color-border-light);
-  flex-shrink: 0;
-}
-
-.modal-header h3 {
-  font-family: var(--font-family);
-  font-size: 16px;
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--color-text-muted);
-  transition: color 0.2s;
-  padding: 0 4px;
-}
-
-.modal-close:hover {
-  color: #333;
-}
-
-.modal-body {
-  padding: 16px 18px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.modal-footer {
-  display: flex;
-  gap: var(--spacing-md);
-  justify-content: flex-end;
-  padding: 12px 18px;
-  border-top: 1px solid #eee;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-}
-
-.form-group {
-  margin-bottom: 14px;
-}
-
-.form-group:last-child {
-  margin-bottom: 0;
-}
-
-.form-group label {
-  display: block;
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  margin-bottom: 4px;
-}
-
-.form-select,
-.form-input {
-  width: 100%;
-  padding: 6px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-family: var(--font-family);
-  font-size: 13px;
-  background: var(--color-bg-light);
-  transition: border-color 0.2s;
-  color: var(--color-text);
-}
-
-.form-select:focus,
-.form-input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  background: var(--color-bg-white);
 }
 
 /* ============================================================
@@ -1695,10 +1320,10 @@ body {
   .table-section {
     padding: 4px 8px 6px;
   }
-  
+
   .tab-btn {
-    padding: 4px 10px;
-    font-size: var(--font-size-md);
+    padding: 3px 8px;
+    font-size: 11px;
   }
   
   .calc-progress-box {

@@ -745,30 +745,21 @@ tbody tr.new-row .sticky-action {
   letter-spacing: -0.3px;
 }
 
-/* ============ 移动端适配（表格模式下的微调） ============ */
+/* ============ 移动端适配 ============ */
 @media (max-width: 768px) {
-  table {
-    font-size: var(--font-size-sm);
-    min-width: 700px;
-  }
-  
-  thead th {
-    padding: 4px 3px;
-    height: 30px;
-  }
-  
-  tbody td {
-    height: 30px;
-  }
-  
-  .control-cell .cell-input {
-    font-size: var(--font-size-sm);
-    min-height: 28px;
+  /* ⭐ 工具栏：压缩 padding 和 gap */
+  .table-controls {
+    gap: 3px;
     padding: 3px 6px;
   }
-  
-  .armor-cell {
-    font-size: var(--font-size-xs);
+
+  .control-hint {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .count-badge {
+    margin-left: 0;
   }
 }
 </style>

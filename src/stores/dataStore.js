@@ -8,15 +8,13 @@ const state = reactive({
   weapons: [],
   bullets: [],
   prices: [],
+  armors: [],       // ⭐ 新增：护甲/头盔数据
   isLoaded: false,
   loadingError: null
 })
 
 export const dataStore = {
   // ⭐ 对外暴露可写 state（配合 UI 层的 v-model）
-  // 说明：所有持久化写入仍走 dm.xxx + refreshXxx，
-  //      UI 的 v-model 只改"内存里的临时副本"，
-  //      最终由 DataManager 落库。
   state,
 
   // ============================================================
@@ -30,9 +28,10 @@ export const dataStore = {
       state.weapons = [...dm.getWeapons()]
       state.bullets = [...dm.getBullets()]
       state.prices = [...dm.getPrices()]
+      state.armors = [...dm.getArmors()]      // ⭐ 新增
       state.isLoaded = true
       state.loadingError = null
-      console.log(`✅ 数据加载完成: ${state.weapons.length} 把武器, ${state.bullets.length} 种子弹, ${state.prices.length} 条价格配置`)
+      console.log(`✅ 数据加载完成: ${state.weapons.length} 把武器, ${state.bullets.length} 种子弹, ${state.prices.length} 条价格配置, ${state.armors.length} 条护甲数据`)
     } catch (error) {
       state.loadingError = error.message
       console.error('❌ 数据加载失败:', error)
@@ -53,6 +52,10 @@ export const dataStore = {
 
   refreshBullets() {
     state.bullets = [...dm.getBullets()]
+  },
+
+  refreshArmors() {
+    state.armors = [...dm.getArmors()]      // ⭐ 新增
   },
 
   // ============================================================
@@ -132,6 +135,33 @@ export const dataStore = {
 
   getPrices() {
     return dm.getPrices()
+  },
+
+  // ============================================================
+  // ⭐ 护甲数据（新增）
+  // ============================================================
+  getArmors() {
+    return dm.getArmors()
+  },
+
+  getArmorsByType(type) {
+    return dm.getArmorsByType(type)
+  },
+
+  getArmorById(id) {
+    return dm.getArmorById(id)
+  },
+
+  addArmor(armorData) {
+    return dm.addArmor(armorData)
+  },
+
+  updateArmor(id, updates) {
+    return dm.updateArmor(id, updates)
+  },
+
+  removeArmor(id) {
+    return dm.removeArmor(id)
   },
 
   // ============================================================
@@ -217,6 +247,7 @@ export const dataStore = {
     state.weapons = [...dm.getWeapons()]
     state.bullets = [...dm.getBullets()]
     state.prices = [...dm.getPrices()]
+    state.armors = [...dm.getArmors()]      // ⭐ 新增
   },
 
   resetData() {
@@ -224,5 +255,6 @@ export const dataStore = {
     state.weapons = [...dm.getWeapons()]
     state.bullets = [...dm.getBullets()]
     state.prices = [...dm.getPrices()]
+    state.armors = [...dm.getArmors()]      // ⭐ 新增
   }
 }
