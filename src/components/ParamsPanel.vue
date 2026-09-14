@@ -56,6 +56,13 @@
         <input type="number" v-model.number="localParams.extraCost" @change="syncParams" step="1" class="param-input" />
         <span class="unit">发</span>
       </div>
+
+      <!-- ⭐ 开镜权重 -->
+      <div class="param-group economic">
+        <label>开镜权重</label>
+        <input type="number" v-model.number="aimWeightPercent" @change="syncAimWeight" step="5" min="0" class="param-input" />
+        <span class="unit">%</span>
+      </div>
     </div>
 
     <!-- 第二行：命中相关 -->
@@ -159,7 +166,9 @@ const localParams = ref({
   triggerDelayEnable: true,
   kdRatio: 1.0,
   extractRate: 0.5,
-  extraCost: 30
+  extraCost: 30,
+  // ⭐ 开镜权重（小数，0~1）
+  aimWeight: 0.4
 })
 
 // ---------- 加载状态 ----------
@@ -170,6 +179,16 @@ const extractRatePercent = computed({
   get: () => Math.round(localParams.value.extractRate * 100),
   set: (val) => {
     localParams.value.extractRate = Math.max(0, Math.min(1, val / 100))
+  }
+})
+
+// ---------- ⭐ 开镜权重（百分比显示） ----------
+// 内部存小数（0~1），UI 显示百分比（0~100）
+const aimWeightPercent = computed({
+  get: () => Math.round((localParams.value.aimWeight ?? 0.4) * 100),
+  set: (val) => {
+    const p = Math.max(0, Math.min(100, Number(val) || 0))
+    localParams.value.aimWeight = p / 100
   }
 })
 
@@ -194,6 +213,12 @@ const syncParams = () => {
 
 // 同步撤离率
 const syncExtractRate = () => {
+  syncParams()
+}
+
+// ⭐ 同步开镜权重
+const syncAimWeight = () => {
+  // aimWeightPercent 的 setter 已经把值写到 localParams.aimWeight
   syncParams()
 }
 
@@ -451,37 +476,37 @@ const onResetData = () => {
   .params-panel {
     padding: 6px 10px;
   }
-  
+
   .params-row {
     gap: 4px 8px;
   }
-  
+
   .param-group label {
     font-size: var(--font-size-sm);
   }
-  
+
   .param-select,
   .param-input {
     width: 80px;
     font-size: var(--font-size-md);
     height: 30px;
   }
-  
+
   .hitrate-input {
     width: 150px;
     font-size: var(--font-size-md);
     height: 30px;
   }
-  
+
   .prob-input {
     width: 60px;
     height: 28px;
   }
-  
+
   .hit-prob-items {
     gap: 2px 6px;
   }
-  
+
   .hit-prob-item span {
     width: 24px;
     font-size: var(--font-size-xs);

@@ -36,7 +36,6 @@
         </div>
 
         <div v-else class="weapon-head">
-          <!-- ⭐ 收起/展开按钮（最左侧） -->
           <button
             class="collapse-btn"
             :title="isCollapsed(row.id) ? '展开' : '收起'"
@@ -45,14 +44,12 @@
             {{ isCollapsed(row.id) ? '▶' : '▼' }}
           </button>
 
-          <!-- 身份列 -->
           <div class="wh-identity">
             <span class="weapon-name" :title="row.name">{{ row.name }}</span>
             <span class="weapon-type">{{ row.type }}</span>
             <span class="weapon-caliber">{{ row.allowedBullet || '-' }}</span>
           </div>
 
-          <!-- 附件列：枪管 -->
           <div class="wh-attach">
             <span class="k">枪管</span>
             <select
@@ -65,7 +62,6 @@
             </select>
           </div>
 
-          <!-- 附件列：枪口 -->
           <div class="wh-attach">
             <span class="k">枪口</span>
             <select
@@ -77,7 +73,6 @@
             </select>
           </div>
 
-          <!-- 附件列：精校 -->
           <div class="wh-precision">
             <span class="k">精校</span>
             <input
@@ -90,7 +85,6 @@
             <span class="val">{{ Math.round((row.activeConfig?.precision ?? 0.09) * 100) }}%</span>
           </div>
 
-          <!-- 属性列 -->
           <div class="wh-attr">
             <span class="k">射速</span>
             <span class="v orig">{{ row.rof }}</span>
@@ -306,6 +300,21 @@
                 />
               </div>
 
+              <!-- ⭐ 开镜速度 -->
+              <span class="fld">
+                <span class="k">开镜</span>
+                <input
+                  type="number"
+                  class="inline-input aim-input"
+                  :value="cfg.aimSpeed"
+                  min="0"
+                  step="1"
+                  @click.stop
+                  @change="updateConfigField(index, cfg.configId, 'aimSpeed', parseFloat($event.target.value) || 0)"
+                />
+                <span class="unit-tiny">ms</span>
+              </span>
+
               <span class="fld">
                 <span class="k">价格</span>
                 <input
@@ -319,7 +328,6 @@
                 <span class="price-unit">W</span>
               </span>
 
-              <!-- ⭐ 子弹下拉框：绑定 ID -->
               <span class="fld">
                 <span class="k">子弹</span>
                 <select
@@ -337,7 +345,7 @@
                 </select>
               </span>
 
-              <!-- ⭐ 哈弗币（带 tooltip） -->
+              <!-- 哈弗币（带 tooltip） -->
               <span class="fld">
                 <span class="k">哈弗币</span>
                 <span
@@ -347,6 +355,19 @@
                   :style="{ cursor: cfg._havocCost ? 'help' : 'default' }"
                 >
                   {{ cfg.havocCost != null ? fmtPrice(cfg.havocCost) : '-' }}
+                </span>
+              </span>
+
+              <!-- ⭐ 评分（假 TTK） -->
+              <span class="fld">
+                <span class="k">评分</span>
+                <span
+                  class="v score-value"
+                  :class="scoreColor(cfg.fakeTTK)"
+                  :title="getScoreTooltip(cfg)"
+                  style="cursor: help;"
+                >
+                  {{ cfg.fakeTTK != null && isFinite(cfg.fakeTTK) ? Math.round(cfg.fakeTTK) + 'ms' : '-' }}
                 </span>
               </span>
 
@@ -444,7 +465,6 @@
 
         <!-- 已有行 -->
         <template v-else>
-          <!-- ⭐ 可收起部分 -->
           <template v-if="!isCollapsed(row.id)">
             <div class="card-row">
               <span class="row-label">枪管</span>
@@ -627,6 +647,22 @@
                       @change="onHitRateChange(index, cfg.configId, $event.target.value)"
                     />
                   </div>
+
+                  <!-- ⭐ 开镜速度 -->
+                  <div class="cfg-mobile-row">
+                    <span class="k">开镜</span>
+                    <input
+                      type="number"
+                      class="inline-input"
+                      :value="cfg.aimSpeed"
+                      min="0"
+                      step="1"
+                      @click.stop
+                      @change="updateConfigField(index, cfg.configId, 'aimSpeed', parseFloat($event.target.value) || 0)"
+                    />
+                    <span class="k">ms</span>
+                  </div>
+
                   <div class="cfg-mobile-row">
                     <span class="k">价格</span>
                     <input
@@ -639,7 +675,6 @@
                     />
                     <span class="k">W</span>
                   </div>
-                  <!-- ⭐ 子弹下拉框：绑定 ID -->
                   <div class="cfg-mobile-row">
                     <span class="k">子弹</span>
                     <select
@@ -658,7 +693,6 @@
                   </div>
                   <div class="cfg-mobile-row">
                     <span class="k">哈弗币</span>
-                    <!-- ⭐ 哈弗币（带 tooltip） -->
                     <span
                       class="v havoc-cost"
                       :class="havocColor(cfg.havocCost)"
@@ -666,6 +700,14 @@
                       :style="{ cursor: cfg._havocCost ? 'help' : 'default' }"
                     >
                       {{ cfg.havocCost != null ? fmtPrice(cfg.havocCost) : '-' }}
+                    </span>
+                    <span class="k">评分</span>
+                    <span
+                      class="v score-value"
+                      :class="scoreColor(cfg.fakeTTK)"
+                      :title="getScoreTooltip(cfg)"
+                    >
+                      {{ cfg.fakeTTK != null && isFinite(cfg.fakeTTK) ? Math.round(cfg.fakeTTK) + 'ms' : '-' }}
                     </span>
                     <div class="config-actions">
                       <button class="cfg-btn detail" @click.stop="showDetail(index, cfg.configId)">模拟</button>
@@ -693,6 +735,7 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 import { appStore } from '@/stores/appStore'
+import { paramsStore } from '@/stores/paramsStore'
 import { calculateCurrentValues } from '@/utils/weaponCalc'
 
 const props = defineProps({
@@ -724,7 +767,7 @@ const emit = defineEmits(['update', 'edit-barrel', 'add-weapon', 'delete-weapon'
 
 const typeOptions = ['步枪', '冲锋枪', '轻机枪', '精确射手步枪', '手枪']
 
-// ⭐ 是否为移动端
+// 是否为移动端
 const isMobile = ref(false)
 const updateIsMobile = () => {
   isMobile.value = window.innerWidth <= 768
@@ -740,7 +783,7 @@ onBeforeUnmount(() => {
 })
 
 // ============================================================
-// ⭐ 收起/展开状态（每个武器独立）
+// 收起/展开状态（每个武器独立）
 // ============================================================
 const collapsedMap = reactive({})
 
@@ -769,7 +812,7 @@ const collapseAll = () => {
 }
 
 // ============================================================
-// ⭐ 全部启用 / 全部禁用配置
+// 全部启用 / 全部禁用配置
 // ============================================================
 const enableAllConfigs = () => {
   const dm = dataStore.getDataManager()
@@ -816,7 +859,7 @@ const disableAllConfigs = () => {
 }
 
 // ============================================================
-// ⭐ 当前选中的配置（每个武器独立）
+// 当前选中的配置（每个武器独立）
 // ============================================================
 const activeConfigMap = reactive({})
 
@@ -839,7 +882,7 @@ const getActiveConfigId = (weaponId, configs) => {
 }
 
 // ============================================================
-// ⭐ 秒伤计算
+// 秒伤计算
 // ============================================================
 const calcDPSBySegment = (current) => {
   const { ranges, decays, flesh, armor, rof, mult } = current
@@ -882,7 +925,73 @@ const havocColor = (v) => {
   return 'havoc-green'
 }
 
-// ⭐ 哈弗币消耗 tooltip
+/**
+ * ⭐ 评分颜色（基于假 TTK，按相对排名）
+ * 
+ * 分档（相对所有配置的假 TTK）：
+ * - 前 15%：绿色
+ * - 前 40%：蓝色
+ * - 其他：橙色
+ */
+const scoreColor = (fakeTTK) => {
+  if (fakeTTK == null || !isFinite(fakeTTK)) return 'score-empty'
+
+  // 从 rowsWithCurrent 里拿阈值（见下方 _scoreThresholds）
+  const thresholds = _scoreThresholds.value
+  if (!thresholds) return 'score-normal'
+
+  if (fakeTTK <= thresholds.top15) return 'score-good'
+  if (fakeTTK <= thresholds.top40) return 'score-normal'
+  return 'score-warn'
+}
+
+// ⭐ 评分阈值（computed，用于 rank 分档）
+const _scoreThresholds = computed(() => {
+  const rows = rowsWithCurrent.value
+  const allFakeTTKs = []
+  for (const row of rows) {
+    for (const cfg of row._configRows || []) {
+      if (cfg.fakeTTK != null && isFinite(cfg.fakeTTK)) {
+        allFakeTTKs.push(cfg.fakeTTK)
+      }
+    }
+  }
+  if (allFakeTTKs.length === 0) return null
+
+  allFakeTTKs.sort((a, b) => a - b)
+  const total = allFakeTTKs.length
+  const top15Idx = Math.max(0, Math.ceil(total * 0.15) - 1)
+  const top40Idx = Math.max(0, Math.ceil(total * 0.40) - 1)
+
+  return {
+    top15: allFakeTTKs[top15Idx],
+    top40: allFakeTTKs[top40Idx]
+  }
+})
+
+/**
+ * ⭐ 评分 tooltip
+ */
+const getScoreTooltip = (cfg) => {
+  if (cfg.fakeTTK == null || !isFinite(cfg.fakeTTK)) return ''
+  const aimWeight = paramsStore.state.aimWeight ?? 0.4
+  const ttk = cfg._scoreTtk
+  const aim = cfg._scoreAim
+  if (ttk == null) return ''
+
+  const lines = [
+    `═══════════════════════════════`,
+    `⭐ 假 TTK: ${cfg.fakeTTK.toFixed(1)}ms`,
+    `═══════════════════════════════`,
+    `TTK 加权平均: ${ttk.toFixed(1)}ms  (×1)`,
+    `开镜时间:    ${aim}ms  (×${aimWeight})`,
+    `公式: ${ttk.toFixed(1)} + ${aimWeight} × ${aim} = ${cfg.fakeTTK.toFixed(1)}ms`,
+    `═══════════════════════════════`
+  ]
+  return lines.join('\n')
+}
+
+// 哈弗币消耗 tooltip
 const getHavocTooltip = (cost) => {
   if (!cost) return ''
   const lines = [
@@ -899,12 +1008,16 @@ const getHavocTooltip = (cost) => {
 }
 
 // ============================================================
-// ⭐ 核心：rowsWithCurrent
+// 核心：rowsWithCurrent
 // ============================================================
 const rowsWithCurrent = computed(() => {
   const weapons = dataStore.state.weapons
   const prices = dataStore.state.prices
   void prices
+
+  const havocCosts = appStore.state.havocCosts || {}
+  const scores = appStore.state.scores || {}   // ⭐ { key: { ttk, aim } }
+  const aimWeight = paramsStore.state.aimWeight ?? 0.4   // ⭐ 开镜权重
 
   return weapons.map(weapon => {
     if (weapon._isNewRow) {
@@ -930,14 +1043,26 @@ const rowsWithCurrent = computed(() => {
 
     const dps = calcDPSBySegment(current)
 
-    const havocCosts = appStore.state.havocCosts || {}
     const configsWithHavoc = configRows.map(cfg => {
       const key = `${weapon.id}_${cfg.configId}`
       const cost = havocCosts[key] || null
+      const scoreData = scores[key] || null   // { ttk, aim }
+
+      // ⭐ 假 TTK = 1 × ttk + aimWeight × aim
+      let fakeTTK = null
+      if (scoreData && isFinite(scoreData.ttk)) {
+        const ttk = scoreData.ttk
+        const aim = scoreData.aim || 0
+        fakeTTK = ttk + aimWeight * aim
+      }
+
       return {
         ...cfg,
         havocCost: cost?.totalCost ?? null,
-        _havocCost: cost
+        _havocCost: cost,
+        fakeTTK,                              // ⭐ 假 TTK
+        _scoreTtk: scoreData?.ttk ?? null,   // 原始 TTK
+        _scoreAim: scoreData?.aim ?? 0       // 原始开镜
       }
     })
 
@@ -1003,7 +1128,7 @@ const parseMult = (row) => {
 }
 
 // ============================================================
-// ⭐ 精校
+// 精校
 // ============================================================
 const precisionLocalMap = ref({})
 
@@ -1025,7 +1150,7 @@ const onPrecisionCommit = (index, event) => {
 }
 
 // ============================================================
-// ⭐ 配置操作
+// 配置操作
 // ============================================================
 const getConfigKey = (weaponId, configId) => `${weaponId}_${configId}`
 
@@ -1090,15 +1215,11 @@ const parseHitRateString = (str) => {
   }
 }
 
-/**
- * ⭐ 子弹变更（直接用 ID，不再反查）
- */
 const onBulletChange = (index, configId, bulletId) => {
   const row = rowsWithCurrent.value[index]
   if (!row) return
   const dm = dataStore.getDataManager()
 
-  // 空值 = 无子弹
   const finalBulletId = (bulletId === '无' || bulletId === '-' || !bulletId)
     ? ''
     : bulletId
@@ -1107,9 +1228,6 @@ const onBulletChange = (index, configId, bulletId) => {
   dataStore.refreshPrices()
 }
 
-/**
- * ⭐ 获取子弹下拉框选项（返回 { id, display }）
- */
 const getBulletOptionsForWeapon = (row) => {
   const weapon = dataStore.getWeaponById(row.id)
   if (!weapon || !weapon.allowedBullet) return []
@@ -1123,7 +1241,7 @@ const getBulletOptionsForWeapon = (row) => {
 }
 
 // ============================================================
-// ⭐ 复制改枪码
+// 复制改枪码
 // ============================================================
 const copiedRowKey = ref(null)
 let copiedTimer = null
@@ -1166,7 +1284,7 @@ const fallbackCopy = (text) => {
 }
 
 // ============================================================
-// ⭐ 配置增删
+// 配置增删
 // ============================================================
 const addConfig = (row) => {
   const dm = dataStore.getDataManager()
@@ -1188,6 +1306,7 @@ const addConfig = (row) => {
     muzzleId: 0,
     muzzle: '无',
     precision: 0.09,
+    aimSpeed: 0,       // ⭐ 新增
     buildCode: '',
     price: 0,
     distance: [30, 50, 100],
@@ -1222,7 +1341,7 @@ const deleteConfig = (index, configId) => {
 }
 
 // ============================================================
-// ⭐ 武器级操作
+// 武器级操作
 // ============================================================
 const editBarrel = (index) => {
   const row = rowsWithCurrent.value[index]
@@ -1259,7 +1378,7 @@ const showDetail = (index, configId) => {
 }
 
 // ============================================================
-// ⭐ 新增武器
+// 新增武器
 // ============================================================
 const addWeapon = () => {
   emit('add-weapon', -1, null)
@@ -1681,6 +1800,8 @@ const cancelAdd = (index) => {
 
 /* ============================================================
    ⭐ 配置区（Grid 固定列对齐）
+   
+   ⭐ 加"开镜"列（命中率后、价格前）：80px
    ============================================================ */
 .config-section {
   padding: 6px 12px 8px;
@@ -1696,16 +1817,18 @@ const cancelAdd = (index) => {
 .config-item {
   display: grid;
   grid-template-columns:
-    28px
-    50px
-    400px
-    140px
-    110px
-    300px
-    90px
-    140px
-    90px
-    minmax(110px, 1fr);
+    28px     /* 勾选 */
+    50px     /* ID */
+    400px    /* 改枪码 */
+    140px    /* 枪管 */
+    110px    /* 枪口 */
+    300px    /* 命中率 */
+    80px     /* ⭐ 开镜 */
+    90px     /* 价格 */
+    140px    /* 子弹 */
+    90px     /* 哈弗币 */
+    80px     /* 评分 */
+    minmax(110px, 1fr);   /* 操作 */
   align-items: center;
   column-gap: 8px;
 
@@ -1715,7 +1838,7 @@ const cancelAdd = (index) => {
   border-radius: 6px;
   transition: all 0.15s;
   cursor: pointer;
-  min-width: 1400px;
+  min-width: 1560px;
 }
 
 .config-item.enabled { border-left: 3px solid var(--color-success); }
@@ -1846,6 +1969,26 @@ const cancelAdd = (index) => {
   border-bottom-color: #ff9800;
 }
 
+/* ⭐ 评分（假 TTK）样式 */
+.fld .v.score-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 0 4px;
+  border-radius: 2px;
+  border-bottom: 1px dashed #ccc;
+  transition: all 0.15s;
+}
+.fld .v.score-value:hover {
+  background: #eef2ff;
+  border-bottom-color: var(--color-primary);
+}
+
+.score-good   { color: #4caf50; }
+.score-normal { color: #4a6cf7; }
+.score-warn   { color: #ff9800; }
+.score-bad    { color: #f44336; }
+.score-empty  { color: #ccc; font-weight: 400; }
+
 .config-item .hitrate-wrap {
   display: flex;
   align-items: center;
@@ -1913,7 +2056,17 @@ const cancelAdd = (index) => {
   text-align: right;
   flex-shrink: 0;
 }
-.price-unit { font-size: 10px; color: #999; flex-shrink: 0; }
+.inline-input.aim-input {
+  width: 60px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.price-unit,
+.unit-tiny {
+  font-size: 10px;
+  color: #999;
+  flex-shrink: 0;
+}
 
 .config-actions {
   display: flex;

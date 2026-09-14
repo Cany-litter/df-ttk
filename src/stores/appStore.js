@@ -10,6 +10,16 @@ const state = reactive({
 
   ttkResults: [],
   havocCosts: {},
+
+  // ⭐ 评分原始数据
+  // 结构：{ "weaponId_configId": { ttk: 420.5, aim: 350 } }
+  // - ttk: 加权平均 TTK（ms）
+  // - aim: 开镜时间（ms）
+  // 
+  // 综合评分（假 TTK）在组件层实时计算：
+  //   假TTK = 1 × ttk + aimWeight × aim
+  scores: {},
+
   isLoading: false,
 
   // 枪管编辑器
@@ -68,6 +78,30 @@ export const appStore = {
   // ============================================================
   setHavocCosts(costs) {
     state.havocCosts = costs
+  },
+
+  // ============================================================
+  // ⭐ 评分原始数据（ttk + aim）
+  // 
+  // 结构：{ "weaponId_configId": { ttk, aim } }
+  // 例：{ "41_#1": { ttk: 420.5, aim: 350 }, "1_#1": { ttk: 500.1, aim: 280 } }
+  // 
+  // ⭐ 综合评分（假 TTK）由组件层通过 paramsStore.state.aimWeight 计算：
+  //   假TTK = 1 × ttk + aimWeight × aim
+  // ============================================================
+  setScores(scores) {
+    state.scores = scores || {}
+  },
+
+  /**
+   * ⭐ 获取单个配置的评分原始数据
+   * @param {number|string} weaponId
+   * @param {string} configId
+   * @returns {{ ttk: number, aim: number } | null}
+   */
+  getScore(weaponId, configId) {
+    const key = `${weaponId}_${configId}`
+    return state.scores[key] || null
   },
 
   // ============================================================

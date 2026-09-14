@@ -23,7 +23,10 @@ const DEFAULT_PARAMS = {
   triggerDelayEnable: true,
   kdRatio: 1.0,
   extractRate: 0.5,
-  extraCost: 30
+  extraCost: 30,
+
+  // ⭐ 新增：开镜时间权重（0.4 = 开镜时间按 40% 计入假 TTK）
+  aimWeight: 0.4
 }
 
 const state = reactive({ ...DEFAULT_PARAMS })

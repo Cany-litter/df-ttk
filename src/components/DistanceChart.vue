@@ -24,10 +24,10 @@ const props = defineProps({
     type: Number,
     default: 10
   },
-  // ⭐ 分段：'0-50' | '50-100'
+  // ⭐ 分段：只支持对象 { start, end }
   segment: {
-    type: String,
-    default: '0-50'
+    type: Object,
+    default: () => ({ start: 0, end: 100 })
   }
 })
 
@@ -49,30 +49,73 @@ const updateIsMobile = () => {
 }
 
 // ============================================================
+// ⭐ 工具：找最接近目标值的索引
+// ============================================================
+
+/**
+ * 在数组中找最接近目标值的索引
+ * 
+ * 因为自定义分段可能传非整数（如 20.5），indexOf 找不到，
+ * 需要用"最接近"的索引。
+ * 
+ * @param {Array<number>} arr
+ * @param {number} target
+ * @returns {number} 索引，找不到返回 -1
+ */
+const findClosestIndex = (arr, target) => {
+  if (!arr || arr.length === 0) return -1
+
+  // 精确匹配
+  const exact = arr.indexOf(target)
+  if (exact !== -1) return exact
+
+  // 找最接近的
+  let closest = 0
+  let minDiff = Math.abs(arr[0] - target)
+  for (let i = 1; i < arr.length; i++) {
+    const diff = Math.abs(arr[i] - target)
+    if (diff < minDiff) {
+      minDiff = diff
+      closest = i
+    }
+  }
+  return closest
+}
+
+// ============================================================
 // ⭐ 根据 segment 计算切片范围
 // ============================================================
 const segmentRange = computed(() => {
   const fullDistances = props.distances || []
 
-  let rangeStart = 0
-  let rangeEnd = 50
+  // ⭐ 只支持对象
+  let rangeStart = Number(props.segment?.start)
+  let rangeEnd = Number(props.segment?.end)
 
-  if (props.segment === '50-100') {
-    rangeStart = 50
-    rangeEnd = 100
-  } else {
-    rangeStart = 0
-    rangeEnd = 50
+  if (isNaN(rangeStart)) rangeStart = 0
+  if (isNaN(rangeEnd)) rangeEnd = 100
+
+  // ⭐ 边界校验
+  rangeStart = Math.max(0, Math.min(100, rangeStart))
+  rangeEnd = Math.max(0, Math.min(100, rangeEnd))
+
+  // ⭐ 起止交换
+  if (rangeStart > rangeEnd) {
+    [rangeStart, rangeEnd] = [rangeEnd, rangeStart]
   }
 
-  const startIndex = fullDistances.indexOf(rangeStart)
-  let endIndex = fullDistances.indexOf(rangeEnd)
+  // ⭐ 用 findClosestIndex 而不是 indexOf（兼容非整数）
+  const startIndex = findClosestIndex(fullDistances, rangeStart)
+  const endIndex = findClosestIndex(fullDistances, rangeEnd)
 
-  if (startIndex === -1 || endIndex === -1) {
+  // 边界兜底
+  if (startIndex === -1 || endIndex === -1 || startIndex > endIndex) {
     return {
       startIndex: 0,
       endIndex: fullDistances.length - 1,
-      visibleDistances: fullDistances
+      visibleDistances: fullDistances,
+      axisStart: fullDistances[0] ?? 0,
+      axisEnd: fullDistances[fullDistances.length - 1] ?? 100
     }
   }
 
@@ -81,17 +124,17 @@ const segmentRange = computed(() => {
   return {
     startIndex,
     endIndex,
-    visibleDistances
+    visibleDistances,
+    axisStart: visibleDistances[0] ?? 0,
+    axisEnd: visibleDistances[visibleDistances.length - 1] ?? 100
   }
 })
 
 // ============================================================
-// 处理统计数据（排序 + 排名 + 截断）
+// ⭐ 处理统计数据（排序 + 排名 + 截断）
 // ============================================================
 const processedStats = computed(() => {
   const stats = props.stats || []
-  console.log('🔄 processedStats 重新计算, stats 长度:', stats.length, 'displayCount:', props.displayCount, 'segment:', props.segment)
-
   if (stats.length === 0) return []
 
   const sortedWithMeta = stats
@@ -132,26 +175,13 @@ const processedStats = computed(() => {
     }
   }
 
-  console.log('  → 显示数量:', displayStats.length)
   return displayStats
 })
 
 // ============================================================
 // ⭐ 计算 Y 轴范围（压缩空白区）
 // ============================================================
-/**
- * 根据当前段的所有数据，计算 Y 轴的 min / max
- * 
- * 策略：
- * - 下界：数据最小值 × 0.92（往下留 8% 余量），取整到 10 的倍数，不低于 0
- * - 上界：数据最大值 × 1.08（往上留 8% 余量），取整到 10 的倍数
- * - 最小跨度：100ms（数据波动小时兜底，避免 Y 轴缩太窄）
- * 
- * @param {Array} series - ECharts 系列数组（每项有 data 字段）
- * @returns {Object} { min, max }
- */
 const calculateYAxisRange = (series) => {
-  // 收集所有 > 0 的值
   const allValues = []
   series.forEach(s => {
     (s.data || []).forEach(v => {
@@ -161,7 +191,6 @@ const calculateYAxisRange = (series) => {
     })
   })
 
-  // 没有有效数据：回退到默认 0~1000
   if (allValues.length === 0) {
     return { min: 0, max: 1000 }
   }
@@ -169,24 +198,31 @@ const calculateYAxisRange = (series) => {
   const dataMin = Math.min(...allValues)
   const dataMax = Math.max(...allValues)
 
-  // 下界：往下留 8% 余量
   let yMin = Math.max(0, dataMin * 0.92)
-  // 上界：往上留 8% 余量
   let yMax = dataMax * 1.08
 
-  // ⭐ 最小跨度：100ms
   if (yMax - yMin < 100) {
     const mid = (yMax + yMin) / 2
     yMin = Math.max(0, mid - 50)
     yMax = mid + 50
   }
 
-  // ⭐ 下界取整到 10 的倍数（向下取整）
   yMin = Math.floor(yMin / 10) * 10
-  // ⭐ 上界取整到 10 的倍数（向上取整）
   yMax = Math.ceil(yMax / 10) * 10
 
   return { min: yMin, max: yMax }
+}
+
+// ============================================================
+// ⭐ 根据跨度计算 X 轴刻度间隔
+// ============================================================
+const getTickInterval = (start, end) => {
+  const span = end - start
+  if (span <= 10) return 1
+  if (span <= 25) return 2
+  if (span <= 50) return 5
+  if (span <= 80) return 10
+  return 20
 }
 
 // ============================================================
@@ -194,7 +230,7 @@ const calculateYAxisRange = (series) => {
 // ============================================================
 const buildChartOption = () => {
   const stats = processedStats.value
-  const { startIndex, endIndex, visibleDistances } = segmentRange.value
+  const { startIndex, endIndex, visibleDistances, axisStart, axisEnd } = segmentRange.value
 
   if (stats.length === 0 || visibleDistances.length === 0) {
     return {
@@ -207,7 +243,7 @@ const buildChartOption = () => {
     }
   }
 
-  // 构建系列数据（⭐ times 按 segment 切片）
+  // 构建系列数据（times 按 segment 切片）
   const series = stats.map((s, index) => {
     const label = s.displayName || s.weapon?.name || '未知武器'
     const isHighlighted = props.highlightWeapon && label === props.highlightWeapon
@@ -216,7 +252,7 @@ const buildChartOption = () => {
     const isTop15 = s._isTop15
     const isTop40 = s._isTop40
 
-    // ⭐ 切片 times
+    // 切片 times
     const fullTimes = s.times || []
     const slicedTimes = fullTimes.slice(startIndex, endIndex + 1)
 
@@ -281,25 +317,26 @@ const buildChartOption = () => {
     }
   }
 
-  // ⭐ 计算 Y 轴范围（压缩空白区）
+  // 计算 Y 轴范围
   const yRange = calculateYAxisRange(series)
 
   // 图例数据
   const legendData = series.map(s => s.name)
 
-  // ⭐ 移动端配置调整
+  // 移动端配置调整
   const axisLabelFontSize = isMobile.value ? 9 : 10
   const axisNameFontSize = isMobile.value ? 10 : 11
   const gridConfig = isMobile.value
     ? { left: 50, right: 12, top: 12, bottom: 55 }
     : { left: 60, right: 20, top: 15, bottom: 60 }
 
-  // ⭐ X 轴刻度：每 5m 一个
+  // ⭐ X 轴刻度：按跨度自适应
+  const tickInterval = getTickInterval(axisStart, axisEnd)
   const xAxisLabelConfig = {
     fontSize: axisLabelFontSize,
     formatter: (value) => {
       const num = Number(value)
-      return num % 5 === 0 ? num : ''
+      return num % tickInterval === 0 ? num : ''
     },
     interval: 0
   }
@@ -361,7 +398,6 @@ const buildChartOption = () => {
       type: 'value',
       name: 'TTK',
       nameTextStyle: { fontSize: axisNameFontSize },
-      // ⭐ 动态 Y 轴范围（压缩空白区）
       min: yRange.min,
       max: yRange.max,
       axisLabel: {
@@ -410,9 +446,8 @@ const updateChart = () => {
   chartInstance.setOption(buildChartOption(), true)
 }
 
-// ⭐ 分别监听每个依赖，确保变化时触发更新
+// 监听依赖变化
 watch(() => props.stats, () => {
-  console.log('👁️ watch: stats 变化')
   nextTick(() => {
     if (chartInstance) updateChart()
     else initChart()
@@ -427,31 +462,28 @@ watch(() => props.distances, () => {
 }, { deep: true })
 
 watch(() => props.highlightWeapon, () => {
-  console.log('👁️ watch: highlightWeapon 变化')
   nextTick(() => {
     if (chartInstance) updateChart()
     else initChart()
   })
 })
 
-watch(() => props.displayCount, (newVal, oldVal) => {
-  console.log('👁️ watch: displayCount 变化', oldVal, '->', newVal)
+watch(() => props.displayCount, () => {
   nextTick(() => {
     if (chartInstance) updateChart()
     else initChart()
   })
 })
 
-// ⭐ 监听分段变化
-watch(() => props.segment, (newVal, oldVal) => {
-  console.log('👁️ watch: segment 变化', oldVal, '->', newVal)
+// ⭐ 监听分段变化（对象类型需要 deep: true）
+watch(() => props.segment, () => {
   nextTick(() => {
     if (chartInstance) updateChart()
     else initChart()
   })
-})
+}, { deep: true })
 
-// ⭐ 监听移动端状态变化（视口宽度跨过 768 时更新图表配置）
+// 监听移动端状态变化
 watch(isMobile, () => {
   nextTick(() => {
     if (chartInstance) {

@@ -49,20 +49,34 @@
         <div class="chart-header">
           <h3 class="chart-title">📈 距离 - TTK 折线图</h3>
           <div class="chart-controls">
-            <div class="segment-switch">
+            <!-- ⭐ 自定义起止距离 -->
+            <div class="custom-range">
+              <span class="range-label">自定义:</span>
+              <input
+                type="number"
+                v-model.number="customStart"
+                min="0"
+                max="100"
+                step="1"
+                class="range-input"
+                @keydown.enter="applyCustomRange"
+              />
+              <span class="range-sep">~</span>
+              <input
+                type="number"
+                v-model.number="customEnd"
+                min="0"
+                max="100"
+                step="1"
+                class="range-input"
+                @keydown.enter="applyCustomRange"
+              />
+              <span class="range-unit">m</span>
               <button
-                class="segment-btn"
-                :class="{ active: currentSegment === '0-50' }"
-                @click="currentSegment = '0-50'"
+                class="range-apply-btn"
+                @click="applyCustomRange"
               >
-                0~50m
-              </button>
-              <button
-                class="segment-btn"
-                :class="{ active: currentSegment === '50-100' }"
-                @click="currentSegment = '50-100'"
-              >
-                50~100m
+                应用
               </button>
             </div>
 
@@ -88,7 +102,7 @@
           :distances="distances"
           :highlight-weapon="highlightWeapon"
           :display-count="displayCount"
-          :segment="currentSegment"
+          :segment="segmentProp"
         />
       </div>
     </div>
@@ -226,7 +240,10 @@ const caliberOptions = ref([])
 
 const displayCount = ref(10)
 const barDisplayCount = ref(10)
-const currentSegment = ref('0-50')
+
+// ⭐ 自定义起止距离（默认 0~100m）
+const customStart = ref(0)
+const customEnd = ref(100)
 
 const showDamageDetail = ref(false)
 const detailWeaponId = ref(null)
@@ -240,6 +257,15 @@ const weaponRows = computed(() => {
 const muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器']
 
 const distanceStats = ref([])
+
+/**
+ * ⭐ 传递给 DistanceChart 的分段
+ * 直接返回对象 { start, end }
+ */
+const segmentProp = computed(() => ({
+  start: customStart.value,
+  end: customEnd.value
+}))
 
 // ---------- 辅助函数 ----------
 const getWeaponBarrelOptions = (row) => {
@@ -269,6 +295,35 @@ const onBarDisplayCountBlur = () => {
 
 const onDisplayCountEnter = (e) => {
   e.target.blur()
+}
+
+// ============================================================
+// ⭐ 应用自定义分段
+// ============================================================
+
+const applyCustomRange = () => {
+  let s = Number(customStart.value)
+  let e = Number(customEnd.value)
+
+  if (isNaN(s) || isNaN(e)) {
+    alert('⚠️ 请输入有效的起止距离')
+    return
+  }
+
+  s = Math.max(0, Math.min(100, s))
+  e = Math.max(0, Math.min(100, e))
+
+  if (s > e) {
+    [s, e] = [e, s]
+  }
+
+  if (e - s < 5) {
+    alert('⚠️ 起止距离至少相差 5m')
+    return
+  }
+
+  customStart.value = s
+  customEnd.value = e
 }
 
 // ---------- 事件处理 ----------
@@ -363,7 +418,6 @@ const handleCalculate = async () => {
         if (realBulletKey) {
           const bulletData = dm.getBulletById(realBulletKey)
           if (bulletData) {
-            // ⭐ 传入 bulletData，优先用 name 匹配策略
             const strategy = BulletStrategyFactory.getStrategy(realBulletKey, bulletData)
 
             const configHitRateMap = attachment.hitRateMap || params.hitRateMap || []
@@ -422,10 +476,7 @@ const handleCalculate = async () => {
 
     console.log(`✅ TTK 计算完成: ${results.length} 个配置 (缓存命中 ${cacheHits}, 失效重算 ${cacheMisses})`)
 
-    // ⭐ 先算折线图（写入缓存）
     await handleDistanceChart()
-
-    // ⭐ 折线图算完后，统一计算哈弗币消耗
     computeHavocCosts(enabledConfigs, dm, cacheManager, params)
 
   } catch (error) {
@@ -503,6 +554,28 @@ const handleDistanceChart = async () => {
 
     const stats = await buildDistanceStats(armed, attachments)
 
+    // ⭐ 提取 { ttk, aim } 作为评分原始数据
+    const dm = dataStore.getDataManager()
+    const scores = {}
+    for (const s of stats) {
+      const weaponId = s.weapon.id
+      const configId = s.weapon._configId || '#1'
+      const key = `${weaponId}_${configId}`
+
+      // ⭐ 读该配置的 aimSpeed
+      const price = dm.getPriceByWeaponId(weaponId)
+      const config = price?.configs.find(c => c.id === configId)
+      const aimSpeed = config?.aimSpeed || 0
+
+      scores[key] = {
+        ttk: s.weightedAvg,
+        aim: aimSpeed
+      }
+    }
+    appStore.setScores(scores)
+    console.log(`⭐ 评分原始数据已计算: ${Object.keys(scores).length} 条`)
+
+    // 全 0 检查
     let allZero = true
     if (stats.length > 0 && stats[0].times) {
       for (let i = 0; i < Math.min(stats[0].times.length, 10); i++) {
@@ -609,11 +682,24 @@ const buildArmedWeapons = (configs) => {
 // ============================================================
 // ⭐ 关键点生成
 // ============================================================
+
+/**
+ * 生成关键距离点
+ * 
+ * 只包含：
+ * - 0m（起点）
+ * - 每个射程分段点 r 及其前 1m（r-1）—— 捕捉衰减跳变
+ * - maxDistance（终点）
+ * 
+ * 例：
+ * - AK-12 [40, 70] → [0, 39, 40, 69, 70, 100]
+ * - M700 [Infinity, ...] → [0, 100]
+ */
 const getKeyDistances = (ranges, maxDistance) => {
   const validRanges = (ranges || []).filter(r => r !== Infinity && r <= maxDistance)
-  
+
   const keyDistances = [0]
-  
+
   for (const range of validRanges) {
     const before = Math.max(0, range - 1)
     if (before > 0 && !keyDistances.includes(before)) {
@@ -623,17 +709,11 @@ const getKeyDistances = (ranges, maxDistance) => {
       keyDistances.push(range)
     }
   }
-  
-  for (let d = 10; d <= maxDistance; d += 10) {
-    if (!keyDistances.includes(d)) {
-      keyDistances.push(d)
-    }
-  }
-  
+
   if (!keyDistances.includes(maxDistance)) {
     keyDistances.push(maxDistance)
   }
-  
+
   return [...new Set(keyDistances)].sort((a, b) => a - b)
 }
 
@@ -749,9 +829,8 @@ const calculateSingleWeapon = (weapon, params, distances, attachment, dm) => {
   const bulletData = dm.getBulletById(realBulletKey)
   if (!bulletData) return null
 
-  // ⭐ 传入 bulletData，优先用 name 匹配策略
   const strategy = BulletStrategyFactory.getStrategy(realBulletKey, bulletData)
-  
+
   const keyDistances = getKeyDistances(
     weapon.ranges || [40, 70, Infinity, Infinity],
     CHART_CONFIG.MAX_DISTANCE || 100
@@ -772,10 +851,10 @@ const calculateSingleWeapon = (weapon, params, distances, attachment, dm) => {
 
     const simParams = { ...params, distance, hitRate, bulletLevel: realBulletKey }
     const result = SimulationEngine.calculateSinglePoint(
-      weapon, 
-      simParams, 
+      weapon,
+      simParams,
       SIMULATION_CONFIG.DISTANCE_SIM_COUNT,
-      strategy, 
+      strategy,
       bulletData
     )
 
@@ -830,11 +909,11 @@ const importData = () => {
   input.onchange = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    
+
     try {
       const confirmed = confirm('导入将覆盖当前所有数据，确定继续吗？')
       if (!confirmed) return
-      
+
       const reader = new FileReader()
       reader.onload = async (event) => {
         try {
@@ -865,18 +944,18 @@ const resetData = () => {
   if (!confirm('⚠️ 确定要重置所有数据为默认值吗？\n（当前修改将丢失！）')) {
     return
   }
-  
+
   try {
     dataStore.resetData()
     dataStore.refreshWeapons()
     dataStore.refreshBullets()
     dataStore.refreshPrices()
     dataStore.refreshArmors()
-    
+
     setTimeout(() => {
       handleCalculate()
     }, 500)
-    
+
     alert('✅ 数据已重置为默认值！')
   } catch (error) {
     console.error('重置失败:', error)
@@ -889,14 +968,14 @@ const resetData = () => {
 // ============================================================
 const onAddWeapon = (index, rowData) => {
   const dm = dataStore.getDataManager()
-  
+
   if (index === -1 || rowData === undefined || rowData === null) {
     const existing = dm.data.weapons.find(w => w._isNewRow === true)
     if (existing) {
       alert('⚠️ 已有新增行，请先完成或取消当前新增操作')
       return
     }
-    
+
     const tempWeapon = {
       id: `temp_${Date.now()}`,
       name: '',
@@ -913,14 +992,14 @@ const onAddWeapon = (index, rowData) => {
       mult: { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 },
       _isNewRow: true
     }
-    
+
     dm.data.weapons.unshift(tempWeapon)
     dataStore.refreshWeapons()
-    
+
     console.log('✅ 已插入临时占位武器')
     return
   }
-  
+
   const weapons = dm.getWeapons()
   let maxId = 0
   for (const w of weapons) {
@@ -929,7 +1008,7 @@ const onAddWeapon = (index, rowData) => {
     if (!isNaN(id) && id > maxId) maxId = id
   }
   const newWeaponId = maxId + 1
-  
+
   const newWeapon = {
     id: newWeaponId,
     name: rowData.name || '新武器',
@@ -945,7 +1024,7 @@ const onAddWeapon = (index, rowData) => {
     barrels: [],
     mult: rowData.mult || { head: 1.9, chest: 1, stomach: 0.9, limbs: 0.4 }
   }
-  
+
   const weaponList = dm.data.weapons
   const tempIndex = weaponList.findIndex(w => w._isNewRow === true)
   if (tempIndex !== -1) {
@@ -953,7 +1032,8 @@ const onAddWeapon = (index, rowData) => {
   } else {
     weaponList.push(newWeapon)
   }
-  
+
+  // ⭐ defaultPriceConfig 加 aimSpeed
   const defaultPriceConfig = {
     id: '#1',
     barrelId: -1,
@@ -961,6 +1041,7 @@ const onAddWeapon = (index, rowData) => {
     muzzleId: 0,
     muzzle: '无',
     precision: 0.09,
+    aimSpeed: 0,       // ⭐ 新增
     buildCode: '',
     price: 0,
     distance: [30, 50, 100],
@@ -969,7 +1050,7 @@ const onAddWeapon = (index, rowData) => {
     enabled: true,
     cache: null
   }
-  
+
   let price = dm.getPriceByWeaponId(newWeaponId)
   if (!price) {
     dm.data.prices.push({
@@ -980,7 +1061,7 @@ const onAddWeapon = (index, rowData) => {
   } else {
     price.configs.push(defaultPriceConfig)
   }
-  
+
   dataStore.refreshWeapons()
   dataStore.refreshPrices()
   console.log(`✅ 新增枪械: ${rowData.name} (ID: ${newWeaponId})`)
@@ -1132,7 +1213,7 @@ body {
 .chart-controls {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -1170,39 +1251,76 @@ body {
   color: var(--color-text-muted);
 }
 
-.segment-switch {
+/* ============ ⭐ 自定义起止距离 ============ */
+.custom-range {
   display: inline-flex;
-  gap: 0;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-white);
 }
 
-.segment-btn {
-  padding: 4px 14px;
-  border: none;
-  background: var(--color-bg-white);
-  font-family: var(--font-family);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
+.range-label {
+  font-size: 12px;
+  color: #666;
   white-space: nowrap;
 }
 
-.segment-btn:not(:last-child) {
-  border-right: 1px solid var(--color-border);
+.range-input {
+  width: 48px;
+  padding: 3px 6px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: center;
+  background: var(--color-bg-light);
+  color: var(--color-text);
+  outline: none;
 }
 
-.segment-btn:hover:not(.active) {
-  background: #f0f4ff;
+.range-input:focus {
+  border-color: var(--color-primary);
+  background: #fff;
+}
+
+.range-input::-webkit-outer-spin-button,
+.range-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.range-input {
+  -moz-appearance: textfield;
+}
+
+.range-sep {
+  font-size: 12px;
+  color: #999;
+}
+
+.range-unit {
+  font-size: 11px;
+  color: #888;
+}
+
+.range-apply-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-bg-white);
+  font-family: var(--font-family);
+  font-size: 12px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.range-apply-btn:hover {
+  border-color: var(--color-primary);
   color: var(--color-primary);
-}
-
-.segment-btn.active {
-  background: var(--color-primary);
-  color: #fff;
 }
 
 /* ============ 表格区域 ============ */
@@ -1336,35 +1454,44 @@ body {
   #app {
     padding: 4px 8px 12px;
   }
-  
+
   .chart-wrapper {
     padding: 10px;
   }
-  
+
   .chart-title {
     font-size: 13px;
   }
-  
+
   .chart-header {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-sm);
   }
-  
+
   .chart-controls {
     width: 100%;
-    gap: var(--spacing-md);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
   }
-  
+
+  .custom-range {
+    justify-content: flex-start;
+  }
+
+  .display-count-label {
+    align-self: flex-start;
+  }
+
   .display-count-input {
     width: 50px;
   }
-  
-  .segment-btn {
-    padding: 3px 10px;
-    font-size: var(--font-size-sm);
+
+  .range-input {
+    width: 44px;
   }
-  
+
   .table-section {
     padding: 4px 8px 6px;
   }
@@ -1373,7 +1500,7 @@ body {
     padding: 3px 8px;
     font-size: 11px;
   }
-  
+
   .calc-progress-box {
     padding: 20px 24px;
     min-width: 280px;
