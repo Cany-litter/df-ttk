@@ -15,9 +15,20 @@
  * 
  * 导出排序：
  * - weapons: 按类型 → 名称 排序
- * - bullets: 按口径 → 等级 排序
+ * - bullets: 按口径 → 等级 → 默认 排序
  * - prices: 按类型 → 武器名称 → 配置序号 排序
- * - ⭐ armors: 按 type → level 排序
+ * - armors: 按 type → level 排序
+ * 
+ * ⭐ 子弹 ID 规范（v2）：
+ * - 格式：${caliber}#${序号}
+ * - 序号：口径内递增，按 level 升序 + name 字典序分配
+ * - 稳定：序号一旦分配，不随 level/name 变化
+ * - 禁止修改 caliber / id
+ * 
+ * ⭐ 子弹字段（v2）：
+ * - partMult: { head, chest, stomach, limbs } 各部位肉伤比例
+ * - isDefault: 同 caliber+level 唯一，用于全局等级匹配
+ * - 已废弃：base / stMult
  */
 import perf from '../utils/performance.js';
 
@@ -118,9 +129,13 @@ export class DataManager {
    * 
    * ⭐ 统一处理：
    * 1. 武器 ranges：'Infinity' / null → Infinity
-   * 2. 子弹 level：数字型字符串 → 数字（如 "4" → 4，保留 "RIP" 等特殊等级为字符串）
-   * 3. 配置 precision：缺失时补默认值 0.09
-   * 4. ⭐ 护甲 armors：缺失时补空数组
+   * 2. 子弹 level：数字型字符串 → 数字
+   * 3. 子弹 name：缺失时补空字符串
+   * 4. 子弹 partMult：缺失时补默认 { head:1, chest:1, stomach:1, limbs:1 }
+   * 5. 子弹 isDefault：缺失时补 false
+   * 6. 子弹 isDefault 唯一性校验（同 caliber+level 只保留序号最小的）
+   * 7. 配置 precision：缺失时补默认值 0.09
+   * 8. 护甲 armors：缺失时补空数组
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
@@ -151,13 +166,57 @@ export class DataManager {
       });
     }
     
-    // ---------- 2. ⭐ 子弹 level 规范化 ----------
+    // ---------- 2. ⭐ 子弹规范化 ----------
     if (Array.isArray(normalized.bullets)) {
       normalized.bullets.forEach(bullet => {
+        // level 数字字符串 → 数字
         if (typeof bullet.level === 'string' && /^\d+$/.test(bullet.level)) {
           bullet.level = parseInt(bullet.level, 10);
         }
+
+        // name 缺失补空
+        if (bullet.name === undefined || bullet.name === null) {
+          bullet.name = '';
+        }
+
+        // ⭐ partMult 缺失补默认
+        if (!bullet.partMult || typeof bullet.partMult !== 'object') {
+          bullet.partMult = { head: 1, chest: 1, stomach: 1, limbs: 1 };
+        } else {
+          // 规范化每个部位
+          const pm = bullet.partMult;
+          const fallback = { head: 1, chest: 1, stomach: 1, limbs: 1 };
+          for (const key of ['head', 'chest', 'stomach', 'limbs']) {
+            if (typeof pm[key] !== 'number' || !isFinite(pm[key])) {
+              pm[key] = fallback[key];
+            }
+          }
+        }
+
+        // ⭐ isDefault 缺失补 false
+        if (bullet.isDefault === undefined) {
+          bullet.isDefault = false;
+        }
+
+        // ⭐ 兼容旧字段名 default
+        if (bullet.default !== undefined) {
+          if (bullet.default === true) {
+            bullet.isDefault = true;
+          }
+          delete bullet.default;
+        }
+
+        // ⭐ 删除已废弃字段
+        if (bullet.base !== undefined) {
+          delete bullet.base;
+        }
+        if (bullet.stMult !== undefined) {
+          delete bullet.stMult;
+        }
       });
+
+      // ⭐ isDefault 唯一性校验（同 caliber+level 只保留序号最小的）
+      this._enforceDefaultUniqueness(normalized.bullets);
     }
 
     // ---------- 3. ⭐ 配置 precision 规范化 ----------
@@ -174,15 +233,13 @@ export class DataManager {
     }
 
     // ---------- 4. ⭐ 护甲 armors 规范化 ----------
-    // 缺失时补空数组；确保每条有 type 字段
     if (!Array.isArray(normalized.armors)) {
       normalized.armors = [];
     } else {
       normalized.armors.forEach(armor => {
         if (!armor.type) {
-          armor.type = 'armor';   // 默认护甲
+          armor.type = 'armor';
         }
-        // 数值字段类型规范化
         if (typeof armor.level === 'string') {
           armor.level = parseInt(armor.level, 10) || 1;
         }
@@ -196,6 +253,79 @@ export class DataManager {
     }
     
     return normalized;
+  }
+
+  /**
+   * ⭐ 强制 isDefault 唯一性（同 caliber+level 只保留一个）
+   * 
+   * 规则：
+   * - 优先保留第一个 isDefault: true 的
+   * - 如果都没有，取序号最小的
+   * - 其他全部设为 false
+   * 
+   * @param {Array} bullets 
+   * @private
+   */
+  _enforceDefaultUniqueness(bullets) {
+    if (!Array.isArray(bullets)) return;
+
+    // 按 caliber + level 分组
+    const groups = new Map();
+    for (const bullet of bullets) {
+      const key = `${bullet.caliber}|${bullet.level}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(bullet);
+    }
+
+    let fixedCount = 0;
+
+    for (const [key, group] of groups.entries()) {
+      if (group.length <= 1) {
+        // 只有一颗，确保它是默认
+        if (group[0] && group[0].isDefault !== true) {
+          group[0].isDefault = true;
+        }
+        continue;
+      }
+
+      // 按 ID 序号排序
+      group.sort((a, b) => {
+        const idxA = this._extractIndexFromId(a.id);
+        const idxB = this._extractIndexFromId(b.id);
+        return idxA - idxB;
+      });
+
+      // 找第一个 isDefault: true 的
+      let firstDefault = group.find(b => b.isDefault === true);
+
+      // 如果都没有，取序号最小的
+      if (!firstDefault) {
+        firstDefault = group[0];
+        firstDefault.isDefault = true;
+        fixedCount++;
+      }
+
+      // 其他全部取消
+      for (const b of group) {
+        if (b !== firstDefault && b.isDefault === true) {
+          b.isDefault = false;
+          fixedCount++;
+        }
+      }
+    }
+
+    if (fixedCount > 0) {
+      console.warn(`⚠️ isDefault 唯一性校验：修正了 ${fixedCount} 颗子弹`);
+    }
+  }
+
+  /**
+   * 从 ID 里提取序号
+   * @private
+   */
+  _extractIndexFromId(id) {
+    const match = String(id || '').match(/#(\d+)$/);
+    return match ? parseInt(match[1], 10) : 999999;
   }
 
   // ============================================================
@@ -223,21 +353,99 @@ export class DataManager {
     return this.data.bullets.find(b => b.id === id) || null;
   }
 
+  /**
+   * ⭐ 按口径+等级查找子弹
+   * 
+   * 同口径同等级有多颗时：
+   * 1. 优先返回 isDefault === true 的
+   * 2. 否则返回第一颗
+   */
   getBulletByCaliberAndLevel(caliber, level) {
-    return this.data.bullets.find(b => 
+    const candidates = this.data.bullets.filter(b => 
       b.caliber === caliber && String(b.level) === String(level)
-    ) || null;
+    );
+
+    if (candidates.length === 0) return null;
+
+    // ⭐ 优先返回默认子弹
+    const defaultBullet = candidates.find(b => b.isDefault === true);
+    if (defaultBullet) return defaultBullet;
+
+    return candidates[0];
   }
 
   getBulletsByCaliber(caliber) {
     return this.data.bullets.filter(b => b.caliber === caliber);
   }
 
+  /**
+   * ⭐ 生成下一个子弹 ID（口径#序号）
+   * 
+   * 规则：
+   * - 同口径内，找最大序号 + 1
+   * - 如果该口径没有子弹，从 1 开始
+   * - 序号一旦分配，永不变（稳定）
+   * 
+   * @param {string} caliber - 口径
+   * @returns {string} 新 ID，如 "5.56x45mm#6"
+   */
+  getNextBulletId(caliber) {
+    if (!caliber) return ''
+    
+    const sameCaliber = this.data.bullets.filter(b => b.caliber === caliber)
+    if (sameCaliber.length === 0) {
+      return `${caliber}#1`
+    }
+
+    let maxIndex = 0
+    for (const b of sameCaliber) {
+      const match = String(b.id).match(/#(\d+)$/)
+      if (match) {
+        const n = parseInt(match[1], 10)
+        if (!isNaN(n) && n > maxIndex) maxIndex = n
+      }
+    }
+
+    return `${caliber}#${maxIndex + 1}`
+  }
+
+  /**
+   * ⭐ 生成子弹的标准显示字符串
+   * 格式：caliber Lv.level name
+   * 
+   * @param {Object} bullet 
+   * @returns {string}
+   */
+  getBulletDisplay(bullet) {
+    if (!bullet) return '-'
+    const parts = [bullet.caliber, `Lv.${bullet.level}`]
+    if (bullet.name) parts.push(bullet.name)
+    return parts.join(' ')
+  }
+
+  /**
+   * ⭐ 获取指定口径+等级的默认子弹
+   * @param {string} caliber 
+   * @param {number|string} level 
+   * @returns {Object|null}
+   */
+  getDefaultBullet(caliber, level) {
+    const candidates = this.data.bullets.filter(b => 
+      b.caliber === caliber && String(b.level) === String(level)
+    );
+    if (candidates.length === 0) return null;
+
+    const defaultBullet = candidates.find(b => b.isDefault === true);
+    return defaultBullet || candidates[0];
+  }
+
   getBulletRows() {
     return this.data.bullets.map(bullet => ({
       caliber: bullet.caliber || '-',
       level: bullet.level || '-',
-      base: bullet.base || 1.0,
+      name: bullet.name || '',
+      partMult: bullet.partMult || { head: 1, chest: 1, stomach: 1, limbs: 1 },
+      isDefault: bullet.isDefault === true,
       armorMult: bullet.armorMult || 1.0,
       pen: bullet.pen || 0,
       price: bullet.price || 0,
@@ -249,31 +457,18 @@ export class DataManager {
   // 3.5. ⭐ 数据获取 - 护甲 / 头盔
   // ============================================================
 
-  /**
-   * 获取所有护甲/头盔
-   */
   getArmors() {
     return this.data.armors || [];
   }
 
-  /**
-   * 按类型获取（'armor' | 'helmet'）
-   */
   getArmorsByType(type) {
     return (this.data.armors || []).filter(a => a.type === type);
   }
 
-  /**
-   * 按 ID 获取
-   */
   getArmorById(id) {
     return (this.data.armors || []).find(a => a.id === id) || null;
   }
 
-  /**
-   * 新增护甲/头盔
-   * @param {Object} armorData - { id, type, name, level, value, price }
-   */
   addArmor(armorData) {
     if (!armorData || !armorData.id) {
       console.warn('⚠️ addArmor: 缺少 id');
@@ -285,7 +480,6 @@ export class DataManager {
       return false;
     }
 
-    // 补默认值
     const armor = {
       id: armorData.id,
       type: armorData.type || 'armor',
@@ -302,11 +496,6 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * 更新护甲/头盔
-   * @param {string} id
-   * @param {Object} updates
-   */
   updateArmor(id, updates) {
     const armor = this.getArmorById(id);
     if (!armor) {
@@ -317,10 +506,6 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * 删除护甲/头盔
-   * @param {string} id
-   */
   removeArmor(id) {
     const idx = (this.data.armors || []).findIndex(a => a.id === id);
     if (idx === -1) return false;
@@ -419,13 +604,13 @@ export class DataManager {
         muzzleName = config.muzzle;
       }
       
-      // ---------- 解析子弹 ----------
+      // ---------- ⭐ 解析子弹 ----------
       let bulletDisplay = '-';
       let bulletId = config.bullet || '';
       if (bulletId) {
         const bullet = this.getBulletById(bulletId);
         if (bullet) {
-          bulletDisplay = `${bullet.caliber} Lv.${bullet.level}`;
+          bulletDisplay = this.getBulletDisplay(bullet);
         }
       }
       
@@ -736,10 +921,115 @@ export class DataManager {
   // 8. 数据更新 - 子弹
   // ============================================================
 
+  /**
+   * ⭐ 新增子弹
+   * - 如果没传 id，自动生成（口径#序号）
+   * - 补 partMult / isDefault 默认值
+   * - 同组没有默认时，自动设为默认
+   */
+  addBullet(bulletData) {
+    if (!bulletData) return false;
+
+    // 自动生成 ID
+    if (!bulletData.id) {
+      if (!bulletData.caliber) {
+        console.warn('⚠️ addBullet: 缺少 caliber，无法生成 ID');
+        return false;
+      }
+      bulletData.id = this.getNextBulletId(bulletData.caliber);
+    }
+
+    // 校验唯一性
+    const existing = this.getBulletById(bulletData.id);
+    if (existing) {
+      console.warn(`⚠️ 子弹 ${bulletData.id} 已存在`);
+      return false;
+    }
+
+    // 补默认值
+    if (bulletData.level === undefined) bulletData.level = 4;
+    if (bulletData.name === undefined) bulletData.name = '';
+    if (bulletData.price === undefined) bulletData.price = 0;
+
+    // ⭐ 补 partMult
+    if (!bulletData.partMult || typeof bulletData.partMult !== 'object') {
+      bulletData.partMult = { head: 1, chest: 1, stomach: 1, limbs: 1 };
+    } else {
+      const fallback = { head: 1, chest: 1, stomach: 1, limbs: 1 };
+      for (const key of ['head', 'chest', 'stomach', 'limbs']) {
+        if (typeof bulletData.partMult[key] !== 'number' || !isFinite(bulletData.partMult[key])) {
+          bulletData.partMult[key] = fallback[key];
+        }
+      }
+    }
+
+    // ⭐ 处理 isDefault
+    const sameGroup = this.data.bullets.filter(b =>
+      b.caliber === bulletData.caliber && String(b.level) === String(bulletData.level)
+    );
+    const hasDefault = sameGroup.some(b => b.isDefault === true);
+
+    if (bulletData.isDefault === undefined) {
+      bulletData.isDefault = !hasDefault;   // 同组没默认 → 自动设为默认
+    }
+
+    if (bulletData.isDefault === true) {
+      // 同组其他取消默认
+      for (const b of sameGroup) {
+        b.isDefault = false;
+      }
+    }
+
+    this.data.bullets.push(bulletData);
+    return true;
+  }
+
+  /**
+   * ⭐ 更新子弹
+   * - 禁止修改 caliber / id / isDefault（isDefault 走 setDefaultBullet）
+   * - 支持 partMult
+   * - 支持 armorMult / pen 数组形式
+   */
   updateBullet(bulletId, updates) {
     const bullet = this.getBulletById(bulletId);
     if (!bullet) return false;
-    
+
+    // ⭐ 禁止修改 caliber
+    if (updates.caliber !== undefined && updates.caliber !== bullet.caliber) {
+      console.warn(`⚠️ 禁止修改子弹口径（${bullet.caliber} → ${updates.caliber}）。如需更改，请删除后重建。`);
+      delete updates.caliber;
+    }
+
+    // ⭐ 禁止直接修改 id
+    if (updates.id !== undefined && updates.id !== bullet.id) {
+      console.warn(`⚠️ 禁止修改子弹 ID`);
+      delete updates.id;
+    }
+
+    // ⭐ 禁止直接修改 isDefault（应该走 setDefaultBullet）
+    if (updates.isDefault !== undefined) {
+      console.warn(`⚠️ 请使用 setDefaultBullet() 设置默认子弹`);
+      delete updates.isDefault;
+    }
+
+    // ⭐ 处理 partMult
+    if (updates.partMult !== undefined) {
+      if (typeof updates.partMult !== 'object' || updates.partMult === null) {
+        delete updates.partMult;
+      } else {
+        const fallback = { head: 1, chest: 1, stomach: 1, limbs: 1 };
+        const pm = { ...bullet.partMult };
+        for (const key of ['head', 'chest', 'stomach', 'limbs']) {
+          if (typeof updates.partMult[key] === 'number' && isFinite(updates.partMult[key])) {
+            pm[key] = updates.partMult[key];
+          }
+        }
+        bullet.partMult = pm;
+        delete updates.partMult;
+      }
+    }
+
+    // armorMult 数组
     if (updates.armorMult !== undefined && Array.isArray(updates.armorMult)) {
       const values = updates.armorMult;
       if (bullet.armorData) {
@@ -752,7 +1042,8 @@ export class DataManager {
       bullet.armorMult = values[0] ?? 1.0;
       delete updates.armorMult;
     }
-    
+
+    // pen 数组
     if (updates.pen !== undefined && Array.isArray(updates.pen)) {
       const values = updates.pen;
       if (bullet.armorData) {
@@ -765,19 +1056,9 @@ export class DataManager {
       bullet.pen = values[0] ?? 0;
       delete updates.pen;
     }
-    
+
     Object.assign(bullet, updates);
     this.markWeaponsByBullet(bulletId);
-    return true;
-  }
-
-  addBullet(bulletData) {
-    const existing = this.getBulletById(bulletData.id);
-    if (existing) {
-      console.warn(`子弹 ${bulletData.id} 已存在`);
-      return false;
-    }
-    this.data.bullets.push(bulletData);
     return true;
   }
 
@@ -792,8 +1073,65 @@ export class DataManager {
       console.warn(`子弹 ${bulletId} 正在被价格配置使用，无法删除`);
       return false;
     }
+
+    // ⭐ 记录被删子弹的组信息
+    const removedBullet = this.data.bullets[index];
+    const caliber = removedBullet.caliber;
+    const level = removedBullet.level;
+    const wasDefault = removedBullet.isDefault === true;
     
     this.data.bullets.splice(index, 1);
+
+    // ⭐ 如果删除的是默认子弹，同组挑一颗补上
+    if (wasDefault) {
+      const remaining = this.data.bullets.filter(b =>
+        b.caliber === caliber && String(b.level) === String(level)
+      );
+      if (remaining.length > 0) {
+        // 按 ID 序号排序，取序号最小的
+        remaining.sort((a, b) => this._extractIndexFromId(a.id) - this._extractIndexFromId(b.id));
+        remaining[0].isDefault = true;
+        console.log(`⭐ 删除默认子弹后，${remaining[0].id} 自动成为默认`);
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * ⭐ 设置子弹为默认
+   * 
+   * 规则：
+   * - 同口径+同等级下，只能有一个默认
+   * - 设置某颗为默认时，同组其他子弹的 isDefault 自动设为 false
+   * 
+   * @param {string} bulletId - 子弹 ID
+   * @returns {boolean} 是否成功
+   */
+  setDefaultBullet(bulletId) {
+    const bullet = this.getBulletById(bulletId);
+    if (!bullet) {
+      console.warn(`⚠️ setDefaultBullet: 子弹 ${bulletId} 不存在`);
+      return false;
+    }
+
+    const caliber = bullet.caliber;
+    const level = bullet.level;
+
+    // 同组其他子弹取消默认
+    let changed = 0;
+    for (const b of this.data.bullets) {
+      if (b.caliber === caliber && String(b.level) === String(level)) {
+        if (b.id === bulletId) {
+          b.isDefault = true;
+        } else if (b.isDefault === true) {
+          b.isDefault = false;
+          changed++;
+        }
+      }
+    }
+
+    console.log(`⭐ 设置默认子弹: ${bulletId} (${bullet.name} Lv.${level})，同组取消 ${changed} 个`);
     return true;
   }
 
@@ -1096,6 +1434,10 @@ export class DataManager {
     });
   }
 
+  /**
+   * ⭐ 子弹导出排序
+   * 口径 → 等级 → isDefault（默认优先）→ ID 序号
+   */
   _sortBulletsForExport(bullets) {
     if (!bullets || bullets.length === 0) return;
     
@@ -1107,13 +1449,19 @@ export class DataManager {
       
       const levelA = DataManager.getLevelWeight(a.level);
       const levelB = DataManager.getLevelWeight(b.level);
-      return levelA - levelB;
+      if (levelA !== levelB) return levelA - levelB;
+
+      // ⭐ 同口径同等级，默认排前面
+      if (a.isDefault && !b.isDefault) return -1;
+      if (!a.isDefault && b.isDefault) return 1;
+      
+      // ⭐ 再按 ID 序号排序
+      const idxA = this._extractIndexFromId(a.id);
+      const idxB = this._extractIndexFromId(b.id);
+      return idxA - idxB;
     });
   }
 
-  /**
-   * ⭐ 护甲排序：type → level
-   */
   _sortArmorsForExport(armors) {
     if (!armors || armors.length === 0) return;
     
@@ -1126,7 +1474,7 @@ export class DataManager {
       
       const levelA = typeof a.level === 'number' ? a.level : parseInt(a.level) || 0;
       const levelB = typeof b.level === 'number' ? b.level : parseInt(b.level) || 0;
-      if (levelA !== levelB) return levelB - levelA;   // 等级高的在前
+      if (levelA !== levelB) return levelB - levelA;
       
       return (a.name || '').localeCompare(b.name || '', 'zh-CN');
     });
@@ -1210,7 +1558,7 @@ export class DataManager {
       
       this._sortWeaponsForExport(dataToExport.weapons);
       this._sortBulletsForExport(dataToExport.bullets);
-      this._sortArmorsForExport(dataToExport.armors);   // ⭐ 新增
+      this._sortArmorsForExport(dataToExport.armors);
       
       const weaponsMap = new Map();
       if (Array.isArray(dataToExport.weapons)) {
@@ -1358,7 +1706,7 @@ export class DataManager {
       weaponCount: this.data.weapons.length,
       bulletCount: this.data.bullets.length,
       priceCount: this.data.prices.length,
-      armorCount: this.data.armors.length,   // ⭐ 新增
+      armorCount: this.data.armors.length,
       muzzleCount: this.muzzles.length,
       isLoaded: this.isLoaded,
       hasUnsavedChanges: this.hasUnsavedChanges(),
@@ -1368,34 +1716,72 @@ export class DataManager {
     };
   }
 
+  /**
+   * ⭐ 从显示字符串反查子弹 ID
+   * 
+   * 支持的显示格式：
+   *   1. "5.56x45mm#5"                      （纯 ID）
+   *   2. "5.56x45mm Lv.4 M995"              （口径 + 等级 + 名称）
+   *   3. "5.56x45mm Lv.4"                   （口径 + 等级，兼容旧格式）
+   *   4. "5.56x45mm Lv.4 M995 (5.56x45mm#5)"（带 ID 括号）
+   */
   findBulletIdByDisplay(bulletDisplay) {
     if (!bulletDisplay || bulletDisplay === '-' || bulletDisplay === '') return null;
-    
-    const match = bulletDisplay.match(/^(.+?)\s+Lv\.(.+)$/);
+
+    const str = String(bulletDisplay).trim();
+
+    // 1. 纯 ID
+    if (this.getBulletById(str)) return str;
+
+    // 2. 尝试从括号里提取 ID
+    const idInParens = str.match(/\(([^()]+)\)$/)
+    if (idInParens) {
+      const maybeId = idInParens[1].trim()
+      if (this.getBulletById(maybeId)) return maybeId
+    }
+
+    // 3. 解析 "caliber Lv.level name" 或 "caliber Lv.level"
+    const match = str.match(/^(.+?)\s+Lv\.(\S+)(?:\s+(.+))?$/)
     if (match) {
-      const caliber = match[1].trim();
-      const level = match[2].trim();
-      
-      let bullet = this.getBulletByCaliberAndLevel(caliber, level);
-      if (bullet) return bullet.id;
-      
-      const normalizedCaliber = caliber.replace(/mm$/, '').toLowerCase();
-      for (const b of this.data.bullets) {
-        const bCaliber = b.caliber.replace(/mm$/, '').toLowerCase();
-        if (bCaliber === normalizedCaliber && String(b.level) === String(level)) {
-          return b.id;
-        }
+      const caliber = match[1].trim()
+      const level = match[2].trim()
+      const name = match[3] ? match[3].trim() : null
+
+      // 3a. 精确匹配 caliber + level + name
+      if (name) {
+        const exact = this.data.bullets.find(b =>
+          b.caliber === caliber &&
+          String(b.level) === level &&
+          (b.name || '') === name
+        )
+        if (exact) return exact.id
       }
+
+      // 3b. 匹配 caliber + level（优先默认子弹）
+      const candidates = this.data.bullets.filter(b =>
+        b.caliber === caliber && String(b.level) === level
+      )
+      if (candidates.length > 0) {
+        const defaultBullet = candidates.find(b => b.isDefault === true)
+        return (defaultBullet || candidates[0]).id
+      }
+
+      // 3c. 规范化 caliber（去掉 mm 后缀）再试
+      const normalizedCaliber = caliber.replace(/mm$/i, '').toLowerCase()
+      const byNormalized = this.data.bullets.find(b => {
+        const bCal = String(b.caliber).replace(/mm$/i, '').toLowerCase()
+        return bCal === normalizedCaliber && String(b.level) === level
+      })
+      if (byNormalized) return byNormalized.id
     }
-    
+
+    // 4. 兜底：遍历所有子弹，匹配 display
     for (const b of this.data.bullets) {
-      const display = `${b.caliber} Lv.${b.level}`;
-      if (display === bulletDisplay) {
-        return b.id;
-      }
+      const display = this.getBulletDisplay(b)
+      if (display === str) return b.id
     }
-    
-    return null;
+
+    return null
   }
 }
 

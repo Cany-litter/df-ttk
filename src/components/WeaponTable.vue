@@ -319,26 +319,33 @@
                 <span class="price-unit">W</span>
               </span>
 
+              <!-- ⭐ 子弹下拉框：绑定 ID -->
               <span class="fld">
                 <span class="k">子弹</span>
                 <select
                   class="inline-select"
-                  :value="cfg.bulletDisplay"
+                  :value="cfg.bulletId || ''"
                   @click.stop
                   @change="onBulletChange(index, cfg.configId, $event.target.value)"
                 >
-                  <option value="无">无</option>
+                  <option value="">无</option>
                   <option
                     v-for="opt in getBulletOptionsForWeapon(row)"
-                    :key="opt"
-                    :value="opt"
-                  >{{ opt }}</option>
+                    :key="opt.id"
+                    :value="opt.id"
+                  >{{ opt.display }}</option>
                 </select>
               </span>
 
+              <!-- ⭐ 哈弗币（带 tooltip） -->
               <span class="fld">
                 <span class="k">哈弗币</span>
-                <span class="v" :class="havocColor(cfg.havocCost)">
+                <span
+                  class="v havoc-cost"
+                  :class="havocColor(cfg.havocCost)"
+                  :title="getHavocTooltip(cfg._havocCost)"
+                  :style="{ cursor: cfg._havocCost ? 'help' : 'default' }"
+                >
                   {{ cfg.havocCost != null ? fmtPrice(cfg.havocCost) : '-' }}
                 </span>
               </span>
@@ -632,21 +639,32 @@
                     />
                     <span class="k">W</span>
                   </div>
+                  <!-- ⭐ 子弹下拉框：绑定 ID -->
                   <div class="cfg-mobile-row">
                     <span class="k">子弹</span>
                     <select
                       class="inline-select flex-1"
-                      :value="cfg.bulletDisplay"
+                      :value="cfg.bulletId || ''"
                       @click.stop
                       @change="onBulletChange(index, cfg.configId, $event.target.value)"
                     >
-                      <option value="无">无</option>
-                      <option v-for="opt in getBulletOptionsForWeapon(row)" :key="opt" :value="opt">{{ opt }}</option>
+                      <option value="">无</option>
+                      <option
+                        v-for="opt in getBulletOptionsForWeapon(row)"
+                        :key="opt.id"
+                        :value="opt.id"
+                      >{{ opt.display }}</option>
                     </select>
                   </div>
                   <div class="cfg-mobile-row">
                     <span class="k">哈弗币</span>
-                    <span class="v" :class="havocColor(cfg.havocCost)">
+                    <!-- ⭐ 哈弗币（带 tooltip） -->
+                    <span
+                      class="v havoc-cost"
+                      :class="havocColor(cfg.havocCost)"
+                      :title="getHavocTooltip(cfg._havocCost)"
+                      :style="{ cursor: cfg._havocCost ? 'help' : 'default' }"
+                    >
                       {{ cfg.havocCost != null ? fmtPrice(cfg.havocCost) : '-' }}
                     </span>
                     <div class="config-actions">
@@ -659,7 +677,7 @@
             </div>
           </template>
 
-          <!-- 操作行（不收起） -->
+          <!-- 操作行 -->
           <div class="card-row row-actions">
             <button class="action-btn edit-base" @click="addConfig(row)">➕ 新增配置</button>
             <button class="action-btn edit-barrel" @click="editBarrel(index)">🔧 编辑枪管</button>
@@ -859,19 +877,31 @@ const fmtPrice = (v) => v >= 10000 ? `¥${(v / 10000).toFixed(1)}W` : `¥${v}`
 const havocColor = (v) => {
   if (v == null) return 'havoc-empty'
   const w = v / 10000
-  if (w > 100) return 'havoc-red'
-  if (w > 50) return 'havoc-orange'
+  if (w > 60) return 'havoc-red'
+  if (w > 30) return 'havoc-orange'
   return 'havoc-green'
+}
+
+// ⭐ 哈弗币消耗 tooltip
+const getHavocTooltip = (cost) => {
+  if (!cost) return ''
+  const lines = [
+    `═══════════════════════════════`,
+    `💰 哈弗币消耗: ¥${(cost.totalCost / 10000).toFixed(1)}W`,
+    `═══════════════════════════════`,
+    `整枪损失: ¥${(cost.weaponLossCost / 10000).toFixed(1)}W`,
+    `子弹消耗: ¥${(cost.bulletCost / 10000).toFixed(1)}W`,
+    `平均致死枪数: ${cost.avgShots.toFixed(1)} 发`,
+    `KD 放大: ${(cost.kdRatio * 5).toFixed(1)}x`,
+    `子弹单价: ¥${cost.bulletPrice}`
+  ]
+  return lines.join('\n')
 }
 
 // ============================================================
 // ⭐ 核心：rowsWithCurrent
-// 
-// ⭐ 关键修复：显式引用 state.weapons / state.prices，
-//    建立响应式依赖，保证 prices 变化时 rowsWithCurrent 重算
 // ============================================================
 const rowsWithCurrent = computed(() => {
-  // ⭐ 显式建立对 state.weapons / state.prices 的响应式依赖
   const weapons = dataStore.state.weapons
   const prices = dataStore.state.prices
   void prices
@@ -903,9 +933,11 @@ const rowsWithCurrent = computed(() => {
     const havocCosts = appStore.state.havocCosts || {}
     const configsWithHavoc = configRows.map(cfg => {
       const key = `${weapon.id}_${cfg.configId}`
+      const cost = havocCosts[key] || null
       return {
         ...cfg,
-        havocCost: havocCosts[key]?.totalCost ?? null
+        havocCost: cost?.totalCost ?? null,
+        _havocCost: cost
       }
     })
 
@@ -1058,25 +1090,36 @@ const parseHitRateString = (str) => {
   }
 }
 
-const onBulletChange = (index, configId, display) => {
+/**
+ * ⭐ 子弹变更（直接用 ID，不再反查）
+ */
+const onBulletChange = (index, configId, bulletId) => {
   const row = rowsWithCurrent.value[index]
   if (!row) return
   const dm = dataStore.getDataManager()
-  if (display === '无' || display === '-' || !display) {
-    dm.updatePriceConfig(row.id, configId, { bullet: '' })
-  } else {
-    const bulletId = dm.findBulletIdByDisplay(display)
-    if (!bulletId) return
-    dm.updatePriceConfig(row.id, configId, { bullet: bulletId })
-  }
+
+  // 空值 = 无子弹
+  const finalBulletId = (bulletId === '无' || bulletId === '-' || !bulletId)
+    ? ''
+    : bulletId
+
+  dm.updatePriceConfig(row.id, configId, { bullet: finalBulletId })
   dataStore.refreshPrices()
 }
 
+/**
+ * ⭐ 获取子弹下拉框选项（返回 { id, display }）
+ */
 const getBulletOptionsForWeapon = (row) => {
   const weapon = dataStore.getWeaponById(row.id)
   if (!weapon || !weapon.allowedBullet) return []
-  const bullets = dataStore.getDataManager().getBulletsByCaliber(weapon.allowedBullet)
-  return bullets.map(b => `${b.caliber} Lv.${b.level}`)
+  const dm = dataStore.getDataManager()
+  const bullets = dm.getBulletsByCaliber(weapon.allowedBullet)
+
+  return bullets.map(b => ({
+    id: b.id,
+    display: dm.getBulletDisplay(b)
+  }))
 }
 
 // ============================================================
@@ -1187,7 +1230,6 @@ const editBarrel = (index) => {
   emit('edit-barrel', row.id)
 }
 
-// ⭐ 编辑基础属性：打开弹窗
 const editBase = (index) => {
   const row = rowsWithCurrent.value[index]
   if (!row) return
@@ -1791,6 +1833,18 @@ const cancelAdd = (index) => {
 .fld .v.havoc-orange { color: #ff9800; }
 .fld .v.havoc-red { color: #f44336; }
 .fld .v.havoc-empty { color: #ccc; font-weight: 400; }
+
+.fld .v.havoc-cost {
+  cursor: help;
+  padding: 0 4px;
+  border-radius: 2px;
+  border-bottom: 1px dashed #ccc;
+  transition: all 0.15s;
+}
+.fld .v.havoc-cost:hover {
+  background: #fff3e0;
+  border-bottom-color: #ff9800;
+}
 
 .config-item .hitrate-wrap {
   display: flex;

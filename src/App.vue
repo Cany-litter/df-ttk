@@ -4,7 +4,7 @@
     <!-- 头部 -->
     <AppHeader />
 
-    <!-- 参数面板（内部已包含所有操作按钮） -->
+    <!-- 参数面板 -->
     <ParamsPanel
       @calculate="handleCalculate"
       @distance-chart="handleDistanceChart"
@@ -15,7 +15,7 @@
 
     <!-- 图表区域 -->
     <div class="charts-area">
-      <!-- ⭐ 柱状图（TTK 对比） -->
+      <!-- 柱状图（TTK 对比） -->
       <div class="chart-wrapper">
         <div class="chart-header">
           <h3 class="chart-title">📊 TTK 对比</h3>
@@ -44,7 +44,7 @@
         />
       </div>
 
-      <!-- ⭐ 折线图（距离 - TTK） -->
+      <!-- 折线图（距离 - TTK） -->
       <div class="chart-wrapper">
         <div class="chart-header">
           <h3 class="chart-title">📈 距离 - TTK 折线图</h3>
@@ -95,7 +95,6 @@
 
     <!-- ============ 表格区域 ============ -->
     <div class="table-section">
-      <!-- ⭐ 主 Tab 导航（枪械 / 弹甲） -->
       <div class="table-tabs">
         <button
           class="tab-btn"
@@ -113,7 +112,6 @@
         </button>
       </div>
 
-      <!-- Tab 内容 -->
       <div class="tab-content">
         <!-- 枪械 Tab -->
         <div
@@ -134,7 +132,7 @@
           />
         </div>
 
-        <!-- ⭐ 弹甲 Tab（含子弹/护甲/头盔三个子 Tab） -->
+        <!-- 弹甲 Tab -->
         <div
           id="tab-items"
           v-show="appStore.state.currentTab === 'items'"
@@ -151,7 +149,7 @@
     <!-- 页脚 -->
     <AppFooter />
 
-    <!-- ============ 枪管编辑器弹窗 ============ -->
+    <!-- 枪管编辑器弹窗 -->
     <BarrelEditor
       :visible="appStore.state.showBarrelEditor"
       :weapon-id="appStore.state.editingWeaponId"
@@ -159,7 +157,7 @@
       @saved="onBarrelSaved"
     />
 
-    <!-- ============ 基础属性编辑器弹窗 ============ -->
+    <!-- 基础属性编辑器弹窗 -->
     <WeaponBaseEditor
       :visible="appStore.state.showBaseEditor"
       :weapon-id="appStore.state.editingBaseWeaponId"
@@ -168,7 +166,7 @@
       @saved="onBaseSaved"
     />
 
-    <!-- ============ 单次伤害模拟弹窗 ============ -->
+    <!-- 单次伤害模拟弹窗 -->
     <DamageDetailModal
       v-model:visible="showDamageDetail"
       :weapon-id="detailWeaponId"
@@ -177,7 +175,7 @@
     />
   </div>
 
-  <!-- ============ 计算进度遮罩 ============ -->
+  <!-- 计算进度遮罩 -->
   <Teleport to="body">
     <div v-if="appStore.state.calcProgress.visible" class="calc-progress-overlay">
       <div class="calc-progress-box">
@@ -216,12 +214,10 @@ import ParamsPanel from '@/components/ParamsPanel.vue'
 import TTKChart from '@/components/TTKChart.vue'
 import DistanceChart from '@/components/DistanceChart.vue'
 import WeaponTable from '@/components/WeaponTable.vue'
-import ItemsPanel from '@/components/ItemsPanel.vue'   // ⭐ 新增
+import ItemsPanel from '@/components/ItemsPanel.vue'
 import BarrelEditor from '@/components/BarrelEditor.vue'
 import WeaponBaseEditor from '@/components/WeaponBaseEditor.vue'
 import DamageDetailModal from '@/components/DamageDetailModal.vue'
-
-// 注意：不再直接导入 BulletTable（已并入 ItemsPanel）
 
 // ---------- 状态 ----------
 const highlightWeapon = ref(null)
@@ -243,7 +239,6 @@ const weaponRows = computed(() => {
 
 const muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声消音器']
 
-// ---------- 距离图表数据 ----------
 const distanceStats = ref([])
 
 // ---------- 辅助函数 ----------
@@ -287,12 +282,7 @@ const onShowDamageDetail = ({ weaponId, configId }) => {
   showDamageDetail.value = true
 }
 
-// ============================================================
-// ⭐ 弹甲数据更新事件
-// ============================================================
 const onItemsUpdate = () => {
-  // 弹甲数据的变更不影响 TTK 计算（护甲参数由 paramsStore 独立控制），
-  // 所以这里只需要刷新对应的 store 即可（ArmorTable/BulletTable 内部已处理）
   dataStore.refreshBullets()
   dataStore.refreshArmors()
 }
@@ -373,7 +363,8 @@ const handleCalculate = async () => {
         if (realBulletKey) {
           const bulletData = dm.getBulletById(realBulletKey)
           if (bulletData) {
-            const strategy = BulletStrategyFactory.getStrategy(realBulletKey)
+            // ⭐ 传入 bulletData，优先用 name 匹配策略
+            const strategy = BulletStrategyFactory.getStrategy(realBulletKey, bulletData)
 
             const configHitRateMap = attachment.hitRateMap || params.hitRateMap || []
             const hitRate = dm.getHitRateFromMap(
@@ -431,7 +422,12 @@ const handleCalculate = async () => {
 
     console.log(`✅ TTK 计算完成: ${results.length} 个配置 (缓存命中 ${cacheHits}, 失效重算 ${cacheMisses})`)
 
+    // ⭐ 先算折线图（写入缓存）
     await handleDistanceChart()
+
+    // ⭐ 折线图算完后，统一计算哈弗币消耗
+    computeHavocCosts(enabledConfigs, dm, cacheManager, params)
+
   } catch (error) {
     console.error('计算失败:', error)
     alert('计算失败: ' + error.message)
@@ -439,6 +435,58 @@ const handleCalculate = async () => {
     appStore.setLoading(false)
     appStore.hideCalcProgress()
   }
+}
+
+// ============================================================
+// ⭐ 哈弗币消耗计算
+// ============================================================
+const computeHavocCosts = (enabledConfigs, dm, cacheManager, params) => {
+  if (!cacheManager) {
+    appStore.setHavocCosts({})
+    return
+  }
+
+  const havocCosts = {}
+  let computed = 0
+  let skipped = 0
+
+  for (const config of enabledConfigs) {
+    const weaponId = config._weaponId
+    const configId = config.configId || '#1'
+    const key = `${weaponId}_${configId}`
+
+    const price = dm.getPriceByWeaponId(weaponId)
+    if (!price) {
+      skipped++
+      continue
+    }
+
+    const cfg = price.configs.find(c => c.id === configId)
+    if (!cfg || !cfg.cache || !cfg.cache.keyPoints || cfg.cache.keyPoints.length === 0) {
+      skipped++
+      continue
+    }
+
+    try {
+      const cost = cacheManager.calculateHavocCostAverage(
+        cfg.cache.keyPoints,
+        {
+          weaponPrice: cfg.price || 0,
+          kdRatio: params.kdRatio ?? 1.0,
+          extractRate: params.extractRate ?? 0.5,
+          extraCost: params.extraCost ?? 30
+        }
+      )
+      havocCosts[key] = cost
+      computed++
+    } catch (e) {
+      console.warn(`⚠️ 哈弗币消耗计算失败: ${key}`, e)
+      skipped++
+    }
+  }
+
+  appStore.setHavocCosts(havocCosts)
+  console.log(`💰 哈弗币估算完成: ${computed} 条 (跳过 ${skipped})`)
 }
 
 // ============================================================
@@ -701,13 +749,14 @@ const calculateSingleWeapon = (weapon, params, distances, attachment, dm) => {
   const bulletData = dm.getBulletById(realBulletKey)
   if (!bulletData) return null
 
-  const strategy = BulletStrategyFactory.getStrategy(realBulletKey)
+  // ⭐ 传入 bulletData，优先用 name 匹配策略
+  const strategy = BulletStrategyFactory.getStrategy(realBulletKey, bulletData)
   
   const keyDistances = getKeyDistances(
     weapon.ranges || [40, 70, Infinity, Infinity],
     CHART_CONFIG.MAX_DISTANCE || 100
   )
-  
+
   const keyPoints = []
   let burstIntervalSum = 0
 
@@ -789,7 +838,7 @@ const importData = () => {
       const reader = new FileReader()
       reader.onload = async (event) => {
         try {
-          await dataStore.importData(event.target.result)
+          dataStore.importData(event.target.result)
           dataStore.refreshWeapons()
           dataStore.refreshBullets()
           dataStore.refreshPrices()
@@ -1121,7 +1170,6 @@ body {
   color: var(--color-text-muted);
 }
 
-/* 分段切换 */
 .segment-switch {
   display: inline-flex;
   gap: 0;
@@ -1208,7 +1256,7 @@ body {
 }
 
 /* ============================================================
-   ⭐ 计算进度遮罩
+   计算进度遮罩
    ============================================================ */
 .calc-progress-overlay {
   position: fixed;

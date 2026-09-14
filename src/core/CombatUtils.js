@@ -1,6 +1,9 @@
 /**
  * 战斗工具类
  * 包含所有战斗相关的计算公式和工具方法
+ * 
+ * ⭐ v2 变化：
+ * - BaseDamageCalculator 改用 bullet.partMult[hitPart]（不再用 bullet.base）
  */
 
 import { seededRandom } from '../utils/rng.js';
@@ -30,20 +33,47 @@ export class DistanceDecayCalculator {
 
 /**
  * 基础伤害计算器
+ * 
+ * ⭐ v2：用 bullet.partMult[hitPart] 替代 bullet.base
  */
 export class BaseDamageCalculator {
   /**
    * 计算基础肉伤
+   * 
+   * ⭐ 公式（v2）：
+   *   基础肉伤 = weapon.flesh × bullet.partMult[hitPart] × weapon.mult[hitPart]
+   * 
+   * 说明：
+   * - weapon.flesh：武器肉伤
+   * - bullet.partMult[hitPart]：子弹该部位的倍率
+   * - weapon.mult[hitPart]：武器该部位的倍率
+   * 
    * @param {Object} weapon - 武器对象
    * @param {Object} bulletData - 子弹数据
-   * @param {string} hitPart - 命中部位
+   * @param {string} hitPart - 命中部位（head / chest / stomach / limbs）
    * @param {number} decay - 距离衰减
-   * @returns {number} 基础肉伤
+   * @returns {number} 基础肉伤（已乘衰减）
    */
   static calculate(weapon, bulletData, hitPart, decay) {
-    const mult = weapon.mult[hitPart];
-    const baseF = weapon.flesh * bulletData.base * mult;
+    const weaponMult = weapon.mult[hitPart] || 1;
+    const partMult = this._getPartMult(bulletData, hitPart);
+    const baseF = weapon.flesh * partMult * weaponMult;
     return baseF * decay;
+  }
+
+  /**
+   * ⭐ 获取子弹该部位的倍率（带默认值兜底）
+   * 
+   * @param {Object} bulletData 
+   * @param {string} hitPart 
+   * @returns {number}
+   * @private
+   */
+  static _getPartMult(bulletData, hitPart) {
+    const pm = bulletData?.partMult;
+    if (!pm || typeof pm !== 'object') return 1;
+    const v = pm[hitPart];
+    return (typeof v === 'number' && isFinite(v)) ? v : 1;
   }
 }
 

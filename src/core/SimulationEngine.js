@@ -619,7 +619,8 @@ export class SimulationEngine {
         }
         
         const simParams = { ...params, hitRate };
-        const strategy = BulletStrategyFactory.getStrategy(realBulletKey);
+        // ⭐ 传入 bulletData，优先用 name 匹配策略
+        const strategy = BulletStrategyFactory.getStrategy(realBulletKey, bulletData);
         
         const stat = this.calculateAvgStats(weapon, simParams, undefined, strategy, bulletData);
         return { ...stat, weapon, name: weapon.name };

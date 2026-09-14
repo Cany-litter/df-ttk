@@ -24,7 +24,7 @@
  */
 
 // ⭐ 缓存版本号（递增即强制所有旧缓存失效）
-const CACHE_VERSION = 4;
+const CACHE_VERSION = 6;
 
 export class ConfigCacheManager {
     constructor(dataManager) {

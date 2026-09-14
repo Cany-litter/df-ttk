@@ -145,10 +145,7 @@
                     <div class="detail-row">
                       <span class="detail-label">命中部位：</span>
                       <span class="detail-value">
-                        {{ partLabel(s.hitPart) }}（mult = {{ s.debug.mult }}）
-                        <template v-if="s.debug.stPartMult !== undefined">
-                          × ST修正 {{ s.debug.stPartMult }}
-                        </template>
+                        {{ partLabel(s.hitPart) }}（武器倍率 = {{ s.debug.mult }}）
                       </span>
                     </div>
 
@@ -156,13 +153,10 @@
                       <span class="detail-label">基础伤害：</span>
                       <span class="detail-value">
                         {{ s.debug.weaponFlesh }}（肉伤）
-                        <template v-if="s.debug.bulletBase !== null">
-                          × {{ s.debug.bulletBase }}（子弹）
+                        <template v-if="s.debug.partMult !== undefined && s.debug.partMult !== 1">
+                          × {{ s.debug.partMult }}（子弹倍率）
                         </template>
-                        × {{ s.debug.mult }}（部位）
-                        <template v-if="s.debug.stPartMult !== undefined">
-                          × {{ s.debug.stPartMult }}（ST）
-                        </template>
+                        × {{ s.debug.mult }}（武器倍率）
                         = {{ s.debug.baseDamage.toFixed(2) }}
                       </span>
                     </div>
@@ -323,10 +317,7 @@
                 <div class="detail-row">
                   <span class="detail-label">命中部位：</span>
                   <span class="detail-value">
-                    {{ partLabel(s.hitPart) }}（mult = {{ s.debug.mult }}）
-                    <template v-if="s.debug.stPartMult !== undefined">
-                      × ST修正 {{ s.debug.stPartMult }}
-                    </template>
+                    {{ partLabel(s.hitPart) }}（武器倍率 = {{ s.debug.mult }}）
                   </span>
                 </div>
 
@@ -334,13 +325,10 @@
                   <span class="detail-label">基础伤害：</span>
                   <span class="detail-value">
                     {{ s.debug.weaponFlesh }}（肉伤）
-                    <template v-if="s.debug.bulletBase !== null">
-                      × {{ s.debug.bulletBase }}（子弹）
+                    <template v-if="s.debug.partMult !== undefined && s.debug.partMult !== 1">
+                      × {{ s.debug.partMult }}（子弹倍率）
                     </template>
-                    × {{ s.debug.mult }}（部位）
-                    <template v-if="s.debug.stPartMult !== undefined">
-                      × {{ s.debug.stPartMult }}（ST）
-                    </template>
+                    × {{ s.debug.mult }}（武器倍率）
                     = {{ s.debug.baseDamage.toFixed(2) }}
                   </span>
                 </div>
@@ -621,7 +609,8 @@ const runSimulation = (seed) => {
   }
 
   setSeed(seed)
-  const strategy = BulletStrategyFactory.getStrategy(bulletKey)
+  // ⭐ 传入 bulletData，优先用 name 匹配策略
+  const strategy = BulletStrategyFactory.getStrategy(bulletKey, bulletData)
   const result = SimulationEngine.simulateOneTTKWithDetail(
     armedWeapon,
     simParams,

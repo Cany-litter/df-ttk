@@ -10,16 +10,38 @@
 
     <!-- ============ ⭐ 桌面：表格 ============ -->
     <div v-if="!isMobile" class="table-scroll">
-      <table>
+      <table class="bullet-table">
+        <colgroup>
+          <col style="width: 50px;" />   <!-- 默认 -->
+          <col style="width: 100px;" />  <!-- 名称 -->
+          <col style="width: 110px;" />  <!-- 口径 -->
+          <col style="width: 65px;" />   <!-- 等级 -->
+          <col style="width: 180px;" />  <!-- 部位肉伤 -->
+          <col style="width: 180px;" />  <!-- 护甲衰减 -->
+          <col style="width: 180px;" />  <!-- 穿透 -->
+          <col style="width: 80px;" />   <!-- 价格 -->
+          <col style="width: 80px;" />   <!-- 操作 -->
+        </colgroup>
         <thead>
           <tr>
-            <th style="min-width:110px;">子弹口径</th>
-            <th style="min-width:65px;">等级</th>
-            <th style="min-width:90px;">基础伤害比例</th>
-            <th style="min-width:180px;">护甲衰减 (1-6级)</th>
-            <th style="min-width:180px;">穿透 (1-6级)</th>
-            <th style="min-width:80px;">价格</th>
-            <th class="sticky-action" style="min-width:80px;">操作</th>
+            <th title="同口径+等级唯一一个默认">默认</th>
+            <th>子弹名称</th>
+            <th>子弹口径</th>
+            <th>等级</th>
+            <th class="multi-col-header">
+              <div class="header-main">部位肉伤</div>
+              <div class="header-sub">头 · 胸 · 腹 · 肢</div>
+            </th>
+            <th class="multi-col-header">
+              <div class="header-main">护甲衰减</div>
+              <div class="header-sub">1 · 2 · 3 · 4 · 5 · 6</div>
+            </th>
+            <th class="multi-col-header">
+              <div class="header-main">穿透</div>
+              <div class="header-sub">1 · 2 · 3 · 4 · 5 · 6</div>
+            </th>
+            <th>价格</th>
+            <th class="sticky-action">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -28,6 +50,44 @@
             :key="row.id || row._bulletId || index"
             :class="{ 'new-row': row._isNewRow }"
           >
+            <!-- ⭐ 默认 -->
+            <td class="readonly-cell default-cell">
+              <label
+                v-if="!row._isNewRow"
+                class="default-radio-wrap"
+                :title="row.isDefault ? '当前默认' : '设为默认'"
+              >
+                <input
+                  type="radio"
+                  :name="`default_${row.caliber}_${row.level}`"
+                  :checked="row.isDefault === true"
+                  @change="onDefaultChange(row)"
+                />
+                <span class="default-star" :class="{ active: row.isDefault }">
+                  {{ row.isDefault ? '⭐' : '○' }}
+                </span>
+              </label>
+              <span v-else class="default-placeholder">-</span>
+            </td>
+
+            <!-- 子弹名称 -->
+            <td :class="row._isNewRow ? 'new-row-cell' : 'control-cell'">
+              <input
+                v-if="row._isNewRow"
+                v-model="row.name"
+                class="new-row-input"
+                placeholder="如: M995"
+              />
+              <input
+                v-else
+                :value="row.name || ''"
+                class="cell-input"
+                type="text"
+                placeholder="未命名"
+                @blur="onNameChange(row, $event)"
+              />
+            </td>
+
             <!-- 子弹口径 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
               <input
@@ -36,77 +96,76 @@
                 class="new-row-input"
                 placeholder="如: 5.56x45mm"
               />
-              <span v-else>{{ row.caliber || '-' }}</span>
+              <span v-else class="readonly-text" :title="row.id">{{ row.caliber || '-' }}</span>
             </td>
 
-            <!-- 等级 -->
-            <td :class="row._isNewRow ? 'new-row-cell' : 'readonly-cell'">
-              <select v-if="row._isNewRow" v-model="row.level" class="new-row-select">
+            <!-- 等级（固定 1-6） -->
+            <td :class="row._isNewRow ? 'new-row-cell' : 'control-cell'">
+              <select
+                v-model="row.level"
+                class="level-select"
+                :class="getLevelClass(row.level)"
+                @change="onLevelChange(row, $event)"
+              >
                 <option v-for="opt in levelOptions" :key="opt" :value="opt">
                   {{ opt }}
                 </option>
               </select>
-              <span v-else-if="isSpecialLevel(row.level)" class="special-badge">
-                {{ row.level }}
-              </span>
-              <span v-else>{{ row.level }}</span>
             </td>
 
-            <!-- 基础伤害比例 -->
+            <!-- ⭐ 部位肉伤（单输入框，逗号分隔） -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'control-cell'">
               <input
                 v-if="row._isNewRow"
-                v-model.number="row.base"
-                class="new-row-input"
-                type="number"
-                step="0.01"
-                min="0"
+                v-model="newRowPartMultStr"
+                class="new-row-input mono-input"
+                type="text"
+                placeholder="1,1,1,1"
               />
               <input
                 v-else
-                :value="row.base !== undefined ? row.base.toFixed(2) : '1.00'"
-                class="cell-input"
-                type="number"
-                step="0.01"
-                min="0"
-                @blur="onBaseChange(row, $event)"
+                :value="getPartMultString(row)"
+                class="cell-input mono-input"
+                type="text"
+                placeholder="1,1,1,1"
+                @blur="onPartMultChange(row, $event)"
               />
             </td>
 
-            <!-- 护甲衰减 1-6级 -->
+            <!-- ⭐ 护甲衰减（单输入框，逗号分隔） -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'control-cell'">
               <input
                 v-if="row._isNewRow"
-                v-model="newRowArmorMultDisplay"
-                class="new-row-input"
-                placeholder="1.0,1.0,1.0,1.0,1.0,0.6"
-                @blur="parseNewRowArmorMult(row)"
+                v-model="newRowArmorMultStr"
+                class="new-row-input mono-input"
+                type="text"
+                placeholder="1,1,1,1,1,0.6"
               />
               <input
                 v-else
                 :value="getArmorMultString(row)"
-                class="cell-input armor-cell"
+                class="cell-input mono-input"
                 type="text"
-                placeholder="1.0,1.0,1.0,1.0,1.0,0.6"
+                placeholder="1,1,1,1,1,0.6"
                 @blur="onArmorMultChange(row, $event)"
               />
             </td>
 
-            <!-- 穿透 1-6级 -->
+            <!-- ⭐ 穿透（单输入框，逗号分隔） -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'control-cell'">
               <input
                 v-if="row._isNewRow"
-                v-model="newRowPenDisplay"
-                class="new-row-input"
-                placeholder="1.0,1.0,0.75,0.5,0,0"
-                @blur="parseNewRowPen(row)"
+                v-model="newRowPenStr"
+                class="new-row-input mono-input"
+                type="text"
+                placeholder="1,1,0.75,0.5,0,0"
               />
               <input
                 v-else
                 :value="getPenString(row)"
-                class="cell-input armor-cell"
+                class="cell-input mono-input"
                 type="text"
-                placeholder="1.0,1.0,0.75,0.5,0,0"
+                placeholder="1,1,0.75,0.5,0,0"
                 @blur="onPenChange(row, $event)"
               />
             </td>
@@ -156,9 +215,14 @@
         <div class="card-header-row">
           <template v-if="row._isNewRow">
             <input
-              v-model="row.caliber"
+              v-model="row.name"
               class="card-title-input"
-              placeholder="如: 5.56x45mm"
+              placeholder="子弹名称"
+            />
+            <input
+              v-model="row.caliber"
+              class="card-caliber-input"
+              placeholder="口径"
             />
             <select v-model="row.level" class="card-level-select">
               <option v-for="opt in levelOptions" :key="opt" :value="opt">
@@ -167,11 +231,23 @@
             </select>
           </template>
           <template v-else>
-            <span class="card-title-text">{{ row.caliber || '-' }}</span>
-            <span v-if="isSpecialLevel(row.level)" class="level-badge">
+            <span class="card-title-text">{{ row.name || '未命名' }}</span>
+            <span class="card-caliber-tag" :title="row.id">{{ row.caliber || '-' }}</span>
+            <span
+              class="level-badge"
+              :class="getLevelClass(row.level)"
+            >
               Lv.{{ row.level }}
             </span>
-            <span v-else class="card-config-tag">Lv.{{ row.level }}</span>
+            <!-- ⭐ 默认切换 -->
+            <button
+              class="default-toggle-btn"
+              :class="{ active: row.isDefault }"
+              :title="row.isDefault ? '当前默认' : '设为默认'"
+              @click.stop="onDefaultChange(row)"
+            >
+              {{ row.isDefault ? '⭐' : '○' }}
+            </button>
           </template>
 
           <div class="card-actions">
@@ -187,24 +263,39 @@
 
         <!-- 卡片主体 -->
         <div class="card-body">
-          <!-- 基础伤害比例 -->
+          <!-- 等级（移动端可编辑） -->
+          <div v-if="!row._isNewRow" class="card-field editable">
+            <span class="field-label">等级</span>
+            <select
+              v-model="row.level"
+              class="level-select-mobile"
+              :class="getLevelClass(row.level)"
+              @change="onLevelChange(row, $event)"
+            >
+              <option v-for="opt in levelOptions" :key="opt" :value="opt">
+                {{ opt }}
+              </option>
+            </select>
+          </div>
+
+          <!-- 部位肉伤 -->
           <div class="card-field editable">
-            <span class="field-label">基础伤害</span>
+            <span class="field-label">部位肉伤</span>
             <input
               v-if="row._isNewRow"
-              v-model.number="row.base"
-              type="number"
-              step="0.01"
-              min="0"
+              v-model="newRowPartMultStr"
+              class="mono"
+              placeholder="1,1,1,1"
             />
             <input
               v-else
-              type="number"
-              step="0.01"
-              min="0"
-              :value="row.base !== undefined ? row.base.toFixed(2) : '1.00'"
-              @blur="onBaseChange(row, $event)"
+              class="mono"
+              type="text"
+              :value="getPartMultString(row)"
+              placeholder="1,1,1,1"
+              @blur="onPartMultChange(row, $event)"
             />
+            <span class="field-hint">头,胸,腹,肢</span>
           </div>
 
           <!-- 护甲衰减 -->
@@ -212,19 +303,19 @@
             <span class="field-label">护甲衰减</span>
             <input
               v-if="row._isNewRow"
-              v-model="newRowArmorMultDisplay"
+              v-model="newRowArmorMultStr"
               class="mono"
-              placeholder="1.0,1.0,1.0,1.0,1.0,0.6"
-              @blur="parseNewRowArmorMult(row)"
+              placeholder="1,1,1,1,1,0.6"
             />
             <input
               v-else
               class="mono"
               type="text"
               :value="getArmorMultString(row)"
-              placeholder="1.0,1.0,1.0,1.0,1.0,0.6"
+              placeholder="1,1,1,1,1,0.6"
               @blur="onArmorMultChange(row, $event)"
             />
+            <span class="field-hint">1~6级</span>
           </div>
 
           <!-- 穿透 -->
@@ -232,19 +323,19 @@
             <span class="field-label">穿透</span>
             <input
               v-if="row._isNewRow"
-              v-model="newRowPenDisplay"
+              v-model="newRowPenStr"
               class="mono"
-              placeholder="1.0,1.0,0.75,0.5,0,0"
-              @blur="parseNewRowPen(row)"
+              placeholder="1,1,0.75,0.5,0,0"
             />
             <input
               v-else
               class="mono"
               type="text"
               :value="getPenString(row)"
-              placeholder="1.0,1.0,0.75,0.5,0,0"
+              placeholder="1,1,0.75,0.5,0,0"
               @blur="onPenChange(row, $event)"
             />
+            <span class="field-hint">1~6级</span>
           </div>
 
           <!-- 价格 -->
@@ -288,13 +379,17 @@ const props = defineProps({
   },
   levelOptions: {
     type: Array,
-    default: () => ['1', '2', '3', '4', '5', 'RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5']
+    default: () => [1, 2, 3, 4, 5, 6]
   }
 })
 
 const emit = defineEmits(['update', 'add-bullet', 'delete-bullet'])
 
-// ⭐ 是否为移动端（视口宽度 <= 768）
+// ⭐ 部位定义
+const PART_KEYS = ['head', 'chest', 'stomach', 'limbs']
+const PART_LABELS = { head: '头', chest: '胸', stomach: '腹', limbs: '肢' }
+
+// ⭐ 是否为移动端
 const isMobile = ref(false)
 const updateIsMobile = () => {
   isMobile.value = window.innerWidth <= 768
@@ -309,12 +404,17 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateIsMobile)
 })
 
-// 特殊等级列表
-const specialLevels = ['RIP', 'M61', 'BT+P', 'Double', 'SUPER', 'AP', 'CT', 'ST4', 'ST5']
+// ⭐ 新增行的临时状态（字符串）
+const newRowPartMultStr = ref('1,1,1,1')
+const newRowArmorMultStr = ref('1,1,1,1,1,0.6')
+const newRowPenStr = ref('1,1,0.75,0.5,0,0')
 
-// ⭐ 新增行的临时输入状态（不依赖 row 字段，避免响应式读写问题）
-const newRowArmorMultDisplay = ref('')
-const newRowPenDisplay = ref('')
+// 重置新增行临时状态
+const resetNewRowState = () => {
+  newRowPartMultStr.value = '1,1,1,1'
+  newRowArmorMultStr.value = '1,1,1,1,1,0.6'
+  newRowPenStr.value = '1,1,0.75,0.5,0,0'
+}
 
 // ---------- 调试：监听 data 变化 ----------
 watch(() => props.data, (newData, oldData) => {
@@ -328,50 +428,25 @@ watch(() => props.data, (newData, oldData) => {
 // 辅助方法
 // ============================================================
 
-const isSpecialLevel = (level) => {
-  return specialLevels.includes(String(level))
+/**
+ * ⭐ 等级颜色 class（固定 1-6）
+ */
+const getLevelClass = (level) => {
+  const n = Number(level)
+  if (n >= 1 && n <= 6) return `level-${n}`
+  return ''
 }
 
 /**
- * 获取护甲衰减字符串
- * - 新增临时行：用组件内临时状态 newRowArmorMultDisplay
- * - 已有子弹：从 row.armorData 拼
+ * ⭐ 通用：把 "1,1,1,1" 解析为数字数组
+ * 
+ * @param {string} str
+ * @param {number} defaultValue - 解析失败时的默认值
+ * @param {number} minLength - 最少长度（不足补默认）
+ * @param {number} maxLength - 最多长度（超出截断）
+ * @returns {number[]|null} 解析成功返回数组，失败返回 null
  */
-const getArmorMultString = (row) => {
-  if (row._isNewRow) {
-    return newRowArmorMultDisplay.value || ''
-  }
-
-  if (!row.armorData) return ''
-  const values = []
-  for (let i = 1; i <= 6; i++) {
-    const v = row.armorData[i]?.armorMult
-    values.push(typeof v === 'number' ? v : 1.0)
-  }
-  return values.map(v => v.toFixed(2)).join(',')
-}
-
-/**
- * 获取穿透字符串
- */
-const getPenString = (row) => {
-  if (row._isNewRow) {
-    return newRowPenDisplay.value || ''
-  }
-
-  if (!row.armorData) return ''
-  const values = []
-  for (let i = 1; i <= 6; i++) {
-    const v = row.armorData[i]?.pen
-    values.push(typeof v === 'number' ? v : 0)
-  }
-  return values.map(v => v.toFixed(2)).join(',')
-}
-
-/**
- * 把 "1.0,1.0,0.75,0.5,0,0" 解析成数字数组（长度补到 6）
- */
-const parseNumberArray = (str, defaultValue, length = 6) => {
+const parseNumberArray = (str, defaultValue, minLength, maxLength = minLength) => {
   if (!str || str.trim() === '') return null
 
   const values = str.split(',').map(v => {
@@ -379,67 +454,220 @@ const parseNumberArray = (str, defaultValue, length = 6) => {
     return isNaN(num) ? defaultValue : num
   })
 
-  while (values.length < length) values.push(defaultValue)
-  return values.slice(0, length)
+  // 不足补默认
+  while (values.length < minLength) values.push(defaultValue)
+
+  // 超出截断
+  return values.slice(0, maxLength)
+}
+
+/**
+ * ⭐ 通用：把数组格式化为 "1,1,1,1"
+ */
+const formatNumberArray = (arr, fallback) => {
+  if (!Array.isArray(arr)) return fallback
+  return arr.map(v => {
+    const n = typeof v === 'number' && isFinite(v) ? v : 0
+    // 去掉末尾多余的 0，但保留小数
+    return String(n)
+  }).join(',')
 }
 
 // ============================================================
-// 新增行的解析（把临时状态写入 row 的临时字段）
+// 显示：已有行的字符串
 // ============================================================
 
-const parseNewRowArmorMult = (row) => {
-  if (!row._isNewRow) return
-  const values = parseNumberArray(newRowArmorMultDisplay.value, 1.0)
-  if (values) {
-    row._armorMultValues = values
+/**
+ * 部位肉伤显示：头,胸,腹,肢
+ */
+const getPartMultString = (row) => {
+  if (row._isNewRow) return newRowPartMultStr.value
+  const pm = row.partMult || { head: 1, chest: 1, stomach: 1, limbs: 1 }
+  const values = PART_KEYS.map(k => {
+    const v = pm[k]
+    return typeof v === 'number' && isFinite(v) ? v : 1
+  })
+  return values.join(',')
+}
+
+/**
+ * 护甲衰减显示：1,2,3,4,5,6
+ */
+const getArmorMultString = (row) => {
+  if (row._isNewRow) return newRowArmorMultStr.value
+  if (!row.armorData) return '1,1,1,1,1,0.6'
+  const values = []
+  for (let i = 1; i <= 6; i++) {
+    const v = row.armorData[i]?.armorMult
+    values.push(typeof v === 'number' && isFinite(v) ? v : 1)
   }
+  return values.join(',')
 }
 
-const parseNewRowPen = (row) => {
-  if (!row._isNewRow) return
-  const values = parseNumberArray(newRowPenDisplay.value, 0)
-  if (values) {
-    row._penValues = values
+/**
+ * 穿透显示：1,2,3,4,5,6
+ */
+const getPenString = (row) => {
+  if (row._isNewRow) return newRowPenStr.value
+  if (!row.armorData) return '1,1,0.75,0.5,0,0'
+  const values = []
+  for (let i = 1; i <= 6; i++) {
+    const v = row.armorData[i]?.pen
+    values.push(typeof v === 'number' && isFinite(v) ? v : 0)
   }
+  return values.join(',')
 }
 
 // ============================================================
-// 已有子弹的编辑（走 DataManager）
+// ⭐ 部位肉伤：失焦处理
 // ============================================================
 
-const onBaseChange = (row, event) => {
-  const value = parseFloat(event.target.value)
-  if (!isNaN(value) && value >= 0) {
-    const dm = dataStore.getDataManager()
-    dm.updateBullet(row.id, { base: value })
+const onPartMultChange = (row, event) => {
+  const str = event.target.value
+  const values = parseNumberArray(str, 1, 4, 4)   // 头,胸,腹,肢
+
+  if (!values || !values.every(v => !isNaN(v) && v >= 0)) {
+    // 解析失败，还原
+    event.target.value = getPartMultString(row)
+    return
+  }
+
+  const newPartMult = {
+    head: values[0],
+    chest: values[1],
+    stomach: values[2],
+    limbs: values[3]
+  }
+
+  const dm = dataStore.getDataManager()
+  const ok = dm.updateBullet(row.id, { partMult: newPartMult })
+  if (ok) {
     dataStore.refreshBullets()
     emit('update')
+    // 回写规范化的字符串
+    event.target.value = getPartMultString(row)
+  } else {
+    event.target.value = getPartMultString(row)
   }
 }
+
+// ============================================================
+// ⭐ 护甲衰减：失焦处理
+// ============================================================
 
 const onArmorMultChange = (row, event) => {
   const str = event.target.value
-  const values = parseNumberArray(str, 1.0)
-  if (values && values.every(v => !isNaN(v) && v >= 0)) {
-    const dm = dataStore.getDataManager()
-    dm.updateBullet(row.id, { armorMult: values })
+  const values = parseNumberArray(str, 1, 6, 6)
+
+  if (!values || !values.every(v => !isNaN(v) && v >= 0)) {
+    event.target.value = getArmorMultString(row)
+    return
+  }
+
+  const dm = dataStore.getDataManager()
+  const ok = dm.updateBullet(row.id, { armorMult: values })
+  if (ok) {
     dataStore.refreshBullets()
     emit('update')
+    event.target.value = getArmorMultString(row)
   } else {
     event.target.value = getArmorMultString(row)
   }
 }
 
+// ============================================================
+// ⭐ 穿透：失焦处理（带 0~1 校验）
+// ============================================================
+
 const onPenChange = (row, event) => {
   const str = event.target.value
-  const values = parseNumberArray(str, 0)
-  if (values && values.every(v => !isNaN(v) && v >= 0 && v <= 1)) {
-    const dm = dataStore.getDataManager()
-    dm.updateBullet(row.id, { pen: values })
+  const values = parseNumberArray(str, 0, 6, 6)
+
+  if (!values || !values.every(v => !isNaN(v) && v >= 0)) {
+    event.target.value = getPenString(row)
+    return
+  }
+
+  // ⭐ 穿透值 0~1 校验
+  const invalid = values.find(v => v > 1)
+  if (invalid !== undefined) {
+    alert(`⚠️ 穿透值不能超过 1（检测到 ${invalid}）`)
+    event.target.value = getPenString(row)
+    return
+  }
+
+  const dm = dataStore.getDataManager()
+  const ok = dm.updateBullet(row.id, { pen: values })
+  if (ok) {
+    dataStore.refreshBullets()
+    emit('update')
+    event.target.value = getPenString(row)
+  } else {
+    event.target.value = getPenString(row)
+  }
+}
+
+// ============================================================
+// ⭐ 已有子弹的其他编辑
+// ============================================================
+
+/**
+ * 子弹名称变更
+ */
+const onNameChange = (row, event) => {
+  const value = String(event.target.value || '').trim()
+  const finalName = value || '未命名'
+
+  if (finalName === row.name) return
+
+  const dm = dataStore.getDataManager()
+  const ok = dm.updateBullet(row.id, { name: finalName })
+  if (ok) {
     dataStore.refreshBullets()
     emit('update')
   } else {
-    event.target.value = getPenString(row)
+    event.target.value = row.name
+  }
+}
+
+/**
+ * ⭐ 等级变更
+ */
+const onLevelChange = (row, event) => {
+  const value = event.target.value
+  const finalLevel = /^\d+$/.test(value) ? parseInt(value, 10) : value
+
+  if (finalLevel === row.level) return
+
+  if (row._isNewRow) {
+    row.level = finalLevel
+    return
+  }
+
+  const dm = dataStore.getDataManager()
+  const ok = dm.updateBullet(row.id, { level: finalLevel })
+  if (ok) {
+    dataStore.refreshBullets()
+    emit('update')
+    console.log(`✅ 子弹等级已更新: ${row.name || row.caliber} Lv.${finalLevel}`)
+  } else {
+    event.target.value = row.level
+  }
+}
+
+/**
+ * ⭐ 设置默认子弹
+ */
+const onDefaultChange = (row) => {
+  if (row._isNewRow) return
+  if (row.isDefault === true) return
+
+  const dm = dataStore.getDataManager()
+  const ok = dm.setDefaultBullet(row.id)
+  if (ok) {
+    dataStore.refreshBullets()
+    emit('update')
+    console.log(`⭐ 已设置默认: ${row.id}`)
   }
 }
 
@@ -458,8 +686,7 @@ const onPriceChange = (row, event) => {
 // ============================================================
 
 const addBullet = () => {
-  newRowArmorMultDisplay.value = ''
-  newRowPenDisplay.value = ''
+  resetNewRowState()
   emit('add-bullet', -1, null)
 }
 
@@ -470,40 +697,61 @@ const confirmAdd = (row) => {
     alert('⚠️ 请输入子弹口径')
     return
   }
-  if (!row.level) {
+  if (row.level === undefined || row.level === null || row.level === '') {
     alert('⚠️ 请选择子弹等级')
     return
   }
 
+  const caliber = String(row.caliber).trim()
+  const name = String(row.name || '').trim() || '未命名'
+  const level = row.level
+
+  const dm = dataStore.getDataManager()
+  const bulletId = dm.getNextBulletId(caliber)
+
+  // ⭐ 解析部位肉伤
+  const partMultValues = parseNumberArray(newRowPartMultStr.value, 1, 4, 4)
+    || [1, 1, 1, 1]
+
+  // ⭐ 解析护甲衰减
+  const armorValues = parseNumberArray(newRowArmorMultStr.value, 1, 6, 6)
+    || [1, 1, 1, 1, 1, 0.6]
+
+  // ⭐ 解析穿透
+  const penValues = parseNumberArray(newRowPenStr.value, 0, 6, 6)
+    || [1, 1, 0.75, 0.5, 0, 0]
+
   const bulletData = {
-    id: `${row.caliber}_${row.level}`,
-    caliber: String(row.caliber).trim(),
-    level: row.level,
-    base: row.base || 1.0,
+    id: bulletId,
+    name: name,
+    caliber: caliber,
+    level: level,
+    partMult: {
+      head: partMultValues[0],
+      chest: partMultValues[1],
+      stomach: partMultValues[2],
+      limbs: partMultValues[3]
+    },
     price: row.price || 0,
     armorData: {}
   }
 
-  const armorValues = row._armorMultValues
-    || parseNumberArray(newRowArmorMultDisplay.value, 1.0)
-    || [1.0, 1.0, 1.0, 1.0, 1.0, 0.6]
-
-  const penValues = row._penValues
-    || parseNumberArray(newRowPenDisplay.value, 0)
-    || [1.0, 1.0, 0.75, 0.5, 0, 0]
-
   for (let i = 1; i <= 6; i++) {
     bulletData.armorData[i] = {
-      armorMult: armorValues[i - 1] ?? 1.0,
+      armorMult: armorValues[i - 1] ?? 1,
       pen: penValues[i - 1] ?? 0
     }
   }
 
+  console.log(`✅ 新增子弹 ID: ${bulletId}`)
   emit('add-bullet', null, bulletData)
+
+  resetNewRowState()
 }
 
 const cancelAdd = (row) => {
   emit('delete-bullet', null, null, true)
+  resetNewRowState()
 }
 
 // ============================================================
@@ -511,7 +759,10 @@ const cancelAdd = (row) => {
 // ============================================================
 
 const deleteRow = (row) => {
-  if (!confirm(`确定要删除子弹 "${row.caliber} Lv.${row.level}" 吗？`)) return
+  const label = row.name
+    ? `${row.name} (${row.caliber} Lv.${row.level})`
+    : `${row.caliber} Lv.${row.level}`
+  if (!confirm(`确定要删除子弹 "${label}" 吗？`)) return
   emit('delete-bullet', null, row.id, false)
 }
 </script>
@@ -559,12 +810,13 @@ const deleteRow = (row) => {
   border-radius: var(--radius-md);
 }
 
-table {
+.bullet-table {
   width: 100%;
+  min-width: 1025px;
   border-collapse: collapse;
+  table-layout: fixed;
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
-  min-width: 800px;
 }
 
 thead th {
@@ -572,13 +824,14 @@ thead th {
   top: 0;
   z-index: 10;
   background: #f0fff4;
-  padding: 6px 6px;
+  padding: 6px 4px;
   border: 1px solid #e0e0e0;
   text-align: center;
   white-space: nowrap;
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-sm);
-  height: 34px;
+  height: 44px;
+  overflow: hidden;
 }
 
 tbody td {
@@ -587,7 +840,7 @@ tbody td {
   text-align: center;
   vertical-align: middle;
   font-size: var(--font-size-sm);
-  height: 32px;
+  height: 36px;
   overflow: hidden;
 }
 
@@ -602,6 +855,15 @@ tbody tr.new-row td {
 
 .readonly-cell {
   padding: 4px 6px;
+}
+
+.readonly-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: #555;
 }
 
 .control-cell {
@@ -639,8 +901,8 @@ tbody tr.new-row .sticky-action {
 .control-cell .cell-input {
   width: 100%;
   height: 100%;
-  min-height: 30px;
-  padding: 4px 8px;
+  min-height: 34px;
+  padding: 4px 6px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -662,10 +924,10 @@ tbody tr.new-row .sticky-action {
   background: rgba(74, 108, 247, 0.06);
 }
 
-/* 护甲衰减/穿透列使用等宽字体 */
-.armor-cell {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
+/* ⭐ 等宽字体（部位肉伤 / 护甲衰减 / 穿透） */
+.mono-input {
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
   letter-spacing: -0.3px;
 }
 
@@ -690,19 +952,114 @@ tbody tr.new-row .sticky-action {
   outline: none;
 }
 
-/* ============ 特殊等级标签 ============ */
-.special-badge {
-  display: inline-block;
-  padding: 1px 8px;
-  border-radius: 8px;
-  font-family: var(--font-family);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  background: var(--color-warning);
-  color: #fff;
+/* ============ 多列表头（部位肉伤 / 护甲衰减 / 穿透 共用） ============ */
+.multi-col-header {
+  padding: 4px 4px 5px;
+  vertical-align: middle;
 }
 
-/* ⭐ 卡片模式：新增行的标题输入框 */
+.multi-col-header .header-main {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.multi-col-header .header-sub {
+  font-size: 10px;
+  font-weight: 400;
+  color: #888;
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+/* ============ ⭐ 默认列 ============ */
+.default-cell {
+  padding: 0;
+}
+
+.default-radio-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 34px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.default-radio-wrap input[type="radio"] {
+  display: none;
+}
+
+.default-star {
+  font-size: 14px;
+  color: #ccc;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+.default-star.active {
+  color: #ffc107;
+  text-shadow: 0 0 4px rgba(255, 193, 7, 0.5);
+}
+
+.default-radio-wrap:hover .default-star {
+  transform: scale(1.2);
+}
+
+.default-placeholder {
+  color: #ccc;
+  font-size: 12px;
+}
+
+/* ============ ⭐ 等级下拉框（桌面） ============ */
+.level-select {
+  width: 100%;
+  height: 100%;
+  min-height: 34px;
+  padding: 2px 16px 2px 4px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-align: center;
+  text-align-last: center;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23999' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 3px center;
+}
+
+.level-select:hover:not(:focus) {
+  background-color: rgba(74, 108, 247, 0.06);
+}
+
+.level-select:focus {
+  background-color: #fff;
+  box-shadow: inset 0 0 0 2px var(--color-primary);
+}
+
+/* 数字等级配色 */
+.level-select.level-1 { background-color: #ffffff; color: #333; }
+.level-select.level-2 { background-color: #e8f5e9; color: #2e7d32; }
+.level-select.level-3 { background-color: #e3f2fd; color: #1565c0; }
+.level-select.level-4 { background-color: #ede7f6; color: #5e35b1; }
+.level-select.level-5 { background-color: #fff8e1; color: #e65100; }
+.level-select.level-6 { background-color: #ffebee; color: #c62828; }
+
+/* ============ 卡片模式 ============ */
+
 .card-title-input {
   flex: 1;
   min-width: 0;
@@ -720,7 +1077,33 @@ tbody tr.new-row .sticky-action {
   border-color: var(--color-primary);
 }
 
-/* ⭐ 卡片模式：新增行的等级下拉 */
+.card-caliber-input {
+  flex-shrink: 0;
+  width: 100px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-size: 12px;
+  background: var(--color-bg-white);
+  color: var(--color-text);
+  outline: none;
+}
+
+.card-caliber-input:focus {
+  border-color: var(--color-primary);
+}
+
+.card-caliber-tag {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #666;
+  background: #eef0f5;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
 .card-level-select {
   flex-shrink: 0;
   padding: 4px 8px;
@@ -738,16 +1121,94 @@ tbody tr.new-row .sticky-action {
   border-color: var(--color-primary);
 }
 
-/* ⭐ 卡片模式：等宽输入框 */
+.level-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 8px;
+  font-family: var(--font-family);
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.level-badge.level-1 { background: #ffffff; color: #333; border: 1px solid #e0e0e0; }
+.level-badge.level-2 { background: #e8f5e9; color: #2e7d32; }
+.level-badge.level-3 { background: #e3f2fd; color: #1565c0; }
+.level-badge.level-4 { background: #ede7f6; color: #5e35b1; }
+.level-badge.level-5 { background: #fff8e1; color: #e65100; }
+.level-badge.level-6 { background: #ffebee; color: #c62828; }
+
+.default-toggle-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #f5f5f5;
+  font-size: 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  margin-left: 4px;
+}
+
+.default-toggle-btn.active {
+  background: #fff8e1;
+  color: #ffc107;
+}
+
+.default-toggle-btn:hover {
+  background: #fff3e0;
+}
+
+.level-select-mobile {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--color-bg-light);
+  color: var(--color-text);
+  outline: none;
+  cursor: pointer;
+}
+
+.level-select-mobile:focus {
+  border-color: var(--color-primary);
+  background: #fff;
+}
+
+.level-select-mobile.level-1 { background: #ffffff; color: #333; }
+.level-select-mobile.level-2 { background: #e8f5e9; color: #2e7d32; }
+.level-select-mobile.level-3 { background: #e3f2fd; color: #1565c0; }
+.level-select-mobile.level-4 { background: #ede7f6; color: #5e35b1; }
+.level-select-mobile.level-5 { background: #fff8e1; color: #e65100; }
+.level-select-mobile.level-6 { background: #ffebee; color: #c62828; }
+
+/* 卡片模式：等宽输入框 */
 .card-field.editable input.mono {
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: -0.3px;
 }
 
+/* 卡片模式：字段提示 */
+.field-hint {
+  font-size: 10px;
+  color: #aaa;
+  flex-shrink: 0;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
 /* ============ 移动端适配 ============ */
 @media (max-width: 768px) {
-  /* ⭐ 工具栏：压缩 padding 和 gap */
   .table-controls {
     gap: 3px;
     padding: 3px 6px;
