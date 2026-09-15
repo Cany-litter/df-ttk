@@ -227,7 +227,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, inject } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 
 const props = defineProps({
@@ -244,15 +244,17 @@ const props = defineProps({
 
 const emit = defineEmits(['update'])
 
+// ⭐ 注入通用弹窗
+const showConfirm = inject('showConfirm', null)
+const showAlert = inject('showAlert', null)
+
 // ---------- 计算属性 ----------
 const typeLabel = computed(() => props.type === 'armor' ? '护甲' : '头盔')
 const valueLabel = computed(() => props.type === 'armor' ? '护甲值' : '头盔值')
 const typeUnit = computed(() => props.type === 'armor' ? '件护甲' : '顶头盔')
 
-// ⭐ 是否显示"防护部位"列（仅护甲显示）
 const showParts = computed(() => props.type === 'armor')
 
-// ⭐ 防护部位选项
 const partsOptions = ['胸部', '胸腹', '胸腹肩']
 
 // ---------- 移动端判断 ----------
@@ -285,9 +287,6 @@ const getPriceInW = (price) => {
 // 事件处理
 // ============================================================
 
-/**
- * 名称变更
- */
 const onNameChange = (row, event) => {
   const value = event.target.value.trim()
   if (!value) {
@@ -303,9 +302,6 @@ const onNameChange = (row, event) => {
   }
 }
 
-/**
- * 等级变更
- */
 const onLevelChange = (row, event) => {
   const value = parseInt(event.target.value, 10)
   if (isNaN(value) || value < 1 || value > 6) {
@@ -314,13 +310,11 @@ const onLevelChange = (row, event) => {
   }
   if (value === row.level) return
 
-  // 新增行：只改本地
   if (row._isNewRow) {
     row.level = value
     return
   }
 
-  // 已有行：写库
   const ok = dataStore.updateArmor(row.id, { level: value })
   if (ok) {
     dataStore.refreshArmors()
@@ -328,21 +322,16 @@ const onLevelChange = (row, event) => {
   }
 }
 
-/**
- * ⭐ 防护部位变更
- */
 const onPartsChange = (row, event) => {
   const value = event.target.value
   if (!partsOptions.includes(value)) return
   if (value === row.parts) return
 
-  // 新增行：只改本地
   if (row._isNewRow) {
     row.parts = value
     return
   }
 
-  // 已有行：写库
   const ok = dataStore.updateArmor(row.id, { parts: value })
   if (ok) {
     dataStore.refreshArmors()
@@ -350,9 +339,6 @@ const onPartsChange = (row, event) => {
   }
 }
 
-/**
- * 值变更（护甲值/头盔值）
- */
 const onValueChange = (row, event) => {
   const value = parseFloat(event.target.value)
   if (isNaN(value) || value < 0) {
@@ -368,9 +354,6 @@ const onValueChange = (row, event) => {
   }
 }
 
-/**
- * 价格变更（输入 W 单位，写回实际值）
- */
 const onPriceChange = (row, event) => {
   const valueInW = parseFloat(event.target.value)
   if (isNaN(valueInW) || valueInW < 0) {
@@ -388,12 +371,17 @@ const onPriceChange = (row, event) => {
 }
 
 // ============================================================
-// 新增
+// 新增（改用弹窗）
 // ============================================================
 
-const addRow = () => {
+const addRow = async () => {
   if (isAdding.value) {
-    alert('请先完成当前新增')
+    const msg = '请先完成当前新增'
+    if (showAlert) {
+      await showAlert(msg)
+    } else {
+      alert(msg)
+    }
     return
   }
 
@@ -410,7 +398,6 @@ const addRow = () => {
     _isNewRow: true
   }
 
-  // ⭐ 仅护甲有 parts 字段
   if (props.type === 'armor') {
     tempArmor.parts = '胸腹'
   }
@@ -423,9 +410,14 @@ const addRow = () => {
   isAdding.value = true
 }
 
-const confirmAdd = (row) => {
+const confirmAdd = async (row) => {
   if (!row.name || row.name.trim() === '') {
-    alert(`⚠️ 请输入${typeLabel.value}名称`)
+    const msg = `⚠️ 请输入${typeLabel.value}名称`
+    if (showAlert) {
+      await showAlert(msg)
+    } else {
+      alert(msg)
+    }
     return
   }
 
@@ -444,7 +436,6 @@ const confirmAdd = (row) => {
     price: Math.round((row.priceInW || 0) * 10000)
   }
 
-  // ⭐ 仅护甲有 parts 字段
   if (props.type === 'armor') {
     newArmor.parts = row.parts || '胸腹'
   }
@@ -468,10 +459,23 @@ const cancelAdd = (row) => {
 }
 
 // ============================================================
-// 删除
+// ⭐ 删除（改用弹窗）
 // ============================================================
-const deleteRow = (row) => {
-  if (!confirm(`确定删除「${row.name}」？`)) return
+const deleteRow = async (row) => {
+  let confirmed = true
+  if (showConfirm) {
+    const result = await showConfirm({
+      title: `删除${typeLabel.value}`,
+      message: `确定删除「${row.name}」？`,
+      confirmText: '删除',
+      confirmType: 'danger'
+    })
+    confirmed = result.confirmed
+  } else {
+    confirmed = confirm(`确定删除「${row.name}」？`)
+  }
+
+  if (!confirmed) return
 
   const ok = dataStore.removeArmor(row.id)
   if (ok) {
@@ -693,7 +697,6 @@ tbody tr.new-row .sticky-action {
 
 /* ============================================================
    等级下拉框（彩色背景）
-   1白 / 2绿 / 3蓝 / 4紫 / 5金 / 6红
    ============================================================ */
 .level-select {
   width: 100%;
@@ -723,7 +726,6 @@ tbody tr.new-row .sticky-action {
   box-shadow: inset 0 0 0 2px var(--color-primary, #4a6cf7);
 }
 
-/* 等级配色 */
 .level-select.lv1 {
   background-color: #ffffff;
   color: #333;
@@ -758,7 +760,7 @@ tbody tr.new-row .sticky-action {
 .level-select.lv6:hover:not(:focus) { background-color: #ffd6da; }
 
 /* ============================================================
-   ⭐ 防护部位下拉框（朴素样式）
+   ⭐ 防护部位下拉框
    ============================================================ */
 .parts-select {
   width: 100%;
@@ -791,7 +793,6 @@ tbody tr.new-row .sticky-action {
   background-color: rgba(74, 108, 247, 0.06);
 }
 
-/* 值单元格 */
 .value-cell {
   font-weight: 600;
   color: var(--color-primary, #4a6cf7);
@@ -897,7 +898,6 @@ tbody tr.new-row .sticky-action {
   border-color: var(--color-primary, #4a6cf7);
 }
 
-/* 移动端等级下拉框 */
 .card-level-select {
   width: auto;
   min-width: 60px;
@@ -909,7 +909,6 @@ tbody tr.new-row .sticky-action {
   flex-shrink: 0;
 }
 
-/* 移动端防护部位下拉框 */
 .card-parts-select {
   flex: 1;
   min-width: 0;

@@ -12,15 +12,15 @@
     <div v-if="!isMobile" class="table-scroll">
       <table class="bullet-table">
         <colgroup>
-          <col style="width: 50px;" />   <!-- 默认 -->
-          <col style="width: 100px;" />  <!-- 名称 -->
-          <col style="width: 110px;" />  <!-- 口径 -->
-          <col style="width: 65px;" />   <!-- 等级 -->
-          <col style="width: 180px;" />  <!-- 部位肉伤 -->
-          <col style="width: 180px;" />  <!-- 护甲衰减 -->
-          <col style="width: 180px;" />  <!-- 穿透 -->
-          <col style="width: 80px;" />   <!-- 价格 -->
-          <col style="width: 80px;" />   <!-- 操作 -->
+          <col style="width: 50px;" />
+          <col style="width: 100px;" />
+          <col style="width: 110px;" />
+          <col style="width: 65px;" />
+          <col style="width: 180px;" />
+          <col style="width: 180px;" />
+          <col style="width: 180px;" />
+          <col style="width: 80px;" />
+          <col style="width: 80px;" />
         </colgroup>
         <thead>
           <tr>
@@ -365,7 +365,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, inject } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 
 const props = defineProps({
@@ -385,9 +385,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update', 'add-bullet', 'delete-bullet'])
 
+// ⭐ 注入通用弹窗
+const showConfirm = inject('showConfirm', null)
+const showAlert = inject('showAlert', null)
+
 // ⭐ 部位定义
 const PART_KEYS = ['head', 'chest', 'stomach', 'limbs']
-const PART_LABELS = { head: '头', chest: '胸', stomach: '腹', limbs: '肢' }
 
 // ⭐ 是否为移动端
 const isMobile = ref(false)
@@ -416,7 +419,7 @@ const resetNewRowState = () => {
   newRowPenStr.value = '1,1,0.75,0.5,0,0'
 }
 
-// ---------- 调试：监听 data 变化 ----------
+// ---------- 调试 ----------
 watch(() => props.data, (newData, oldData) => {
   if (newData && newData.length > 0) {
     const newRows = newData.filter(r => r._isNewRow)
@@ -428,24 +431,12 @@ watch(() => props.data, (newData, oldData) => {
 // 辅助方法
 // ============================================================
 
-/**
- * ⭐ 等级颜色 class（固定 1-6）
- */
 const getLevelClass = (level) => {
   const n = Number(level)
   if (n >= 1 && n <= 6) return `level-${n}`
   return ''
 }
 
-/**
- * ⭐ 通用：把 "1,1,1,1" 解析为数字数组
- * 
- * @param {string} str
- * @param {number} defaultValue - 解析失败时的默认值
- * @param {number} minLength - 最少长度（不足补默认）
- * @param {number} maxLength - 最多长度（超出截断）
- * @returns {number[]|null} 解析成功返回数组，失败返回 null
- */
 const parseNumberArray = (str, defaultValue, minLength, maxLength = minLength) => {
   if (!str || str.trim() === '') return null
 
@@ -454,32 +445,14 @@ const parseNumberArray = (str, defaultValue, minLength, maxLength = minLength) =
     return isNaN(num) ? defaultValue : num
   })
 
-  // 不足补默认
   while (values.length < minLength) values.push(defaultValue)
-
-  // 超出截断
   return values.slice(0, maxLength)
-}
-
-/**
- * ⭐ 通用：把数组格式化为 "1,1,1,1"
- */
-const formatNumberArray = (arr, fallback) => {
-  if (!Array.isArray(arr)) return fallback
-  return arr.map(v => {
-    const n = typeof v === 'number' && isFinite(v) ? v : 0
-    // 去掉末尾多余的 0，但保留小数
-    return String(n)
-  }).join(',')
 }
 
 // ============================================================
 // 显示：已有行的字符串
 // ============================================================
 
-/**
- * 部位肉伤显示：头,胸,腹,肢
- */
 const getPartMultString = (row) => {
   if (row._isNewRow) return newRowPartMultStr.value
   const pm = row.partMult || { head: 1, chest: 1, stomach: 1, limbs: 1 }
@@ -490,9 +463,6 @@ const getPartMultString = (row) => {
   return values.join(',')
 }
 
-/**
- * 护甲衰减显示：1,2,3,4,5,6
- */
 const getArmorMultString = (row) => {
   if (row._isNewRow) return newRowArmorMultStr.value
   if (!row.armorData) return '1,1,1,1,1,0.6'
@@ -504,9 +474,6 @@ const getArmorMultString = (row) => {
   return values.join(',')
 }
 
-/**
- * 穿透显示：1,2,3,4,5,6
- */
 const getPenString = (row) => {
   if (row._isNewRow) return newRowPenStr.value
   if (!row.armorData) return '1,1,0.75,0.5,0,0'
@@ -524,10 +491,9 @@ const getPenString = (row) => {
 
 const onPartMultChange = (row, event) => {
   const str = event.target.value
-  const values = parseNumberArray(str, 1, 4, 4)   // 头,胸,腹,肢
+  const values = parseNumberArray(str, 1, 4, 4)
 
   if (!values || !values.every(v => !isNaN(v) && v >= 0)) {
-    // 解析失败，还原
     event.target.value = getPartMultString(row)
     return
   }
@@ -544,7 +510,6 @@ const onPartMultChange = (row, event) => {
   if (ok) {
     dataStore.refreshBullets()
     emit('update')
-    // 回写规范化的字符串
     event.target.value = getPartMultString(row)
   } else {
     event.target.value = getPartMultString(row)
@@ -579,7 +544,7 @@ const onArmorMultChange = (row, event) => {
 // ⭐ 穿透：失焦处理（带 0~1 校验）
 // ============================================================
 
-const onPenChange = (row, event) => {
+const onPenChange = async (row, event) => {
   const str = event.target.value
   const values = parseNumberArray(str, 0, 6, 6)
 
@@ -588,10 +553,15 @@ const onPenChange = (row, event) => {
     return
   }
 
-  // ⭐ 穿透值 0~1 校验
+  // ⭐ 穿透值 0~1 校验（改用弹窗）
   const invalid = values.find(v => v > 1)
   if (invalid !== undefined) {
-    alert(`⚠️ 穿透值不能超过 1（检测到 ${invalid}）`)
+    const msg = `⚠️ 穿透值不能超过 1（检测到 ${invalid}）`
+    if (showAlert) {
+      await showAlert(msg)
+    } else {
+      alert(msg)
+    }
     event.target.value = getPenString(row)
     return
   }
@@ -611,9 +581,6 @@ const onPenChange = (row, event) => {
 // ⭐ 已有子弹的其他编辑
 // ============================================================
 
-/**
- * 子弹名称变更
- */
 const onNameChange = (row, event) => {
   const value = String(event.target.value || '').trim()
   const finalName = value || '未命名'
@@ -630,9 +597,6 @@ const onNameChange = (row, event) => {
   }
 }
 
-/**
- * ⭐ 等级变更
- */
 const onLevelChange = (row, event) => {
   const value = event.target.value
   const finalLevel = /^\d+$/.test(value) ? parseInt(value, 10) : value
@@ -655,9 +619,6 @@ const onLevelChange = (row, event) => {
   }
 }
 
-/**
- * ⭐ 设置默认子弹
- */
 const onDefaultChange = (row) => {
   if (row._isNewRow) return
   if (row.isDefault === true) return
@@ -690,15 +651,25 @@ const addBullet = () => {
   emit('add-bullet', -1, null)
 }
 
-const confirmAdd = (row) => {
+const confirmAdd = async (row) => {
   if (!row) return
 
   if (!row.caliber || String(row.caliber).trim() === '') {
-    alert('⚠️ 请输入子弹口径')
+    const msg = '⚠️ 请输入子弹口径'
+    if (showAlert) {
+      await showAlert(msg)
+    } else {
+      alert(msg)
+    }
     return
   }
   if (row.level === undefined || row.level === null || row.level === '') {
-    alert('⚠️ 请选择子弹等级')
+    const msg = '⚠️ 请选择子弹等级'
+    if (showAlert) {
+      await showAlert(msg)
+    } else {
+      alert(msg)
+    }
     return
   }
 
@@ -709,15 +680,12 @@ const confirmAdd = (row) => {
   const dm = dataStore.getDataManager()
   const bulletId = dm.getNextBulletId(caliber)
 
-  // ⭐ 解析部位肉伤
   const partMultValues = parseNumberArray(newRowPartMultStr.value, 1, 4, 4)
     || [1, 1, 1, 1]
 
-  // ⭐ 解析护甲衰减
   const armorValues = parseNumberArray(newRowArmorMultStr.value, 1, 6, 6)
     || [1, 1, 1, 1, 1, 0.6]
 
-  // ⭐ 解析穿透
   const penValues = parseNumberArray(newRowPenStr.value, 0, 6, 6)
     || [1, 1, 0.75, 0.5, 0, 0]
 
@@ -755,14 +723,28 @@ const cancelAdd = (row) => {
 }
 
 // ============================================================
-// 删除已有子弹
+// ⭐ 删除已有子弹（改用弹窗）
 // ============================================================
 
-const deleteRow = (row) => {
+const deleteRow = async (row) => {
   const label = row.name
     ? `${row.name} (${row.caliber} Lv.${row.level})`
     : `${row.caliber} Lv.${row.level}`
-  if (!confirm(`确定要删除子弹 "${label}" 吗？`)) return
+
+  let confirmed = true
+  if (showConfirm) {
+    const result = await showConfirm({
+      title: '删除子弹',
+      message: `确定要删除子弹 "${label}" 吗？`,
+      confirmText: '删除',
+      confirmType: 'danger'
+    })
+    confirmed = result.confirmed
+  } else {
+    confirmed = confirm(`确定要删除子弹 "${label}" 吗？`)
+  }
+
+  if (!confirmed) return
   emit('delete-bullet', null, row.id, false)
 }
 </script>
@@ -924,7 +906,6 @@ tbody tr.new-row .sticky-action {
   background: rgba(74, 108, 247, 0.06);
 }
 
-/* ⭐ 等宽字体（部位肉伤 / 护甲衰减 / 穿透） */
 .mono-input {
   font-family: var(--font-mono) !important;
   font-size: 11px !important;
@@ -952,7 +933,7 @@ tbody tr.new-row .sticky-action {
   outline: none;
 }
 
-/* ============ 多列表头（部位肉伤 / 护甲衰减 / 穿透 共用） ============ */
+/* ============ 多列表头 ============ */
 .multi-col-header {
   padding: 4px 4px 5px;
   vertical-align: middle;
@@ -1050,7 +1031,6 @@ tbody tr.new-row .sticky-action {
   box-shadow: inset 0 0 0 2px var(--color-primary);
 }
 
-/* 数字等级配色 */
 .level-select.level-1 { background-color: #ffffff; color: #333; }
 .level-select.level-2 { background-color: #e8f5e9; color: #2e7d32; }
 .level-select.level-3 { background-color: #e3f2fd; color: #1565c0; }
@@ -1191,14 +1171,12 @@ tbody tr.new-row .sticky-action {
 .level-select-mobile.level-5 { background: #fff8e1; color: #e65100; }
 .level-select-mobile.level-6 { background: #ffebee; color: #c62828; }
 
-/* 卡片模式：等宽输入框 */
 .card-field.editable input.mono {
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: -0.3px;
 }
 
-/* 卡片模式：字段提示 */
 .field-hint {
   font-size: 10px;
   color: #aaa;

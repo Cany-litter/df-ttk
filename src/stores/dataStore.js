@@ -10,7 +10,12 @@ const state = reactive({
   prices: [],
   armors: [],       // ⭐ 新增：护甲/头盔数据
   isLoaded: false,
-  loadingError: null
+  loadingError: null,
+
+  // ⭐ 修改追踪版本号
+  // 每次 markWeaponModified / clearWeaponModified 时 +1，
+  // 用于让组件感知"脏标记"变化（因为 modifiedWeaponIds 是 Set，非响应式）
+  modifiedVersion: 0
 })
 
 export const dataStore = {
@@ -211,13 +216,30 @@ export const dataStore = {
 
   // ============================================================
   // 修改追踪
+  // ⭐ 每次 mark / clear 后 modifiedVersion 自增，
+  //    让依赖 state.modifiedVersion 的组件重新渲染
   // ============================================================
+
   markWeaponModified(weaponId) {
     dm.markWeaponModified(weaponId)
+    state.modifiedVersion++
   },
 
   clearWeaponModified(weaponId) {
     dm.clearWeaponModified(weaponId)
+    state.modifiedVersion++
+  },
+
+  /**
+   * ⭐ 判断某把武器是否被修改（脏标记）
+   * @param {number|string} weaponId
+   * @returns {boolean}
+   */
+  isWeaponModified(weaponId) {
+    void state.modifiedVersion   // 依赖收集，让组件能响应
+    const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId
+    if (isNaN(id)) return false
+    return dm.isWeaponModified(id)
   },
 
   // ============================================================

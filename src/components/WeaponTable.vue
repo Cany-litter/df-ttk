@@ -44,10 +44,19 @@
             {{ isCollapsed(row.id) ? '▶' : '▼' }}
           </button>
 
-          <div class="wh-identity">
+          <!-- ⭐ 名称（独立列） -->
+          <div class="wh-name">
             <span class="weapon-name" :title="row.name">{{ row.name }}</span>
+          </div>
+
+          <!-- ⭐ 类型（独立列） -->
+          <div class="wh-type">
             <span class="weapon-type">{{ row.type }}</span>
-            <span class="weapon-caliber">{{ row.allowedBullet || '-' }}</span>
+          </div>
+
+          <!-- ⭐ 口径（独立列） -->
+          <div class="wh-caliber">
+            <span class="weapon-caliber" :title="row.allowedBullet || '-'">{{ row.allowedBullet || '-' }}</span>
           </div>
 
           <div class="wh-attach">
@@ -85,30 +94,24 @@
             <span class="val">{{ Math.round((row.activeConfig?.precision ?? 0.09) * 100) }}%</span>
           </div>
 
-          <div class="wh-attr">
+          <!-- ⭐ 属性列：只显示当前值，tooltip 显示原值 → 当前值 -->
+          <div class="wh-attr" :title="getAttrTooltip('射速', row.rof, Math.round(row.rofCurrent))">
             <span class="k">射速</span>
-            <span class="v orig">{{ row.rof }}</span>
-            <span class="arrow">→</span>
             <span class="v">{{ Math.round(row.rofCurrent) }}</span>
           </div>
-          <div class="wh-attr">
+          <div class="wh-attr" :title="getAttrTooltip('初速', row.velocity, row.velocityCurrent)">
             <span class="k">初速</span>
-            <span class="v orig">{{ row.velocity }}</span>
-            <span class="arrow">→</span>
             <span class="v">{{ row.velocityCurrent }}</span>
           </div>
-          <div class="wh-attr">
+          <div class="wh-attr" :title="getAttrTooltip('肉伤', row.flesh, row.fleshCurrent)">
             <span class="k">肉伤</span>
-            <span class="v orig">{{ row.flesh }}</span>
-            <span class="arrow">→</span>
             <span class="v flesh">{{ row.fleshCurrent }}</span>
           </div>
-          <div class="wh-attr">
+          <div class="wh-attr" :title="getAttrTooltip('甲伤', row.armor, row.armorCurrent)">
             <span class="k">甲伤</span>
-            <span class="v orig">{{ row.armor }}</span>
-            <span class="arrow">→</span>
             <span class="v armor">{{ row.armorCurrent }}</span>
           </div>
+
           <div class="wh-attr wh-attr-wide">
             <span class="k">射程</span>
             <span class="v">{{ row.rangesCurrent.map(fmtDist).join('/') }}</span>
@@ -120,10 +123,10 @@
           <div class="wh-attr wh-attr-tags">
             <span class="k">倍率</span>
             <span class="mult-tags">
-              <span class="mult-tag head">{{ row.multCurrent.head }}</span>
-              <span class="mult-tag chest">{{ row.multCurrent.chest }}</span>
-              <span class="mult-tag stomach">{{ row.multCurrent.stomach }}</span>
-              <span class="mult-tag limbs">{{ row.multCurrent.limbs }}</span>
+              <span class="mult-tag head">{{ fmtMult(row.multCurrent.head) }}</span>
+              <span class="mult-tag chest">{{ fmtMult(row.multCurrent.chest) }}</span>
+              <span class="mult-tag stomach">{{ fmtMult(row.multCurrent.stomach) }}</span>
+              <span class="mult-tag limbs">{{ fmtMult(row.multCurrent.limbs) }}</span>
             </span>
           </div>
           <div class="wh-attr wh-attr-tags">
@@ -206,6 +209,23 @@
           </div>
 
           <div class="head-actions">
+            <!-- ⭐ 更新 TTK 按钮（互斥禁用） -->
+            <button
+              class="head-btn update"
+              :class="{
+                'dirty': isWeaponDirty(row.id),
+                'updating': isWeaponUpdating(row.id)
+              }"
+              :disabled="isWeaponUpdating(row.id) || isGlobalCalculating"
+              :title="getUpdateButtonTitle(row.id)"
+              @click="updateWeaponTTK(index)"
+            >
+              <template v-if="isWeaponUpdating(row.id)">⏳ 更新中…</template>
+              <template v-else>
+                🔄 更新 TTK<span v-if="isWeaponDirty(row.id)" class="dirty-dot">●</span>
+              </template>
+            </button>
+
             <button class="head-btn add" @click="addConfig(row)">➕ 新增配置 ({{ row._enabledCount }}/{{ row._configCount }})</button>
             <button class="head-btn base" @click="editBase(index)">编辑属性</button>
             <button class="head-btn barrel" @click="editBarrel(index)">编辑枪管</button>
@@ -506,15 +526,11 @@
             <div class="card-row">
               <span class="row-label">射速</span>
               <div class="row-value">
-                <span class="v-pair">
-                  <span class="v orig">{{ row.rof }}</span>
-                  <span class="arrow">→</span>
+                <span class="v-pair" :title="getAttrTooltip('射速', row.rof, Math.round(row.rofCurrent))">
                   <span class="v">{{ Math.round(row.rofCurrent) }}</span>
                 </span>
-                <span class="v-pair">
+                <span class="v-pair" :title="getAttrTooltip('初速', row.velocity, row.velocityCurrent)">
                   <span class="k">初速</span>
-                  <span class="v orig">{{ row.velocity }}</span>
-                  <span class="arrow">→</span>
                   <span class="v">{{ row.velocityCurrent }}</span>
                 </span>
               </div>
@@ -523,11 +539,11 @@
             <div class="card-row">
               <span class="row-label">伤/程</span>
               <div class="row-value">
-                <span class="v-pair">
+                <span class="v-pair" :title="getAttrTooltip('肉伤', row.flesh, row.fleshCurrent)">
                   <span class="k">肉</span>
                   <span class="v flesh">{{ row.fleshCurrent }}</span>
                 </span>
-                <span class="v-pair">
+                <span class="v-pair" :title="getAttrTooltip('甲伤', row.armor, row.armorCurrent)">
                   <span class="k">甲</span>
                   <span class="v armor">{{ row.armorCurrent }}</span>
                 </span>
@@ -542,10 +558,10 @@
               <span class="row-label">倍率</span>
               <div class="row-value">
                 <span class="mult-tags">
-                  <span class="mult-tag head">{{ row.multCurrent.head }}</span>
-                  <span class="mult-tag chest">{{ row.multCurrent.chest }}</span>
-                  <span class="mult-tag stomach">{{ row.multCurrent.stomach }}</span>
-                  <span class="mult-tag limbs">{{ row.multCurrent.limbs }}</span>
+                  <span class="mult-tag head">{{ fmtMult(row.multCurrent.head) }}</span>
+                  <span class="mult-tag chest">{{ fmtMult(row.multCurrent.chest) }}</span>
+                  <span class="mult-tag stomach">{{ fmtMult(row.multCurrent.stomach) }}</span>
+                  <span class="mult-tag limbs">{{ fmtMult(row.multCurrent.limbs) }}</span>
                 </span>
                 <span class="dmg-tags">
                   <span class="dmg-tag head">{{ row.partDamageArr[0] }}</span>
@@ -719,8 +735,24 @@
             </div>
           </template>
 
-          <!-- 操作行 -->
+          <!-- ⭐ 操作行（移动端） -->
           <div class="card-row row-actions">
+            <!-- ⭐ 更新 TTK 按钮（互斥禁用） -->
+            <button
+              class="action-btn update"
+              :class="{
+                'dirty': isWeaponDirty(row.id),
+                'updating': isWeaponUpdating(row.id)
+              }"
+              :disabled="isWeaponUpdating(row.id) || isGlobalCalculating"
+              @click="updateWeaponTTK(index)"
+            >
+              <template v-if="isWeaponUpdating(row.id)">⏳ 更新中…</template>
+              <template v-else>
+                🔄 更新 TTK<span v-if="isWeaponDirty(row.id)" class="dirty-dot">●</span>
+              </template>
+            </button>
+
             <button class="action-btn edit-base" @click="addConfig(row)">➕ 新增配置</button>
             <button class="action-btn edit-barrel" @click="editBarrel(index)">🔧 编辑枪管</button>
             <button class="action-btn delete" @click="deleteWeapon(index)">🗑️ 删除</button>
@@ -732,7 +764,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, inject } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 import { appStore } from '@/stores/appStore'
 import { paramsStore } from '@/stores/paramsStore'
@@ -763,7 +795,18 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update', 'edit-barrel', 'add-weapon', 'delete-weapon', 'show-damage-detail'])
+const emit = defineEmits([
+  'update',
+  'edit-barrel',
+  'add-weapon',
+  'delete-weapon',
+  'show-damage-detail',
+  'update-ttk'
+])
+
+// ⭐ 注入通用弹窗
+const showConfirm = inject('showConfirm', null)
+const showAlert = inject('showAlert', null)
 
 const typeOptions = ['步枪', '冲锋枪', '轻机枪', '精确射手步枪', '手枪']
 
@@ -783,7 +826,7 @@ onBeforeUnmount(() => {
 })
 
 // ============================================================
-// 收起/展开状态（每个武器独立）
+// 收起/展开状态
 // ============================================================
 const collapsedMap = reactive({})
 
@@ -917,6 +960,27 @@ const fmtDist = (v) => v === Infinity ? '∞' : Math.round(v)
 const fmtDPS = (v) => v.toFixed(1)
 const fmtPrice = (v) => v >= 10000 ? `¥${(v / 10000).toFixed(1)}W` : `¥${v}`
 
+/**
+ * ⭐ 倍率格式化（去掉浮点长尾小数）
+ * 
+ * 修复前：0.8999999999999999
+ * 修复后：0.9
+ * 
+ * 逻辑：
+ * - 非数字 / 非有限值 → 原样返回
+ * - 其他 → 保留 2 位小数（去掉末尾多余的 0）
+ *   - 1.00  → 1
+ *   - 0.90  → 0.9
+ *   - 1.82  → 1.82
+ *   - 0.8999999999999999 → 0.9
+ */
+const fmtMult = (v) => {
+  if (typeof v !== 'number' || !isFinite(v)) return v
+  const rounded = Math.round((v + Number.EPSILON) * 100) / 100
+  // Number() 会自动去掉末尾多余的 0，如 1.00 → 1，0.90 → 0.9
+  return rounded
+}
+
 const havocColor = (v) => {
   if (v == null) return 'havoc-empty'
   const w = v / 10000
@@ -926,17 +990,18 @@ const havocColor = (v) => {
 }
 
 /**
- * ⭐ 评分颜色（基于假 TTK，按相对排名）
- * 
- * 分档（相对所有配置的假 TTK）：
- * - 前 15%：绿色
- * - 前 40%：蓝色
- * - 其他：橙色
+ * ⭐ 属性 tooltip（原值 → 当前值）
+ */
+const getAttrTooltip = (label, original, current) => {
+  return `${label}\n${original} → ${current}`
+}
+
+/**
+ * ⭐ 评分颜色
  */
 const scoreColor = (fakeTTK) => {
   if (fakeTTK == null || !isFinite(fakeTTK)) return 'score-empty'
 
-  // 从 rowsWithCurrent 里拿阈值（见下方 _scoreThresholds）
   const thresholds = _scoreThresholds.value
   if (!thresholds) return 'score-normal'
 
@@ -945,7 +1010,6 @@ const scoreColor = (fakeTTK) => {
   return 'score-warn'
 }
 
-// ⭐ 评分阈值（computed，用于 rank 分档）
 const _scoreThresholds = computed(() => {
   const rows = rowsWithCurrent.value
   const allFakeTTKs = []
@@ -969,9 +1033,6 @@ const _scoreThresholds = computed(() => {
   }
 })
 
-/**
- * ⭐ 评分 tooltip
- */
 const getScoreTooltip = (cfg) => {
   if (cfg.fakeTTK == null || !isFinite(cfg.fakeTTK)) return ''
   const aimWeight = paramsStore.state.aimWeight ?? 0.4
@@ -991,7 +1052,6 @@ const getScoreTooltip = (cfg) => {
   return lines.join('\n')
 }
 
-// 哈弗币消耗 tooltip
 const getHavocTooltip = (cost) => {
   if (!cost) return ''
   const lines = [
@@ -1008,6 +1068,42 @@ const getHavocTooltip = (cost) => {
 }
 
 // ============================================================
+// ⭐ 单枪更新状态判断
+// ============================================================
+
+const isWeaponDirty = (weaponId) => {
+  if (weaponId === undefined || weaponId === null) return false
+  const row = rowsWithCurrent.value.find(r => r.id === weaponId)
+  if (row?._isNewRow) return false
+  return dataStore.isWeaponModified(weaponId)
+}
+
+const isWeaponUpdating = (weaponId) => {
+  if (weaponId === undefined || weaponId === null) return false
+  return appStore.isUpdatingWeapon(weaponId)
+}
+
+const isGlobalCalculating = computed(() => {
+  return appStore.state.isGlobalCalculating === true
+})
+
+const getUpdateButtonTitle = (weaponId) => {
+  if (isWeaponUpdating(weaponId)) return '更新中…'
+  if (isGlobalCalculating.value) return '全局计算中，请稍候'
+  if (isWeaponDirty(weaponId)) return '有未同步的修改，点击更新'
+  return '数据已同步，点击可强制重算'
+}
+
+const updateWeaponTTK = (index) => {
+  const row = rowsWithCurrent.value[index]
+  if (!row || row._isNewRow) return
+  if (isWeaponUpdating(row.id)) return
+  if (isGlobalCalculating.value) return
+
+  emit('update-ttk', { weaponId: row.id })
+}
+
+// ============================================================
 // 核心：rowsWithCurrent
 // ============================================================
 const rowsWithCurrent = computed(() => {
@@ -1015,9 +1111,13 @@ const rowsWithCurrent = computed(() => {
   const prices = dataStore.state.prices
   void prices
 
+  void dataStore.state.modifiedVersion
+  void appStore.state.updatingWeaponIds
+  void appStore.state.isGlobalCalculating
+
   const havocCosts = appStore.state.havocCosts || {}
-  const scores = appStore.state.scores || {}   // ⭐ { key: { ttk, aim } }
-  const aimWeight = paramsStore.state.aimWeight ?? 0.4   // ⭐ 开镜权重
+  const scores = appStore.state.scores || {}
+  const aimWeight = paramsStore.state.aimWeight ?? 0.4
 
   return weapons.map(weapon => {
     if (weapon._isNewRow) {
@@ -1046,9 +1146,8 @@ const rowsWithCurrent = computed(() => {
     const configsWithHavoc = configRows.map(cfg => {
       const key = `${weapon.id}_${cfg.configId}`
       const cost = havocCosts[key] || null
-      const scoreData = scores[key] || null   // { ttk, aim }
+      const scoreData = scores[key] || null
 
-      // ⭐ 假 TTK = 1 × ttk + aimWeight × aim
       let fakeTTK = null
       if (scoreData && isFinite(scoreData.ttk)) {
         const ttk = scoreData.ttk
@@ -1060,9 +1159,9 @@ const rowsWithCurrent = computed(() => {
         ...cfg,
         havocCost: cost?.totalCost ?? null,
         _havocCost: cost,
-        fakeTTK,                              // ⭐ 假 TTK
-        _scoreTtk: scoreData?.ttk ?? null,   // 原始 TTK
-        _scoreAim: scoreData?.aim ?? 0       // 原始开镜
+        fakeTTK,
+        _scoreTtk: scoreData?.ttk ?? null,
+        _scoreAim: scoreData?.aim || 0
       }
     })
 
@@ -1286,11 +1385,11 @@ const fallbackCopy = (text) => {
 // ============================================================
 // 配置增删
 // ============================================================
-const addConfig = (row) => {
+const addConfig = async (row) => {
   const dm = dataStore.getDataManager()
   const price = dm.getPriceByWeaponId(row.id)
   if (!price) {
-    alert('⚠️ 未找到价格配置')
+    if (showAlert) await showAlert('⚠️ 未找到价格配置')
     return
   }
 
@@ -1306,7 +1405,7 @@ const addConfig = (row) => {
     muzzleId: 0,
     muzzle: '无',
     precision: 0.09,
-    aimSpeed: 0,       // ⭐ 新增
+    aimSpeed: 0,
     buildCode: '',
     price: 0,
     distance: [30, 50, 100],
@@ -1321,14 +1420,28 @@ const addConfig = (row) => {
     activeConfigMap[row.id] = nextId
     console.log(`✅ 已为 ${row.name} 添加配置 ${nextId}`)
   } else {
-    alert('添加失败，请检查控制台')
+    if (showAlert) await showAlert('添加失败，请检查控制台')
   }
 }
 
-const deleteConfig = (index, configId) => {
+const deleteConfig = async (index, configId) => {
   const row = rowsWithCurrent.value[index]
   if (!row) return
-  if (!confirm(`确定删除配置 ${configId}？（${row.name}）`)) return
+
+  let confirmed = true
+  if (showConfirm) {
+    const result = await showConfirm({
+      title: '删除配置',
+      message: `确定删除配置 ${configId}？（${row.name}）`,
+      confirmText: '删除',
+      confirmType: 'danger'
+    })
+    confirmed = result.confirmed
+  } else {
+    confirmed = confirm(`确定删除配置 ${configId}？（${row.name}）`)
+  }
+
+  if (!confirmed) return
 
   const dm = dataStore.getDataManager()
   const ok = dm.removePriceConfig(row.id, configId)
@@ -1355,10 +1468,25 @@ const editBase = (index) => {
   appStore.openBaseEditor(row.id)
 }
 
-const deleteWeapon = (index) => {
+const deleteWeapon = async (index) => {
   const row = rowsWithCurrent.value[index]
   if (!row) return
-  if (!confirm(`确定删除武器「${row.name}」？此操作不可恢复。`)) return
+
+  let confirmed = true
+  if (showConfirm) {
+    const result = await showConfirm({
+      title: '删除武器',
+      message: `确定删除武器「${row.name}」？此操作不可恢复。`,
+      confirmText: '删除',
+      confirmType: 'danger'
+    })
+    confirmed = result.confirmed
+  } else {
+    confirmed = confirm(`确定删除武器「${row.name}」？此操作不可恢复。`)
+  }
+
+  if (!confirmed) return
+
   const dm = dataStore.getDataManager()
   const weaponList = dm.data.weapons
   const idx = weaponList.findIndex(w => w.id === row.id)
@@ -1384,15 +1512,15 @@ const addWeapon = () => {
   emit('add-weapon', -1, null)
 }
 
-const confirmAdd = (index) => {
+const confirmAdd = async (index) => {
   const row = rowsWithCurrent.value[index]
   if (!row) return
   if (!row.name || row.name.trim() === '') {
-    alert('⚠️ 请输入武器名称')
+    if (showAlert) await showAlert('⚠️ 请输入武器名称')
     return
   }
   if (!row.allowedBullet || row.allowedBullet.trim() === '') {
-    alert('⚠️ 请选择口径')
+    if (showAlert) await showAlert('⚠️ 请选择口径')
     return
   }
   emit('add-weapon', index, row)
@@ -1484,22 +1612,30 @@ const cancelAdd = (index) => {
   border-width: 2px;
 }
 
+/* ============================================================
+   ⭐ 武器头 Grid（名称 -20，衰减 +30）
+   
+   列顺序：
+     [折叠] [名称] [类型] [口径] [枪管] [枪口] [精校] [射速] [初速] [肉伤] [甲伤] [射程] [衰减] [倍率] [伤害]
+   ============================================================ */
 .weapon-head {
   display: grid;
   grid-template-columns:
-    26px
-    200px
-    140px
-    110px
-    130px
-    140px
-    130px
-    110px
-    110px
-    180px
-    200px
-    180px
-    180px;
+    26px     /* 折叠 */
+    110px    /* 名称 */
+    56px     /* 类型 */
+    90px     /* 口径 */
+    180px    /* 枪管 */
+    150px    /* 枪口 */
+    130px    /* 精校 */
+    60px     /* 射速 */
+    60px     /* 初速 */
+    60px     /* 肉伤 */
+    60px     /* 甲伤 */
+    130px    /* 射程 */
+    210px    /* 衰减 */
+    150px    /* 倍率 */
+    150px;   /* 伤害 */
   align-items: center;
   column-gap: 8px;
   padding: 8px 12px;
@@ -1528,10 +1664,10 @@ const cancelAdd = (index) => {
   background: #dde6ff;
 }
 
-.wh-identity {
+/* ⭐ 名称列 */
+.wh-name {
   display: flex;
   align-items: center;
-  gap: 6px;
   min-width: 0;
   overflow: hidden;
 }
@@ -1542,9 +1678,16 @@ const cancelAdd = (index) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 1;
   min-width: 0;
-  max-width: 100px;
+  max-width: 100%;
+}
+
+/* ⭐ 类型列 */
+.wh-type {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
 }
 .weapon-type {
   font-size: 10px;
@@ -1553,7 +1696,18 @@ const cancelAdd = (index) => {
   padding: 1px 6px;
   border-radius: 8px;
   font-weight: 600;
-  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ⭐ 口径列 */
+.wh-caliber {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
 }
 .weapon-caliber {
   font-size: 10px;
@@ -1565,19 +1719,19 @@ const cancelAdd = (index) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 1;
-  min-width: 0;
+  max-width: 100%;
 }
 
 .wh-attach {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
+  width: 100%;
 }
 .wh-attach .k {
   color: #888;
-  font-size: 11px;
+  font-size: 10px;
   flex-shrink: 0;
 }
 .head-select {
@@ -1593,6 +1747,7 @@ const cancelAdd = (index) => {
   cursor: pointer;
   outline: none;
   height: 22px;
+  text-overflow: ellipsis;
 }
 .head-select:focus { border-color: var(--color-primary); }
 
@@ -1624,18 +1779,20 @@ const cancelAdd = (index) => {
   text-align: right;
 }
 
+/* ⭐ 属性列（只显示当前值，tooltip 显示原值 → 当前值） */
 .wh-attr {
   display: inline-flex;
   align-items: baseline;
-  gap: 3px;
+  gap: 2px;
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   min-width: 0;
+  cursor: help;
 }
 .wh-attr .k {
   color: #888;
-  font-size: 11px;
+  font-size: 10px;
   flex-shrink: 0;
 }
 .wh-attr .v {
@@ -1645,11 +1802,6 @@ const cancelAdd = (index) => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.wh-attr .v.orig {
-  color: #aaa;
-  font-weight: 400;
-  font-size: 11px;
-}
 .wh-attr .v.flesh { color: #e74c3c; }
 .wh-attr .v.armor { color: #2980b9; }
 .wh-attr .v.muted {
@@ -1657,16 +1809,12 @@ const cancelAdd = (index) => {
   font-weight: 400;
   font-size: 11px;
 }
-.wh-attr .arrow {
-  color: #ddd;
-  font-size: 11px;
-  flex-shrink: 0;
-}
 .wh-attr-wide {
   gap: 4px;
 }
 .wh-attr-tags {
   overflow: visible;
+  cursor: default;
 }
 
 .mult-tags, .dmg-tags {
@@ -1798,10 +1946,51 @@ const cancelAdd = (index) => {
 .head-btn.add { background: #4caf50; color: #fff; }
 .head-btn.add:hover { background: #388e3c; }
 
+/* ⭐ 更新 TTK 按钮 */
+.head-btn.update {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  position: relative;
+}
+.head-btn.update:hover:not(:disabled) {
+  background: #d4ead6;
+  border-color: #81c784;
+}
+.head-btn.update.dirty {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ffcc80;
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.15);
+}
+.head-btn.update.dirty:hover:not(:disabled) {
+  background: #ffe0b2;
+  border-color: #ffb74d;
+}
+.head-btn.update.updating {
+  background: #f5f5f5;
+  color: #999;
+  border-color: #e0e0e0;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+.head-btn.update:disabled {
+  cursor: not-allowed;
+}
+.head-btn.update .dirty-dot {
+  color: #f44336;
+  font-size: 14px;
+  line-height: 1;
+  margin-left: 3px;
+  animation: dirty-pulse 1.5s ease-in-out infinite;
+}
+@keyframes dirty-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 /* ============================================================
-   ⭐ 配置区（Grid 固定列对齐）
-   
-   ⭐ 加"开镜"列（命中率后、价格前）：80px
+   配置区
    ============================================================ */
 .config-section {
   padding: 6px 12px 8px;
@@ -1817,18 +2006,18 @@ const cancelAdd = (index) => {
 .config-item {
   display: grid;
   grid-template-columns:
-    28px     /* 勾选 */
-    50px     /* ID */
-    400px    /* 改枪码 */
-    140px    /* 枪管 */
-    110px    /* 枪口 */
-    300px    /* 命中率 */
-    80px     /* ⭐ 开镜 */
-    90px     /* 价格 */
-    140px    /* 子弹 */
-    90px     /* 哈弗币 */
-    80px     /* 评分 */
-    minmax(110px, 1fr);   /* 操作 */
+    28px
+    50px
+    400px
+    140px
+    110px
+    300px
+    80px
+    90px
+    140px
+    90px
+    80px
+    minmax(110px, 1fr);
   align-items: center;
   column-gap: 8px;
 
@@ -1969,7 +2158,6 @@ const cancelAdd = (index) => {
   border-bottom-color: #ff9800;
 }
 
-/* ⭐ 评分（假 TTK）样式 */
 .fld .v.score-value {
   font-family: var(--font-mono);
   font-weight: 600;
@@ -2140,18 +2328,18 @@ const cancelAdd = (index) => {
 }
 
 /* ============================================================
-   响应式
+   响应式（名称 -15，衰减 +30 同步调整断点）
    ============================================================ */
 @media (max-width: 1600px) {
   .weapon-head {
     grid-template-columns:
-      26px 180px 130px 100px 120px 130px 120px 100px 100px 160px 180px 160px 160px;
+      26px 105px 52px 82px 170px 140px 120px 56px 56px 56px 56px 120px 200px 140px 140px;
   }
 }
 @media (max-width: 1400px) {
   .weapon-head {
     grid-template-columns:
-      26px 160px 120px 90px 110px 120px 110px 90px 90px 140px 160px 140px 140px;
+      26px 95px 50px 76px 160px 130px 110px 52px 52px 52px 52px 110px 190px 130px 130px;
     column-gap: 6px;
   }
   .weapon-name { font-size: 13px; }
@@ -2164,11 +2352,19 @@ const cancelAdd = (index) => {
     row-gap: 6px;
   }
   .collapse-btn { order: -1; }
-  .wh-identity { flex: 0 0 auto; min-width: 0; }
-  .wh-attach { flex: 1 1 auto; }
+  .wh-name { flex: 0 0 auto; min-width: 0; max-width: 130px; }
+  .wh-type { flex: 0 0 auto; }
+  .wh-caliber { flex: 0 0 auto; }
+  .wh-attach {
+    flex: 1 1 auto;
+    min-width: 140px;
+  }
   .wh-precision { flex: 1 1 auto; }
   .wh-attr { flex: 0 0 auto; }
-  .head-select { max-width: 130px; }
+  .wh-attr-wide {
+    min-width: 150px;
+  }
+  .head-select { max-width: 160px; }
   .wh-precision input[type="range"] { width: 70px; }
 }
 
@@ -2214,14 +2410,12 @@ const cancelAdd = (index) => {
   gap: 3px;
   white-space: nowrap;
   font-size: 13px;
+  cursor: help;
 }
 .v-pair .k { color: #999; font-size: 11px; }
 .v-pair .v { font-family: var(--font-mono); font-weight: 600; color: var(--color-text); }
-.v-pair .v.orig { color: #aaa; font-weight: 400; font-size: 12px; }
 .v-pair .v.flesh { color: #e74c3c; }
 .v-pair .v.armor { color: #2980b9; }
-.v-pair .v.muted { color: #aaa; font-weight: 400; font-size: 12px; }
-.v-pair .arrow { color: #ccc; font-size: 11px; }
 
 .attach-select.full {
   flex: 1;
@@ -2363,4 +2557,41 @@ const cancelAdd = (index) => {
 .action-btn.edit-base:active { background: #388e3c; }
 .action-btn.delete { background: #f0f0f0; color: #666; }
 .action-btn.delete:active { background: #e0e0e0; color: #f44336; }
+
+/* ⭐ 移动端「更新 TTK」按钮 */
+.action-btn.update {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  position: relative;
+}
+.action-btn.update:active:not(:disabled) {
+  background: #d4ead6;
+}
+.action-btn.update.dirty {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ffcc80;
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.15);
+}
+.action-btn.update.dirty:active:not(:disabled) {
+  background: #ffe0b2;
+}
+.action-btn.update.updating {
+  background: #f5f5f5;
+  color: #999;
+  border-color: #e0e0e0;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+.action-btn.update:disabled {
+  cursor: not-allowed;
+}
+.action-btn.update .dirty-dot {
+  color: #f44336;
+  font-size: 14px;
+  line-height: 1;
+  margin-left: 3px;
+  animation: dirty-pulse 1.5s ease-in-out infinite;
+}
 </style>

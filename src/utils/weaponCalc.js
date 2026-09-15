@@ -30,7 +30,27 @@ import { getDataManager } from '@/core/DataManager'
  *      原始初速 330，rangeMult 1.0，velocityAdd 120
  *      velocityMult = 1.0 × 1.0 × 1.09 = 1.09
  *      初速 = (330 + 120) × 1.09 = 490.5 → 491
+ * 
+ * ⭐ 浮点精度处理：
+ *    部位倍率经过「原始倍率 + partMultAdd」的浮点加法后，
+ *    可能出现 0.8999999999999999 这类长尾小数。
+ *    返回前统一用「2 位小数四舍五入」修正。
  */
+
+/**
+ * 四舍五入到指定小数位（避免浮点误差）
+ * 
+ * 用 Number.EPSILON 补偿经典浮点问题（如 1.005 → 1.00 而非 1.01）。
+ * 
+ * @param {number} value - 待处理数值
+ * @param {number} decimals - 保留小数位（默认 2）
+ * @returns {number}
+ */
+function roundTo(value, decimals = 2) {
+  if (typeof value !== 'number' || !isFinite(value)) return value
+  const p = Math.pow(10, decimals)
+  return Math.round((value + Number.EPSILON) * p) / p
+}
 
 /**
  * 计算应用枪管 / 枪口 / 精校后的武器当前属性
@@ -46,7 +66,7 @@ import { getDataManager } from '@/core/DataManager'
  *   decays,            // 当前衰减数组
  *   flesh,             // 当前肉伤
  *   armor,             // 当前甲伤
- *   mult,              // 当前部位倍率对象
+ *   mult,              // 当前部位倍率对象（2 位小数）
  *   fireMode,          // 开火模式：'auto' | 'burst' | null
  *   burstCount,        // 连发数（如 3、4）
  *   burstInternalROF,  // 连发内射速
@@ -112,6 +132,13 @@ export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
     for (const k in partAdd) {
       newMult[k] = (newMult[k] ?? 1) + partAdd[k]
     }
+  }
+
+  // ⭐ 修复浮点精度：所有倍率统一修到 2 位小数
+  const roundedMult = {}
+  for (const k of ['head', 'chest', 'stomach', 'limbs']) {
+    const v = newMult[k]
+    roundedMult[k] = (typeof v === 'number' && isFinite(v)) ? roundTo(v, 2) : v
   }
 
   // ============================================================
@@ -194,7 +221,7 @@ export function calculateCurrentValues(weapon, barrel, muzzleId, precision) {
     decays: newDecays,
     flesh,
     armor,
-    mult: newMult,
+    mult: roundedMult,   // ⭐ 已修正浮点精度
     // 连发字段
     fireMode,
     burstCount,

@@ -143,6 +143,7 @@
             @add-weapon="onAddWeapon"
             @delete-weapon="onDeleteWeapon"
             @show-damage-detail="onShowDamageDetail"
+            @update-ttk="onUpdateWeaponTTK"
           />
         </div>
 
@@ -187,6 +188,20 @@
       :config-id="detailConfigId"
       :distance="paramsStore.state.distance"
     />
+
+    <!-- ⭐ 通用确认弹窗 -->
+    <ConfirmDialog
+      v-model:visible="confirmState.visible"
+      :title="confirmState.title"
+      :message="confirmState.message"
+      :confirm-text="confirmState.confirmText"
+      :cancel-text="confirmState.cancelText"
+      :confirm-type="confirmState.confirmType"
+      :checkbox-label="confirmState.checkboxLabel"
+      :checkbox-default="confirmState.checkboxDefault"
+      @confirm="onConfirmResolve"
+      @cancel="onConfirmReject"
+    />
   </div>
 
   <!-- 计算进度遮罩 -->
@@ -211,7 +226,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, provide } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 import { paramsStore } from '@/stores/paramsStore'
 import { appStore } from '@/stores/appStore'
@@ -232,6 +247,7 @@ import ItemsPanel from '@/components/ItemsPanel.vue'
 import BarrelEditor from '@/components/BarrelEditor.vue'
 import WeaponBaseEditor from '@/components/WeaponBaseEditor.vue'
 import DamageDetailModal from '@/components/DamageDetailModal.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 // ---------- 状态 ----------
 const highlightWeapon = ref(null)
@@ -260,12 +276,96 @@ const distanceStats = ref([])
 
 /**
  * ⭐ 传递给 DistanceChart 的分段
- * 直接返回对象 { start, end }
  */
 const segmentProp = computed(() => ({
   start: customStart.value,
   end: customEnd.value
 }))
+
+// ============================================================
+// ⭐ 通用确认弹窗（Promise 封装 + provide）
+// ============================================================
+
+const confirmState = ref({
+  visible: false,
+  title: '确认',
+  message: '',
+  confirmText: '确定',
+  cancelText: '取消',
+  confirmType: 'primary',
+  checkboxLabel: '',
+  checkboxDefault: false
+})
+
+let _confirmResolve = null
+let _confirmReject = null
+
+/**
+ * ⭐ 显示确认弹窗（Promise 版本）
+ * 
+ * 用法：
+ *   const result = await showConfirm({
+ *     title: '导出数据',
+ *     message: '是否包含缓存数据？',
+ *     checkboxLabel: '包含缓存',
+ *     checkboxDefault: true,
+ *     confirmText: '导出',
+ *   })
+ *   if (result.confirmed) {
+ *     // result.checked 表示勾选状态
+ *   }
+ * 
+ * @param {Object} options
+ * @returns {Promise<{ confirmed: boolean, checked: boolean }>}
+ */
+const showConfirm = (options = {}) => {
+  return new Promise((resolve, reject) => {
+    _confirmResolve = resolve
+    _confirmReject = reject
+
+    confirmState.value = {
+      visible: true,
+      title: options.title || '确认',
+      message: options.message || '',
+      confirmText: options.confirmText || '确定',
+      cancelText: options.cancelText || '取消',
+      confirmType: options.confirmType || 'primary',
+      checkboxLabel: options.checkboxLabel || '',
+      checkboxDefault: options.checkboxDefault || false
+    }
+  })
+}
+
+/**
+ * ⭐ 简化版 alert（只有确认按钮，无勾选框）
+ */
+const showAlert = async (message, title = '提示') => {
+  return showConfirm({
+    title,
+    message,
+    confirmText: '知道了',
+    cancelText: '',
+    confirmType: 'primary'
+  })
+}
+
+const onConfirmResolve = ({ checked }) => {
+  const resolve = _confirmResolve
+  _confirmResolve = null
+  _confirmReject = null
+  if (resolve) resolve({ confirmed: true, checked })
+}
+
+const onConfirmReject = () => {
+  const resolve = _confirmResolve
+  _confirmResolve = null
+  _confirmReject = null
+  if (resolve) resolve({ confirmed: false, checked: false })
+}
+
+// ⭐ 通过 provide 暴露给所有子组件
+provide('showConfirm', showConfirm)
+provide('showAlert', showAlert)
 
 // ---------- 辅助函数 ----------
 const getWeaponBarrelOptions = (row) => {
@@ -306,7 +406,7 @@ const applyCustomRange = () => {
   let e = Number(customEnd.value)
 
   if (isNaN(s) || isNaN(e)) {
-    alert('⚠️ 请输入有效的起止距离')
+    showAlert('⚠️ 请输入有效的起止距离')
     return
   }
 
@@ -318,7 +418,7 @@ const applyCustomRange = () => {
   }
 
   if (e - s < 5) {
-    alert('⚠️ 起止距离至少相差 5m')
+    showAlert('⚠️ 起止距离至少相差 5m')
     return
   }
 
@@ -343,14 +443,25 @@ const onItemsUpdate = () => {
 }
 
 // ============================================================
-// ⭐ TTK 计算
+// ⭐ TTK 计算（全局）
 // ============================================================
 const handleCalculate = async () => {
+  // ⭐ 互斥：单枪更新中时不允许全局计算
+  if (appStore.state.updatingWeaponIds.length > 0) {
+    showAlert('⚠️ 正在更新单枪数据，请稍候')
+    return
+  }
+  if (appStore.state.isGlobalCalculating) {
+    return
+  }
+
+  appStore.setGlobalCalculating(true)
   appStore.setLoading(true)
+
   try {
     const enabledConfigs = getEnabledConfigs()
     if (enabledConfigs.length === 0) {
-      alert('请至少启用一个价格配置')
+      showAlert('请至少启用一个价格配置')
       return
     }
 
@@ -481,15 +592,324 @@ const handleCalculate = async () => {
 
   } catch (error) {
     console.error('计算失败:', error)
-    alert('计算失败: ' + error.message)
+    showAlert('计算失败: ' + error.message)
   } finally {
+    appStore.setGlobalCalculating(false)
     appStore.setLoading(false)
     appStore.hideCalcProgress()
   }
 }
 
 // ============================================================
-// ⭐ 哈弗币消耗计算
+// ⭐ 单枪 TTK 更新
+// ============================================================
+
+/**
+ * 更新单把枪的完整 TTK 数据（所有配置）
+ * 
+ * @param {number|string} weaponId
+ * @param {Function} onProgress - 进度回调 (current, total) => void
+ */
+const updateSingleWeaponTTK = async (weaponId, onProgress) => {
+  const dm = dataStore.getDataManager()
+  const cacheManager = dm.getCacheManager?.() || null
+  const params = paramsStore.state
+
+  const weapon = dataStore.getWeaponById(weaponId)
+  if (!weapon) {
+    console.warn(`⚠️ updateSingleWeaponTTK: 未找到武器 ${weaponId}`)
+    return { success: false, newDistanceStats: [] }
+  }
+
+  // 1. 取该枪的所有配置（不筛选 enabled）
+  const allConfigRows = dataStore.getPriceRowsForWeapon(weaponId)
+  if (allConfigRows.length === 0) {
+    console.warn(`⚠️ updateSingleWeaponTTK: 武器 ${weaponId} 无配置`)
+    return { success: false, newDistanceStats: [] }
+  }
+
+  // 2. 构建"武装后"武器
+  const { armed, attachments } = buildArmedWeapons(allConfigRows)
+
+  // 3. 对每个配置：强制失效缓存 + 重算 + 写缓存
+  const newDistanceStats = []
+  const totalConfigs = armed.length
+
+  for (let idx = 0; idx < armed.length; idx++) {
+    const weaponArmed = armed[idx]
+    const attachment = attachments[idx] || {}
+    const configId = attachment.configId || '#1'
+
+    const price = dm.getPriceByWeaponId(weaponId)
+    const config = price?.configs.find(c => c.id === configId)
+
+    if (config) {
+      // ⭐ 强制失效缓存
+      delete config.cache
+
+      // 计算关键点 + times
+      const result = calculateSingleWeapon(
+        weaponArmed,
+        params,
+        distances.value,
+        attachment,
+        dm
+      )
+
+      if (!result) {
+        console.warn(`⚠️ 武器 ${weaponId} 配置 ${configId} 计算失败（子弹未匹配）`)
+      } else {
+        // 写缓存
+        if (cacheManager) {
+          try {
+            const hash = cacheManager.generateParamsHash(
+              weaponArmed,
+              config,
+              params,
+              attachment
+            )
+            config.cache = {
+              keyPoints: result.keyPoints,
+              hash: hash,
+              avgBurstInterval: result.avgBurstInterval || 0,
+              cachedAt: new Date().toISOString()
+            }
+          } catch (e) {
+            console.warn(`⚠️ 缓存写入失败: ${weaponId} ${configId}`, e)
+          }
+        }
+
+        // ⭐ 只收集 enabled 的配置
+        if (config.enabled !== false) {
+          let weightedSum = 0
+          let weightSum = 0
+          distances.value.forEach((d, i) => {
+            const ttk = result.times[i]
+            if (ttk > 0) {
+              const w = 1.5 - (d / 100) * 1.0
+              weightedSum += ttk * w
+              weightSum += w
+            }
+          })
+          const weightedAvg = weightSum > 0 ? weightedSum / weightSum : Infinity
+
+          newDistanceStats.push({
+            weapon: weaponArmed,
+            times: result.times,
+            keyPoints: result.keyPoints,
+            displayName: weaponArmed._displayName || weaponArmed.name,
+            weightedAvg
+          })
+        }
+      }
+    }
+
+    // ⭐ 进度回调
+    if (typeof onProgress === 'function') {
+      onProgress(idx + 1, totalConfigs)
+    }
+
+    // 让出主线程，让进度条能渲染
+    await new Promise(resolve => setTimeout(resolve, 0))
+  }
+
+  return { success: true, newDistanceStats }
+}
+
+/**
+ * ⭐ 单枪更新的事件处理
+ */
+const onUpdateWeaponTTK = async ({ weaponId }) => {
+  if (!weaponId) return
+
+  // ⭐ 互斥：全局计算中时不允许单枪更新
+  if (appStore.state.isGlobalCalculating) {
+    showAlert('⚠️ 正在全局计算，请稍候')
+    return
+  }
+
+  // ⭐ 互斥：该枪已在更新中
+  if (appStore.isUpdatingWeapon(weaponId)) {
+    return
+  }
+
+  const weapon = dataStore.getWeaponById(weaponId)
+  const weaponName = weapon?.name || weaponId
+
+  // 1. 标记更新中
+  appStore.addUpdatingWeapon(weaponId)
+
+  // 2. 显示进度遮罩
+  appStore.showCalcProgress(`更新 ${weaponName} 中...`, 1)
+
+  try {
+    const dm = dataStore.getDataManager()
+    const cacheManager = dm.getCacheManager?.() || null
+    const params = paramsStore.state
+
+    // 3. 执行单枪更新（带进度回调）
+    const { success, newDistanceStats } = await updateSingleWeaponTTK(
+      weaponId,
+      (current, total) => {
+        appStore.updateCalcProgress(current)
+        // 更新标题显示配置进度
+        appStore.state.calcProgress.title = `更新 ${weaponName} 中...`
+      }
+    )
+
+    if (!success) {
+      console.warn(`⚠️ 单枪更新失败: ${weaponId}`)
+      return
+    }
+
+    // 4. 局部更新 appStore.ttkResults
+    const oldResults = appStore.state.ttkResults || []
+    const filteredResults = oldResults.filter(
+      r => r.weapon?.id !== weaponId
+    )
+
+    const newTtkResults = []
+    for (const stat of newDistanceStats) {
+      const weaponArmed = stat.weapon
+      const configId = weaponArmed._configId || '#1'
+
+      const price = dm.getPriceByWeaponId(weaponId)
+      const config = price?.configs.find(c => c.id === configId)
+      if (!config || !config.cache || !config.cache.keyPoints) continue
+
+      const totalTimeMs = cacheManager.interpolateTTK(
+        config.cache.keyPoints,
+        params.distance
+      )
+
+      let totalShots = 0
+      let shotCount = 0
+      for (const point of config.cache.keyPoints) {
+        if (point.shots !== undefined && point.shots !== null) {
+          totalShots += point.shots
+          shotCount++
+        }
+      }
+      const avgShots = shotCount > 0 ? totalShots / shotCount : 0
+      const burstIntervalMs = (config.cache.avgBurstInterval || 0) * 1000
+
+      const triggerDelay = params.triggerDelayEnable ? (weaponArmed.triggerDelay || 0) : 0
+      const velocity = weaponArmed.velocity || 500
+      const flight = (params.distance / velocity) * 1000
+
+      const nonShotPart = flight + triggerDelay + burstIntervalMs
+      const remaining = Math.max(0, totalTimeMs - nonShotPart)
+      const noMissFireDelay = remaining * (0.5 / 0.7)
+      const emptyDelay = remaining * (0.2 / 0.7)
+
+      newTtkResults.push({
+        name: weaponArmed._displayName || weaponArmed.name,
+        weapon: weaponArmed,
+        totalTime: totalTimeMs || 0,
+        noMissFireDelay: noMissFireDelay || 0,
+        burstInterval: burstIntervalMs,
+        emptyDelay: emptyDelay || 0,
+        flight: flight || 0,
+        triggerDelay: triggerDelay || 0,
+        avgShots: avgShots || 0,
+        fromCache: true
+      })
+    }
+
+    const mergedResults = [...filteredResults, ...newTtkResults]
+    mergedResults.sort((a, b) => a.totalTime - b.totalTime)
+    appStore.setTtkResults(mergedResults)
+
+    // 5. 局部更新 appStore.scores
+    const oldScores = appStore.state.scores || {}
+    const newScores = { ...oldScores }
+
+    const prefix = `${weaponId}_`
+    for (const key of Object.keys(newScores)) {
+      if (key.startsWith(prefix)) {
+        delete newScores[key]
+      }
+    }
+
+    for (const stat of newDistanceStats) {
+      const weaponArmed = stat.weapon
+      const configId = weaponArmed._configId || '#1'
+      const key = `${weaponId}_${configId}`
+
+      const price = dm.getPriceByWeaponId(weaponId)
+      const config = price?.configs.find(c => c.id === configId)
+      const aimSpeed = config?.aimSpeed || 0
+
+      newScores[key] = {
+        ttk: stat.weightedAvg,
+        aim: aimSpeed
+      }
+    }
+    appStore.setScores(newScores)
+
+    // 6. 局部更新 appStore.havocCosts
+    if (cacheManager) {
+      const oldHavoc = appStore.state.havocCosts || {}
+      const newHavoc = { ...oldHavoc }
+
+      for (const key of Object.keys(newHavoc)) {
+        if (key.startsWith(prefix)) {
+          delete newHavoc[key]
+        }
+      }
+
+      const price = dm.getPriceByWeaponId(weaponId)
+      if (price) {
+        for (const config of price.configs) {
+          if (config.enabled === false) continue
+          if (!config.cache || !config.cache.keyPoints || config.cache.keyPoints.length === 0) continue
+
+          const key = `${weaponId}_${config.id}`
+          try {
+            const cost = cacheManager.calculateHavocCostAverage(
+              config.cache.keyPoints,
+              {
+                weaponPrice: config.price || 0,
+                kdRatio: params.kdRatio ?? 1.0,
+                extractRate: params.extractRate ?? 0.5,
+                extraCost: params.extraCost ?? 30
+              }
+            )
+            newHavoc[key] = cost
+          } catch (e) {
+            console.warn(`⚠️ 哈弗币计算失败: ${key}`, e)
+          }
+        }
+      }
+      appStore.setHavocCosts(newHavoc)
+    }
+
+    // 7. 替换 distanceStats 中该枪的条目
+    if (newDistanceStats.length > 0) {
+      const oldStats = distanceStats.value || []
+      const filteredStats = oldStats.filter(
+        s => s.weapon?.id !== weaponId
+      )
+      const mergedStats = [...filteredStats, ...newDistanceStats]
+      mergedStats.sort((a, b) => a.weightedAvg - b.weightedAvg)
+      distanceStats.value = mergedStats
+    }
+
+    // 8. 清除该枪的 modified 标记
+    dataStore.clearWeaponModified(weaponId)
+
+    console.log(`✅ 单枪 TTK 更新完成: ${weaponName} (${newDistanceStats.length} 个启用配置)`)
+  } catch (error) {
+    console.error('单枪更新失败:', error)
+    showAlert('更新失败: ' + error.message)
+  } finally {
+    appStore.removeUpdatingWeapon(weaponId)
+    appStore.hideCalcProgress()
+  }
+}
+
+// ============================================================
+// ⭐ 哈弗币消耗计算（全量）
 // ============================================================
 const computeHavocCosts = (enabledConfigs, dm, cacheManager, params) => {
   if (!cacheManager) {
@@ -541,7 +961,7 @@ const computeHavocCosts = (enabledConfigs, dm, cacheManager, params) => {
 }
 
 // ============================================================
-// ⭐ 折线图
+// ⭐ 折线图（全量）
 // ============================================================
 const handleDistanceChart = async () => {
   try {
@@ -554,7 +974,6 @@ const handleDistanceChart = async () => {
 
     const stats = await buildDistanceStats(armed, attachments)
 
-    // ⭐ 提取 { ttk, aim } 作为评分原始数据
     const dm = dataStore.getDataManager()
     const scores = {}
     for (const s of stats) {
@@ -562,7 +981,6 @@ const handleDistanceChart = async () => {
       const configId = s.weapon._configId || '#1'
       const key = `${weaponId}_${configId}`
 
-      // ⭐ 读该配置的 aimSpeed
       const price = dm.getPriceByWeaponId(weaponId)
       const config = price?.configs.find(c => c.id === configId)
       const aimSpeed = config?.aimSpeed || 0
@@ -575,7 +993,6 @@ const handleDistanceChart = async () => {
     appStore.setScores(scores)
     console.log(`⭐ 评分原始数据已计算: ${Object.keys(scores).length} 条`)
 
-    // 全 0 检查
     let allZero = true
     if (stats.length > 0 && stats[0].times) {
       for (let i = 0; i < Math.min(stats[0].times.length, 10); i++) {
@@ -682,19 +1099,6 @@ const buildArmedWeapons = (configs) => {
 // ============================================================
 // ⭐ 关键点生成
 // ============================================================
-
-/**
- * 生成关键距离点
- * 
- * 只包含：
- * - 0m（起点）
- * - 每个射程分段点 r 及其前 1m（r-1）—— 捕捉衰减跳变
- * - maxDistance（终点）
- * 
- * 例：
- * - AK-12 [40, 70] → [0, 39, 40, 69, 70, 100]
- * - M700 [Infinity, ...] → [0, 100]
- */
 const getKeyDistances = (ranges, maxDistance) => {
   const validRanges = (ranges || []).filter(r => r !== Infinity && r <= maxDistance)
 
@@ -718,7 +1122,7 @@ const getKeyDistances = (ranges, maxDistance) => {
 }
 
 // ============================================================
-// ⭐ 折线图数据构建
+// ⭐ 折线图数据构建（全量）
 // ============================================================
 const buildDistanceStats = async (armed, attachments) => {
   const params = paramsStore.state
@@ -891,17 +1295,37 @@ const onWeaponUpdate = (payload) => {
   }
 }
 
-// ---------- 数据管理 ----------
-const exportData = () => {
+// ============================================================
+// ⭐ 数据管理（导出/导入/重置）
+// ============================================================
+
+/**
+ * ⭐ 导出数据（带勾选框的弹窗）
+ */
+const exportData = async () => {
   try {
-    const includeCache = confirm('是否包含缓存数据？\n\n点击"确定"包含缓存，点击"取消"不包含缓存')
-    dataStore.exportData(includeCache)
+    const result = await showConfirm({
+      title: '📤 导出数据',
+      message: '是否包含缓存数据？\n\n包含缓存：下次导入时可直接读取，无需重算\n不含缓存：文件更小，导入后需重新计算',
+      confirmText: '导出',
+      cancelText: '取消',
+      confirmType: 'primary',
+      checkboxLabel: '包含缓存数据',
+      checkboxDefault: true
+    })
+
+    if (result.confirmed) {
+      dataStore.exportData(result.checked)
+    }
   } catch (error) {
     console.error('导出失败:', error)
-    alert('导出失败: ' + error.message)
+    showAlert('导出失败: ' + error.message)
   }
 }
 
+/**
+ * ⭐ 导入数据（带确认弹窗）
+ */
 const importData = () => {
   const input = document.createElement('input')
   input.type = 'file'
@@ -911,8 +1335,15 @@ const importData = () => {
     if (!file) return
 
     try {
-      const confirmed = confirm('导入将覆盖当前所有数据，确定继续吗？')
-      if (!confirmed) return
+      const result = await showConfirm({
+        title: '📥 导入数据',
+        message: `即将导入文件「${file.name}」\n\n导入将覆盖当前所有数据，确定继续吗？`,
+        confirmText: '导入',
+        cancelText: '取消',
+        confirmType: 'warning'
+      })
+
+      if (!result.confirmed) return
 
       const reader = new FileReader()
       reader.onload = async (event) => {
@@ -922,28 +1353,37 @@ const importData = () => {
           dataStore.refreshBullets()
           dataStore.refreshPrices()
           dataStore.refreshArmors()
-          alert('✅ 数据导入成功！')
+          await showAlert('✅ 数据导入成功！')
         } catch (error) {
           console.error('导入失败:', error)
-          alert('导入失败: ' + error.message)
+          showAlert('导入失败: ' + error.message)
         }
       }
       reader.onerror = () => {
-        alert('读取文件失败')
+        showAlert('读取文件失败')
       }
       reader.readAsText(file)
     } catch (error) {
       console.error('导入失败:', error)
-      alert('导入失败: ' + error.message)
+      showAlert('导入失败: ' + error.message)
     }
   }
   input.click()
 }
 
-const resetData = () => {
-  if (!confirm('⚠️ 确定要重置所有数据为默认值吗？\n（当前修改将丢失！）')) {
-    return
-  }
+/**
+ * ⭐ 重置数据（带确认弹窗）
+ */
+const resetData = async () => {
+  const result = await showConfirm({
+    title: '🔄 重置数据',
+    message: '⚠️ 确定要重置所有数据为默认值吗？\n\n当前的所有修改都将丢失！',
+    confirmText: '重置',
+    cancelText: '取消',
+    confirmType: 'danger'
+  })
+
+  if (!result.confirmed) return
 
   try {
     dataStore.resetData()
@@ -956,10 +1396,10 @@ const resetData = () => {
       handleCalculate()
     }, 500)
 
-    alert('✅ 数据已重置为默认值！')
+    await showAlert('✅ 数据已重置为默认值！')
   } catch (error) {
     console.error('重置失败:', error)
-    alert('重置失败: ' + error.message)
+    showAlert('重置失败: ' + error.message)
   }
 }
 
@@ -972,7 +1412,7 @@ const onAddWeapon = (index, rowData) => {
   if (index === -1 || rowData === undefined || rowData === null) {
     const existing = dm.data.weapons.find(w => w._isNewRow === true)
     if (existing) {
-      alert('⚠️ 已有新增行，请先完成或取消当前新增操作')
+      showAlert('⚠️ 已有新增行，请先完成或取消当前新增操作')
       return
     }
 
@@ -1033,7 +1473,6 @@ const onAddWeapon = (index, rowData) => {
     weaponList.push(newWeapon)
   }
 
-  // ⭐ defaultPriceConfig 加 aimSpeed
   const defaultPriceConfig = {
     id: '#1',
     barrelId: -1,
@@ -1041,7 +1480,7 @@ const onAddWeapon = (index, rowData) => {
     muzzleId: 0,
     muzzle: '无',
     precision: 0.09,
-    aimSpeed: 0,       // ⭐ 新增
+    aimSpeed: 0,
     buildCode: '',
     price: 0,
     distance: [30, 50, 100],
@@ -1079,7 +1518,7 @@ const onDeleteWeapon = (index, weaponId, isCancelled) => {
     console.log('✅ 已取消新增武器')
     return
   }
-  alert('删除武器功能开发中')
+  showAlert('删除武器功能开发中')
 }
 
 // ============================================================
@@ -1150,7 +1589,7 @@ onMounted(async () => {
     }, 500)
   } catch (error) {
     console.error('初始化失败:', error)
-    alert('数据加载失败，请检查 data.json 文件是否存在')
+    showAlert('数据加载失败，请检查 data.json 文件是否存在')
   }
 })
 </script>

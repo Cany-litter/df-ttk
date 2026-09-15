@@ -22,6 +22,14 @@ const state = reactive({
 
   isLoading: false,
 
+  // ⭐ 全局计算中状态（用于互斥判断）
+  // - true 时：单枪「更新 TTK」按钮禁用
+  isGlobalCalculating: false,
+
+  // ⭐ 单枪更新中的武器 ID 列表（响应式，用于按钮 loading 状态）
+  // - 非空时：全局「计算 TTK」「生成折线图」按钮禁用
+  updatingWeaponIds: [],
+
   // 枪管编辑器
   showBarrelEditor: false,
   editingWeaponId: null,
@@ -102,6 +110,59 @@ export const appStore = {
   getScore(weaponId, configId) {
     const key = `${weaponId}_${configId}`
     return state.scores[key] || null
+  },
+
+  // ============================================================
+  // ⭐ 全局计算状态管理（用于互斥判断）
+  // ============================================================
+
+  /**
+   * 设置全局计算中状态
+   * @param {boolean} calculating
+   */
+  setGlobalCalculating(calculating) {
+    state.isGlobalCalculating = !!calculating
+  },
+
+  // ============================================================
+  // ⭐ 单枪更新状态管理
+  // 用于「🔄 更新 TTK」按钮的 loading 状态
+  // ============================================================
+
+  /**
+   * 标记某把武器正在更新中
+   * @param {number|string} weaponId
+   */
+  addUpdatingWeapon(weaponId) {
+    const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId
+    if (isNaN(id)) return
+    if (!state.updatingWeaponIds.includes(id)) {
+      state.updatingWeaponIds.push(id)
+    }
+  },
+
+  /**
+   * 取消某把武器的更新中状态
+   * @param {number|string} weaponId
+   */
+  removeUpdatingWeapon(weaponId) {
+    const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId
+    if (isNaN(id)) return
+    const idx = state.updatingWeaponIds.indexOf(id)
+    if (idx !== -1) {
+      state.updatingWeaponIds.splice(idx, 1)
+    }
+  },
+
+  /**
+   * 判断某把武器是否正在更新中
+   * @param {number|string} weaponId
+   * @returns {boolean}
+   */
+  isUpdatingWeapon(weaponId) {
+    const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId
+    if (isNaN(id)) return false
+    return state.updatingWeaponIds.includes(id)
   },
 
   // ============================================================

@@ -149,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 
 const props = defineProps({
@@ -175,6 +175,9 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'saved'])
 
+// ⭐ 注入通用弹窗
+const showAlert = inject('showAlert', null)
+
 const typeOptions = ['步枪', '冲锋枪', '轻机枪', '精确射手步枪', '手枪']
 
 // ---------- 表单状态 ----------
@@ -190,7 +193,6 @@ const form = ref({
   ranges: [40, 70, Infinity, Infinity],
   decays: [1, 0.9, 0.75, 0.75, 0.75],
   mult: { head: 1.9, chest: 1.0, stomach: 0.9, limbs: 0.4 },
-  // ⭐ 连发字段
   fireMode: '',
   burstCount: 3,
   burstInternalROF: 800,
@@ -207,7 +209,6 @@ const weaponName = computed(() => {
   return w?.name || '未知武器'
 })
 
-// ⭐ 是否连发模式（控制其他 3 个字段的禁用状态）
 const isBurstMode = computed(() => form.value.fireMode === 'burst')
 
 // ---------- 工具函数 ----------
@@ -259,7 +260,6 @@ const loadWeapon = () => {
     ranges: [...(weapon.ranges || [40, 70, Infinity, Infinity])],
     decays: [...(weapon.decays || [1, 0.9, 0.75, 0.75, 0.75])],
     mult: { ...(weapon.mult || { head: 1.9, chest: 1.0, stomach: 0.9, limbs: 0.4 }) },
-    // ⭐ 连发字段（缺失时给默认值）
     fireMode: weapon.fireMode || '',
     burstCount: weapon.burstCount ?? 3,
     burstInternalROF: weapon.burstInternalROF ?? 800,
@@ -290,12 +290,16 @@ const onDecaysBlur = () => {
   decaysDisplay.value = fmtDecays(form.value.decays)
 }
 
-// ---------- 保存 ----------
-const save = () => {
+// ---------- 保存（改用弹窗） ----------
+const save = async () => {
   if (!props.weaponId) return
 
   if (!form.value.name || form.value.name.trim() === '') {
-    alert('⚠️ 请输入武器名称')
+    if (showAlert) {
+      await showAlert('⚠️ 请输入武器名称')
+    } else {
+      alert('⚠️ 请输入武器名称')
+    }
     return
   }
 
@@ -336,7 +340,11 @@ const save = () => {
     emit('saved')
     emit('update:visible', false)
   } else {
-    alert('保存失败，请检查控制台')
+    if (showAlert) {
+      await showAlert('保存失败，请检查控制台')
+    } else {
+      alert('保存失败，请检查控制台')
+    }
   }
 }
 

@@ -147,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 
 const props = defineProps({
@@ -162,6 +162,10 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:visible', 'saved'])
+
+// ⭐ 注入通用弹窗
+const showConfirm = inject('showConfirm', null)
+const showAlert = inject('showAlert', null)
 
 // 本地状态
 const barrels = ref([])
@@ -225,8 +229,6 @@ const parsePartMultAdd = (str) => {
  * 
  * 输入：[{ untilShot: 3, rofAdd: 100 }, { rofAdd: 0 }]
  * 输出："3:+100"
- * 
- * 规则：只显示"有 untilShot 且 rofAdd != 0"的阶段
  */
 const formatRofStages = (rofStages) => {
   if (!Array.isArray(rofStages) || rofStages.length === 0) return ''
@@ -244,12 +246,6 @@ const formatRofStages = (rofStages) => {
 
 /**
  * 将显示字符串解析为 rofStages 数组
- * 
- * 输入："3:+100" 或 "3:+100,6:+50" 或空
- * 输出：
- *   [{ untilShot: 3, rofAdd: 100 }, { rofAdd: 0 }]
- *   [{ untilShot: 3, rofAdd: 100 }, { untilShot: 6, rofAdd: 50 }, { rofAdd: 0 }]
- *   null（空字符串）
  */
 const parseRofStagesFromString = (str) => {
   if (!str || str.trim() === '') return null
@@ -258,7 +254,6 @@ const parseRofStagesFromString = (str) => {
   const stages = []
 
   for (const seg of segments) {
-    // 匹配 "N:+X" 或 "N:-X" 或 "N:X"
     const match = seg.match(/^(\d+)\s*:\s*([+-]?\d+(?:\.\d+)?)$/)
     if (!match) continue
 
@@ -273,10 +268,7 @@ const parseRofStagesFromString = (str) => {
 
   if (stages.length === 0) return null
 
-  // 按 untilShot 升序排序
   stages.sort((a, b) => a.untilShot - b.untilShot)
-
-  // 自动补"之后所有发"阶段
   stages.push({ rofAdd: 0 })
 
   return stages
@@ -300,13 +292,12 @@ const loadWeapon = () => {
   weaponName.value = weapon.name || '未命名武器'
   currentWeapon.value = weapon
 
-  // 复制枪管数据
   barrels.value = (weapon.barrels || []).map(b => ({
     ...b,
     rangesDisplay: b.ranges ? b.ranges.map(r => r === Infinity ? '∞' : r).join(',') : '',
     decaysDisplay: b.decays ? b.decays.join(',') : '',
     partMultAddDisplay: formatPartMultAdd(b.partMultAdd),
-    rofStagesDisplay: formatRofStages(b.rofStages),   // ⭐ 分段射速
+    rofStagesDisplay: formatRofStages(b.rofStages),
     fireMode: b.fireMode || '',
     burstCount: b.burstCount || 3,
     burstInternalROF: b.burstInternalROF || 800,
@@ -314,7 +305,6 @@ const loadWeapon = () => {
   }))
 }
 
-// 监听 weaponId 变化
 watch(() => props.weaponId, loadWeapon, { immediate: true })
 watch(() => props.visible, (newVal) => {
   if (newVal) loadWeapon()
@@ -324,7 +314,6 @@ watch(() => props.visible, (newVal) => {
 // 解析方法
 // ============================================================
 
-// 解析射程
 const parseRanges = (index) => {
   const barrel = barrels.value[index]
   if (!barrel || !barrel.rangesDisplay) return
@@ -338,7 +327,6 @@ const parseRanges = (index) => {
   barrel.ranges = ranges
 }
 
-// ⭐ 解析分段射速（唯一的 parseRofStages，写回 barrel.rofStages）
 const parseRofStages = (index) => {
   const barrel = barrels.value[index]
   if (!barrel) return
@@ -364,7 +352,7 @@ const addBarrel = () => {
     decays: [],
     decaysDisplay: '',
     partMultAddDisplay: '',
-    rofStagesDisplay: '',   // ⭐ 分段射速
+    rofStagesDisplay: '',
     rofStages: null,
     fireMode: '',
     burstCount: 3,
@@ -373,8 +361,22 @@ const addBarrel = () => {
   })
 }
 
-const deleteBarrel = (index) => {
-  if (!confirm('确定要删除这个枪管吗？')) return
+// ⭐ 删除枪管（改用弹窗）
+const deleteBarrel = async (index) => {
+  let confirmed = true
+  if (showConfirm) {
+    const result = await showConfirm({
+      title: '删除枪管',
+      message: '确定要删除这个枪管吗？',
+      confirmText: '删除',
+      confirmType: 'danger'
+    })
+    confirmed = result.confirmed
+  } else {
+    confirmed = confirm('确定要删除这个枪管吗？')
+  }
+
+  if (!confirmed) return
   barrels.value.splice(index, 1)
 }
 
@@ -382,17 +384,19 @@ const deleteBarrel = (index) => {
 // 保存
 // ============================================================
 
-const save = () => {
+const save = async () => {
   const weapon = dataStore.getWeaponById(props.weaponId)
   if (!weapon) {
-    alert('未找到武器')
+    if (showAlert) {
+      await showAlert('未找到武器')
+    } else {
+      alert('未找到武器')
+    }
     return
   }
 
-  // 过滤空名称的枪管
   const validBarrels = barrels.value.filter(b => b.name && b.name.trim() !== '')
 
-  // 构建保存数据
   weapon.barrels = validBarrels.map(b => {
     const result = {
       name: b.name.trim(),
@@ -405,24 +409,19 @@ const save = () => {
       triggerDelayDelta: b.triggerDelayDelta || 0
     }
 
-    // 自定义射程（仅当用户填写时才写入）
     if (b.ranges && b.ranges.length > 0) {
       result.ranges = b.ranges
     }
 
-    // 自定义衰减（仅当用户填写时才写入）
     if (b.decaysDisplay && b.decaysDisplay.trim() !== '') {
       result.decays = b.decaysDisplay.split(',').map(v => parseFloat(v.trim()) || 1.0)
     }
 
-    // 部位倍率加成（仅当用户填写且非全 0 时才写入）
     const partMultAdd = parsePartMultAdd(b.partMultAddDisplay)
     if (partMultAdd) {
       result.partMultAdd = partMultAdd
     }
 
-    // ⭐ 分段射速（仅当用户填写时才写入）
-    // 优先用 b.rofStages（如果 parse 过），否则从 display 重新解析
     let rofStages = b.rofStages
     if (rofStages === undefined || rofStages === null) {
       rofStages = parseRofStagesFromString(b.rofStagesDisplay || '')
@@ -431,7 +430,6 @@ const save = () => {
       result.rofStages = rofStages
     }
 
-    // 开火模式
     if (b.fireMode) {
       result.fireMode = b.fireMode
       if (b.fireMode === 'burst') {
@@ -444,13 +442,18 @@ const save = () => {
     return result
   })
 
-  // 标记武器已修改
   dataStore.markWeaponModified(props.weaponId)
   dataStore.refreshWeapons()
 
   emit('saved')
   emit('update:visible', false)
-  alert('✅ 枪管已保存')
+
+  // ⭐ 保存成功提示（改用弹窗）
+  if (showAlert) {
+    await showAlert('✅ 枪管已保存')
+  } else {
+    alert('✅ 枪管已保存')
+  }
 }
 
 // ============================================================
@@ -605,13 +608,11 @@ const close = () => {
   cursor: not-allowed;
 }
 
-/* 部位倍率加成输入框 - 等宽字体 */
 .part-mult-input {
   font-family: var(--font-mono);
   letter-spacing: -0.3px;
 }
 
-/* ⭐ 分段射速输入框 - 等宽字体 */
 .rof-stages-input {
   font-family: var(--font-mono);
   letter-spacing: -0.3px;

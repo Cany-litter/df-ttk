@@ -117,19 +117,55 @@
 
     <!-- 第三行：操作按钮 -->
     <div class="params-row buttons-row">
-      <button class="btn-primary" @click="onCalculate" :disabled="isLoading">
-        {{ isLoading ? '⏳ 计算中...' : '📊 计算 TTK' }}
+      <!-- ⭐ 计算 TTK（互斥禁用） -->
+      <button
+        class="btn-primary"
+        @click="onCalculate"
+        :disabled="isAnyUpdating || isGlobalCalculating"
+        :title="getCalcButtonTitle()"
+      >
+        <template v-if="isGlobalCalculating">⏳ 计算中...</template>
+        <template v-else-if="isAnyUpdating">⏳ 更新中...</template>
+        <template v-else>📊 计算 TTK</template>
       </button>
-      <button class="btn-secondary" @click="onDistanceChart" :disabled="isLoading">
+
+      <!-- ⭐ 生成折线图（互斥禁用） -->
+      <button
+        class="btn-secondary"
+        @click="onDistanceChart"
+        :disabled="isAnyUpdating || isGlobalCalculating"
+        :title="getChartButtonTitle()"
+      >
         📈 生成折线图
       </button>
-      <button class="btn-secondary" @click="onExportData" style="background:#9c27b0;color:#fff;">
+
+      <!-- ⭐ 导出数据（互斥禁用） -->
+      <button
+        class="btn-secondary"
+        @click="onExportData"
+        :disabled="isAnyUpdating || isGlobalCalculating"
+        style="background:#9c27b0;color:#fff;"
+      >
         📤 导出数据
       </button>
-      <button class="btn-secondary" @click="onImportData" style="background:#607d8b;color:#fff;">
+
+      <!-- ⭐ 导入数据（互斥禁用） -->
+      <button
+        class="btn-secondary"
+        @click="onImportData"
+        :disabled="isAnyUpdating || isGlobalCalculating"
+        style="background:#607d8b;color:#fff;"
+      >
         📥 导入数据
       </button>
-      <button class="btn-secondary" @click="onResetData" style="background:#ff9800;color:#fff;">
+
+      <!-- ⭐ 重置数据（互斥禁用） -->
+      <button
+        class="btn-secondary"
+        @click="onResetData"
+        :disabled="isAnyUpdating || isGlobalCalculating"
+        style="background:#ff9800;color:#fff;"
+      >
         🔄 重置数据
       </button>
     </div>
@@ -167,12 +203,26 @@ const localParams = ref({
   kdRatio: 1.0,
   extractRate: 0.5,
   extraCost: 30,
-  // ⭐ 开镜权重（小数，0~1）
   aimWeight: 0.4
 })
 
 // ---------- 加载状态 ----------
 const isLoading = computed(() => appStore.state.isLoading)
+
+// ⭐ 全局计算中状态
+const isGlobalCalculating = computed(() => {
+  return appStore.state.isGlobalCalculating === true
+})
+
+// ⭐ 任意单枪更新中状态
+const isAnyUpdating = computed(() => {
+  return (appStore.state.updatingWeaponIds || []).length > 0
+})
+
+// ⭐ 互斥禁用
+const isAnyBusy = computed(() => {
+  return isAnyUpdating.value || isGlobalCalculating.value
+})
 
 // ---------- 撤离率（百分比显示） ----------
 const extractRatePercent = computed({
@@ -183,7 +233,6 @@ const extractRatePercent = computed({
 })
 
 // ---------- ⭐ 开镜权重（百分比显示） ----------
-// 内部存小数（0~1），UI 显示百分比（0~100）
 const aimWeightPercent = computed({
   get: () => Math.round((localParams.value.aimWeight ?? 0.4) * 100),
   set: (val) => {
@@ -195,7 +244,6 @@ const aimWeightPercent = computed({
 // ---------- 命中率原始输入 ----------
 const hitRateRaw = ref('')
 
-// 初始化命中率显示
 const initHitRateRaw = () => {
   const map = localParams.value.hitRateMap
   if (map && map.length > 0) {
@@ -211,14 +259,11 @@ const syncParams = () => {
   paramsStore.updateAll(localParams.value)
 }
 
-// 同步撤离率
 const syncExtractRate = () => {
   syncParams()
 }
 
-// ⭐ 同步开镜权重
 const syncAimWeight = () => {
-  // aimWeightPercent 的 setter 已经把值写到 localParams.aimWeight
   syncParams()
 }
 
@@ -261,26 +306,44 @@ watch(() => paramsStore.state, (newState) => {
   }
 }, { deep: true })
 
+// ---------- ⭐ 按钮 title（互斥提示） ----------
+const getCalcButtonTitle = () => {
+  if (isGlobalCalculating.value) return '全局计算中...'
+  if (isAnyUpdating.value) return '正在更新单枪数据，请稍候'
+  return '计算所有启用配置的 TTK'
+}
+
+const getChartButtonTitle = () => {
+  if (isGlobalCalculating.value) return '全局计算中...'
+  if (isAnyUpdating.value) return '正在更新单枪数据，请稍候'
+  return '生成距离-TTK 折线图数据'
+}
+
 // ---------- 事件触发 ----------
 const onCalculate = () => {
+  if (isAnyBusy.value) return
   syncParams()
   emit('calculate')
 }
 
 const onDistanceChart = () => {
+  if (isAnyBusy.value) return
   syncParams()
   emit('distance-chart')
 }
 
 const onExportData = () => {
+  if (isAnyBusy.value) return
   emit('export-data')
 }
 
 const onImportData = () => {
+  if (isAnyBusy.value) return
   emit('import-data')
 }
 
 const onResetData = () => {
+  if (isAnyBusy.value) return
   emit('reset-data')
 }
 </script>
@@ -342,13 +405,11 @@ const onResetData = () => {
   background: var(--color-bg-white);
 }
 
-/* ⭐ 普通下拉框和输入框宽度 120px */
 .param-select,
 .param-input {
   width: 120px;
 }
 
-/* ⭐ 命中率输入框单独加宽 */
 .hitrate-input {
   width: 220px;
   padding: 2px 4px;
@@ -367,7 +428,6 @@ const onResetData = () => {
   background: var(--color-bg-white);
 }
 
-/* ⭐ 命中概率输入框 */
 .prob-input {
   width: 80px;
   padding: 2px 3px;
@@ -462,6 +522,16 @@ const onResetData = () => {
   padding-top: 4px;
   border-top: 1px solid #eee;
   margin-top: 4px;
+}
+
+/* ⭐ 按钮禁用态（统一视觉） */
+.buttons-row button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.buttons-row button:disabled:active {
+  transform: none;
 }
 
 .unit {
