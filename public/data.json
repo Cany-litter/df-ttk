@@ -1866,17 +1866,23 @@
       "barrels": [
         {
           "name": "军需长枪管",
-          "rangeMult": 1.06,
+          "rangeMult": 1.2,
+          "rangeAdd": 0,
+          "velocityAdd": 0,
+          "rofMult": 1,
           "damageBonus": 0,
           "armorDamageBonus": 0,
-          "rofMult": 1
+          "triggerDelayDelta": 0
         },
         {
           "name": "竞赛性能长枪管",
-          "rangeMult": 1.18,
+          "rangeMult": 1.3,
+          "rangeAdd": 0,
+          "velocityAdd": 0,
+          "rofMult": 1,
           "damageBonus": 0,
           "armorDamageBonus": 0,
-          "rofMult": 1
+          "triggerDelayDelta": 0
         }
       ],
       "mult": {
@@ -5155,56 +5161,64 @@
           "id": "#1",
           "barrel": "无",
           "muzzle": "无",
-          "buildCode": "AKS74U-CFG1",
-          "price": 0,
-          "distance": [],
-          "hitRate": [],
+          "buildCode": "AKS-74U突击步枪-烽火地带-6LA97N005506E7BV9G8G5",
+          "price": 120000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.8,
+            0.5
+          ],
           "enabled": true,
           "precision": 0.09,
+          "aimSpeed": 270,
           "cache": {
             "keyPoints": [
               {
                 "d": 0,
-                "t": 669.0112570356753,
-                "shots": 6.94305,
+                "t": 549.9906191370136,
+                "shots": 5.88575,
                 "bulletPrice": 1891
               },
               {
                 "d": 39,
-                "t": 737.7284885621899,
-                "shots": 6.9178,
+                "t": 686.4752052601422,
+                "shots": 6.4625,
                 "bulletPrice": 1891
               },
               {
                 "d": 40,
-                "t": 879.133707420273,
-                "shots": 8.15765,
+                "t": 829.5858650187623,
+                "shots": 7.7175,
                 "bulletPrice": 1891
               },
               {
                 "d": 69,
-                "t": 935.78936950281,
-                "shots": 8.18825,
+                "t": 1155.3297072138782,
+                "shots": 10.1385,
                 "bulletPrice": 1891
               },
               {
                 "d": 70,
-                "t": 1134.5491849838004,
-                "shots": 9.9376,
+                "t": 1411.1908360156915,
+                "shots": 12.3951,
                 "bulletPrice": 1891
               },
               {
                 "d": 100,
-                "t": 1186.1110040104522,
-                "shots": 9.90665,
+                "t": 1963.6344561680787,
+                "shots": 16.81365,
                 "bulletPrice": 1891
               }
             ],
             "hash": "hyarz7x",
             "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:07.470Z"
-          },
-          "aimSpeed": 0
+            "cachedAt": "2026-09-15T11:09:16.427Z"
+          }
         }
       ]
     },
@@ -7708,80 +7722,88 @@
           "id": "#1",
           "barrel": "野牛刀锋超长枪管",
           "muzzle": "无",
-          "buildCode": "YENIU-CFG1",
-          "price": 0,
-          "distance": [],
-          "hitRate": [],
+          "buildCode": "野牛冲锋枪-烽火地带-6LA98K005506E7BV9G8G5",
+          "price": 120000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.8,
+            0.4
+          ],
           "enabled": true,
           "precision": 0.09,
+          "aimSpeed": 308,
           "cache": {
             "keyPoints": [
               {
                 "d": 0,
-                "t": 567.0455235204704,
-                "shots": 7.22805,
+                "t": 468.28224582700767,
+                "shots": 6.1433,
                 "bulletPrice": 1816
               },
               {
                 "d": 25,
-                "t": 600.5355894621075,
-                "shots": 7.2086,
+                "t": 503.0560750463571,
+                "shots": 6.13795,
                 "bulletPrice": 1816
               },
               {
                 "d": 26,
-                "t": 755.6516412652371,
-                "shots": 8.8968,
+                "t": 635.2419295809178,
+                "shots": 7.5743,
                 "bulletPrice": 1816
               },
               {
                 "d": 34,
-                "t": 767.2583561451107,
-                "shots": 8.90035,
+                "t": 675.3964441573022,
+                "shots": 7.8914,
                 "bulletPrice": 1816
               },
               {
                 "d": 35,
-                "t": 857.867579420075,
-                "shots": 9.88005,
+                "t": 761.676380633965,
+                "shots": 8.82355,
                 "bulletPrice": 1816
               },
               {
                 "d": 51,
-                "t": 877.8488392251201,
-                "shots": 9.85165,
+                "t": 944.9505084208647,
+                "shots": 10.58865,
                 "bulletPrice": 1816
               },
               {
                 "d": 52,
-                "t": 997.9800655350631,
-                "shots": 11.1556,
+                "t": 1083.6826452011978,
+                "shots": 12.0969,
                 "bulletPrice": 1816
               },
               {
                 "d": 71,
-                "t": 1024.9968859087414,
-                "shots": 11.158,
+                "t": 1372.4232895506832,
+                "shots": 14.9739,
                 "bulletPrice": 1816
               },
               {
                 "d": 72,
-                "t": 1193.6197662397485,
-                "shots": 12.99455,
+                "t": 1614.5848648739814,
+                "shots": 17.61815,
                 "bulletPrice": 1816
               },
               {
                 "d": 100,
-                "t": 1231.0452410050143,
-                "shots": 12.97185,
+                "t": 2562.676500488855,
+                "shots": 27.5976,
                 "bulletPrice": 1816
               }
             ],
             "hash": "hojjz0z",
             "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:24.154Z"
-          },
-          "aimSpeed": 0
+            "cachedAt": "2026-09-15T11:13:18.456Z"
+          }
         }
       ]
     },
@@ -7793,8 +7815,8 @@
           "id": "#1",
           "barrel": "勇士海狸枪管",
           "muzzle": "冲锋枪回声消音器",
-          "buildCode": "勇士冲锋枪-烽火地带-6L3TJ2S0CCNDBQDO7A8E4",
-          "price": 270000,
+          "buildCode": "勇士冲锋枪-烽火地带-6LA99F405506E7BV9G8G5",
+          "price": 140000,
           "distance": [
             30,
             50,
@@ -7803,79 +7825,79 @@
           "hitRate": [
             1,
             0.9,
-            0.5
+            0.55
           ],
           "enabled": true,
           "bullet": "",
           "precision": 0.09,
+          "aimSpeed": 338,
           "cache": {
             "keyPoints": [
               {
                 "d": 0,
-                "t": 406.76571428567013,
-                "shots": 5.7456,
+                "t": 406.27714285709965,
+                "shots": 5.7399,
                 "bulletPrice": 1816
               },
               {
                 "d": 25,
-                "t": 442.4980737457299,
-                "shots": 5.7511,
+                "t": 443.6980737457307,
+                "shots": 5.7651,
                 "bulletPrice": 1816
               },
               {
                 "d": 26,
-                "t": 574.8456538385185,
-                "shots": 7.2787,
+                "t": 575.2142252670934,
+                "shots": 7.283,
                 "bulletPrice": 1816
               },
               {
                 "d": 34,
-                "t": 599.3762945798001,
-                "shots": 7.43325,
+                "t": 599.3934374369422,
+                "shots": 7.43345,
                 "bulletPrice": 1816
               },
               {
                 "d": 35,
-                "t": 682.3053032440697,
-                "shots": 8.3843,
+                "t": 682.5324461012124,
+                "shots": 8.38695,
                 "bulletPrice": 1816
               },
               {
                 "d": 51,
-                "t": 773.2980132983496,
-                "shots": 9.1826,
+                "t": 769.7408704411991,
+                "shots": 9.1411,
                 "bulletPrice": 1816
               },
               {
                 "d": 52,
-                "t": 891.5541648196288,
-                "shots": 10.5458,
+                "t": 890.1784505339186,
+                "shots": 10.52975,
                 "bulletPrice": 1816
               },
               {
                 "d": 71,
-                "t": 1106.5296151520633,
-                "shots": 12.7412,
+                "t": 1076.675329437795,
+                "shots": 12.3929,
                 "bulletPrice": 1816
               },
               {
                 "d": 72,
-                "t": 1320.4000523877648,
-                "shots": 15.2199,
+                "t": 1282.2743381020355,
+                "shots": 14.7751,
                 "bulletPrice": 1816
               },
               {
                 "d": 100,
-                "t": 1947.159437839944,
-                "shots": 22.07135,
+                "t": 1775.4308664113653,
+                "shots": 20.06785,
                 "bulletPrice": 1816
               }
             ],
             "hash": "h4iupgm",
             "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:25.686Z"
-          },
-          "aimSpeed": 0
+            "cachedAt": "2026-09-15T11:16:59.395Z"
+          }
         }
       ]
     },
@@ -7888,703 +7910,7 @@
           "barrel": "击剑手枪管",
           "muzzle": "冲锋枪回声消音器",
           "buildCode": "MK4冲锋枪-烽火地带-6L3TJ9K0CCNDBQDO7A8E4",
-          "price": 410000,
-          "distance": [
-            30,
-            50,
-            100
-          ],
-          "hitRate": [
-            1,
-            0.9,
-            0.6
-          ],
-          "enabled": true,
-          "muzzleId": 3,
-          "bullet": "",
-          "precision": 0.09,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 295.04300000003104,
-                "shots": 5.276,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 31,
-                "t": 326.3381583101586,
-                "shots": 5.3004,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 32,
-                "t": 376.07016341688006,
-                "shots": 5.70335,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 47,
-                "t": 426.7182400185886,
-                "shots": 6.1728,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 48,
-                "t": 490.0847451252895,
-                "shots": 6.96985,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 63,
-                "t": 566.6468217270569,
-                "shots": 7.73735,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 64,
-                "t": 622.4228268338379,
-                "shots": 8.4401,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 100,
-                "t": 902.9340106777935,
-                "shots": 11.52105,
-                "bulletPrice": 1170
-              }
-            ],
-            "hash": "hdhkkc9",
-            "avgBurstInterval": 0.23192137500001891,
-            "cachedAt": "2026-09-14T08:21:26.178Z"
-          },
-          "aimSpeed": 0
-        },
-        {
-          "id": "#3",
-          "barrelId": 0,
-          "barrel": "深空镀铬枪管",
-          "muzzleId": 0,
-          "muzzle": "无",
-          "precision": 0.09,
-          "buildCode": "",
-          "price": 0,
-          "distance": [
-            30,
-            50,
-            100
-          ],
-          "hitRate": [
-            1,
-            0.9,
-            0.6
-          ],
-          "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 349.37636134358763,
-                "shots": 6.07935,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 24,
-                "t": 387.7226569806876,
-                "shots": 6.08035,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 25,
-                "t": 425.50808409302664,
-                "shots": 6.6065,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 34,
-                "t": 450.3207089143532,
-                "shots": 6.75855,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 35,
-                "t": 492.93475003564953,
-                "shots": 7.3549,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 44,
-                "t": 531.5900895193823,
-                "shots": 7.7082,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 45,
-                "t": 591.6923800961436,
-                "shots": 8.5588,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 100,
-                "t": 996.2086518599557,
-                "shots": 13.1645,
-                "bulletPrice": 1170
-              }
-            ],
-            "hash": "huz8rk6",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:27.218Z"
-          },
-          "aimSpeed": 0
-        }
-      ]
-    },
-    {
-      "weaponId": 22,
-      "weaponName": "MP5",
-      "configs": [
-        {
-          "id": "#3",
-          "barrel": "斥候长枪管组合",
-          "muzzle": "冲锋枪回声消音器",
-          "buildCode": "MP5冲锋枪-烽火地带-6L3TIMS0CCNDBQDO7A8E4",
-          "price": 230000,
-          "distance": [
-            30,
-            50,
-            100
-          ],
-          "hitRate": [
-            1,
-            0.8,
-            0.5
-          ],
-          "enabled": true,
-          "bullet": "",
-          "precision": 0.09,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 407.2719512194026,
-                "shots": 6.56605,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 23,
-                "t": 447.3504907535011,
-                "shots": 6.5709,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 24,
-                "t": 562.2727284215753,
-                "shots": 8.1179,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 31,
-                "t": 579.5832701461654,
-                "shots": 8.18925,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 32,
-                "t": 649.571361472689,
-                "shots": 9.12215,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 46,
-                "t": 787.4180546779348,
-                "shots": 10.6756,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 47,
-                "t": 899.6329752727061,
-                "shots": 12.1856,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 64,
-                "t": 1074.267113189314,
-                "shots": 14.171,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 65,
-                "t": 1255.0393508572267,
-                "shots": 16.61795,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 1820.8493765533287,
-                "shots": 23.52455,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "ha2817w",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:28.911Z"
-          },
-          "aimSpeed": 0
-        }
-      ]
-    },
-    {
-      "weaponId": 23,
-      "weaponName": "MP7",
-      "configs": [
-        {
-          "id": "#2",
-          "barrel": "蜂刺长枪管组合",
-          "muzzle": "冲锋枪回声消音器",
-          "buildCode": "MP7冲锋枪-烽火地带-6L3TJ4S0CCNDBQDO7A8E4",
-          "price": 500000,
-          "distance": [
-            30,
-            50,
-            100
-          ],
-          "hitRate": [
-            1,
-            0.85,
-            0.5
-          ],
-          "enabled": true,
-          "muzzleId": 3,
-          "bullet": "",
-          "precision": 0.09,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 343.8821052631134,
-                "shots": 6.4448,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 31,
-                "t": 377.6121568628431,
-                "shots": 6.49765,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 32,
-                "t": 482.78728586168006,
-                "shots": 8.1474,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 42,
-                "t": 534.4491021672611,
-                "shots": 8.81015,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 43,
-                "t": 599.5094943239957,
-                "shots": 9.82475,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 63,
-                "t": 736.1931269348505,
-                "shots": 11.67845,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 64,
-                "t": 837.0924664603538,
-                "shots": 13.2605,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 100,
-                "t": 1294.8339525284753,
-                "shots": 19.94925,
-                "bulletPrice": 1170
-              }
-            ],
-            "hash": "hj9rl4u",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:30.121Z"
-          },
-          "aimSpeed": 0
-        }
-      ]
-    },
-    {
-      "weaponId": 24,
-      "weaponName": "P90",
-      "configs": [
-        {
-          "id": "#1",
-          "barrel": "重攻长枪管",
-          "muzzle": "冲锋枪回声消音器",
-          "buildCode": "P90冲锋枪-烽火地带-6L3TIP80CCNDBQDO7A8E4",
-          "price": 330000,
-          "distance": [
-            30,
-            50,
-            100
-          ],
-          "hitRate": [
-            1,
-            0.9,
-            0.6
-          ],
-          "enabled": true,
-          "muzzleId": 3,
-          "precision": 0.09,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 343.8240534521337,
-                "shots": 6.1459,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 31,
-                "t": 376.8687715619781,
-                "shots": 6.1856,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 32,
-                "t": 475.8903663915946,
-                "shots": 7.65295,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 42,
-                "t": 512.5706799423913,
-                "shots": 8.0552,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 43,
-                "t": 573.7448360189587,
-                "shots": 8.9561,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 63,
-                "t": 679.4874230316173,
-                "shots": 10.24525,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 64,
-                "t": 772.0045635182298,
-                "shots": 11.61525,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 87,
-                "t": 950.4734049520251,
-                "shots": 13.94885,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 88,
-                "t": 1114.8235075766815,
-                "shots": 16.39395,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 100,
-                "t": 1259.590440630513,
-                "shots": 18.38455,
-                "bulletPrice": 2343
-              }
-            ],
-            "hash": "h3uhtbc",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:31.671Z"
-          },
-          "aimSpeed": 0
-        }
-      ]
-    },
-    {
-      "weaponId": 31,
-      "weaponName": "QCQ171",
-      "configs": [
-        {
-          "id": "#2",
-          "barrel": "新式红缨战术长枪管",
-          "muzzle": "无",
-          "buildCode": "QCQ171-CFG2",
-          "price": 0,
-          "distance": [],
-          "hitRate": [],
-          "enabled": true,
-          "precision": 0.09,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 458.4456094364774,
-                "shots": 6.8299,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 25,
-                "t": 497.001466739591,
-                "shots": 6.8219,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 26,
-                "t": 617.9319054877404,
-                "shots": 8.3398,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 34,
-                "t": 630.3138165219889,
-                "shots": 8.3378,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 35,
-                "t": 696.4736130684054,
-                "shots": 9.1592,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 51,
-                "t": 723.2466094488115,
-                "shots": 9.18075,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 52,
-                "t": 818.6672185770285,
-                "shots": 10.37425,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 71,
-                "t": 850.7282546620514,
-                "shots": 10.40325,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 72,
-                "t": 975.9640669359414,
-                "shots": 11.9759,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 1020.4881736421736,
-                "shots": 11.984,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "h5ky0v4",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:33.144Z"
-          },
-          "aimSpeed": 0
-        }
-      ]
-    },
-    {
-      "weaponId": 32,
-      "weaponName": "QCQ171高导",
-      "configs": [
-        {
-          "id": "#2",
-          "barrel": "新式红缨战术长枪管",
-          "muzzle": "冲锋枪回声消音器",
-          "buildCode": "QCQ171冲锋枪-烽火地带-6L3TJ780CCNDBQDO7A8E4",
-          "price": 560000,
-          "distance": [
-            30,
-            50,
-            100
-          ],
-          "hitRate": [
-            1,
-            1,
-            0.6
-          ],
-          "enabled": true,
-          "bullet": "",
-          "precision": 0.09,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 339.55542452840245,
-                "shots": 5.79905,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 25,
-                "t": 379.1153775063433,
-                "shots": 5.80435,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 26,
-                "t": 470.33607751232006,
-                "shots": 7.07145,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 34,
-                "t": 482.9389417104931,
-                "shots": 7.07235,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 35,
-                "t": 535.4214341693986,
-                "shots": 7.79195,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 51,
-                "t": 564.6601814337756,
-                "shots": 7.85075,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 52,
-                "t": 645.9787587981833,
-                "shots": 8.9779,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 71,
-                "t": 789.2463513633529,
-                "shots": 10.58185,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 72,
-                "t": 916.5378060862569,
-                "shots": 12.35875,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 1285.4756609687404,
-                "shots": 16.9528,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "h2ft0rw",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:34.587Z"
-          },
-          "aimSpeed": 0
-        }
-      ]
-    },
-    {
-      "weaponId": 33,
-      "weaponName": "QCQ171稳固",
-      "configs": [
-        {
-          "id": "#2",
-          "barrel": "新式红缨战术长枪管",
-          "muzzle": "无",
-          "buildCode": "QCQ171W-CFG2",
-          "price": 0,
-          "distance": [],
-          "hitRate": [],
-          "enabled": true,
-          "precision": 0.09,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 504.8040345821644,
-                "shots": 6.8389,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 34,
-                "t": 556.6647348974335,
-                "shots": 6.82235,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 35,
-                "t": 689.6917871952312,
-                "shots": 8.3429,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 46,
-                "t": 706.2588149204342,
-                "shots": 8.3351,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 47,
-                "t": 779.264253385506,
-                "shots": 9.1614,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 69,
-                "t": 812.7268390955113,
-                "shots": 9.1496,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 70,
-                "t": 922.9512977333761,
-                "shots": 10.4064,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 96,
-                "t": 963.0854932110026,
-                "shots": 10.39925,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 97,
-                "t": 1103.0981362867994,
-                "shots": 12.0006,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 1105.5395237277398,
-                "shots": 11.97445,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "hjgq2k5",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:36.032Z"
-          },
-          "aimSpeed": 0
-        }
-      ]
-    },
-    {
-      "weaponId": 37,
-      "weaponName": "SMG-45",
-      "configs": [
-        {
-          "id": "#2",
-          "barrel": "裂变长枪管",
-          "muzzle": "冲锋枪回声消音器",
-          "buildCode": "SMG-45冲锋枪-烽火地带-6L3TIU80CCNDBQDO7A8E4",
-          "price": 430000,
+          "price": 400000,
           "distance": [
             30,
             50,
@@ -8596,52 +7922,758 @@
             0.7
           ],
           "enabled": true,
+          "muzzleId": 3,
           "bullet": "",
           "precision": 0.09,
+          "aimSpeed": 342,
           "cache": {
             "keyPoints": [
               {
                 "d": 0,
-                "t": 440.5438016530482,
-                "shots": 5.44215,
-                "bulletPrice": 2555
+                "t": 294.38200000003064,
+                "shots": 5.26575,
+                "bulletPrice": 1170
               },
               {
                 "d": 31,
-                "t": 490.9073763222591,
-                "shots": 5.46385,
-                "bulletPrice": 2555
+                "t": 325.2316583101595,
+                "shots": 5.287,
+                "bulletPrice": 1170
               },
               {
                 "d": 32,
-                "t": 613.6229168539635,
-                "shots": 6.68555,
-                "bulletPrice": 2555
+                "t": 374.30416341688044,
+                "shots": 5.68045,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 47,
+                "t": 405.51774001859144,
+                "shots": 5.90395,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 48,
+                "t": 459.8952451252969,
+                "shots": 6.6078,
+                "bulletPrice": 1170
               },
               {
                 "d": 63,
-                "t": 744.4261609451444,
-                "shots": 7.51835,
-                "bulletPrice": 2555
+                "t": 521.5748217270574,
+                "shots": 7.18115,
+                "bulletPrice": 1170
               },
               {
                 "d": 64,
-                "t": 849.9350899062666,
-                "shots": 8.56655,
+                "t": 570.1403268338365,
+                "shots": 7.80125,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 100,
+                "t": 769.2660106778269,
+                "shots": 9.84975,
+                "bulletPrice": 1170
+              }
+            ],
+            "hash": "hdhkkc9",
+            "avgBurstInterval": 0.21077437500001667,
+            "cachedAt": "2026-09-15T11:20:52.396Z"
+          }
+        },
+        {
+          "id": "#3",
+          "barrelId": 0,
+          "barrel": "深空镀铬枪管",
+          "muzzleId": 3,
+          "muzzle": "冲锋枪回声消音器",
+          "precision": 0.09,
+          "buildCode": "MK4冲锋枪-烽火地带-6LA9A4C05506E7BV9G8G5",
+          "price": 400000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.85,
+            0.6
+          ],
+          "bullet": "",
+          "enabled": true,
+          "aimSpeed": 342,
+          "cache": {
+            "keyPoints": [
+              {
+                "d": 0,
+                "t": 348.7469907142175,
+                "shots": 6.0702,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 30,
+                "t": 377.59148017734117,
+                "shots": 6.0777,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 31,
+                "t": 418.763899763809,
+                "shots": 6.66255,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 43,
+                "t": 476.6446968099631,
+                "shots": 7.3393,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 44,
+                "t": 523.6981206381747,
+                "shots": 8.00965,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 56,
+                "t": 585.0937634944127,
+                "shots": 8.7375,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 57,
+                "t": 652.7891682924079,
+                "shots": 9.70795,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 100,
+                "t": 927.6775885919662,
+                "shots": 13.11405,
+                "bulletPrice": 1170
+              }
+            ],
+            "hash": "hon4jqt",
+            "avgBurstInterval": 0,
+            "cachedAt": "2026-09-15T11:20:53.423Z"
+          }
+        }
+      ]
+    },
+    {
+      "weaponId": 22,
+      "weaponName": "MP5",
+      "configs": [
+        {
+          "id": "#3",
+          "barrel": "特勤一体消音枪管",
+          "muzzle": "冲锋枪回声消音器",
+          "buildCode": "MP5冲锋枪-烽火地带-6LA9BKK05506E7BV9G8G5",
+          "price": 130000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.75,
+            0.5
+          ],
+          "enabled": true,
+          "bullet": "",
+          "precision": 0.09,
+          "aimSpeed": 267,
+          "barrelId": 3,
+          "cache": {
+            "keyPoints": [
+              {
+                "d": 0,
+                "t": 407.1256097559873,
+                "shots": 6.56405,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 25,
+                "t": 446.29592858792137,
+                "shots": 6.56385,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 26,
+                "t": 559.4413754873675,
+                "shots": 8.08875,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 34,
+                "t": 604.354950684325,
+                "shots": 8.5312,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 35,
+                "t": 679.9455195351941,
+                "shots": 9.54285,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 51,
+                "t": 885.1921821240043,
+                "shots": 12.00515,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 52,
+                "t": 1011.091287560167,
+                "shots": 13.70435,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 71,
+                "t": 1187.1694127991623,
+                "shots": 15.70375,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 72,
+                "t": 1385.2514450645688,
+                "shots": 18.38945,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 100,
+                "t": 1809.289811912224,
+                "shots": 23.58485,
+                "bulletPrice": 1816
+              }
+            ],
+            "hash": "h9e8nv2",
+            "avgBurstInterval": 0,
+            "cachedAt": "2026-09-15T11:26:19.130Z"
+          }
+        }
+      ]
+    },
+    {
+      "weaponId": 23,
+      "weaponName": "MP7",
+      "configs": [
+        {
+          "id": "#2",
+          "barrel": "蜂刺长枪管组合",
+          "muzzle": "冲锋枪回声消音器",
+          "buildCode": "MP7冲锋枪-烽火地带-6LA9CUO05506E7BV9G8G5",
+          "price": 470000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.85,
+            0.6
+          ],
+          "enabled": true,
+          "muzzleId": 3,
+          "bullet": "",
+          "precision": 0.09,
+          "aimSpeed": 343,
+          "cache": {
+            "keyPoints": [
+              {
+                "d": 0,
+                "t": 343.8978947367974,
+                "shots": 6.44505,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 31,
+                "t": 378.4900515996853,
+                "shots": 6.51155,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 32,
+                "t": 482.34833849325855,
+                "shots": 8.14045,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 42,
+                "t": 536.3943653251542,
+                "shots": 8.84095,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 43,
+                "t": 600.0084416924104,
+                "shots": 9.83265,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 63,
+                "t": 712.7394427243333,
+                "shots": 11.3071,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 64,
+                "t": 806.8240454077177,
+                "shots": 12.78125,
+                "bulletPrice": 1170
+              },
+              {
+                "d": 100,
+                "t": 1082.727636739002,
+                "shots": 16.5909,
+                "bulletPrice": 1170
+              }
+            ],
+            "hash": "hj9rl4u",
+            "avgBurstInterval": 0,
+            "cachedAt": "2026-09-15T11:31:40.519Z"
+          }
+        }
+      ]
+    },
+    {
+      "weaponId": 24,
+      "weaponName": "P90",
+      "configs": [
+        {
+          "id": "#1",
+          "barrel": "重攻长枪管",
+          "muzzle": "冲锋枪回声消音器",
+          "buildCode": "P90冲锋枪-烽火地带-6LA9DT405506E7BV9G8G5",
+          "price": 330000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.8,
+            0.5
+          ],
+          "enabled": true,
+          "muzzleId": 3,
+          "precision": 0.09,
+          "aimSpeed": 418,
+          "cache": {
+            "keyPoints": [
+              {
+                "d": 0,
+                "t": 344.0512249443386,
+                "shots": 6.1493,
+                "bulletPrice": 2343
+              },
+              {
+                "d": 31,
+                "t": 378.0781256822462,
+                "shots": 6.2037,
+                "bulletPrice": 2343
+              },
+              {
+                "d": 32,
+                "t": 481.55629066776817,
+                "shots": 7.73775,
+                "bulletPrice": 2343
+              },
+              {
+                "d": 42,
+                "t": 550.6452901874069,
+                "shots": 8.62505,
+                "bulletPrice": 2343
+              },
+              {
+                "d": 43,
+                "t": 618.541049827458,
+                "shots": 9.62655,
+                "bulletPrice": 2343
+              },
+              {
+                "d": 63,
+                "t": 772.1032359490998,
+                "shots": 11.6314,
+                "bulletPrice": 2343
+              },
+              {
+                "d": 64,
+                "t": 878.6515568365938,
+                "shots": 13.2114,
+                "bulletPrice": 2343
+              },
+              {
+                "d": 87,
+                "t": 1117.8019127472262,
+                "shots": 16.4532,
+                "bulletPrice": 2343
+              },
+              {
+                "d": 88,
+                "t": 1309.8736189352985,
+                "shots": 19.3132,
+                "bulletPrice": 2343
+              },
+              {
+                "d": 100,
+                "t": 1499.5503515436535,
+                "shots": 21.97595,
+                "bulletPrice": 2343
+              }
+            ],
+            "hash": "h3uhtbc",
+            "avgBurstInterval": 0,
+            "cachedAt": "2026-09-15T11:35:51.176Z"
+          }
+        }
+      ]
+    },
+    {
+      "weaponId": 31,
+      "weaponName": "QCQ171",
+      "configs": [
+        {
+          "id": "#2",
+          "barrel": "新式红缨战术长枪管",
+          "muzzle": "冲锋枪回声消音器",
+          "buildCode": "QCQ171冲锋枪-烽火地带-6LA9FM405506E7BV9G8G5",
+          "price": 400000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            1,
+            0.7
+          ],
+          "enabled": true,
+          "precision": 0.09,
+          "aimSpeed": 343,
+          "muzzleId": 3,
+          "cache": {
+            "keyPoints": [
+              {
+                "d": 0,
+                "t": 377.453473132359,
+                "shots": 5.79995,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 31,
+                "t": 408.1523141366451,
+                "shots": 5.80385,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 32,
+                "t": 509.90203787943256,
+                "shots": 7.0853,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 42,
+                "t": 520.0244391334276,
+                "shots": 7.08935,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 43,
+                "t": 575.7007683807439,
+                "shots": 7.7849,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 63,
+                "t": 647.4527792768746,
+                "shots": 8.448,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 64,
+                "t": 741.6808778556957,
+                "shots": 9.6338,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 87,
+                "t": 897.6650219720985,
+                "shots": 11.33065,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 88,
+                "t": 1045.4330943386572,
+                "shots": 13.1973,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 100,
+                "t": 1163.3655590676083,
+                "shots": 14.5474,
+                "bulletPrice": 1816
+              }
+            ],
+            "hash": "hduxmhh",
+            "avgBurstInterval": 0,
+            "cachedAt": "2026-09-15T11:43:50.445Z"
+          }
+        }
+      ]
+    },
+    {
+      "weaponId": 32,
+      "weaponName": "QCQ171高导",
+      "configs": [
+        {
+          "id": "#2",
+          "barrel": "新式红缨战术长枪管",
+          "muzzle": "冲锋枪回声消音器",
+          "buildCode": "QCQ171冲锋枪-烽火地带-6L7SUSC05506E7BV9G8G5",
+          "price": 420000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.9,
+            0.7
+          ],
+          "enabled": true,
+          "bullet": "",
+          "precision": 0.09,
+          "aimSpeed": 368,
+          "muzzleId": 3,
+          "cache": {
+            "keyPoints": [
+              {
+                "d": 0,
+                "t": 340.3797169812357,
+                "shots": 5.8107,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 31,
+                "t": 371.99946818359325,
+                "shots": 5.82805,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 32,
+                "t": 466.08245468004407,
+                "shots": 7.1439,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 42,
+                "t": 503.18000832416135,
+                "shots": 7.52965,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 43,
+                "t": 560.1026174620713,
+                "shots": 8.3203,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 63,
+                "t": 640.8460738069253,
+                "shots": 9.18435,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 64,
+                "t": 732.5092489825835,
+                "shots": 10.466,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 87,
+                "t": 846.7528440621396,
+                "shots": 11.76195,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 88,
+                "t": 978.0103588605443,
+                "shots": 13.6032,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 100,
+                "t": 1054.664215686254,
+                "shots": 14.5203,
+                "bulletPrice": 1816
+              }
+            ],
+            "hash": "htcyh4c",
+            "avgBurstInterval": 0,
+            "cachedAt": "2026-09-15T11:38:20.855Z"
+          }
+        }
+      ]
+    },
+    {
+      "weaponId": 33,
+      "weaponName": "QCQ171稳固",
+      "configs": [
+        {
+          "id": "#2",
+          "barrel": "新式红缨战术长枪管",
+          "muzzle": "冲锋枪回声消音器",
+          "buildCode": "QCQ171冲锋枪-烽火地带-6LA9G2O05506E7BV9G8G5",
+          "price": 430000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            1,
+            0.8
+          ],
+          "enabled": true,
+          "precision": 0.09,
+          "aimSpeed": 343,
+          "muzzleId": 3,
+          "cache": {
+            "keyPoints": [
+              {
+                "d": 0,
+                "t": 415.0504322765746,
+                "shots": 5.80075,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 42,
+                "t": 455.63036107820693,
+                "shots": 5.79385,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 43,
+                "t": 568.1900039554762,
+                "shots": 7.08445,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 57,
+                "t": 600.0711137480604,
+                "shots": 7.29445,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 58,
+                "t": 666.3123128213834,
+                "shots": 8.0493,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 85,
+                "t": 781.6892411143131,
+                "shots": 9.07765,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 86,
+                "t": 889.9261174210576,
+                "shots": 10.31825,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 100,
+                "t": 964.3864779340819,
+                "shots": 11.02075,
+                "bulletPrice": 1816
+              }
+            ],
+            "hash": "hjrhrfx",
+            "avgBurstInterval": 0,
+            "cachedAt": "2026-09-15T11:44:58.857Z"
+          }
+        }
+      ]
+    },
+    {
+      "weaponId": 37,
+      "weaponName": "SMG-45",
+      "configs": [
+        {
+          "id": "#2",
+          "barrel": "长弩超长枪管",
+          "muzzle": "冲锋枪回声消音器",
+          "buildCode": "SMG-45冲锋枪-烽火地带-6LA9I9005506E7BV9G8G5",
+          "price": 330000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.95,
+            0.8
+          ],
+          "enabled": true,
+          "bullet": "",
+          "precision": 0.09,
+          "aimSpeed": 296,
+          "barrelId": 2,
+          "muzzleId": 3,
+          "cache": {
+            "keyPoints": [
+              {
+                "d": 0,
+                "t": 441.7190082646197,
+                "shots": 5.454,
+                "bulletPrice": 2555
+              },
+              {
+                "d": 42,
+                "t": 494.6188552187471,
+                "shots": 5.61395,
+                "bulletPrice": 2555
+              },
+              {
+                "d": 43,
+                "t": 621.3915985250853,
+                "shots": 6.88335,
+                "bulletPrice": 2555
+              },
+              {
+                "d": 85,
+                "t": 759.3625198595121,
+                "shots": 7.9011,
+                "bulletPrice": 2555
+              },
+              {
+                "d": 86,
+                "t": 864.9517920913922,
+                "shots": 8.9569,
                 "bulletPrice": 2555
               },
               {
                 "d": 100,
-                "t": 1124.7143837640426,
-                "shots": 10.7727,
+                "t": 924.9999504423707,
+                "shots": 9.4379,
                 "bulletPrice": 2555
               }
             ],
-            "hash": "ho8bhlh",
+            "hash": "hkwp8sa",
             "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:36.752Z"
-          },
-          "aimSpeed": 0
+            "cachedAt": "2026-09-15T11:54:21.275Z"
+          }
         }
       ]
     },
@@ -8654,7 +8686,7 @@
           "barrel": "SR-3M铸钢战术枪管",
           "muzzle": "冲锋枪回声消音器",
           "buildCode": "SR-3M紧凑突击步枪-烽火地带-6L7H3RC05506E7BV9G8G5",
-          "price": 410000,
+          "price": 400000,
           "distance": [
             30,
             50,
@@ -8668,50 +8700,50 @@
           "enabled": true,
           "muzzleId": 3,
           "precision": 0.09,
+          "aimSpeed": 340,
           "cache": {
             "keyPoints": [
               {
                 "d": 0,
-                "t": 351.46987951817806,
-                "shots": 5.3758,
+                "t": 351.3855421687805,
+                "shots": 5.37475,
                 "bulletPrice": 2481
               },
               {
                 "d": 21,
-                "t": 382.24240313869416,
-                "shots": 5.3811,
+                "t": 381.5877846647988,
+                "shots": 5.37295,
                 "bulletPrice": 2481
               },
               {
                 "d": 22,
-                "t": 473.88427699240725,
-                "shots": 6.50405,
+                "t": 473.9324697634937,
+                "shots": 6.50465,
                 "bulletPrice": 2481
               },
               {
                 "d": 45,
-                "t": 572.5349258305646,
-                "shots": 7.31845,
+                "t": 571.9887410916094,
+                "shots": 7.31165,
                 "bulletPrice": 2481
               },
               {
                 "d": 46,
-                "t": 644.7470808089056,
-                "shots": 8.1995,
+                "t": 644.0041089213539,
+                "shots": 8.19025,
                 "bulletPrice": 2481
               },
               {
                 "d": 100,
-                "t": 1118.127144415835,
-                "shots": 13.12155,
+                "t": 1111.8781484318997,
+                "shots": 13.04375,
                 "bulletPrice": 2481
               }
             ],
             "hash": "hi5jjwd",
             "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:37.475Z"
-          },
-          "aimSpeed": 0
+            "cachedAt": "2026-09-15T11:59:01.856Z"
+          }
         }
       ]
     },
@@ -8722,81 +8754,91 @@
         {
           "id": "#2",
           "barrel": "竞赛性能长枪管",
-          "muzzle": "无",
-          "buildCode": "UZI-CFG2",
-          "price": 0,
-          "distance": [],
-          "hitRate": [],
+          "muzzle": "冲锋枪回声消音器",
+          "buildCode": "UZI冲锋枪-烽火地带-6LA9KH005506E7BV9G8G5",
+          "price": 210000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.9,
+            0.7
+          ],
           "enabled": true,
           "precision": 0.09,
+          "aimSpeed": 363,
+          "muzzleId": 3,
+          "barrelId": 1,
           "cache": {
             "keyPoints": [
               {
                 "d": 0,
-                "t": 602.230769230776,
-                "shots": 7.958,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 23,
-                "t": 642.2890461007307,
-                "shots": 7.96235,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 24,
-                "t": 785.7430848944289,
-                "shots": 9.8048,
+                "t": 510.8038461538065,
+                "shots": 6.76945,
                 "bulletPrice": 1816
               },
               {
                 "d": 31,
-                "t": 797.2482795270276,
-                "shots": 9.7972,
+                "t": 543.01138763197,
+                "shots": 6.79305,
                 "bulletPrice": 1816
               },
               {
                 "d": 32,
-                "t": 882.3869337054102,
-                "shots": 10.88155,
+                "t": 668.7994720965382,
+                "shots": 8.41555,
                 "bulletPrice": 1816
               },
               {
-                "d": 46,
-                "t": 906.1588614320953,
-                "shots": 10.87625,
+                "d": 42,
+                "t": 713.5610859728736,
+                "shots": 8.87,
                 "bulletPrice": 1816
               },
               {
-                "d": 47,
-                "t": 1018.2013617642878,
-                "shots": 12.31035,
+                "d": 43,
+                "t": 793.7607088989942,
+                "shots": 9.89985,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 63,
+                "t": 891.9416289592413,
+                "shots": 10.9213,
                 "bulletPrice": 1816
               },
               {
                 "d": 64,
-                "t": 1051.346944333631,
-                "shots": 12.35955,
+                "t": 1008.6297134238027,
+                "shots": 12.4255,
                 "bulletPrice": 1816
               },
               {
-                "d": 65,
-                "t": 1210.1625215889699,
-                "shots": 14.4017,
+                "d": 87,
+                "t": 1146.7441176470622,
+                "shots": 13.92785,
+                "bulletPrice": 1816
+              },
+              {
+                "d": 88,
+                "t": 1335.6629713424202,
+                "shots": 16.37105,
                 "bulletPrice": 1816
               },
               {
                 "d": 100,
-                "t": 1271.1384947522176,
-                "shots": 14.40855,
+                "t": 1431.4199849171434,
+                "shots": 17.46295,
                 "bulletPrice": 1816
               }
             ],
-            "hash": "hxscwug",
+            "hash": "hqx0r4i",
             "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:39.176Z"
-          },
-          "aimSpeed": 0
+            "cachedAt": "2026-09-15T12:05:08.045Z"
+          }
         }
       ]
     },
@@ -8808,8 +8850,8 @@
           "id": "#2",
           "barrel": "长剑超长枪管组合",
           "muzzle": "冲锋枪回声消音器",
-          "buildCode": "Vector冲锋枪-烽火地带-6L3TIRO0CCNDBQDO7A8E4",
-          "price": 530000,
+          "buildCode": "Vector冲锋枪-烽火地带-6LA9LRG05506E7BV9G8G5",
+          "price": 430000,
           "distance": [
             30,
             50,
@@ -8817,80 +8859,81 @@
           ],
           "hitRate": [
             1,
-            0.8,
+            0.9,
             0.5
           ],
           "enabled": true,
           "bullet": "",
           "precision": 0.09,
+          "aimSpeed": 308,
+          "muzzleId": 3,
           "cache": {
             "keyPoints": [
               {
                 "d": 0,
-                "t": 300.1539871678112,
-                "shots": 6.4578,
+                "t": 300.12373968843445,
+                "shots": 6.45725,
                 "bulletPrice": 2555
               },
               {
-                "d": 25,
-                "t": 335.5716549949048,
-                "shots": 6.46065,
+                "d": 31,
+                "t": 328.4230201569242,
+                "shots": 6.47475,
                 "bulletPrice": 2555
               },
               {
-                "d": 26,
-                "t": 423.56687683170077,
-                "shots": 8.03505,
+                "d": 32,
+                "t": 418.4084290742125,
+                "shots": 8.09495,
                 "bulletPrice": 2555
               },
               {
-                "d": 34,
-                "t": 452.9081199039893,
-                "shots": 8.3634,
+                "d": 42,
+                "t": 451.50174831109024,
+                "shots": 8.53635,
                 "bulletPrice": 2555
               },
               {
-                "d": 35,
-                "t": 507.98583486642815,
-                "shots": 9.33925,
+                "d": 43,
+                "t": 504.73372001478776,
+                "shots": 9.48825,
                 "bulletPrice": 2555
               },
               {
-                "d": 51,
-                "t": 631.2246913132931,
-                "shots": 11.1698,
+                "d": 63,
+                "t": 612.3374070679671,
+                "shots": 11.12415,
                 "bulletPrice": 2555
               },
               {
-                "d": 52,
-                "t": 714.4545602628309,
-                "shots": 12.65755,
+                "d": 64,
+                "t": 697.9039342254026,
+                "shots": 12.664,
                 "bulletPrice": 2555
               },
               {
-                "d": 71,
-                "t": 858.6763324495196,
-                "shots": 14.7927,
+                "d": 87,
+                "t": 929.1017948680355,
+                "shots": 16.49915,
                 "bulletPrice": 2555
               },
               {
-                "d": 72,
-                "t": 1000.1023517198599,
-                "shots": 17.33865,
+                "d": 88,
+                "t": 1087.3282670300973,
+                "shots": 19.3602,
                 "bulletPrice": 2555
               },
               {
                 "d": 100,
-                "t": 1357.7348326285198,
-                "shots": 23.1235,
+                "t": 1304.6710475479367,
+                "shots": 23.1198,
                 "bulletPrice": 2555
               }
             ],
-            "hash": "hrpyqye",
+            "hash": "hl7yucb",
             "avgBurstInterval": 0,
-            "cachedAt": "2026-09-14T08:21:40.793Z"
-          },
-          "aimSpeed": 0
+            "cachedAt": "2026-09-15T12:09:37.725Z"
+          }
         }
       ]
     },
