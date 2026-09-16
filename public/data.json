@@ -4,7 +4,7 @@
   "meta": {
     "description": "Delta Force TTK 计算器 - 统一数据源",
     "note": "包含武器、子弹、价格三类数据，所有数据以 JSON 格式存储。enabled 字段控制该配置是否参与 TTK 计算。枪管新增字段：fireMode, burstCount, burstInternalROF, burstInterval；新增 armors 数组（护甲/头盔数据） 护甲/头盔数据已按截图更新（1白/2绿/3蓝/4紫/5金/6红）。 bullets 已按截图更新。 bullets 已按截图全量更新。 bullets 已按截图全量更新。 bullets 已添加 default 字段（每 caliber+level 唯一）。",
-    "updatedAt": "2026-09-14"
+    "updatedAt": "2026-09-17"
   },
   "weapons": [
     {
@@ -2509,7 +2509,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": ".300BLK#2",
@@ -2533,7 +2534,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": ".300BLK#3",
@@ -2557,7 +2559,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": ".357 Magnum#1",
@@ -2581,7 +2584,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": ".357 Magnum#4",
@@ -2605,7 +2609,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": ".357 Magnum#2",
@@ -2629,7 +2634,8 @@
         "stomach": 0.4,
         "limbs": 0.4
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": false
     },
     {
       "id": ".357 Magnum#3",
@@ -2653,7 +2659,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": ".45 ACP#3",
@@ -2677,7 +2684,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": ".45 ACP#1",
@@ -2701,31 +2709,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
-    },
-    {
-      "id": ".45 ACP#4",
-      "caliber": ".45 ACP",
-      "name": "RIP",
-      "level": 3,
-      "armorMult": 0.9,
-      "pen": 0,
-      "price": 935,
-      "armorData": {
-        "1": { "armorMult": 0.9, "pen": 0 },
-        "2": { "armorMult": 0.9, "pen": 0 },
-        "3": { "armorMult": 0.9, "pen": 0 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
-      },
-      "partMult": {
-        "head": 1.35,
-        "chest": 1.35,
-        "stomach": 1.35,
-        "limbs": 1.35
-      },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": ".45 ACP#2",
@@ -2749,7 +2734,33 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": false
+      "isDefault": true,
+      "enabled": false
+    },
+    {
+      "id": ".45 ACP#4",
+      "caliber": ".45 ACP",
+      "name": "RIP",
+      "level": 3,
+      "armorMult": 0.9,
+      "pen": 0,
+      "price": 935,
+      "armorData": {
+        "1": { "armorMult": 0.9, "pen": 0 },
+        "2": { "armorMult": 0.9, "pen": 0 },
+        "3": { "armorMult": 0.9, "pen": 0 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
+      },
+      "partMult": {
+        "head": 1.35,
+        "chest": 1.35,
+        "stomach": 1.35,
+        "limbs": 1.35
+      },
+      "isDefault": false,
+      "enabled": true
     },
     {
       "id": ".45 ACP#5",
@@ -2773,7 +2784,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": ".45 ACP#6",
@@ -2797,7 +2809,8 @@
         "stomach": 0.85,
         "limbs": 0.85
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": ".50 AE#2",
@@ -2821,7 +2834,8 @@
         "stomach": 1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": ".50 AE#1",
@@ -2845,7 +2859,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": ".50 AE#3",
@@ -2869,7 +2884,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "12 Gauge#1",
@@ -2893,7 +2909,8 @@
         "stomach": 1.05,
         "limbs": 1.05
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "12 Gauge#5",
@@ -2917,7 +2934,8 @@
         "stomach": 5.5,
         "limbs": 5.5
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "12 Gauge#4",
@@ -2941,7 +2959,8 @@
         "stomach": 4.8,
         "limbs": 4.8
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": false
     },
     {
       "id": "12 Gauge#3",
@@ -2965,7 +2984,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "12 Gauge#2",
@@ -2989,7 +3009,8 @@
         "stomach": 1.3,
         "limbs": 1.3
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": false
     },
     {
       "id": "12 Gauge#6",
@@ -3013,7 +3034,8 @@
         "stomach": 0.85,
         "limbs": 0.85
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": false
     },
     {
       "id": "12 Gauge#7",
@@ -3037,7 +3059,8 @@
         "stomach": 4.8,
         "limbs": 4.8
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "12 Gauge#8",
@@ -3061,7 +3084,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": false
     },
     {
       "id": "12 Gauge#9",
@@ -3085,7 +3109,8 @@
         "stomach": 0.85,
         "limbs": 0.85
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": false
     },
     {
       "id": "12.7x55mm#3",
@@ -3109,31 +3134,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
-    },
-    {
-      "id": "12.7x55mm#1",
-      "caliber": "12.7x55mm",
-      "name": "PD12双头弹",
-      "level": 4,
-      "armorMult": 0.1,
-      "pen": 1,
-      "price": 3067,
-      "armorData": {
-        "1": { "armorMult": 0.1, "pen": 1 },
-        "2": { "armorMult": 0.1, "pen": 1 },
-        "3": { "armorMult": 0.1, "pen": 0.75 },
-        "4": { "armorMult": 0.1, "pen": 0.5 },
-        "5": { "armorMult": 0.1, "pen": 0.4 },
-        "6": { "armorMult": 0.1, "pen": 0.3 }
-      },
-      "partMult": {
-        "head": 1.32,
-        "chest": 1.32,
-        "stomach": 1.32,
-        "limbs": 1.32
-      },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "12.7x55mm#2",
@@ -3157,7 +3159,33 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": false
+      "isDefault": true,
+      "enabled": true
+    },
+    {
+      "id": "12.7x55mm#1",
+      "caliber": "12.7x55mm",
+      "name": "PD12双头弹",
+      "level": 4,
+      "armorMult": 0.1,
+      "pen": 1,
+      "price": 3067,
+      "armorData": {
+        "1": { "armorMult": 0.1, "pen": 1 },
+        "2": { "armorMult": 0.1, "pen": 1 },
+        "3": { "armorMult": 0.1, "pen": 0.75 },
+        "4": { "armorMult": 0.1, "pen": 0.5 },
+        "5": { "armorMult": 0.1, "pen": 0.4 },
+        "6": { "armorMult": 0.1, "pen": 0.3 }
+      },
+      "partMult": {
+        "head": 1.32,
+        "chest": 1.32,
+        "stomach": 1.32,
+        "limbs": 1.32
+      },
+      "isDefault": false,
+      "enabled": true
     },
     {
       "id": "12.7x55mm#4",
@@ -3181,7 +3209,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "4.6x30mm#5",
@@ -3205,7 +3234,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "4.6x30mm#4",
@@ -3229,7 +3259,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "4.6x30mm#2",
@@ -3253,7 +3284,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": true
     },
     {
       "id": "4.6x30mm#3",
@@ -3277,7 +3309,8 @@
         "stomach": 0.9,
         "limbs": 0.9
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": true
     },
     {
       "id": "4.6x30mm#1",
@@ -3301,7 +3334,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "4.6x30mm#6",
@@ -3325,7 +3359,8 @@
         "stomach": 0.9,
         "limbs": 0.9
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": true
     },
     {
       "id": "45-70Govt#2",
@@ -3349,7 +3384,8 @@
         "stomach": 1.5,
         "limbs": 1.5
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "45-70Govt#1",
@@ -3373,7 +3409,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "45-70Govt#3",
@@ -3397,7 +3434,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "5.45x39mm#1",
@@ -3421,7 +3459,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.45x39mm#2",
@@ -3445,7 +3484,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.45x39mm#5",
@@ -3469,7 +3509,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.45x39mm#4",
@@ -3493,7 +3534,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "5.45x39mm#3",
@@ -3517,7 +3559,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "5.56x45mm#2",
@@ -3541,7 +3584,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.56x45mm#1",
@@ -3565,7 +3609,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.56x45mm#3",
@@ -3589,7 +3634,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.56x45mm#4",
@@ -3613,7 +3659,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "5.56x45mm#5",
@@ -3637,7 +3684,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "5.7x28mm#3",
@@ -3661,7 +3709,8 @@
         "stomach": 1.1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.7x28mm#2",
@@ -3685,7 +3734,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.7x28mm#4",
@@ -3709,7 +3759,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.7x28mm#1",
@@ -3733,7 +3784,8 @@
         "stomach": 1.4,
         "limbs": 1.4
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": true
     },
     {
       "id": "5.7x28mm#6",
@@ -3757,7 +3809,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "5.7x28mm#5",
@@ -3781,7 +3834,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "5.8x42mm#1",
@@ -3805,7 +3859,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.8x42mm#4",
@@ -3829,7 +3884,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "5.8x42mm#2",
@@ -3853,7 +3909,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "5.8x42mm#3",
@@ -3877,7 +3934,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "6.8x51mm#1",
@@ -3901,7 +3959,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "6.8x51mm#2",
@@ -3925,7 +3984,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "7.62x39mm#1",
@@ -3949,7 +4009,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "7.62x39mm#2",
@@ -3973,7 +4034,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "7.62x39mm#5",
@@ -3997,7 +4059,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "7.62x39mm#4",
@@ -4021,7 +4084,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "7.62x39mm#3",
@@ -4045,7 +4109,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "7.62x51mm#1",
@@ -4069,7 +4134,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "7.62x51mm#2",
@@ -4093,7 +4159,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "7.62x51mm#4",
@@ -4117,7 +4184,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "7.62x51mm#3",
@@ -4141,7 +4209,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "7.62x54R#3",
@@ -4165,7 +4234,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "7.62x54R#2",
@@ -4189,7 +4259,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "7.62x54R#1",
@@ -4213,7 +4284,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "9x19mm#1",
@@ -4237,7 +4309,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "9x19mm#2",
@@ -4261,23 +4334,24 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "9x19mm#3",
       "caliber": "9x19mm",
       "name": "AP6.3",
       "level": 3,
-      "armorMult": 1,
+      "armorMult": 0.9,
       "pen": 1,
       "price": 501,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 0.75 },
-        "3": { "armorMult": 1, "pen": 0.5 },
-        "4": { "armorMult": 1, "pen": 0 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4285,7 +4359,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "9x19mm#5",
@@ -4309,7 +4384,8 @@
         "stomach": 1.4,
         "limbs": 1.4
       },
-      "isDefault": false
+      "isDefault": false,
+      "enabled": true
     },
     {
       "id": "9x19mm#4",
@@ -4333,23 +4409,24 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "9x39mm#1",
       "caliber": "9x39mm",
       "name": "SP5",
       "level": 3,
-      "armorMult": 0.7,
+      "armorMult": 0.9,
       "pen": 1,
       "price": 344,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 1 },
-        "2": { "armorMult": 0.7, "pen": 0.75 },
-        "3": { "armorMult": 0.7, "pen": 0.5 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -4357,7 +4434,8 @@
         "stomach": 1.1,
         "limbs": 1.1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "9x39mm#3",
@@ -4381,23 +4459,24 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "9x39mm#2",
       "caliber": "9x39mm",
       "name": "BP",
       "level": 5,
-      "armorMult": 1,
+      "armorMult": 1.1,
       "pen": 1,
       "price": 4939,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": { "armorMult": 1.1, "pen": 1 },
+        "2": { "armorMult": 1.1, "pen": 1 },
+        "3": { "armorMult": 1.1, "pen": 1 },
+        "4": { "armorMult": 1.1, "pen": 0.75 },
+        "5": { "armorMult": 1.1, "pen": 0.5 },
+        "6": { "armorMult": 1.1, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4405,7 +4484,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     },
     {
       "id": "Arrow#1",
@@ -4429,7 +4509,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "Arrow#3",
@@ -4453,7 +4534,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": false
     },
     {
       "id": "Arrow#2",
@@ -4477,7 +4559,8 @@
         "stomach": 1,
         "limbs": 1
       },
-      "isDefault": true
+      "isDefault": true,
+      "enabled": true
     }
   ],
   "prices": [
@@ -4504,50 +4587,7 @@
           "enabled": true,
           "precision": 0.09,
           "muzzleId": 2,
-          "aimSpeed": 349,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 398.536827195325,
-                "shots": 5.68945,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 51,
-                "t": 501.8869571965973,
-                "shots": 6.3575,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 52,
-                "t": 535.9744201689158,
-                "shots": 6.74785,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 91,
-                "t": 693.4690454938077,
-                "shots": 8.18195,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 92,
-                "t": 834.1839872196924,
-                "shots": 9.82695,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 100,
-                "t": 880.7703765505619,
-                "shots": 10.28915,
-                "bulletPrice": 2723
-              }
-            ],
-            "hash": "h5qj4k",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:46.944Z"
-          }
+          "aimSpeed": 349
         },
         {
           "id": "#2",
@@ -4569,51 +4609,8 @@
             0.5
           ],
           "bullet": "",
-          "enabled": true,
-          "aimSpeed": 361,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 398.77478753526754,
-                "shots": 5.69225,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 45,
-                "t": 540.0079250594175,
-                "shots": 6.7044,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 46,
-                "t": 580.7023410207888,
-                "shots": 7.1688,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 80,
-                "t": 839.006534698275,
-                "shots": 9.7173,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 81,
-                "t": 1007.9275795548186,
-                "shots": 11.6905,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 100,
-                "t": 1255.8835224803975,
-                "shots": 14.3338,
-                "bulletPrice": 2723
-              }
-            ],
-            "hash": "h9t11qq",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:47.848Z"
-          }
+          "enabled": false,
+          "aimSpeed": 361
         }
       ]
     },
@@ -4637,53 +4634,10 @@
             0.85,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "muzzleId": 2,
-          "aimSpeed": 366,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 371.3438735177931,
-                "shots": 5.6975,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 51,
-                "t": 501.78087606260505,
-                "shots": 6.75835,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 52,
-                "t": 539.3265291388989,
-                "shots": 7.22175,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 91,
-                "t": 852.7769595900257,
-                "shots": 10.73635,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 92,
-                "t": 1025.8087786742415,
-                "shots": 12.91365,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 100,
-                "t": 1148.193766130651,
-                "shots": 14.3694,
-                "bulletPrice": 2723
-              }
-            ],
-            "hash": "h2tfsiz",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:48.710Z"
-          }
+          "aimSpeed": 366
         }
       ]
     },
@@ -4707,53 +4661,10 @@
             1,
             0.9
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "muzzleId": 2,
-          "aimSpeed": 383,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 426.91363636353765,
-                "shots": 5.69605,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 51,
-                "t": 474.00261519297595,
-                "shots": 5.7017,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 52,
-                "t": 506.32040265662334,
-                "shots": 6.04715,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 91,
-                "t": 588.718659194659,
-                "shots": 6.56175,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 92,
-                "t": 705.8728102946483,
-                "shots": 7.8404,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 100,
-                "t": 728.3469281860202,
-                "shots": 8.00725,
-                "bulletPrice": 2723
-              }
-            ],
-            "hash": "hip8r7l",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:49.507Z"
-          }
+          "aimSpeed": 383
         },
         {
           "id": "#2",
@@ -4775,51 +4686,8 @@
             0.7
           ],
           "bullet": "",
-          "enabled": true,
-          "aimSpeed": 317,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 426.7272727271698,
-                "shots": 5.694,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 45,
-                "t": 523.4874511990706,
-                "shots": 6.151,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 46,
-                "t": 561.409899609581,
-                "shots": 6.55465,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 80,
-                "t": 706.8504182933732,
-                "shots": 7.6956,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 81,
-                "t": 850.37286670387,
-                "shots": 9.26085,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 100,
-                "t": 963.2084774121087,
-                "shots": 10.2456,
-                "bulletPrice": 2723
-              }
-            ],
-            "hash": "hknkb0n",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:50.354Z"
-          }
+          "enabled": false,
+          "aimSpeed": 317
         }
       ]
     },
@@ -4848,38 +4716,7 @@
             0.65
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 409.3469387754306,
-                "shots": 6.0145,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 58,
-                "t": 541.0782406112771,
-                "shots": 6.97935,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 59,
-                "t": 598.4812785387763,
-                "shots": 7.67135,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 100,
-                "t": 834.789507035689,
-                "shots": 10.10745,
-                "bulletPrice": 1891
-              }
-            ],
-            "hash": "hld2d9z",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:50.919Z"
-          }
+          "enabled": true
         },
         {
           "id": "#4",
@@ -4902,50 +4739,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 408.7224489795125,
-                "shots": 6.00685,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 51,
-                "t": 561.4991360961194,
-                "shots": 7.1118,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 52,
-                "t": 621.5832728183154,
-                "shots": 7.8328,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 90,
-                "t": 851.0621009140863,
-                "shots": 10.07275,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 91,
-                "t": 980.5135845750032,
-                "shots": 11.6435,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 100,
-                "t": 1065.6830599724947,
-                "shots": 12.55155,
-                "bulletPrice": 1891
-              }
-            ],
-            "hash": "hw08hxq",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:51.880Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -4973,51 +4767,8 @@
             0.5
           ],
           "bullet": "",
-          "enabled": true,
-          "aimSpeed": 322,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 405.89999999995825,
-                "shots": 5.059,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 51,
-                "t": 605.0833870967207,
-                "shots": 6.36535,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 52,
-                "t": 695.1924731183472,
-                "shots": 7.253,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 90,
-                "t": 1041.8477419355413,
-                "shots": 10.2088,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 91,
-                "t": 1196.7418279570627,
-                "shots": 11.7443,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 100,
-                "t": 1337.4236021505117,
-                "shots": 13.03015,
-                "bulletPrice": 1821
-              }
-            ],
-            "hash": "hdnj229",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:52.697Z"
-          }
+          "enabled": false,
+          "aimSpeed": 322
         },
         {
           "id": "#5",
@@ -5039,51 +4790,8 @@
             0.35
           ],
           "bullet": "",
-          "enabled": true,
-          "aimSpeed": 319,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 386.57500000001545,
-                "shots": 4.86575,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 49,
-                "t": 644.5124133811718,
-                "shots": 6.8597,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 50,
-                "t": 750.1521565113193,
-                "shots": 7.90415,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 86,
-                "t": 1236.0279091994355,
-                "shots": 12.3328,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 87,
-                "t": 1425.7276523297132,
-                "shots": 14.21785,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 100,
-                "t": 1815.509313022635,
-                "shots": 17.96035,
-                "bulletPrice": 1821
-              }
-            ],
-            "hash": "h8762zc",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:53.493Z"
-          }
+          "enabled": false,
+          "aimSpeed": 319
         },
         {
           "id": "#6",
@@ -5106,50 +4814,7 @@
             0.55
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 405.78499999995904,
-                "shots": 5.05785,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 51,
-                "t": 536.6083870967257,
-                "shots": 5.6806,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 52,
-                "t": 614.6574731183742,
-                "shots": 6.44765,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 90,
-                "t": 941.8127419355383,
-                "shots": 9.20845,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 91,
-                "t": 1089.761827957045,
-                "shots": 10.6745,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 100,
-                "t": 1220.2936021505081,
-                "shots": 11.85885,
-                "bulletPrice": 1821
-              }
-            ],
-            "hash": "hdnj229",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:54.271Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -5173,52 +4838,9 @@
             0.8,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 270,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 548.4540337711593,
-                "shots": 5.8721,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 39,
-                "t": 686.4583197066698,
-                "shots": 6.46235,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 40,
-                "t": 827.8185104221393,
-                "shots": 7.7018,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 69,
-                "t": 1151.9807391088073,
-                "shots": 10.10875,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 70,
-                "t": 1412.4628810438276,
-                "shots": 12.4064,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 100,
-                "t": 1968.739521834124,
-                "shots": 16.859,
-                "bulletPrice": 1891
-              }
-            ],
-            "hash": "hyarz7x",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:55.181Z"
-          }
+          "aimSpeed": 270
         }
       ]
     },
@@ -5247,50 +4869,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 375.14999999987754,
-                "shots": 6.62725,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 45,
-                "t": 471.1538709676644,
-                "shots": 7.16005,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 46,
-                "t": 535.4746236559338,
-                "shots": 8.1047,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 64,
-                "t": 630.2181720430201,
-                "shots": 9.16295,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 65,
-                "t": 726.5822580645553,
-                "shots": 10.58825,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 100,
-                "t": 1016.7086021505391,
-                "shots": 14.2345,
-                "bulletPrice": 2343
-              }
-            ],
-            "hash": "hqznu6x",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:56.154Z"
-          }
+          "enabled": false
         },
         {
           "id": "#5",
@@ -5313,50 +4892,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 375.42999999987865,
-                "shots": 6.63145,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 45,
-                "t": 470.467204300997,
-                "shots": 7.14975,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 46,
-                "t": 535.3746236559313,
-                "shots": 8.1032,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 64,
-                "t": 628.3715053763541,
-                "shots": 9.13525,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 65,
-                "t": 722.63559139789,
-                "shots": 10.52905,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 100,
-                "t": 1020.9686021505406,
-                "shots": 14.2984,
-                "bulletPrice": 2343
-              }
-            ],
-            "hash": "hqznu6x",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:57.190Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -5385,50 +4921,7 @@
             0.7
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 264.7969763313486,
-                "shots": 4.32195,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 39,
-                "t": 354.85098375485853,
-                "shots": 4.433,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 40,
-                "t": 449.2725134552353,
-                "shots": 5.31525,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 59,
-                "t": 521.6946961038476,
-                "shots": 5.75145,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 60,
-                "t": 561.7493027270623,
-                "shots": 6.23095,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 100,
-                "t": 796.841325058231,
-                "shots": 8.01765,
-                "bulletPrice": 2481
-              }
-            ],
-            "hash": "hi1ug01",
-            "avgBurstInterval": 0.11807250000000578,
-            "cachedAt": "2026-09-15T22:35:57.548Z"
-          }
+          "enabled": true
         },
         {
           "id": "#4",
@@ -5451,50 +4944,7 @@
             0.45
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 337.4938271605252,
-                "shots": 6.4674,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 34,
-                "t": 426.411918328562,
-                "shots": 6.73095,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 35,
-                "t": 466.0085470085306,
-                "shots": 7.3378,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 69,
-                "t": 730.3463912630347,
-                "shots": 10.44315,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 70,
-                "t": 795.5386989553431,
-                "shots": 11.46465,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 100,
-                "t": 1190.1999050332192,
-                "shots": 16.8197,
-                "bulletPrice": 2481
-              }
-            ],
-            "hash": "h4ewbjd",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:58.479Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -5520,38 +4970,7 @@
           ],
           "enabled": true,
           "precision": 0.09,
-          "aimSpeed": 382,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 265.2899999998894,
-                "shots": 3.21075,
-                "bulletPrice": 3067
-              },
-              {
-                "d": 71,
-                "t": 638.060904564396,
-                "shots": 5.08965,
-                "bulletPrice": 3067
-              },
-              {
-                "d": 72,
-                "t": 743.0115933609446,
-                "shots": 5.94695,
-                "bulletPrice": 3067
-              },
-              {
-                "d": 100,
-                "t": 1199.418879668099,
-                "shots": 9.26625,
-                "bulletPrice": 3067
-              }
-            ],
-            "hash": "huj9o7z",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:58.817Z"
-          }
+          "aimSpeed": 382
         },
         {
           "id": "#2",
@@ -5573,51 +4992,8 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
-          "aimSpeed": 348,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 311.8200000000142,
-                "shots": 3.0788,
-                "bulletPrice": 3067
-              },
-              {
-                "d": 54,
-                "t": 478.5750688072875,
-                "shots": 3.52995,
-                "bulletPrice": 3067
-              },
-              {
-                "d": 55,
-                "t": 522.0199311926,
-                "shots": 3.80735,
-                "bulletPrice": 3067
-              },
-              {
-                "d": 89,
-                "t": 759.4552522936565,
-                "shots": 4.97435,
-                "bulletPrice": 3067
-              },
-              {
-                "d": 90,
-                "t": 781.5026146789464,
-                "shots": 5.1091,
-                "bulletPrice": 3067
-              },
-              {
-                "d": 100,
-                "t": 874.4312385320812,
-                "shots": 5.6063,
-                "bulletPrice": 3067
-              }
-            ],
-            "hash": "hp2m2zk",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:59.273Z"
-          }
+          "enabled": false,
+          "aimSpeed": 348
         }
       ]
     },
@@ -5641,41 +5017,10 @@
             1,
             0.75
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "muzzleId": 2,
-          "aimSpeed": 379,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 442.5949926362376,
-                "shots": 6.0087,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 80,
-                "t": 610.125634662767,
-                "shots": 7.0778,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 81,
-                "t": 661.265680795622,
-                "shots": 7.6462,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 766.3242009132523,
-                "shots": 8.63875,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "hgkpf8e",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:35:59.862Z"
-          }
+          "aimSpeed": 379
         },
         {
           "id": "#4",
@@ -5698,50 +5043,7 @@
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 395,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 442.32106038292204,
-                "shots": 6.0056,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 57,
-                "t": 572.8595737885887,
-                "shots": 6.5114,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 58,
-                "t": 622.2860691661347,
-                "shots": 7.0537,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 94,
-                "t": 791.4705360469183,
-                "shots": 8.35475,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 95,
-                "t": 863.8013024114732,
-                "shots": 9.15625,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 893.3741327607207,
-                "shots": 9.4057,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "hwlylwa",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:00.762Z"
-          }
+          "aimSpeed": 395
         }
       ]
     },
@@ -5765,41 +5067,10 @@
             0.9,
             0.65
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "aimSpeed": 315,
-          "muzzleId": 2,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 580.6471518987872,
-                "shots": 7.11615,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 58,
-                "t": 742.2749985550288,
-                "shots": 8.2607,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 59,
-                "t": 847.0062785388556,
-                "shots": 9.35425,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 1165.7466692676996,
-                "shots": 12.31725,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "htky8k5",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:01.414Z"
-          }
+          "muzzleId": 2
         },
         {
           "id": "#5",
@@ -5822,50 +5093,7 @@
             0.5
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 580.1060126582809,
-                "shots": 7.11045,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 46,
-                "t": 771.1447570988645,
-                "shots": 8.46795,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 47,
-                "t": 883.3726907286776,
-                "shots": 9.63585,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 82,
-                "t": 1263.375684228494,
-                "shots": 13.14035,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 83,
-                "t": 1458.9343140608592,
-                "shots": 15.186,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 1773.2015908313806,
-                "shots": 18.2543,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "h7e8wxj",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:02.436Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -5889,41 +5117,10 @@
             0.95,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "muzzleId": 2,
-          "aimSpeed": 411,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 469.660412757971,
-                "shots": 5.17215,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 80,
-                "t": 680.619079063806,
-                "shots": 6.45345,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 81,
-                "t": 738.5656777770826,
-                "shots": 6.9608,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 100,
-                "t": 864.9281640266033,
-                "shots": 7.94255,
-                "bulletPrice": 1418
-              }
-            ],
-            "hash": "hpgbvdh",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:02.898Z"
-          }
+          "aimSpeed": 411
         },
         {
           "id": "#3",
@@ -5945,39 +5142,8 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
-          "aimSpeed": 450,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 469.42401500937757,
-                "shots": 5.17005,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 71,
-                "t": 746.0982732068563,
-                "shots": 6.92155,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 72,
-                "t": 809.6890133601073,
-                "shots": 7.4765,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 100,
-                "t": 1038.013977801074,
-                "shots": 9.22625,
-                "bulletPrice": 1418
-              }
-            ],
-            "hash": "hex7c9z",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:03.341Z"
-          }
+          "enabled": false,
+          "aimSpeed": 450
         }
       ]
     },
@@ -6004,50 +5170,7 @@
           "enabled": true,
           "precision": 0.09,
           "muzzleId": 2,
-          "aimSpeed": 343,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 364.8886363636338,
-                "shots": 6.3517,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 39,
-                "t": 400.41302926520973,
-                "shots": 6.35035,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 40,
-                "t": 450.9796803652366,
-                "shots": 7.0786,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 79,
-                "t": 568.7722550851593,
-                "shots": 8.28385,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 80,
-                "t": 657.6264061852556,
-                "shots": 9.57365,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 763.6582918224083,
-                "shots": 10.8609,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "hi6o7sm",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:04.284Z"
-          }
+          "aimSpeed": 343
         },
         {
           "id": "#4",
@@ -6070,50 +5193,7 @@
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 308,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 365.35227272727116,
-                "shots": 6.3585,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 34,
-                "t": 420.0962005018835,
-                "shots": 6.54955,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 35,
-                "t": 477.09251254870935,
-                "shots": 7.3675,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 69,
-                "t": 691.0375766872129,
-                "shots": 9.8935,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 70,
-                "t": 800.9941160066584,
-                "shots": 11.4882,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 1162.1789319576062,
-                "shots": 16.2457,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "heop470",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:05.235Z"
-          }
+          "aimSpeed": 308
         }
       ]
     },
@@ -6140,38 +5220,7 @@
           "enabled": true,
           "precision": 0.09,
           "muzzleId": 2,
-          "aimSpeed": 354,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 365.60384615379536,
-                "shots": 5.75285,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 58,
-                "t": 484.05656509345204,
-                "shots": 6.68565,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 59,
-                "t": 519.2001796110532,
-                "shots": 7.13205,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 100,
-                "t": 722.4229902142864,
-                "shots": 9.3448,
-                "bulletPrice": 2317
-              }
-            ],
-            "hash": "hovu921",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:05.848Z"
-          }
+          "aimSpeed": 354
         },
         {
           "id": "#3",
@@ -6194,50 +5243,7 @@
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 375,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 364.7230769230276,
-                "shots": 5.7414,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 52,
-                "t": 477.19607201305337,
-                "shots": 6.4844,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 53,
-                "t": 510.30990180030756,
-                "shots": 6.90105,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 89,
-                "t": 721.0346972177267,
-                "shots": 9.1426,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 90,
-                "t": 865.8485270048802,
-                "shots": 11.01135,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 100,
-                "t": 963.7291325695428,
-                "shots": 12.1455,
-                "bulletPrice": 2317
-              }
-            ],
-            "hash": "h9lvmmy",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:06.779Z"
-          }
+          "aimSpeed": 375
         }
       ]
     },
@@ -6264,38 +5270,7 @@
           "enabled": true,
           "precision": 0.09,
           "aimSpeed": 337,
-          "muzzleId": 2,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 400.816216216123,
-                "shots": 5.9434,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 80,
-                "t": 558.3134147846165,
-                "shots": 6.9848,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 81,
-                "t": 624.7117919288497,
-                "shots": 7.79245,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 100,
-                "t": 720.4039306430377,
-                "shots": 8.75865,
-                "bulletPrice": 1891
-              }
-            ],
-            "hash": "ha6j79z",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:07.341Z"
-          }
+          "muzzleId": 2
         },
         {
           "id": "#3",
@@ -6318,38 +5293,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 401.1891891890912,
-                "shots": 5.948,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 71,
-                "t": 606.6679157685346,
-                "shots": 7.4078,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 72,
-                "t": 677.6205853091617,
-                "shots": 8.26775,
-                "bulletPrice": 1891
-              },
-              {
-                "d": 100,
-                "t": 933.0642513679127,
-                "shots": 10.9945,
-                "bulletPrice": 1891
-              }
-            ],
-            "hash": "hs7be0e",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:07.955Z"
-          }
+          "enabled": true
         }
       ]
     },
@@ -6376,38 +5320,7 @@
           "enabled": true,
           "precision": 0.09,
           "aimSpeed": 294,
-          "muzzleId": 2,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 407.8462499999475,
-                "shots": 6.43795,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 58,
-                "t": 499.9155365296381,
-                "shots": 6.9593,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 59,
-                "t": 558.7625285387852,
-                "shots": 7.73175,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 685.8342009132892,
-                "shots": 8.9268,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "hsjb4mu",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:08.600Z"
-          }
+          "muzzleId": 2
         },
         {
           "id": "#5",
@@ -6430,50 +5343,7 @@
             0.55
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 408.20249999994724,
-                "shots": 6.4427,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 46,
-                "t": 512.3984121620824,
-                "shots": 7.00315,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 47,
-                "t": 573.8660135135074,
-                "shots": 7.8047,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 82,
-                "t": 829.089560810741,
-                "shots": 10.57705,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 83,
-                "t": 964.4246621620658,
-                "shots": 12.3635,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 1186.650135135161,
-                "shots": 15.0202,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "ho61huu",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:09.673Z"
-          }
+          "enabled": true
         }
       ]
     },
@@ -6497,40 +5367,9 @@
             0.9,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 396,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 378.7950693374863,
-                "shots": 5.0973,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 64,
-                "t": 577.3973465940453,
-                "shots": 6.4703,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 65,
-                "t": 638.5079224303435,
-                "shots": 7.1192,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 100,
-                "t": 1045.5367824044652,
-                "shots": 11.09795,
-                "bulletPrice": 2744
-              }
-            ],
-            "hash": "h5hyzq1",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:10.282Z"
-          }
+          "aimSpeed": 396
         }
       ]
     },
@@ -6554,53 +5393,10 @@
             0.85,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "aimSpeed": 278,
-          "barrelId": 0,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 354.4987589630544,
-                "shots": 6.14165,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 29,
-                "t": 413.94110115552775,
-                "shots": 6.14715,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 30,
-                "t": 474.6753616952368,
-                "shots": 6.9985,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 49,
-                "t": 593.439466941026,
-                "shots": 8.1598,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 50,
-                "t": 687.4783331068553,
-                "shots": 9.4942,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 100,
-                "t": 1062.3911670409634,
-                "shots": 13.45495,
-                "bulletPrice": 2317
-              }
-            ],
-            "hash": "hhn3c7m",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:11.256Z"
-          }
+          "barrelId": 0
         },
         {
           "id": "#2",
@@ -6623,50 +5419,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 354.6400992829648,
-                "shots": 6.1437,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 29,
-                "t": 413.83768140925287,
-                "shots": 6.14565,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 30,
-                "t": 474.4581802280528,
-                "shots": 6.99535,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 49,
-                "t": 591.4158872388772,
-                "shots": 8.13045,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 50,
-                "t": 686.0166673594794,
-                "shots": 9.473,
-                "bulletPrice": 2317
-              },
-              {
-                "d": 100,
-                "t": 1056.7754748181387,
-                "shots": 13.3735,
-                "bulletPrice": 2317
-              }
-            ],
-            "hash": "hhn3c7m",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:12.253Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -6693,52 +5446,9 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 408,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 373.0047619047901,
-                "shots": 4.91655,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 51,
-                "t": 468.73354120950205,
-                "shots": 5.4888,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 52,
-                "t": 537.2800438850626,
-                "shots": 6.20005,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 73,
-                "t": 651.9042191168851,
-                "shots": 7.22535,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 74,
-                "t": 724.4602456018876,
-                "shots": 7.9787,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 100,
-                "t": 943.6121723062826,
-                "shots": 10.0591,
-                "bulletPrice": 1418
-              }
-            ],
-            "hash": "hcfwzn1",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:13.063Z"
-          }
+          "aimSpeed": 408
         },
         {
           "id": "#2",
@@ -6761,50 +5471,7 @@
             0.5
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 373.3142857143114,
-                "shots": 4.9198,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 51,
-                "t": 536.1716364475994,
-                "shots": 6.1969,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 52,
-                "t": 613.0609962660121,
-                "shots": 6.99575,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 73,
-                "t": 754.1566000692426,
-                "shots": 8.299,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 74,
-                "t": 841.6888170304609,
-                "shots": 9.2096,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 100,
-                "t": 1134.8264580205343,
-                "shots": 12.06685,
-                "bulletPrice": 1418
-              }
-            ],
-            "hash": "hcfwzn1",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:13.824Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -6828,52 +5495,9 @@
             0.9,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 400,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 352.0079999999116,
-                "shots": 4.66675,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 34,
-                "t": 405.0265436434926,
-                "shots": 4.75485,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 35,
-                "t": 455.00435963299793,
-                "shots": 5.2618,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 49,
-                "t": 513.5337834863631,
-                "shots": 5.68035,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 50,
-                "t": 605.333999475887,
-                "shots": 6.62295,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 100,
-                "t": 988.7495989516487,
-                "shots": 9.93425,
-                "bulletPrice": 1821
-              }
-            ],
-            "hash": "hfdfyfo",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:14.571Z"
-          }
+          "aimSpeed": 400
         },
         {
           "id": "#3",
@@ -6895,51 +5519,8 @@
             0.7
           ],
           "bullet": "",
-          "enabled": true,
-          "aimSpeed": 348,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 336.1295999998976,
-                "shots": 4.50135,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 24,
-                "t": 379.7196419580669,
-                "shots": 4.51835,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 25,
-                "t": 425.83429370636895,
-                "shots": 4.9805,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 39,
-                "t": 461.724218181847,
-                "shots": 5.0994,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 40,
-                "t": 547.3284699301244,
-                "shots": 5.9729,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 100,
-                "t": 878.4859748251698,
-                "shots": 8.3298,
-                "bulletPrice": 1821
-              }
-            ],
-            "hash": "hqrjjf5",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:15.336Z"
-          }
+          "enabled": false,
+          "aimSpeed": 348
         }
       ]
     },
@@ -6963,41 +5544,10 @@
             0.9,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "aimSpeed": 383,
-          "muzzleId": 2,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 446.2500000000492,
-                "shots": 5.7005,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 58,
-                "t": 587.5856700204513,
-                "shots": 6.6797,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 59,
-                "t": 667.6348882507824,
-                "shots": 7.5141,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 100,
-                "t": 997.2683420255231,
-                "shots": 10.62605,
-                "bulletPrice": 1821
-              }
-            ],
-            "hash": "hz25ond",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:15.925Z"
-          }
+          "muzzleId": 2
         },
         {
           "id": "#3",
@@ -7020,50 +5570,7 @@
             0.55
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 446.78164556966937,
-                "shots": 5.7061,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 51,
-                "t": 603.0206723886182,
-                "shots": 6.75025,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 52,
-                "t": 683.4363792932731,
-                "shots": 7.5855,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 90,
-                "t": 996.4262796433759,
-                "shots": 10.4341,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 91,
-                "t": 1143.8340751556082,
-                "shots": 11.975,
-                "bulletPrice": 1821
-              },
-              {
-                "d": 100,
-                "t": 1263.853918309749,
-                "shots": 13.13305,
-                "bulletPrice": 1821
-              }
-            ],
-            "hash": "h6cs6tr",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:16.907Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -7087,41 +5594,10 @@
             0.95,
             0.65
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "aimSpeed": 342,
-          "muzzleId": 2,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 471.98969072171394,
-                "shots": 6.34135,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 80,
-                "t": 716.561569861618,
-                "shots": 8.2823,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 81,
-                "t": 813.3687735791774,
-                "shots": 9.3675,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 100,
-                "t": 974.7468813256121,
-                "shots": 10.9974,
-                "bulletPrice": 2723
-              }
-            ],
-            "hash": "hf3o9wb",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:17.547Z"
-          }
+          "muzzleId": 2
         },
         {
           "id": "#3",
@@ -7144,38 +5620,7 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 472.06480117826817,
-                "shots": 6.3422,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 71,
-                "t": 722.3389502786937,
-                "shots": 8.1886,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 72,
-                "t": 821.205119401509,
-                "shots": 9.29355,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 100,
-                "t": 1090.3871626443895,
-                "shots": 11.951,
-                "bulletPrice": 2723
-              }
-            ],
-            "hash": "hdaxbho",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:18.246Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -7199,41 +5644,10 @@
             0.9,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "muzzleId": 2,
           "precision": 0.09,
-          "aimSpeed": 348,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 416.98363636351496,
-                "shots": 4.82235,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 80,
-                "t": 686.556231351385,
-                "shots": 6.7006,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 81,
-                "t": 782.8464569708592,
-                "shots": 7.57585,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 100,
-                "t": 962.3825619168051,
-                "shots": 9.0808,
-                "bulletPrice": 2744
-              }
-            ],
-            "hash": "hhitg7o",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:18.766Z"
-          }
+          "aimSpeed": 348
         },
         {
           "id": "#2",
@@ -7256,38 +5670,7 @@
             0.5
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 415.9199999998771,
-                "shots": 4.8126,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 64,
-                "t": 704.4059330144604,
-                "shots": 6.7553,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 65,
-                "t": 799.9602870815381,
-                "shots": 7.62025,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 100,
-                "t": 1196.7699521531288,
-                "shots": 10.8739,
-                "bulletPrice": 2744
-              }
-            ],
-            "hash": "hx9m0ob",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:19.296Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -7311,41 +5694,10 @@
             0.9,
             0.65
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "aimSpeed": 371,
-          "muzzleId": 2,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 401.0820512821731,
-                "shots": 4.91055,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 58,
-                "t": 531.1736447038328,
-                "shots": 5.7073,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 59,
-                "t": 576.9615192146168,
-                "shots": 6.1456,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 100,
-                "t": 806.9361690297901,
-                "shots": 8.05445,
-                "bulletPrice": 1418
-              }
-            ],
-            "hash": "h2y2bsd",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:19.793Z"
-          }
+          "muzzleId": 2
         },
         {
           "id": "#3",
@@ -7368,50 +5720,7 @@
             0.55
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 401.871794871918,
-                "shots": 4.91825,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 51,
-                "t": 550.2082981595288,
-                "shots": 5.8077,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 52,
-                "t": 595.2563241163939,
-                "shots": 6.236,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 90,
-                "t": 875.8966950928549,
-                "shots": 8.55735,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 91,
-                "t": 1000.437028742112,
-                "shots": 9.7607,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 100,
-                "t": 1108.4436213283195,
-                "shots": 10.7155,
-                "bulletPrice": 1418
-              }
-            ],
-            "hash": "hurcy5n",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:20.548Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -7435,54 +5744,11 @@
             0.95,
             0.75
           ],
-          "enabled": true,
+          "enabled": false,
           "barrelId": 0,
           "precision": 0.09,
           "aimSpeed": 327,
-          "muzzleId": 2,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 424.1390728477413,
-                "shots": 7.4045,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 47,
-                "t": 493.44815872977756,
-                "shots": 7.7456,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 48,
-                "t": 557.1574263031501,
-                "shots": 8.6926,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 87,
-                "t": 707.3850868298875,
-                "shots": 10.37565,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 88,
-                "t": 775.0744868536649,
-                "shots": 11.38275,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 836.13867786655,
-                "shots": 12.1247,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "h5p4na7",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:21.673Z"
-          }
+          "muzzleId": 2
         },
         {
           "id": "#2",
@@ -7505,50 +5771,7 @@
             0.55
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 424.19536423847234,
-                "shots": 7.40535,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 34,
-                "t": 488.22978653747697,
-                "shots": 7.55345,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 35,
-                "t": 553.6723649883951,
-                "shots": 8.51755,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 64,
-                "t": 722.3051533106532,
-                "shots": 10.3655,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 65,
-                "t": 795.9795198411632,
-                "shots": 11.4539,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 1188.2479113194256,
-                "shots": 16.53425,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "h4rmmsj",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:22.794Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -7575,64 +5798,9 @@
             0.5
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 343,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 303.5899999999607,
-                "shots": 5.55385,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 28,
-                "t": 327.738024691338,
-                "shots": 5.5457,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 29,
-                "t": 370.50652557307734,
-                "shots": 6.174,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 49,
-                "t": 431.5098765430972,
-                "shots": 6.8245,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 50,
-                "t": 481.8750440917472,
-                "shots": 7.56675,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 71,
-                "t": 617.143562610262,
-                "shots": 9.318,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 72,
-                "t": 670.3453968253879,
-                "shots": 10.1028,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 100,
-                "t": 998.4967548500845,
-                "shots": 14.6547,
-                "bulletPrice": 1170
-              }
-            ],
-            "hash": "hascoh8",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:46:24.260Z"
-          }
+          "aimSpeed": 343
         },
         {
           "id": "#2",
@@ -7655,62 +5823,7 @@
             0.45
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 303.3933333332939,
-                "shots": 5.5509,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 28,
-                "t": 327.504691358005,
-                "shots": 5.5422,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 29,
-                "t": 370.23985890641273,
-                "shots": 6.17,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 49,
-                "t": 483.96320987648295,
-                "shots": 7.6113,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 50,
-                "t": 546.1350440916965,
-                "shots": 8.53065,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 71,
-                "t": 692.0068959436044,
-                "shots": 10.44095,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 72,
-                "t": 751.3820634920517,
-                "shots": 11.31835,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 100,
-                "t": 1108.8434215167451,
-                "shots": 16.3099,
-                "bulletPrice": 1170
-              }
-            ],
-            "hash": "hascoh8",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:46:25.382Z"
-          }
+          "enabled": false
         },
         {
           "id": "#3",
@@ -7733,62 +5846,7 @@
             0.3
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 330.1866666665891,
-                "shots": 5.9528,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 20,
-                "t": 406.45419906683287,
-                "shots": 6.63025,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 21,
-                "t": 453.9094090201276,
-                "shots": 7.31875,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 36,
-                "t": 578.1375583204044,
-                "shots": 8.83225,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 37,
-                "t": 652.8561016070076,
-                "shots": 9.9297,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 52,
-                "t": 839.6475842405174,
-                "shots": 12.38165,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 53,
-                "t": 940.8994608605371,
-                "shots": 13.8771,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 100,
-                "t": 1877.4876620009945,
-                "shots": 26.8295,
-                "bulletPrice": 1170
-              }
-            ],
-            "hash": "hstfmok",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:46:26.583Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -7812,76 +5870,9 @@
             0.8,
             0.4
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 308,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 468.25037936266807,
-                "shots": 6.14295,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 25,
-                "t": 503.3565302815608,
-                "shots": 6.14125,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 26,
-                "t": 635.5833559845593,
-                "shots": 7.57805,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 34,
-                "t": 674.1627567521414,
-                "shots": 7.87785,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 35,
-                "t": 762.0815399662913,
-                "shots": 8.828,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 51,
-                "t": 944.4679591037282,
-                "shots": 10.58335,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 52,
-                "t": 1085.1029790403434,
-                "shots": 12.1125,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 71,
-                "t": 1370.9528798389872,
-                "shots": 14.95775,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 72,
-                "t": 1620.639493098559,
-                "shots": 17.68465,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 2559.9223274994847,
-                "shots": 27.56735,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "hojjz0z",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:27.267Z"
-          }
+          "aimSpeed": 308
         }
       ]
     },
@@ -7905,77 +5896,10 @@
             0.9,
             0.55
           ],
-          "enabled": true,
+          "enabled": false,
           "bullet": "",
           "precision": 0.09,
-          "aimSpeed": 338,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 407.33999999995524,
-                "shots": 5.7523,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 25,
-                "t": 441.7480737457315,
-                "shots": 5.74235,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 26,
-                "t": 574.9227966956629,
-                "shots": 7.2796,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 34,
-                "t": 598.0005802940857,
-                "shots": 7.4172,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 35,
-                "t": 681.936731815503,
-                "shots": 8.38,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 51,
-                "t": 772.312299012624,
-                "shots": 9.1711,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 52,
-                "t": 890.7655933910582,
-                "shots": 10.5366,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 71,
-                "t": 1078.693900866365,
-                "shots": 12.41645,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 72,
-                "t": 1284.40862381632,
-                "shots": 14.8,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 1771.1237235542067,
-                "shots": 20.0176,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "h4iupgm",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:29.237Z"
-          }
+          "aimSpeed": 338
         }
       ]
     },
@@ -7999,66 +5923,11 @@
             0.95,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "muzzleId": 3,
           "bullet": "",
           "precision": 0.09,
-          "aimSpeed": 342,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 294.4385000000323,
-                "shots": 5.26895,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 31,
-                "t": 325.26315831016007,
-                "shots": 5.2897,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 32,
-                "t": 373.89466341687915,
-                "shots": 5.67685,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 47,
-                "t": 405.24524001859237,
-                "shots": 5.8994,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 48,
-                "t": 461.51124512529407,
-                "shots": 6.62365,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 63,
-                "t": 521.2978217270561,
-                "shots": 7.182,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 64,
-                "t": 570.188326833836,
-                "shots": 7.80005,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 100,
-                "t": 767.3910106778279,
-                "shots": 9.8262,
-                "bulletPrice": 1170
-              }
-            ],
-            "hash": "hdhkkc9",
-            "avgBurstInterval": 0.21066412500001658,
-            "cachedAt": "2026-09-15T22:36:29.858Z"
-          }
+          "aimSpeed": 342
         },
         {
           "id": "#3",
@@ -8080,63 +5949,8 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
-          "aimSpeed": 342,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 349.5070503267353,
-                "shots": 6.08125,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 30,
-                "t": 377.1271903687886,
-                "shots": 6.07095,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 31,
-                "t": 419.34856100420865,
-                "shots": 6.67105,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 43,
-                "t": 475.7057996415503,
-                "shots": 7.32565,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 44,
-                "t": 524.169288814253,
-                "shots": 8.0165,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 56,
-                "t": 585.6681071835114,
-                "shots": 8.74585,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 57,
-                "t": 650.8081984425829,
-                "shots": 9.67915,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 100,
-                "t": 932.0109601384584,
-                "shots": 13.17705,
-                "bulletPrice": 1170
-              }
-            ],
-            "hash": "hon4jqt",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:31.242Z"
-          }
+          "enabled": false,
+          "aimSpeed": 342
         }
       ]
     },
@@ -8160,78 +5974,11 @@
             0.75,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "bullet": "",
           "precision": 0.09,
           "aimSpeed": 267,
-          "barrelId": 3,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 407.6451219511102,
-                "shots": 6.57115,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 25,
-                "t": 446.63251395377443,
-                "shots": 6.56845,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 26,
-                "t": 560.8938145117601,
-                "shots": 8.1086,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 34,
-                "t": 605.1269019038413,
-                "shots": 8.54175,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 35,
-                "t": 679.1113731937338,
-                "shots": 9.53145,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 51,
-                "t": 885.7446211483908,
-                "shots": 12.0127,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 52,
-                "t": 1011.2815314626084,
-                "shots": 13.70695,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 71,
-                "t": 1185.8194127991612,
-                "shots": 15.6853,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 72,
-                "t": 1386.4843718938337,
-                "shots": 18.4063,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 1808.653226546357,
-                "shots": 23.57615,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "h9e8nv2",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:33.132Z"
-          }
+          "barrelId": 3
         }
       ]
     },
@@ -8255,66 +6002,11 @@
             0.85,
             0.6
           ],
-          "enabled": true,
+          "enabled": false,
           "muzzleId": 3,
           "bullet": "",
           "precision": 0.09,
-          "aimSpeed": 343,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 344.1189473683765,
-                "shots": 6.44855,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 31,
-                "t": 377.6216305470536,
-                "shots": 6.4978,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 32,
-                "t": 482.4872858616801,
-                "shots": 8.14265,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 42,
-                "t": 535.364891640943,
-                "shots": 8.82465,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 43,
-                "t": 599.3705469555725,
-                "shots": 9.82255,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 63,
-                "t": 711.6436532506474,
-                "shots": 11.28975,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 64,
-                "t": 805.9145717235091,
-                "shots": 12.76685,
-                "bulletPrice": 1170
-              },
-              {
-                "d": 100,
-                "t": 1082.3171104231983,
-                "shots": 16.5844,
-                "bulletPrice": 1170
-              }
-            ],
-            "hash": "hj9rl4u",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:34.593Z"
-          }
+          "aimSpeed": 343
         }
       ]
     },
@@ -8338,77 +6030,10 @@
             0.8,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "muzzleId": 3,
           "precision": 0.09,
-          "aimSpeed": 418,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 342.7884187082636,
-                "shots": 6.1304,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 31,
-                "t": 377.8910432769027,
-                "shots": 6.2009,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 32,
-                "t": 480.8614131622014,
-                "shots": 7.72735,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 42,
-                "t": 548.6475173588983,
-                "shots": 8.59515,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 43,
-                "t": 619.7971745490628,
-                "shots": 9.64535,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 63,
-                "t": 771.7357526528866,
-                "shots": 11.6259,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 64,
-                "t": 879.0691514913773,
-                "shots": 13.21765,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 87,
-                "t": 1112.1526922572345,
-                "shots": 16.36865,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 88,
-                "t": 1308.363596663591,
-                "shots": 19.2906,
-                "bulletPrice": 2343
-              },
-              {
-                "d": 100,
-                "t": 1501.2407747062487,
-                "shots": 22.00125,
-                "bulletPrice": 2343
-              }
-            ],
-            "hash": "h3uhtbc",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:36.407Z"
-          }
+          "aimSpeed": 418
         }
       ]
     },
@@ -8432,77 +6057,10 @@
             1,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "aimSpeed": 343,
-          "muzzleId": 3,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 378.3931847968429,
-                "shots": 5.8119,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 31,
-                "t": 407.5114229177725,
-                "shots": 5.7957,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 32,
-                "t": 509.4262842752414,
-                "shots": 7.07925,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 42,
-                "t": 519.505435201579,
-                "shots": 7.08275,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 43,
-                "t": 576.3573869914884,
-                "shots": 7.79325,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 63,
-                "t": 648.1841029990284,
-                "shots": 8.4573,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 64,
-                "t": 742.1605633078523,
-                "shots": 9.6399,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 87,
-                "t": 901.5614833089218,
-                "shots": 11.3802,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 88,
-                "t": 1045.7240510883294,
-                "shots": 13.201,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 1161.875388687531,
-                "shots": 14.52845,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "hduxmhh",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:38.132Z"
-          }
+          "muzzleId": 3
         }
       ]
     },
@@ -8526,78 +6084,11 @@
             0.9,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "bullet": "",
           "precision": 0.09,
           "aimSpeed": 368,
-          "muzzleId": 3,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 338.90801886802586,
-                "shots": 5.7899,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 31,
-                "t": 371.65984554208165,
-                "shots": 5.82325,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 32,
-                "t": 467.29589807626354,
-                "shots": 7.16105,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 42,
-                "t": 502.47953662604795,
-                "shots": 7.51975,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 43,
-                "t": 562.0271457639558,
-                "shots": 8.3475,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 63,
-                "t": 640.7647058824023,
-                "shots": 9.1832,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 64,
-                "t": 732.3465131335271,
-                "shots": 10.4637,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 87,
-                "t": 846.5228912319566,
-                "shots": 11.7587,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 88,
-                "t": 980.6459720680915,
-                "shots": 13.64045,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 1055.5628005919132,
-                "shots": 14.533,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "htcyh4c",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:39.909Z"
-          }
+          "muzzleId": 3
         }
       ]
     },
@@ -8621,65 +6112,10 @@
             1,
             0.8
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "aimSpeed": 343,
-          "muzzleId": 3,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 416.0662824206653,
-                "shots": 5.8125,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 42,
-                "t": 455.7168164096196,
-                "shots": 5.79485,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 43,
-                "t": 568.3629146183051,
-                "shots": 7.08645,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 57,
-                "t": 598.5408543820608,
-                "shots": 7.27675,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 58,
-                "t": 667.1638978357929,
-                "shots": 8.05915,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 85,
-                "t": 779.8823246878025,
-                "shots": 9.05675,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 86,
-                "t": 889.5327456631315,
-                "shots": 10.3137,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 965.0176018533956,
-                "shots": 11.02805,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "hjrhrfx",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:41.287Z"
-          }
+          "muzzleId": 3
         }
       ]
     },
@@ -8703,55 +6139,12 @@
             0.95,
             0.8
           ],
-          "enabled": true,
+          "enabled": false,
           "bullet": "",
           "precision": 0.09,
           "aimSpeed": 296,
           "barrelId": 2,
-          "muzzleId": 3,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 441.93719008280186,
-                "shots": 5.4562,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 42,
-                "t": 494.80232629312644,
-                "shots": 5.6158,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 43,
-                "t": 621.7089538969827,
-                "shots": 6.88655,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 85,
-                "t": 755.712933082651,
-                "shots": 7.8643,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 86,
-                "t": 866.7269987029665,
-                "shots": 8.9748,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 100,
-                "t": 923.899123996089,
-                "shots": 9.4268,
-                "bulletPrice": 2555
-              }
-            ],
-            "hash": "hkwp8sa",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:42.348Z"
-          }
+          "muzzleId": 3
         }
       ]
     },
@@ -8775,53 +6168,10 @@
             0.85,
             0.55
           ],
-          "enabled": true,
+          "enabled": false,
           "muzzleId": 3,
           "precision": 0.09,
-          "aimSpeed": 340,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 351.7228915663711,
-                "shots": 5.37895,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 21,
-                "t": 382.3909975162044,
-                "shots": 5.38295,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 22,
-                "t": 473.67945771530026,
-                "shots": 6.5015,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 45,
-                "t": 571.7598254289583,
-                "shots": 7.3088,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 46,
-                "t": 644.160735427378,
-                "shots": 8.1922,
-                "bulletPrice": 2481
-              },
-              {
-                "d": 100,
-                "t": 1114.6773452190398,
-                "shots": 13.0786,
-                "bulletPrice": 2481
-              }
-            ],
-            "hash": "hi5jjwd",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:43.286Z"
-          }
+          "aimSpeed": 340
         }
       ]
     },
@@ -8845,78 +6195,11 @@
             0.9,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "aimSpeed": 363,
           "muzzleId": 3,
-          "barrelId": 1,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 510.1538461538071,
-                "shots": 6.761,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 31,
-                "t": 543.3921568627393,
-                "shots": 6.798,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 32,
-                "t": 668.7340874811551,
-                "shots": 8.4147,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 42,
-                "t": 714.3610859728686,
-                "shots": 8.8804,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 43,
-                "t": 791.914555052831,
-                "shots": 9.87585,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 63,
-                "t": 892.2762443438519,
-                "shots": 10.92565,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 64,
-                "t": 1008.6989441930323,
-                "shots": 12.4264,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 87,
-                "t": 1144.9748868778354,
-                "shots": 13.90485,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 88,
-                "t": 1330.6360482655011,
-                "shots": 16.3057,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 1433.9546003017615,
-                "shots": 17.4959,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "hqx0r4i",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:45.542Z"
-          }
+          "barrelId": 1
         }
       ]
     },
@@ -8940,78 +6223,11 @@
             0.9,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "bullet": "",
           "precision": 0.09,
           "aimSpeed": 308,
-          "muzzleId": 3,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 300.31347387725197,
-                "shots": 6.4607,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 31,
-                "t": 328.7117460964295,
-                "shots": 6.48,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 32,
-                "t": 419.88780579282,
-                "shots": 8.12185,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 42,
-                "t": 451.35051091420536,
-                "shots": 8.5336,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 43,
-                "t": 504.01602982230645,
-                "shots": 9.4752,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 63,
-                "t": 614.3722374987683,
-                "shots": 11.16115,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 64,
-                "t": 698.0029259760928,
-                "shots": 12.6658,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 87,
-                "t": 926.9707224574048,
-                "shots": 16.4604,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 88,
-                "t": 1089.5665805039746,
-                "shots": 19.4009,
-                "bulletPrice": 2555
-              },
-              {
-                "d": 100,
-                "t": 1310.0303509393225,
-                "shots": 23.21725,
-                "bulletPrice": 2555
-              }
-            ],
-            "hash": "hl7yucb",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:47.526Z"
-          }
+          "muzzleId": 3
         }
       ]
     },
@@ -9035,52 +6251,9 @@
             0.85,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 0,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 426.10139860148996,
-                "shots": 6.37825,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 51,
-                "t": 570.936826976651,
-                "shots": 7.55455,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 52,
-                "t": 641.7896949676534,
-                "shots": 8.5502,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 90,
-                "t": 965.8909863143133,
-                "shots": 12.5181,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 91,
-                "t": 1109.2963018576936,
-                "shots": 14.55125,
-                "bulletPrice": 1941
-              },
-              {
-                "d": 100,
-                "t": 1250.8812046848811,
-                "shots": 16.418,
-                "bulletPrice": 1941
-              }
-            ],
-            "hash": "h8ma3pu",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:48.511Z"
-          }
+          "aimSpeed": 0
         }
       ]
     },
@@ -9104,53 +6277,10 @@
             0.85,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
           "aimSpeed": 425,
-          "muzzleId": 0,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 414.19818181808097,
-                "shots": 3.88015,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 51,
-                "t": 548.4526804439632,
-                "shots": 4.5873,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 52,
-                "t": 608.0070467270612,
-                "shots": 5.12295,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 90,
-                "t": 911.9856927620021,
-                "shots": 7.51935,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 91,
-                "t": 1041.1018772269265,
-                "shots": 8.69265,
-                "bulletPrice": 2744
-              },
-              {
-                "d": 100,
-                "t": 1166.925719230414,
-                "shots": 9.75365,
-                "bulletPrice": 2744
-              }
-            ],
-            "hash": "h718xsp",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:49.117Z"
-          }
+          "muzzleId": 0
         }
       ]
     },
@@ -9174,52 +6304,9 @@
             0.85,
             0.5
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 405,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 378.0044843049399,
-                "shots": 4.65725,
-                "bulletPrice": 2410
-              },
-              {
-                "d": 51,
-                "t": 513.3036873741765,
-                "shots": 5.52905,
-                "bulletPrice": 2410
-              },
-              {
-                "d": 52,
-                "t": 582.5625216557272,
-                "shots": 6.2888,
-                "bulletPrice": 2410
-              },
-              {
-                "d": 90,
-                "t": 888.102260230232,
-                "shots": 9.2211,
-                "bulletPrice": 2410
-              },
-              {
-                "d": 91,
-                "t": 1018.6570586374073,
-                "shots": 10.6643,
-                "bulletPrice": 2410
-              },
-              {
-                "d": 100,
-                "t": 1150.8968810730655,
-                "shots": 12.0264,
-                "bulletPrice": 2410
-              }
-            ],
-            "hash": "h3ac1dv",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:49.860Z"
-          }
+          "aimSpeed": 405
         },
         {
           "id": "#2",
@@ -9242,50 +6329,7 @@
             0.4
           ],
           "bullet": "",
-          "enabled": true,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 378.03139013453557,
-                "shots": 4.65755,
-                "bulletPrice": 2410
-              },
-              {
-                "d": 51,
-                "t": 543.4202793024311,
-                "shots": 5.86485,
-                "bulletPrice": 2410
-              },
-              {
-                "d": 52,
-                "t": 618.8091584270414,
-                "shots": 6.69295,
-                "bulletPrice": 2410
-              },
-              {
-                "d": 90,
-                "t": 1045.1919463289091,
-                "shots": 10.97265,
-                "bulletPrice": 2410
-              },
-              {
-                "d": 91,
-                "t": 1202.5942783683868,
-                "shots": 12.7152,
-                "bulletPrice": 2410
-              },
-              {
-                "d": 100,
-                "t": 1416.3184057367432,
-                "shots": 14.98585,
-                "bulletPrice": 2410
-              }
-            ],
-            "hash": "h3ac1dv",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:50.589Z"
-          }
+          "enabled": false
         }
       ]
     },
@@ -9309,52 +6353,9 @@
             0.9,
             0.7
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 359,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 427.8624203822384,
-                "shots": 5.9437,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 51,
-                "t": 544.6110820209531,
-                "shots": 6.65245,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 52,
-                "t": 611.1960376693954,
-                "shots": 7.50755,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 90,
-                "t": 774.4549255598131,
-                "shots": 9.0335,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 91,
-                "t": 886.5863780235019,
-                "shots": 10.4845,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 100,
-                "t": 938.417857840658,
-                "shots": 11.01815,
-                "bulletPrice": 2723
-              }
-            ],
-            "hash": "hbkbvl0",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:51.510Z"
-          }
+          "aimSpeed": 359
         }
       ]
     },
@@ -9378,52 +6379,9 @@
             0.8,
             0.4
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 359,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 391.0412371134668,
-                "shots": 5.96215,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 51,
-                "t": 561.2364809309514,
-                "shots": 7.528,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 52,
-                "t": 629.6696603630774,
-                "shots": 8.50585,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 90,
-                "t": 1049.2232622857052,
-                "shots": 13.93195,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 91,
-                "t": 1221.1203592435265,
-                "shots": 16.4152,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 100,
-                "t": 1432.5722387367816,
-                "shots": 19.33115,
-                "bulletPrice": 2723
-              }
-            ],
-            "hash": "hvoyjph",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:52.421Z"
-          }
+          "aimSpeed": 359
         }
       ]
     },
@@ -9447,40 +6405,9 @@
             1,
             0.9
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 359,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 467.29411764701507,
-                "shots": 5.9658,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 69,
-                "t": 571.2802237460021,
-                "shots": 6.19575,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 70,
-                "t": 637.0954529050111,
-                "shots": 6.96435,
-                "bulletPrice": 2723
-              },
-              {
-                "d": 100,
-                "t": 715.4893024694045,
-                "shots": 7.4592,
-                "bulletPrice": 2723
-              }
-            ],
-            "hash": "huhtswd",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:52.957Z"
-          }
+          "aimSpeed": 359
         }
       ]
     },
@@ -9507,52 +6434,9 @@
             0.6
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 386,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 543.0300000001452,
-                "shots": 2.8101,
-                "bulletPrice": 1213
-              },
-              {
-                "d": 38,
-                "t": 614.1328833489323,
-                "shots": 2.92795,
-                "bulletPrice": 1213
-              },
-              {
-                "d": 39,
-                "t": 809.6086171214247,
-                "shots": 3.5764,
-                "bulletPrice": 1213
-              },
-              {
-                "d": 64,
-                "t": 1017.0119614299286,
-                "shots": 4.18935,
-                "bulletPrice": 1213
-              },
-              {
-                "d": 65,
-                "t": 1062.5176952019906,
-                "shots": 4.3379,
-                "bulletPrice": 1213
-              },
-              {
-                "d": 100,
-                "t": 1545.788377234357,
-                "shots": 5.83905,
-                "bulletPrice": 1213
-              }
-            ],
-            "hash": "hfliwr0",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:53.383Z"
-          }
+          "aimSpeed": 386
         }
       ]
     },
@@ -9579,28 +6463,9 @@
             0.8
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 374,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 361.3302585265366,
-                "shots": 3.977,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 100,
-                "t": 618.2982447341092,
-                "shots": 4.9321,
-                "bulletPrice": 1418
-              }
-            ],
-            "hash": "hh1we3x",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:53.555Z"
-          }
+          "aimSpeed": 374
         }
       ]
     },
@@ -9624,52 +6489,9 @@
             0.8,
             0.45
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 437,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 348.70151306734317,
-                "shots": 5.2251,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 51,
-                "t": 525.1956692348955,
-                "shots": 6.6054,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 52,
-                "t": 615.2012050530649,
-                "shots": 7.6811,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 90,
-                "t": 988.843478114118,
-                "shots": 11.64345,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 91,
-                "t": 1101.545024936537,
-                "shots": 12.99415,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 100,
-                "t": 1260.5783411111277,
-                "shots": 14.7873,
-                "bulletPrice": 1418
-              }
-            ],
-            "hash": "hocv5ak",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:54.338Z"
-          }
+          "aimSpeed": 437
         }
       ]
     },
@@ -9696,40 +6518,9 @@
             0.5
           ],
           "bullet": "",
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 383,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 301.7349999999606,
-                "shots": 4.44075,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 84,
-                "t": 742.6724420712687,
-                "shots": 7.6688,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 85,
-                "t": 813.3043078783292,
-                "shots": 8.3608,
-                "bulletPrice": 1418
-              },
-              {
-                "d": 100,
-                "t": 959.8272949828064,
-                "shots": 9.6148,
-                "bulletPrice": 1418
-              }
-            ],
-            "hash": "htzn89u",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:54.747Z"
-          }
+          "aimSpeed": 383
         }
       ]
     },
@@ -9753,64 +6544,9 @@
             0.5,
             0.25
           ],
-          "enabled": true,
+          "enabled": false,
           "precision": 0.09,
-          "aimSpeed": 397,
-          "cache": {
-            "keyPoints": [
-              {
-                "d": 0,
-                "t": 416.08873720152025,
-                "shots": 9.1276,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 12,
-                "t": 449.252758365405,
-                "shots": 9.362,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 13,
-                "t": 534.3432186046424,
-                "shots": 10.98965,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 25,
-                "t": 661.0089462532899,
-                "shots": 13.05045,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 26,
-                "t": 780.256403079525,
-                "shots": 15.3453,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 38,
-                "t": 984.8658167349491,
-                "shots": 18.9286,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 39,
-                "t": 1118.6038878956815,
-                "shots": 21.5065,
-                "bulletPrice": 1816
-              },
-              {
-                "d": 100,
-                "t": 2948.4922696546796,
-                "shots": 55.14885,
-                "bulletPrice": 1816
-              }
-            ],
-            "hash": "h976qha",
-            "avgBurstInterval": 0,
-            "cachedAt": "2026-09-15T22:36:56.576Z"
-          }
+          "aimSpeed": 397
         }
       ]
     }
@@ -9823,7 +6559,8 @@
       "level": 6,
       "value": 115,
       "price": 5086836,
-      "parts": "胸腹肩"
+      "parts": "胸腹肩",
+      "enabled": false
     },
     {
       "id": "armor_4_1789274589262",
@@ -9832,7 +6569,8 @@
       "level": 5,
       "value": 95,
       "price": 357970,
-      "parts": "胸腹"
+      "parts": "胸腹",
+      "enabled": true
     },
     {
       "id": "armor_4_1789274589259",
@@ -9841,7 +6579,8 @@
       "level": 5,
       "value": 125,
       "price": 421306,
-      "parts": "胸腹肩"
+      "parts": "胸腹肩",
+      "enabled": true
     },
     {
       "id": "armor_4_1789274589260",
@@ -9850,7 +6589,8 @@
       "level": 5,
       "value": 105,
       "price": 363393,
-      "parts": "胸腹"
+      "parts": "胸腹",
+      "enabled": true
     },
     {
       "id": "armor_4_1789274589261",
@@ -9859,7 +6599,8 @@
       "level": 5,
       "value": 115,
       "price": 361284,
-      "parts": "胸腹肩"
+      "parts": "胸腹肩",
+      "enabled": true
     },
     {
       "id": "armor_4_1789274589265",
@@ -9868,7 +6609,8 @@
       "level": 4,
       "value": 90,
       "price": 141920,
-      "parts": "胸腹"
+      "parts": "胸腹",
+      "enabled": true
     },
     {
       "id": "armor_4_1789274589267",
@@ -9877,7 +6619,8 @@
       "level": 4,
       "value": 80,
       "price": 106267,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "armor_4_1789274589264",
@@ -9886,7 +6629,8 @@
       "level": 4,
       "value": 100,
       "price": 160711,
-      "parts": "胸腹"
+      "parts": "胸腹",
+      "enabled": true
     },
     {
       "id": "armor_4_1789274589266",
@@ -9895,7 +6639,8 @@
       "level": 4,
       "value": 80,
       "price": 114816,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": true
     },
     {
       "id": "armor_4_1789274589263",
@@ -9904,7 +6649,8 @@
       "level": 4,
       "value": 110,
       "price": 181666,
-      "parts": "胸腹"
+      "parts": "胸腹",
+      "enabled": true
     },
     {
       "id": "armor_4_1789274589268",
@@ -9913,7 +6659,8 @@
       "level": 3,
       "value": 85,
       "price": 55502,
-      "parts": "胸腹"
+      "parts": "胸腹",
+      "enabled": false
     },
     {
       "id": "armor_4_1789274589271",
@@ -9922,7 +6669,8 @@
       "level": 3,
       "value": 50,
       "price": 33579,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "armor_4_1789274589270",
@@ -9931,7 +6679,8 @@
       "level": 3,
       "value": 60,
       "price": 36455,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "armor_4_1789274589269",
@@ -9940,7 +6689,8 @@
       "level": 3,
       "value": 75,
       "price": 48389,
-      "parts": "胸腹"
+      "parts": "胸腹",
+      "enabled": false
     },
     {
       "id": "armor_4_1789274589275",
@@ -9949,7 +6699,8 @@
       "level": 2,
       "value": 30,
       "price": 6926,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "armor_4_1789274589272",
@@ -9958,7 +6709,8 @@
       "level": 2,
       "value": 50,
       "price": 14591,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "armor_4_1789274589274",
@@ -9967,7 +6719,8 @@
       "level": 2,
       "value": 35,
       "price": 8756,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "armor_4_1789274589273",
@@ -9976,7 +6729,8 @@
       "level": 2,
       "value": 40,
       "price": 10949,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "armor_3_1789274589278",
@@ -9985,7 +6739,8 @@
       "level": 1,
       "value": 20,
       "price": 2390,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "armor_3_1789274589279",
@@ -9994,7 +6749,8 @@
       "level": 1,
       "value": 20,
       "price": 2020,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "armor_3_1789274589277",
@@ -10003,7 +6759,8 @@
       "level": 1,
       "value": 25,
       "price": 3095,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "armor_3_1789274589276",
@@ -10012,7 +6769,8 @@
       "level": 1,
       "value": 30,
       "price": 3880,
-      "parts": "胸部"
+      "parts": "胸部",
+      "enabled": false
     },
     {
       "id": "helmet_4_1789274589280",
@@ -10020,7 +6778,8 @@
       "name": "H70精英头盔",
       "level": 6,
       "value": 55,
-      "price": 3644181
+      "price": 3644181,
+      "enabled": false
     },
     {
       "id": "helmet_4_1789274589283",
@@ -10028,7 +6787,8 @@
       "name": "DICH-1战术头盔",
       "level": 5,
       "value": 40,
-      "price": 308151
+      "price": 308151,
+      "enabled": true
     },
     {
       "id": "helmet_4_1789274589284",
@@ -10036,7 +6796,8 @@
       "name": "GN久战重型夜视头盔",
       "level": 5,
       "value": 20,
-      "price": 261428
+      "price": 261428,
+      "enabled": false
     },
     {
       "id": "helmet_4_1789274589285",
@@ -10044,7 +6805,8 @@
       "name": "GN重型头盔",
       "level": 5,
       "value": 50,
-      "price": 261360
+      "price": 261360,
+      "enabled": true
     },
     {
       "id": "helmet_4_1789274589281",
@@ -10052,7 +6814,8 @@
       "name": "GN重型夜视头盔",
       "level": 5,
       "value": 50,
-      "price": 692630
+      "price": 692630,
+      "enabled": false
     },
     {
       "id": "helmet_4_1789274589282",
@@ -10060,7 +6823,8 @@
       "name": "H09防暴头盔",
       "level": 5,
       "value": 45,
-      "price": 344711
+      "price": 344711,
+      "enabled": true
     },
     {
       "id": "helmet_4_1789274589287",
@@ -10068,7 +6832,8 @@
       "name": "Mask-1铁壁头盔",
       "level": 5,
       "value": 75,
-      "price": 136869
+      "price": 136869,
+      "enabled": false
     },
     {
       "id": "helmet_4_1789274589290",
@@ -10076,7 +6841,8 @@
       "name": "D6战术头盔",
       "level": 4,
       "value": 55,
-      "price": 48463
+      "price": 48463,
+      "enabled": false
     },
     {
       "id": "helmet_4_1789274589286",
@@ -10084,7 +6850,8 @@
       "name": "DICH训练头盔",
       "level": 4,
       "value": 35,
-      "price": 156254
+      "price": 156254,
+      "enabled": true
     },
     {
       "id": "helmet_4_1789274589288",
@@ -10092,7 +6859,8 @@
       "name": "GT1战术头盔",
       "level": 4,
       "value": 48,
-      "price": 131201
+      "price": 131201,
+      "enabled": true
     },
     {
       "id": "helmet_4_1789274589289",
@@ -10100,7 +6868,8 @@
       "name": "MHS战术头盔",
       "level": 4,
       "value": 30,
-      "price": 110803
+      "price": 110803,
+      "enabled": false
     },
     {
       "id": "helmet_3_1789274589294",
@@ -10108,7 +6877,8 @@
       "name": "防暴头盔",
       "level": 3,
       "value": 28,
-      "price": 23467
+      "price": 23467,
+      "enabled": false
     },
     {
       "id": "helmet_4_1789274589292",
@@ -10116,7 +6886,8 @@
       "name": "DAS防弹头盔",
       "level": 3,
       "value": 40,
-      "price": 39541
+      "price": 39541,
+      "enabled": false
     },
     {
       "id": "helmet_4_1789274589293",
@@ -10124,7 +6895,8 @@
       "name": "H07战术头盔",
       "level": 3,
       "value": 20,
-      "price": 25052
+      "price": 25052,
+      "enabled": false
     },
     {
       "id": "helmet_3_1789274589291",
@@ -10132,7 +6904,8 @@
       "name": "MC201防弹头盔",
       "level": 3,
       "value": 34,
-      "price": 44641
+      "price": 44641,
+      "enabled": false
     },
     {
       "id": "helmet_3_1789274589297",
@@ -10140,7 +6913,8 @@
       "name": "复古摩托车盔",
       "level": 2,
       "value": 18,
-      "price": 9609
+      "price": 9609,
+      "enabled": false
     },
     {
       "id": "helmet_3_1789274589298",
@@ -10148,7 +6922,8 @@
       "name": "DRO战术头盔",
       "level": 2,
       "value": 15,
-      "price": 8352
+      "price": 8352,
+      "enabled": false
     },
     {
       "id": "helmet_3_1789274589299",
@@ -10156,7 +6931,8 @@
       "name": "HO1战术头盔",
       "level": 2,
       "value": 12,
-      "price": 7967
+      "price": 7967,
+      "enabled": false
     },
     {
       "id": "helmet_3_1789274589295",
@@ -10164,7 +6940,8 @@
       "name": "MC防弹头盔",
       "level": 2,
       "value": 20,
-      "price": 11498
+      "price": 11498,
+      "enabled": false
     },
     {
       "id": "helmet_3_1789274589301",
@@ -10172,7 +6949,8 @@
       "name": "安保头盔",
       "level": 1,
       "value": 10,
-      "price": 1948
+      "price": 1948,
+      "enabled": false
     },
     {
       "id": "helmet_3_1789274589300",
@@ -10180,7 +6958,8 @@
       "name": "奔尼帽",
       "level": 1,
       "value": 10,
-      "price": 2272
+      "price": 2272,
+      "enabled": false
     },
     {
       "id": "helmet_3_1789274589296",
@@ -10188,7 +6967,8 @@
       "name": "户外棒球帽",
       "level": 1,
       "value": 12,
-      "price": 10110
+      "price": 10110,
+      "enabled": false
     },
     {
       "id": "helmet_3_1789274589302",
@@ -10196,7 +6976,11 @@
       "name": "老式钢盔",
       "level": 1,
       "value": 10,
-      "price": 1631
+      "price": 1631,
+      "enabled": false
     }
-  ]
+  ],
+  "ttkCache": {
+    "v1": {}
+  }
 }

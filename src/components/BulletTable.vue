@@ -4,14 +4,20 @@
     <!-- 工具栏 -->
     <div class="table-controls">
       <button class="btn-sm btn-primary" @click="addBullet">➕ 新增子弹</button>
+      <button class="btn-sm btn-outline" @click="enableAll">✅ 全部启用</button>
+      <button class="btn-sm btn-outline" @click="disableAll">❌ 全部禁用</button>
+      <span class="toolbar-divider"></span>
       <span class="control-hint">（点击新增后在表格顶部填写数据，然后点击"✅ 确认"保存）</span>
-      <span class="count-badge">共 {{ data.length }} 种子弹</span>
+      <span class="count-badge">
+        共 {{ data.length }} 种子弹（启用 {{ enabledCount }}）
+      </span>
     </div>
 
     <!-- ============ ⭐ 桌面：表格 ============ -->
     <div v-if="!isMobile" class="table-scroll">
       <table class="bullet-table">
         <colgroup>
+          <col style="width: 50px;" />
           <col style="width: 50px;" />
           <col style="width: 100px;" />
           <col style="width: 110px;" />
@@ -24,6 +30,7 @@
         </colgroup>
         <thead>
           <tr>
+            <th title="是否启用（禁用的不参与推荐/计算）">启用</th>
             <th title="同口径+等级唯一一个默认">默认</th>
             <th>子弹名称</th>
             <th>子弹口径</th>
@@ -48,8 +55,24 @@
           <tr
             v-for="(row, index) in data"
             :key="row.id || row._bulletId || index"
-            :class="{ 'new-row': row._isNewRow }"
+            :class="{ 'new-row': row._isNewRow, 'disabled-row': row.enabled === false && !row._isNewRow }"
           >
+            <!-- ⭐ 启用 -->
+            <td class="readonly-cell enabled-cell">
+              <label
+                v-if="!row._isNewRow"
+                class="enabled-checkbox-wrap"
+                :title="row.enabled !== false ? '点击禁用' : '点击启用'"
+              >
+                <input
+                  type="checkbox"
+                  :checked="row.enabled !== false"
+                  @change="onEnabledChange(row, $event)"
+                />
+              </label>
+              <span v-else class="enabled-placeholder">-</span>
+            </td>
+
             <!-- ⭐ 默认 -->
             <td class="readonly-cell default-cell">
               <label
@@ -210,6 +233,7 @@
         v-for="(row, index) in data"
         :key="row.id || row._bulletId || index"
         class="card-item"
+        :class="{ 'disabled-row': row.enabled === false && !row._isNewRow }"
       >
         <!-- 卡片头部 -->
         <div class="card-header-row">
@@ -231,6 +255,14 @@
             </select>
           </template>
           <template v-else>
+            <!-- ⭐ 启用勾选框 -->
+            <label class="enabled-checkbox-wrap card-enabled" :title="row.enabled !== false ? '点击禁用' : '点击启用'">
+              <input
+                type="checkbox"
+                :checked="row.enabled !== false"
+                @change="onEnabledChange(row, $event)"
+              />
+            </label>
             <span class="card-title-text">{{ row.name || '未命名' }}</span>
             <span class="card-caliber-tag" :title="row.id">{{ row.caliber || '-' }}</span>
             <span
@@ -365,7 +397,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, onBeforeUnmount, inject } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, inject } from 'vue'
 import { dataStore } from '@/stores/dataStore'
 
 const props = defineProps({
@@ -405,6 +437,11 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateIsMobile)
+})
+
+// ⭐ 启用数量统计
+const enabledCount = computed(() => {
+  return props.data.filter(r => r.enabled !== false).length
 })
 
 // ⭐ 新增行的临时状态（字符串）
@@ -483,6 +520,67 @@ const getPenString = (row) => {
     values.push(typeof v === 'number' && isFinite(v) ? v : 0)
   }
   return values.join(',')
+}
+
+// ============================================================
+// ⭐ 启用/禁用切换
+// ============================================================
+
+const onEnabledChange = (row, event) => {
+  if (row._isNewRow) return
+
+  const newEnabled = event.target.checked
+  const dm = dataStore.getDataManager()
+  const ok = dm.updateBullet(row.id, { enabled: newEnabled })
+  if (ok) {
+    dataStore.refreshBullets()
+    emit('update')
+    console.log(`${newEnabled ? '✅ 启用' : '❌ 禁用'} 子弹: ${row.id}`)
+  } else {
+    // 失败时回滚 checkbox
+    event.target.checked = !newEnabled
+  }
+}
+
+// ⭐ 全部启用
+const enableAll = () => {
+  const dm = dataStore.getDataManager()
+  const count = dm.setBulletsEnabled(true)
+  if (count > 0) {
+    dataStore.refreshBullets()
+    emit('update')
+    console.log(`✅ 已启用 ${count} 颗子弹`)
+  } else {
+    console.log('ℹ️ 所有子弹已启用')
+  }
+}
+
+// ⭐ 全部禁用
+const disableAll = async () => {
+  let confirmed = true
+  if (showConfirm) {
+    const result = await showConfirm({
+      title: '禁用全部子弹',
+      message: '确定要禁用全部子弹吗？禁用后推荐功能将无法使用任何子弹。',
+      confirmText: '禁用',
+      confirmType: 'warning'
+    })
+    confirmed = result.confirmed
+  } else {
+    confirmed = confirm('确定要禁用全部子弹吗？')
+  }
+
+  if (!confirmed) return
+
+  const dm = dataStore.getDataManager()
+  const count = dm.setBulletsEnabled(false)
+  if (count > 0) {
+    dataStore.refreshBullets()
+    emit('update')
+    console.log(`❌ 已禁用 ${count} 颗子弹`)
+  } else {
+    console.log('ℹ️ 所有子弹已禁用')
+  }
 }
 
 // ============================================================
@@ -701,6 +799,7 @@ const confirmAdd = async (row) => {
       limbs: partMultValues[3]
     },
     price: row.price || 0,
+    enabled: true,
     armorData: {}
   }
 
@@ -784,6 +883,14 @@ const deleteRow = async (row) => {
   font-weight: var(--font-weight-medium);
 }
 
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: #dde3ee;
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
 /* ============ 表格 ============ */
 .table-scroll {
   overflow: auto;
@@ -794,7 +901,7 @@ const deleteRow = async (row) => {
 
 .bullet-table {
   width: 100%;
-  min-width: 1025px;
+  min-width: 1105px;
   border-collapse: collapse;
   table-layout: fixed;
   font-family: var(--font-family);
@@ -833,6 +940,19 @@ tbody tr:hover {
 tbody tr.new-row td {
   background: #fff8e1;
   border-top: 2px solid var(--color-warning);
+}
+
+/* ⭐ 禁用行（灰色） */
+tbody tr.disabled-row {
+  background: #f5f5f5;
+}
+
+tbody tr.disabled-row td {
+  color: #bbb;
+}
+
+tbody tr.disabled-row:hover {
+  background: #f0f0f0;
 }
 
 .readonly-cell {
@@ -877,6 +997,10 @@ tbody tr:hover .sticky-action {
 
 tbody tr.new-row .sticky-action {
   background: #fff8e1;
+}
+
+tbody tr.disabled-row .sticky-action {
+  background: #f5f5f5;
 }
 
 /* ============ 输入框（填满单元格） ============ */
@@ -955,6 +1079,35 @@ tbody tr.new-row .sticky-action {
   line-height: 1.2;
   text-align: center;
   letter-spacing: 0.3px;
+}
+
+/* ============ ⭐ 启用列 ============ */
+.enabled-cell {
+  padding: 0;
+}
+
+.enabled-checkbox-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 34px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.enabled-checkbox-wrap input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-success);
+  margin: 0;
+}
+
+.enabled-placeholder {
+  color: #ccc;
+  font-size: 12px;
 }
 
 /* ============ ⭐ 默认列 ============ */
@@ -1142,6 +1295,19 @@ tbody tr.new-row .sticky-action {
 
 .default-toggle-btn:hover {
   background: #fff3e0;
+}
+
+/* ⭐ 移动端启用勾选框 */
+.card-enabled {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+/* ⭐ 禁用卡片 */
+.card-item.disabled-row {
+  background: #f5f5f5;
+  opacity: 0.7;
 }
 
 .level-select-mobile {

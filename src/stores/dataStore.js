@@ -8,7 +8,7 @@ const state = reactive({
   weapons: [],
   bullets: [],
   prices: [],
-  armors: [],       // ⭐ 新增：护甲/头盔数据
+  armors: [],       // ⭐ 护甲/头盔数据
   isLoaded: false,
   loadingError: null,
 
@@ -33,7 +33,7 @@ export const dataStore = {
       state.weapons = [...dm.getWeapons()]
       state.bullets = [...dm.getBullets()]
       state.prices = [...dm.getPrices()]
-      state.armors = [...dm.getArmors()]      // ⭐ 新增
+      state.armors = [...dm.getArmors()]
       state.isLoaded = true
       state.loadingError = null
       console.log(`✅ 数据加载完成: ${state.weapons.length} 把武器, ${state.bullets.length} 种子弹, ${state.prices.length} 条价格配置, ${state.armors.length} 条护甲数据`)
@@ -60,7 +60,7 @@ export const dataStore = {
   },
 
   refreshArmors() {
-    state.armors = [...dm.getArmors()]      // ⭐ 新增
+    state.armors = [...dm.getArmors()]
   },
 
   // ============================================================
@@ -143,7 +143,7 @@ export const dataStore = {
   },
 
   // ============================================================
-  // ⭐ 护甲数据（新增）
+  // ⭐ 护甲数据
   // ============================================================
   getArmors() {
     return dm.getArmors()
@@ -243,17 +243,6 @@ export const dataStore = {
   },
 
   // ============================================================
-  // 缓存
-  // ============================================================
-  getCacheStats() {
-    return dm.getCacheStats()
-  },
-
-  clearAllCache() {
-    return dm.clearAllCache()
-  },
-
-  // ============================================================
   // 数据导入导出
   // ============================================================
   getDataManager() {
@@ -269,7 +258,7 @@ export const dataStore = {
     state.weapons = [...dm.getWeapons()]
     state.bullets = [...dm.getBullets()]
     state.prices = [...dm.getPrices()]
-    state.armors = [...dm.getArmors()]      // ⭐ 新增
+    state.armors = [...dm.getArmors()]
   },
 
   resetData() {
@@ -277,6 +266,6 @@ export const dataStore = {
     state.weapons = [...dm.getWeapons()]
     state.bullets = [...dm.getBullets()]
     state.prices = [...dm.getPrices()]
-    state.armors = [...dm.getArmors()]      // ⭐ 新增
+    state.armors = [...dm.getArmors()]
   }
 }

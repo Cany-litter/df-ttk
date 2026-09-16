@@ -8,6 +8,11 @@ import { seededRandom } from '../utils/rng.js';
  * 
  * 数据依赖：通过 dataManager 获取子弹数据
  * 不直接依赖 bullets.js 或 data.json
+ * 
+ * ⭐ 子弹启用机制：
+ * - getRealBulletKey 会过滤 enabled === false 的子弹
+ * - 如果指定了子弹 ID 但该子弹被禁用，仍然使用它（假想敌场景）
+ * - 如果没有指定子弹，按口径+等级查找时只查启用的
  */
 export class SimulationEngine {
   /**
@@ -121,7 +126,7 @@ export class SimulationEngine {
   }
 
   // ============================================================
-  // 1. 单次模拟（核心）⭐ 修改命中率取值逻辑 + 连发部位偏置
+  // 1. 单次模拟（核心）
   // ============================================================
 
   /**
@@ -450,7 +455,7 @@ export class SimulationEngine {
       finalHelmetVal: armorState.helmetVal,
       isBurstMode,
       flightTime,
-      shotInterval: shots > 1 ? shootingIntervalTime / (shots - 1) : 0,  // 平均间隔（兼容旧字段）
+      shotInterval: shots > 1 ? shootingIntervalTime / (shots - 1) : 0,
       burstInterval: isBurstMode ? weapon.burstInterval : 0,
       burstIntervalCount: burstStats.count,
       burstIntervalTotal: burstStats.totalTime,
@@ -637,15 +642,23 @@ export class SimulationEngine {
 
   /**
    * 获取真实子弹类型
-   * @param {string|null} selectedBulletType - 用户选择的子弹类型
+   * 
+   * ⭐ 启用机制：
+   * - 如果 selectedBulletType 显式指定了子弹 ID → 直接用它（不管 enabled）
+   *   （假想敌场景：用户明确选了某颗子弹，即使它被禁用也要用）
+   * - 如果没有指定 → 按口径 + 等级查找，只查启用的子弹
+   *   （主界面 / 推荐场景：全局等级对应的子弹，禁用的不参与）
+   * 
+   * @param {string|null} selectedBulletType - 用户选择的子弹 ID（如 "5.56x45mm#5"）
    * @param {Object} weapon - 武器对象
-   * @param {Object} params - 游戏参数
+   * @param {Object} params - 游戏参数（含 bulletLevel）
    * @param {DataManager} dataManager - DataManager 实例
-   * @returns {string|null} 真实子弹类型（bullet id）
+   * @returns {string|null} 真实子弹 ID
    */
   static getRealBulletKey(selectedBulletType, weapon, params, dataManager) {
     const dm = dataManager || this.getDataManager();
     
+    // ⭐ 显式指定子弹：直接用（不检查 enabled，假想敌场景）
     if (selectedBulletType) return selectedBulletType;
     
     const caliber = weapon.allowedBullet;
@@ -654,6 +667,7 @@ export class SimulationEngine {
       return null;
     }
     
+    // ⭐ 按口径 + 等级查找，只查启用的子弹（getBulletByCaliberAndLevel 内部已过滤）
     const bullet = dm.getBulletByCaliberAndLevel(caliber, params.bulletLevel);
     return bullet ? bullet.id : null;
   }

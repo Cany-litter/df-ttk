@@ -2,7 +2,7 @@
 import { reactive, readonly } from 'vue'
 
 const state = reactive({
-  // ⭐ 主 Tab：'weapon'（枪械数据） | 'items'（弹甲数据）
+  // ⭐ 主 Tab：'weapon'（枪械数据） | 'items'（弹甲数据） | 'rec'（配装推荐）
   currentTab: 'weapon',
 
   // ⭐ 子 Tab（仅用于 items）：'bullet' | 'armor' | 'helmet'
@@ -56,10 +56,10 @@ export const appStore = {
 
   // ============================================================
   // 主 Tab 切换
-  // ⭐ 白名单：'weapon' | 'items'
+  // ⭐ 白名单：'weapon' | 'items' | 'rec'
   // ============================================================
   switchTab(tab) {
-    if (['weapon', 'items'].includes(tab)) {
+    if (['weapon', 'items', 'rec'].includes(tab)) {
       state.currentTab = tab
     }
   },

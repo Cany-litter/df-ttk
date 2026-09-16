@@ -6,8 +6,11 @@
       <button class="btn-sm btn-primary" @click="addRow">
         ➕ 新增{{ typeLabel }}
       </button>
+      <button class="btn-sm btn-outline" @click="enableAll">✅ 全部启用</button>
+      <button class="btn-sm btn-outline" @click="disableAll">❌ 全部禁用</button>
+      <span class="toolbar-divider"></span>
       <span class="toolbar-hint">（点击单元格直接编辑，失焦即保存；价格单位 W）</span>
-      <span class="count-badge">共 {{ data.length }} {{ typeUnit }}</span>
+      <span class="count-badge">共 {{ data.length }} {{ typeUnit }}（启用 {{ enabledCount }}）</span>
     </div>
 
     <!-- ============ ⭐ 桌面端：表格 ============ -->
@@ -15,6 +18,7 @@
       <table>
         <thead>
           <tr>
+            <th style="min-width:50px;" title="是否启用（禁用的不参与推荐）">启用</th>
             <th style="min-width:160px;">名称</th>
             <th style="min-width:70px;">等级</th>
             <th v-if="showParts" style="min-width:90px;">防护部位</th>
@@ -27,8 +31,24 @@
           <tr
             v-for="row in data"
             :key="row.id || row._tempId"
-            :class="{ 'new-row': row._isNewRow }"
+            :class="{ 'new-row': row._isNewRow, 'disabled-row': row.enabled === false && !row._isNewRow }"
           >
+            <!-- ⭐ 启用 -->
+            <td class="readonly-cell enabled-cell">
+              <label
+                v-if="!row._isNewRow"
+                class="enabled-checkbox-wrap"
+                :title="row.enabled !== false ? '点击禁用' : '点击启用'"
+              >
+                <input
+                  type="checkbox"
+                  :checked="row.enabled !== false"
+                  @change="onEnabledChange(row, $event)"
+                />
+              </label>
+              <span v-else class="enabled-placeholder">-</span>
+            </td>
+
             <!-- 名称 -->
             <td :class="row._isNewRow ? 'new-row-cell' : 'control-cell'">
               <input
@@ -133,7 +153,7 @@
         v-for="row in data"
         :key="row.id || row._tempId"
         class="card-item"
-        :class="{ 'new-row': row._isNewRow }"
+        :class="{ 'new-row': row._isNewRow, 'disabled-row': row.enabled === false && !row._isNewRow }"
       >
         <!-- 卡片头 -->
         <div class="card-header-row">
@@ -145,6 +165,17 @@
             />
           </template>
           <template v-else>
+            <!-- ⭐ 启用勾选框 -->
+            <label
+              class="enabled-checkbox-wrap card-enabled"
+              :title="row.enabled !== false ? '点击禁用' : '点击启用'"
+            >
+              <input
+                type="checkbox"
+                :checked="row.enabled !== false"
+                @change="onEnabledChange(row, $event)"
+              />
+            </label>
             <span class="card-title-text">{{ row.name }}</span>
           </template>
 
@@ -257,6 +288,11 @@ const showParts = computed(() => props.type === 'armor')
 
 const partsOptions = ['胸部', '胸腹', '胸腹肩']
 
+// ⭐ 启用数量统计
+const enabledCount = computed(() => {
+  return props.data.filter(r => r.enabled !== false).length
+})
+
 // ---------- 移动端判断 ----------
 const isMobile = ref(false)
 const updateIsMobile = () => {
@@ -281,6 +317,66 @@ const isAdding = ref(false)
 const getPriceInW = (price) => {
   if (price === undefined || price === null || price < 0) return ''
   return (price / 10000).toFixed(1)
+}
+
+// ============================================================
+// ⭐ 启用/禁用切换
+// ============================================================
+
+const onEnabledChange = (row, event) => {
+  if (row._isNewRow) return
+
+  const newEnabled = event.target.checked
+  const ok = dataStore.updateArmor(row.id, { enabled: newEnabled })
+  if (ok) {
+    dataStore.refreshArmors()
+    emit('update')
+    console.log(`${newEnabled ? '✅ 启用' : '❌ 禁用'} ${typeLabel.value}: ${row.id}`)
+  } else {
+    // 失败时回滚 checkbox
+    event.target.checked = !newEnabled
+  }
+}
+
+// ⭐ 全部启用
+const enableAll = () => {
+  const dm = dataStore.getDataManager()
+  const count = dm.setArmorsEnabledByType(props.type, true)
+  if (count > 0) {
+    dataStore.refreshArmors()
+    emit('update')
+    console.log(`✅ 已启用 ${count} ${typeUnit.value}`)
+  } else {
+    console.log(`ℹ️ 所有${typeLabel.value}已启用`)
+  }
+}
+
+// ⭐ 全部禁用
+const disableAll = async () => {
+  let confirmed = true
+  if (showConfirm) {
+    const result = await showConfirm({
+      title: `禁用全部${typeLabel.value}`,
+      message: `确定要禁用全部${typeLabel.value}吗？禁用后推荐功能将无法使用这些${typeLabel.value}。`,
+      confirmText: '禁用',
+      confirmType: 'warning'
+    })
+    confirmed = result.confirmed
+  } else {
+    confirmed = confirm(`确定要禁用全部${typeLabel.value}吗？`)
+  }
+
+  if (!confirmed) return
+
+  const dm = dataStore.getDataManager()
+  const count = dm.setArmorsEnabledByType(props.type, false)
+  if (count > 0) {
+    dataStore.refreshArmors()
+    emit('update')
+    console.log(`❌ 已禁用 ${count} ${typeUnit.value}`)
+  } else {
+    console.log(`ℹ️ 所有${typeLabel.value}已禁用`)
+  }
 }
 
 // ============================================================
@@ -395,6 +491,7 @@ const addRow = async () => {
     level: 1,
     value: 0,
     priceInW: 0,
+    enabled: true,
     _isNewRow: true
   }
 
@@ -433,7 +530,8 @@ const confirmAdd = async (row) => {
     name: row.name.trim(),
     level: row.level,
     value: row.value || 0,
-    price: Math.round((row.priceInW || 0) * 10000)
+    price: Math.round((row.priceInW || 0) * 10000),
+    enabled: true
   }
 
   if (props.type === 'armor') {
@@ -529,9 +627,28 @@ const deleteRow = async (row) => {
   background: var(--color-primary-hover, #3a5cd7);
 }
 
+.btn-sm.btn-outline {
+  background: var(--color-bg-white);
+  border: 1px solid var(--color-border);
+  color: #333;
+}
+.btn-sm.btn-outline:hover {
+  background: #f0f4ff;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
 .toolbar-hint {
   font-size: 11px;
   color: var(--color-text-muted, #999);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: #dde3ee;
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
 .count-badge {
@@ -567,7 +684,7 @@ table {
   width: 100%;
   border-collapse: collapse;
   font-size: 11px;
-  min-width: 600px;
+  min-width: 650px;
 }
 
 thead th {
@@ -602,6 +719,19 @@ tbody tr.new-row td {
   border-top: 2px solid var(--color-warning, #ff9800);
 }
 
+/* ⭐ 禁用行（灰色） */
+tbody tr.disabled-row {
+  background: #f5f5f5;
+}
+
+tbody tr.disabled-row td {
+  color: #bbb;
+}
+
+tbody tr.disabled-row:hover {
+  background: #f0f0f0;
+}
+
 .sticky-action {
   position: sticky;
   right: 0;
@@ -618,6 +748,9 @@ tbody tr:hover .sticky-action {
 }
 tbody tr.new-row .sticky-action {
   background: #fff8e1;
+}
+tbody tr.disabled-row .sticky-action {
+  background: #f5f5f5;
 }
 
 .readonly-cell {
@@ -693,6 +826,37 @@ tbody tr.new-row .sticky-action {
   color: #999;
   flex-shrink: 0;
   padding-left: 2px;
+}
+
+/* ============================================================
+   ⭐ 启用列
+   ============================================================ */
+.enabled-cell {
+  padding: 0;
+}
+
+.enabled-checkbox-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 28px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.enabled-checkbox-wrap input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-success);
+  margin: 0;
+}
+
+.enabled-placeholder {
+  color: #ccc;
+  font-size: 12px;
 }
 
 /* ============================================================
@@ -859,6 +1023,12 @@ tbody tr.new-row .sticky-action {
   border-width: 2px;
 }
 
+/* ⭐ 禁用卡片 */
+.card-item.disabled-row {
+  background: #f5f5f5;
+  opacity: 0.7;
+}
+
 .card-header-row {
   display: flex;
   align-items: center;
@@ -869,6 +1039,13 @@ tbody tr.new-row .sticky-action {
 }
 .card-item.new-row .card-header-row {
   background: #fff3c4;
+}
+
+/* ⭐ 移动端启用勾选框 */
+.card-enabled {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
 }
 
 .card-title-text {

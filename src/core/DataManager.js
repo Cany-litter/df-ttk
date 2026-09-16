@@ -28,10 +28,25 @@
  * ⭐ 子弹字段（v2）：
  * - partMult: { head, chest, stomach, limbs } 各部位肉伤比例
  * - isDefault: 同 caliber+level 唯一，用于全局等级匹配
+ * - enabled: 是否启用（默认 true）
  * - 已废弃：base / stMult
+ * 
+ * ⭐ 护甲/头盔字段（v2）：
+ * - enabled: 是否启用（默认 true）
  * 
  * ⭐ 配置字段（v3）：
  * - aimSpeed: 开镜时间（ms），默认 0，影响评分（不影响 TTK）
+ * - enabled: 是否启用（默认 true）
+ * 
+ * ⭐ 统一缓存（v2）：
+ * - 所有 TTK 缓存统一走 ttkCache（四层嵌套）
+ * - 旧的 config.cache 已废弃，加载时自动删除
+ * - 由 TtkCacheManager 管理
+ * 
+ * ⭐ 已删除的旧 API：
+ * - setCacheManager / getCacheManager
+ * - getConfigCache / saveConfigCache
+ * - clearWeaponCache / clearAllCache / getCacheStats
  */
 import perf from '../utils/performance.js';
 
@@ -41,7 +56,9 @@ export class DataManager {
       weapons: [],
       bullets: [],
       prices: [],
-      armors: []
+      armors: [],
+      // ⭐ 多维 TTK 缓存（唯一缓存，由 TtkCacheManager 管理）
+      ttkCache: { v1: {} }
     };
     this.originalData = null;
     this.isLoaded = false;
@@ -58,20 +75,36 @@ export class DataManager {
     // 修改追踪
     this.modifiedWeaponIds = new Set();
     
-    // 缓存管理器（由外部注入）
-    this._cacheManager = null;
+    // ⭐ 多维缓存管理器（由外部注入）
+    this._ttkCacheManager = null;
   }
 
   // ============================================================
   // 0. 缓存管理器注入
   // ============================================================
 
-  setCacheManager(cacheManager) {
-    this._cacheManager = cacheManager;
+  // ⭐ 多维缓存管理器
+  setTtkCacheManager(mgr) {
+    this._ttkCacheManager = mgr;
   }
 
-  getCacheManager() {
-    return this._cacheManager;
+  getTtkCacheManager() {
+    return this._ttkCacheManager;
+  }
+
+  // ⭐ 多维缓存读写
+  getTtkCache() {
+    if (!this.data.ttkCache) {
+      this.data.ttkCache = { v1: {} };
+    }
+    if (!this.data.ttkCache.v1) {
+      this.data.ttkCache.v1 = {};
+    }
+    return this.data.ttkCache;
+  }
+
+  setTtkCache(cache) {
+    this.data.ttkCache = cache || { v1: {} };
   }
 
   // ============================================================
@@ -101,7 +134,14 @@ export class DataManager {
       this.modifiedWeaponIds.clear();
       
       perf.mark('dataLoadDone', '数据加载完成');
-      console.log(`✅ DataManager: 加载了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹, ${this.data.prices.length} 条价格配置, ${this.data.armors.length} 条护甲数据`);
+      const ttkStats = this.getTtkCacheStats();
+      console.log(
+        `✅ DataManager: 加载了 ${this.data.weapons.length} 把武器, ` +
+        `${this.data.bullets.length} 种子弹, ` +
+        `${this.data.prices.length} 条价格配置, ` +
+        `${this.data.armors.length} 条护甲数据, ` +
+        `TTK缓存 ${ttkStats.entryCount} 条`
+      );
       return this.data;
       
     } catch (error) {
@@ -122,6 +162,11 @@ export class DataManager {
         return false;
       }
     }
+
+    // ⭐ ttkCache 可选，校验存在时是对象
+    if (data.ttkCache !== undefined && typeof data.ttkCache !== 'object') {
+      console.warn('⚠️ ttkCache 格式无效，将重置为空');
+    }
     
     return true;
   }
@@ -135,10 +180,15 @@ export class DataManager {
    * 3. 子弹 name：缺失时补空字符串
    * 4. 子弹 partMult：缺失时补默认 { head:1, chest:1, stomach:1, limbs:1 }
    * 5. 子弹 isDefault：缺失时补 false
-   * 6. 子弹 isDefault 唯一性校验
-   * 7. 配置 precision：缺失时补默认值 0.09
-   * 8. ⭐ 配置 aimSpeed：缺失时补默认值 0
-   * 9. 护甲 armors：缺失时补空数组
+   * 6. 子弹 enabled：缺失时补 true
+   * 7. 子弹 isDefault 唯一性校验
+   * 8. 配置 precision：缺失时补默认值 0.09
+   * 9. 配置 aimSpeed：缺失时补默认值 0
+   * 10. 配置 enabled：缺失时补 true
+   * 11. 护甲 armors：缺失时补空数组
+   * 12. 护甲 enabled：缺失时补 true
+   * 13. ⭐ ttkCache：缺失时补 { v1: {} }
+   * 14. ⭐ config.cache：删除（旧缓存已废弃）
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
@@ -196,6 +246,11 @@ export class DataManager {
           bullet.isDefault = false;
         }
 
+        // ⭐ 新增：enabled 默认 true
+        if (bullet.enabled === undefined) {
+          bullet.enabled = true;
+        }
+
         if (bullet.default !== undefined) {
           if (bullet.default === true) {
             bullet.isDefault = true;
@@ -214,7 +269,7 @@ export class DataManager {
       this._enforceDefaultUniqueness(normalized.bullets);
     }
 
-    // ---------- 3. ⭐ 配置规范化（precision + aimSpeed） ----------
+    // ---------- 3. 配置规范化（precision + aimSpeed + enabled + ⭐ 删除旧缓存） ----------
     if (Array.isArray(normalized.prices)) {
       normalized.prices.forEach(price => {
         if (Array.isArray(price.configs)) {
@@ -223,9 +278,17 @@ export class DataManager {
             if (typeof config.precision !== 'number' || isNaN(config.precision)) {
               config.precision = 0.09;
             }
-            // ⭐ aimSpeed
+            // aimSpeed
             if (typeof config.aimSpeed !== 'number' || isNaN(config.aimSpeed) || config.aimSpeed < 0) {
               config.aimSpeed = 0;
+            }
+            // ⭐ enabled 默认 true
+            if (config.enabled === undefined) {
+              config.enabled = true;
+            }
+            // ⭐ 删除旧缓存 config.cache（已废弃）
+            if (config.cache !== undefined) {
+              delete config.cache;
             }
           });
         }
@@ -249,7 +312,19 @@ export class DataManager {
         if (typeof armor.price === 'string') {
           armor.price = parseFloat(armor.price) || 0;
         }
+        // ⭐ 新增：enabled 默认 true
+        if (armor.enabled === undefined) {
+          armor.enabled = true;
+        }
       });
+    }
+
+    // ---------- 5. ⭐ ttkCache 规范化 ----------
+    if (!normalized.ttkCache || typeof normalized.ttkCache !== 'object') {
+      normalized.ttkCache = { v1: {} };
+    }
+    if (!normalized.ttkCache.v1 || typeof normalized.ttkCache.v1 !== 'object') {
+      normalized.ttkCache.v1 = {};
     }
     
     return normalized;
@@ -331,14 +406,38 @@ export class DataManager {
     return this.data.bullets || [];
   }
 
+  /**
+   * 获取所有启用的子弹（enabled !== false）
+   * 
+   * @returns {Array}
+   */
+  getEnabledBullets() {
+    return (this.data.bullets || []).filter(b => b.enabled !== false);
+  }
+
   getBulletById(id) {
     return this.data.bullets.find(b => b.id === id) || null;
   }
 
-  getBulletByCaliberAndLevel(caliber, level) {
-    const candidates = this.data.bullets.filter(b => 
+  /**
+   * 按口径 + 等级查子弹
+   * 
+   * ⭐ 默认只返回启用的子弹（enabled !== false）
+   * 
+   * @param {string} caliber
+   * @param {number} level
+   * @param {boolean} [includeDisabled=false] - 是否包含禁用的
+   * @returns {Object|null}
+   */
+  getBulletByCaliberAndLevel(caliber, level, includeDisabled = false) {
+    let candidates = this.data.bullets.filter(b => 
       b.caliber === caliber && String(b.level) === String(level)
     );
+
+    // ⭐ 过滤禁用的（除非显式要求包含）
+    if (!includeDisabled) {
+      candidates = candidates.filter(b => b.enabled !== false);
+    }
 
     if (candidates.length === 0) return null;
 
@@ -348,8 +447,21 @@ export class DataManager {
     return candidates[0];
   }
 
-  getBulletsByCaliber(caliber) {
-    return this.data.bullets.filter(b => b.caliber === caliber);
+  /**
+   * 按口径查子弹
+   * 
+   * ⭐ 默认只返回启用的子弹
+   * 
+   * @param {string} caliber
+   * @param {boolean} [includeDisabled=false]
+   * @returns {Array}
+   */
+  getBulletsByCaliber(caliber, includeDisabled = false) {
+    let bullets = this.data.bullets.filter(b => b.caliber === caliber);
+    if (!includeDisabled) {
+      bullets = bullets.filter(b => b.enabled !== false);
+    }
+    return bullets;
   }
 
   getNextBulletId(caliber) {
@@ -396,6 +508,7 @@ export class DataManager {
       name: bullet.name || '',
       partMult: bullet.partMult || { head: 1, chest: 1, stomach: 1, limbs: 1 },
       isDefault: bullet.isDefault === true,
+      enabled: bullet.enabled !== false,
       armorMult: bullet.armorMult || 1.0,
       pen: bullet.pen || 0,
       price: bullet.price || 0,
@@ -411,8 +524,30 @@ export class DataManager {
     return this.data.armors || [];
   }
 
-  getArmorsByType(type) {
-    return (this.data.armors || []).filter(a => a.type === type);
+  /**
+   * 按类型获取护甲/头盔
+   * 
+   * ⭐ 默认只返回启用的
+   * 
+   * @param {string} type - 'armor' | 'helmet'
+   * @param {boolean} [includeDisabled=false]
+   * @returns {Array}
+   */
+  getArmorsByType(type, includeDisabled = false) {
+    let armors = (this.data.armors || []).filter(a => a.type === type);
+    if (!includeDisabled) {
+      armors = armors.filter(a => a.enabled !== false);
+    }
+    return armors;
+  }
+
+  /**
+   * 获取所有启用的护甲/头盔
+   * 
+   * @returns {Array}
+   */
+  getEnabledArmors() {
+    return (this.data.armors || []).filter(a => a.enabled !== false);
   }
 
   getArmorById(id) {
@@ -436,7 +571,8 @@ export class DataManager {
       name: armorData.name || '未命名',
       level: armorData.level || 1,
       value: armorData.value || 0,
-      price: armorData.price || 0
+      price: armorData.price || 0,
+      enabled: armorData.enabled !== false
     };
 
     if (!Array.isArray(this.data.armors)) {
@@ -461,6 +597,24 @@ export class DataManager {
     if (idx === -1) return false;
     this.data.armors.splice(idx, 1);
     return true;
+  }
+
+  /**
+   * ⭐ 批量启用/禁用护甲
+   * 
+   * @param {string} type - 'armor' | 'helmet'
+   * @param {boolean} enabled
+   * @returns {number} 影响的条目数
+   */
+  setArmorsEnabledByType(type, enabled) {
+    let count = 0;
+    for (const armor of this.data.armors) {
+      if (armor.type === type && armor.enabled !== enabled) {
+        armor.enabled = enabled;
+        count++;
+      }
+    }
+    return count;
   }
 
   // ============================================================
@@ -564,7 +718,7 @@ export class DataManager {
         }
       }
       
-      // ---------- 拼命中率字符串 ----------
+      // ---------- 拼装命中率字符串 ----------
       let hitRateRaw = '';
       const distances = Array.isArray(config.distance) ? config.distance : [];
       const hitRates = Array.isArray(config.hitRate) ? config.hitRate : [];
@@ -582,7 +736,7 @@ export class DataManager {
         ? config.precision
         : 0.09;
 
-      // ⭐ 开镜速度
+      // 开镜速度
       const aimSpeed = (typeof config.aimSpeed === 'number' && !isNaN(config.aimSpeed))
         ? config.aimSpeed
         : 0;
@@ -595,7 +749,7 @@ export class DataManager {
         muzzle: muzzleName,
         muzzleId: muzzleId,
         precision: precision,
-        aimSpeed: aimSpeed,       // ⭐ 新增
+        aimSpeed: aimSpeed,
         buildCode: config.buildCode || '-',
         price: config.price || 0,
         distance: distances,
@@ -605,9 +759,7 @@ export class DataManager {
         bulletId: bulletId,
         enabled: config.enabled !== undefined ? config.enabled : true,
         _weaponId: weaponId,
-        _rawConfig: config,
-        cache: config.cache || null,
-        _cache: config.cache || null
+        _rawConfig: config
       };
     });
   }
@@ -897,6 +1049,7 @@ export class DataManager {
     if (bulletData.level === undefined) bulletData.level = 4;
     if (bulletData.name === undefined) bulletData.name = '';
     if (bulletData.price === undefined) bulletData.price = 0;
+    if (bulletData.enabled === undefined) bulletData.enabled = true;
 
     if (!bulletData.partMult || typeof bulletData.partMult !== 'object') {
       bulletData.partMult = { head: 1, chest: 1, stomach: 1, limbs: 1 };
@@ -1053,6 +1206,25 @@ export class DataManager {
     return true;
   }
 
+  /**
+   * ⭐ 批量启用/禁用子弹
+   * 
+   * @param {boolean} enabled
+   * @param {string} [caliber] - 可选，只操作某口径
+   * @returns {number} 影响的条目数
+   */
+  setBulletsEnabled(enabled, caliber = null) {
+    let count = 0;
+    for (const bullet of this.data.bullets) {
+      if (caliber && bullet.caliber !== caliber) continue;
+      if (bullet.enabled !== enabled) {
+        bullet.enabled = enabled;
+        count++;
+      }
+    }
+    return count;
+  }
+
   // ============================================================
   // 9. 数据更新 - 价格
   // ============================================================
@@ -1135,7 +1307,6 @@ export class DataManager {
       configData.precision = 0.09;
     }
 
-    // ⭐ 开镜速度默认值
     if (configData.aimSpeed === undefined) {
       configData.aimSpeed = 0;
     }
@@ -1244,74 +1415,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 11. 缓存管理
-  // ============================================================
-
-  getConfigCache(weaponId, configId) {
-    const price = this.getPriceByWeaponId(weaponId);
-    if (!price) return null;
-    const config = price.configs.find(c => c.id === configId);
-    return config?.cache || null;
-  }
-
-  saveConfigCache(weaponId, configId, cacheData) {
-    const price = this.getPriceByWeaponId(weaponId);
-    if (!price) return false;
-    const config = price.configs.find(c => c.id === configId);
-    if (!config) return false;
-    
-    config.cache = {
-      keyPoints: cacheData.keyPoints,
-      hash: cacheData.hash,
-      cachedAt: new Date().toISOString()
-    };
-    return true;
-  }
-
-  clearWeaponCache(weaponId) {
-    const price = this.getPriceByWeaponId(weaponId);
-    if (!price) return 0;
-    let count = 0;
-    for (const config of price.configs) {
-      if (config.cache) {
-        delete config.cache;
-        count++;
-      }
-    }
-    if (count > 0) {
-      console.log(`🗑️ 清除武器 ${weaponId} 的 ${count} 个缓存`);
-    }
-    return count;
-  }
-
-  clearAllCache() {
-    let count = 0;
-    for (const price of this.data.prices) {
-      for (const config of price.configs) {
-        if (config.cache) {
-          delete config.cache;
-          count++;
-        }
-      }
-    }
-    console.log(`🗑️ 清除所有缓存，共 ${count} 个`);
-    return count;
-  }
-
-  getCacheStats() {
-    let total = 0;
-    let cached = 0;
-    for (const price of this.data.prices) {
-      for (const config of price.configs) {
-        total++;
-        if (config.cache) cached++;
-      }
-    }
-    return { total, cached, modified: this.modifiedWeaponIds.size };
-  }
-
-  // ============================================================
-  // 12. 导出排序方法（仅导出时使用）
+  // 11. 导出排序方法（仅导出时使用）
   // ============================================================
 
   static get TYPE_ORDER() {
@@ -1427,7 +1531,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 13. 数据序列化
+  // 12. 数据序列化
   // ============================================================
 
   serializeData(data) {
@@ -1462,7 +1566,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 14. 数据导出/导入
+  // 13. 数据导出/导入
   // ============================================================
 
   exportToJSON(includeCache = true) {
@@ -1485,10 +1589,9 @@ export class DataManager {
       this._sortPricesForExport(dataToExport.prices, weaponsMap);
       
       if (!includeCache) {
-        for (const price of dataToExport.prices || []) {
-          for (const config of price.configs || []) {
-            delete config.cache;
-          }
+        // ⭐ 清空 ttkCache
+        if (dataToExport.ttkCache) {
+          dataToExport.ttkCache = { v1: {} };
         }
       }
       
@@ -1519,7 +1622,7 @@ export class DataManager {
     return json.replace(
       /"keyPoints":\s*\[\s*\n\s*((?:\{[^}]*\},\s*\n\s*)*\{[^}]*\})\s*\n\s*\]/g,
       (match, content) => {
-        const points = content.match(/\{\s*"d":\s*([\d.]+),\s*"t":\s*([\d.]+)\s*\}/g);
+        const points = content.match(/\{\s*"d":\s*([\d.]+),\s*"t":\s*([\d.]+)(?:,\s*"shots":\s*([\d.]+))?(?:,\s*"bulletPrice":\s*([\d.]+))?\s*\}/g);
         if (!points) return match;
         
         const compressed = points.map(p => p.replace(/\s+/g, ' ').trim());
@@ -1558,7 +1661,13 @@ export class DataManager {
       
       this.clearAllModified();
       
-      console.log(`✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ${this.data.bullets.length} 种子弹, ${this.data.armors.length} 条护甲数据`);
+      const ttkStats = this.getTtkCacheStats();
+      console.log(
+        `✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ` +
+        `${this.data.bullets.length} 种子弹, ` +
+        `${this.data.armors.length} 条护甲数据, ` +
+        `TTK缓存 ${ttkStats.entryCount} 条`
+      );
       return this.data;
       
     } catch (error) {
@@ -1586,7 +1695,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 15. 数据重置
+  // 14. 数据重置
   // ============================================================
 
   resetToOriginal() {
@@ -1614,11 +1723,11 @@ export class DataManager {
   }
 
   // ============================================================
-  // 16. 工具方法
+  // 15. 工具方法
   // ============================================================
 
   getStats() {
-    const cacheStats = this.getCacheStats();
+    const ttkStats = this.getTtkCacheStats();
     return {
       weaponCount: this.data.weapons.length,
       bulletCount: this.data.bullets.length,
@@ -1628,9 +1737,33 @@ export class DataManager {
       isLoaded: this.isLoaded,
       hasUnsavedChanges: this.hasUnsavedChanges(),
       modifiedWeapons: this.modifiedWeaponIds.size,
-      cachedConfigs: cacheStats.cached,
-      totalConfigs: cacheStats.total
+      ttkCacheEntries: ttkStats.entryCount || 0
     };
+  }
+
+  /**
+   * ⭐ 获取 ttkCache 统计（通过 TtkCacheManager）
+   */
+  getTtkCacheStats() {
+    if (this._ttkCacheManager) {
+      return this._ttkCacheManager.getStats();
+    }
+    // 降级：直接读数据结构
+    const cache = this.getTtkCache();
+    if (!cache?.v1) return { weaponCount: 0, bulletCount: 0, entryCount: 0, sizeKB: 0 };
+    
+    let entryCount = 0;
+    const weaponKeys = Object.keys(cache.v1);
+    for (const wk of weaponKeys) {
+      const bullets = Object.keys(cache.v1[wk]);
+      for (const bid of bullets) {
+        const defenders = Object.keys(cache.v1[wk][bid]);
+        for (const dk of defenders) {
+          entryCount += Object.keys(cache.v1[wk][bid][dk]).length;
+        }
+      }
+    }
+    return { weaponCount: weaponKeys.length, entryCount };
   }
 
   /**
