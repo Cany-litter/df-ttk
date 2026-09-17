@@ -1,4 +1,26 @@
 ﻿<!-- src/App.vue -->
+<!--
+  ⚠️ 维护提示：本文件有 3 处"101 距离点循环"，逻辑相似但用途不同：
+
+    1. handleCalculate() 里的循环
+       - 只算 1 个距离点（params.distance）
+       - 用于主表格的 TTK 结果
+
+    2. handleDistanceChart() → buildDistanceStats()
+       - 算 101 个距离点
+       - 用于折线图 + 评分（weightedAvg）
+
+    3. computeHavocCosts()
+       - 算 101 个距离点
+       - 用于哈弗币消耗（avgShots）
+
+    4. onUpdateWeaponTTK() → updateSingleWeaponTTK()
+       - 算 101 个距离点
+       - 单枪更新时替代 1+2+3（局部刷新）
+
+  三处都调 computeSingleTTK()，公式一致。改 TTK 分解 / 哈弗币公式时，
+  记得同步这几处（或考虑抽公共函数）。
+-->
 <template>
   <div id="app">
     <!-- 布局：Header + 中间内容 + Footer -->
@@ -243,7 +265,7 @@
 import { ref, computed, onMounted, provide } from 'vue'
 import { dataStore, paramsStore, appStore } from '@/stores/stores'
 import { SimulationEngine } from '@/core/SimulationEngine'
-import { computeKeyPoints } from '@/core/KeyPointsComputer'
+import { computeTTK } from '@/core/FastTTK'
 
 import { calculateCurrentValues } from '@/utils/weaponCalc'
 
@@ -432,6 +454,81 @@ const onItemsUpdate = () => {
 }
 
 // ============================================================
+// ⭐ 通用：计算单个配置在指定距离的 TTK（用 DP）
+// ============================================================
+
+/**
+ * 计算单条 TTK（DP 快速模式）
+ *
+ * @param {Object} armedWeapon - 武装武器（含 _current）
+ * @param {Object} attachment - { bulletType, hitRateMap, configId }
+ * @param {Object} params - { distance, bulletLevel, armorLevel, armorValue, helmetLevel, helmetValue, healthValue, hitProb, triggerDelayEnable, hitRateMap }
+ * @param {DataManager} dm
+ * @returns {Promise<Object|null>} { ttk, shots, hits } 或 null
+ */
+const computeSingleTTK = async (armedWeapon, attachment, params, dm) => {
+  const realBulletKey = SimulationEngine.getRealBulletKey(
+    attachment.bulletType,
+    armedWeapon,
+    params,
+    dm
+  )
+  if (!realBulletKey) {
+    console.warn(`⚠️ computeSingleTTK: 未匹配子弹 ${armedWeapon._displayName || armedWeapon.name}`)
+    return null
+  }
+
+  const bulletData = dm.getBulletById(realBulletKey)
+  if (!bulletData) {
+    console.warn(`⚠️ computeSingleTTK: 子弹不存在 ${realBulletKey} (${armedWeapon._displayName || armedWeapon.name})`)
+    return null
+  }
+
+  // 命中率（配置的 hitRateMap 优先）
+  let hitRate = params.hitRate ?? 0.85
+  const map = attachment.hitRateMap || params.hitRateMap || []
+  if (map.length > 0) {
+    hitRate = dm.getHitRateFromMap(map, params.distance, hitRate)
+  }
+
+  try {
+    const result = await computeTTK({
+      weapon: armedWeapon,
+      bulletData,
+      defender: {
+        armorLevel: params.armorLevel,
+        armorValue: params.armorValue,
+        helmetLevel: params.helmetLevel,
+        helmetValue: params.helmetValue,
+      },
+      scenario: {
+        hitRate,
+        hitProb: params.hitProb,
+        triggerDelayEnable: params.triggerDelayEnable,
+        healthValue: params.healthValue,
+      },
+      distance: params.distance,
+      mode: 'fast',   // DP
+    })
+
+    return {
+      ttk: result.ttk,
+      shots: result.shots,
+      hits: result.hits,
+    }
+  } catch (e) {
+    console.error(`❌ computeSingleTTK 异常: ${armedWeapon._displayName || armedWeapon.name}`)
+    console.error('   武器:', armedWeapon.name, '子弹:', realBulletKey)
+    console.error('   距离:', params.distance)
+    console.error('   armedWeapon._current:', armedWeapon._current)
+    console.error('   bulletData:', bulletData)
+    console.error('   错误消息:', e && e.message)
+    console.error('   错误堆栈:', e && e.stack)
+    return null
+  }
+}
+
+// ============================================================
 // ⭐ TTK 计算（全局）
 // ============================================================
 const handleCalculate = async () => {
@@ -456,74 +553,36 @@ const handleCalculate = async () => {
 
     const { armed, attachments } = buildArmedWeapons(enabledConfigs)
     const dm = dataStore.getDataManager()
-    const tcm = dm.getTtkCacheManager?.() || null
     const params = paramsStore.state
 
     const total = armed.length
     appStore.showCalcProgress('计算 TTK 中...', total)
 
     const results = []
-    let cacheHits = 0
-    let cacheMisses = 0
     let skippedCount = 0
 
     for (let i = 0; i < armed.length; i++) {
       const weapon = armed[i]
       const attachment = attachments[i] || {}
-      const params = paramsStore.state
 
-      // ⭐⭐⭐ 前置检查：解析实际使用的子弹
-      const realBulletKey = SimulationEngine.getRealBulletKey(
-        attachment.bulletType,
-        weapon,
-        params,
-        dm
-      )
+      const single = await computeSingleTTK(weapon, attachment, {
+        ...params,
+        distance: params.distance,
+      }, dm)
 
-      if (!realBulletKey) {
-        console.log(`⚠️ 跳过 ${weapon._displayName || weapon.name}：无 Lv.${params.bulletLevel} 子弹`)
+      if (!single) {
+        console.log(`⚠️ 跳过 ${weapon._displayName || weapon.name}：无法计算`)
         skippedCount++
         appStore.updateCalcProgress(i + 1)
         continue
-      }
-
-      const bulletData = dm.getBulletById(realBulletKey)
-      if (!bulletData) {
-        console.log(`⚠️ 跳过 ${weapon._displayName || weapon.name}：子弹 ${realBulletKey} 不存在`)
-        skippedCount++
-        appStore.updateCalcProgress(i + 1)
-        continue
-      }
-
-      // ⭐⭐⭐ 统一走 computeKeyPoints（内部查 ttkCache + 未命中算 + 写缓存）
-      const kp = await computeKeyPoints({
-        armedWeapon: weapon,
-        attachment,
-        bulletId: realBulletKey,
-        params,
-        dataManager: dm,
-        ttkCacheManager: tcm
-      })
-
-      if (!kp || !kp.keyPoints || kp.keyPoints.length === 0) {
-        console.log(`⚠️ 跳过 ${weapon._displayName || weapon.name}：keyPoints 为空`)
-        skippedCount++
-        appStore.updateCalcProgress(i + 1)
-        continue
-      }
-
-      if (kp.fromCache) {
-        cacheHits++
-      } else {
-        cacheMisses++
       }
 
       // ============================================================
-      // 计算 TTK 分解
+      // 计算 TTK 分解（5 段）
       // ============================================================
-      const totalTimeMs = tcm.interpolateTTK(kp.keyPoints, params.distance)
-      const avgShots = tcm.averageShots(kp.keyPoints)
-      const burstIntervalMs = (kp.avgBurstInterval || 0) * 1000
+      const totalTimeMs = single.ttk
+      const avgShots = single.shots
+      const burstIntervalMs = 0   // DP 里已包含在 ttk 中
 
       const triggerDelay = params.triggerDelayEnable ? (weapon.triggerDelay || 0) : 0
       const velocity = weapon.velocity || 500
@@ -544,7 +603,6 @@ const handleCalculate = async () => {
         flight: flight || 0,
         triggerDelay: triggerDelay || 0,
         avgShots: avgShots || 0,
-        fromCache: kp.fromCache
       })
 
       appStore.updateCalcProgress(i + 1)
@@ -554,10 +612,10 @@ const handleCalculate = async () => {
     results.sort((a, b) => a.totalTime - b.totalTime)
     appStore.setTtkResults(results)
 
-    console.log(`✅ TTK 计算完成: ${results.length} 个配置 (缓存命中 ${cacheHits}, 失效重算 ${cacheMisses}, 跳过 ${skippedCount})`)
+    console.log(`✅ TTK 计算完成: ${results.length} 个配置 (跳过 ${skippedCount})`)
 
     await handleDistanceChart()
-    computeHavocCosts(enabledConfigs, dm, tcm, params)
+    await computeHavocCosts(enabledConfigs, dm, params)
 
   } catch (error) {
     console.error('计算失败:', error)
@@ -578,7 +636,6 @@ const handleCalculate = async () => {
  */
 const updateSingleWeaponTTK = async (weaponId, onProgress) => {
   const dm = dataStore.getDataManager()
-  const tcm = dm.getTtkCacheManager?.() || null
   const params = paramsStore.state
 
   const weapon = dataStore.getWeaponById(weaponId)
@@ -607,55 +664,48 @@ const updateSingleWeaponTTK = async (weaponId, onProgress) => {
     const config = price?.configs.find(c => c.id === configId)
 
     if (config) {
-      // ⭐ 解析实际子弹
-      const realBulletKey = SimulationEngine.getRealBulletKey(
-        attachment.bulletType,
-        weaponArmed,
-        params,
-        dm
-      )
+      // ⭐ 逐距离算
+      const times = []
+      const shots = []
+      let anySuccess = false
 
-      if (!realBulletKey) {
-        console.warn(`⚠️ 武器 ${weaponId} 配置 ${configId} 计算失败（子弹未匹配）`)
-      } else {
-        // ⭐ 统一走 computeKeyPoints（会先查缓存）
-        const kp = await computeKeyPoints({
-          armedWeapon: weaponArmed,
-          attachment,
-          bulletId: realBulletKey,
-          params,
-          dataManager: dm,
-          ttkCacheManager: tcm
-        })
+      for (const d of distances.value) {
+        const single = await computeSingleTTK(weaponArmed, attachment, {
+          ...params,
+          distance: d,
+        }, dm)
 
-        if (kp && kp.keyPoints && kp.keyPoints.length > 0) {
-          if (config.enabled !== false) {
-            // 计算加权平均
-            const times = distances.value.map(d => tcm.interpolateTTK(kp.keyPoints, d))
-
-            let weightedSum = 0
-            let weightSum = 0
-            distances.value.forEach((d, i) => {
-              const ttk = times[i]
-              if (ttk > 0) {
-                const w = 1.5 - (d / 100) * 1.0
-                weightedSum += ttk * w
-                weightSum += w
-              }
-            })
-            const weightedAvg = weightSum > 0 ? weightedSum / weightSum : Infinity
-
-            newDistanceStats.push({
-              weapon: weaponArmed,
-              times,
-              keyPoints: kp.keyPoints,
-              displayName: weaponArmed._displayName || weaponArmed.name,
-              weightedAvg
-            })
-          }
+        if (single) {
+          times.push(single.ttk)
+          shots.push(single.shots)
+          anySuccess = true
         } else {
-          console.warn(`⚠️ 武器 ${weaponId} 配置 ${configId} 计算失败（keyPoints 为空）`)
+          times.push(0)
+          shots.push(0)
         }
+      }
+
+      if (anySuccess && config.enabled !== false) {
+        // 加权平均
+        let weightedSum = 0
+        let weightSum = 0
+        distances.value.forEach((d, i) => {
+          const ttk = times[i]
+          if (ttk > 0) {
+            const w = 1.5 - (d / 100) * 1.0
+            weightedSum += ttk * w
+            weightSum += w
+          }
+        })
+        const weightedAvg = weightSum > 0 ? weightedSum / weightSum : Infinity
+
+        newDistanceStats.push({
+          weapon: weaponArmed,
+          times,
+          shots,
+          displayName: weaponArmed._displayName || weaponArmed.name,
+          weightedAvg
+        })
       }
     }
 
@@ -692,7 +742,6 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
 
   try {
     const dm = dataStore.getDataManager()
-    const tcm = dm.getTtkCacheManager?.() || null
     const params = paramsStore.state
 
     const { success, newDistanceStats } = await updateSingleWeaponTTK(
@@ -717,32 +766,28 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
     const newTtkResults = []
     for (const stat of newDistanceStats) {
       const weaponArmed = stat.weapon
-      const configId = weaponArmed._configId || '#1'
-
-      const totalTimeMs = tcm.interpolateTTK(stat.keyPoints, params.distance)
-      const avgShots = tcm.averageShots(stat.keyPoints)
-      const burstIntervalMs = (weaponArmed._current?.avgBurstInterval || 0) * 1000
+      const ttkAtDistance = stat.times[params.distance] || 0
+      const shotsAtDistance = stat.shots[params.distance] || 0
 
       const triggerDelay = params.triggerDelayEnable ? (weaponArmed.triggerDelay || 0) : 0
       const velocity = weaponArmed.velocity || 500
       const flight = (params.distance / velocity) * 1000
 
-      const nonShotPart = flight + triggerDelay + burstIntervalMs
-      const remaining = Math.max(0, totalTimeMs - nonShotPart)
+      const nonShotPart = flight + triggerDelay
+      const remaining = Math.max(0, ttkAtDistance - nonShotPart)
       const noMissFireDelay = remaining * (0.5 / 0.7)
       const emptyDelay = remaining * (0.2 / 0.7)
 
       newTtkResults.push({
         name: weaponArmed._displayName || weaponArmed.name,
         weapon: weaponArmed,
-        totalTime: totalTimeMs || 0,
+        totalTime: ttkAtDistance || 0,
         noMissFireDelay: noMissFireDelay || 0,
-        burstInterval: burstIntervalMs,
+        burstInterval: 0,
         emptyDelay: emptyDelay || 0,
         flight: flight || 0,
         triggerDelay: triggerDelay || 0,
-        avgShots: avgShots || 0,
-        fromCache: true
+        avgShots: shotsAtDistance || 0,
       })
     }
 
@@ -778,44 +823,67 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
     appStore.setScores(newScores)
 
     // ---------- 更新哈弗币消耗 ----------
-    if (tcm) {
-      const oldHavoc = appStore.state.havocCosts || {}
-      const newHavoc = { ...oldHavoc }
+    const oldHavoc = appStore.state.havocCosts || {}
+    const newHavoc = { ...oldHavoc }
 
-      for (const key of Object.keys(newHavoc)) {
-        if (key.startsWith(prefix)) {
-          delete newHavoc[key]
-        }
+    for (const key of Object.keys(newHavoc)) {
+      if (key.startsWith(prefix)) {
+        delete newHavoc[key]
       }
-
-      const price = dm.getPriceByWeaponId(weaponId)
-      if (price) {
-        for (const config of price.configs) {
-          if (config.enabled === false) continue
-
-          // ⭐ 从 ttkCache 读
-          const key = `${weaponId}_${config.id}`
-          const keyPoints = getKeyPointsForConfig(weaponId, config, params, dm, tcm)
-          if (!keyPoints) continue
-
-          try {
-            const cost = tcm.calculateHavocCostAverage(
-              keyPoints,
-              {
-                weaponPrice: config.price || 0,
-                kdRatio: params.kdRatio ?? 1.0,
-                extractRate: params.extractRate ?? 0.5,
-                extraCost: params.extraCost ?? 30
-              }
-            )
-            newHavoc[key] = cost
-          } catch (e) {
-            console.warn(`⚠️ 哈弗币计算失败: ${key}`, e)
-          }
-        }
-      }
-      appStore.setHavocCosts(newHavoc)
     }
+
+    const price = dm.getPriceByWeaponId(weaponId)
+    if (price) {
+      for (const config of price.configs) {
+        if (config.enabled === false) continue
+
+        const key = `${weaponId}_${config.id}`
+
+        const stat = newDistanceStats.find(
+          s => s.weapon._configId === config.id
+        )
+        if (!stat) continue
+
+        const avgShots = stat.shots.reduce((a, b) => a + b, 0) / stat.shots.length
+
+        let bulletPrice = 0
+        const bulletId = SimulationEngine.getRealBulletKey(
+          null,
+          stat.weapon,
+          params,
+          dm
+        )
+        if (bulletId) {
+          const bullet = dm.getBulletById(bulletId)
+          bulletPrice = bullet?.price || 0
+        }
+
+        const weaponPrice = config.price || 0
+        const kdRatio = params.kdRatio ?? 1.0
+        const extractRate = params.extractRate ?? 0.5
+        const extraCost = params.extraCost ?? 30
+
+        const weaponLossCost = weaponPrice * (1 - extractRate)
+        const effectiveKd = kdRatio * 5
+        const effectiveShots = effectiveKd * avgShots + extraCost
+        const bulletCost = effectiveShots * bulletPrice
+        const totalCost = weaponLossCost + bulletCost
+
+        newHavoc[key] = {
+          totalCost,
+          weaponLossCost,
+          bulletCost,
+          weaponPrice,
+          avgShots,
+          bulletPrice,
+          effectiveShots,
+          kdRatio,
+          extractRate,
+          extraCost,
+        }
+      }
+    }
+    appStore.setHavocCosts(newHavoc)
 
     // ---------- 更新折线图数据 ----------
     if (newDistanceStats.length > 0) {
@@ -841,75 +909,21 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
   }
 }
 
-/**
- * ⭐ 辅助：从 ttkCache 读取某配置的 keyPoints
- *
- * @param {number} weaponId
- * @param {Object} config - 原始 config 对象
- * @param {Object} params - 战斗参数
- * @param {DataManager} dm
- * @param {TtkCacheManager} tcm
- * @returns {Array|null} keyPoints 或 null
- */
-const getKeyPointsForConfig = (weaponId, config, params, dm, tcm) => {
-  const weapon = dm.getWeaponById(weaponId)
-  if (!weapon) return null
-
-  const barrelId = config.barrelId ?? -1
-  const muzzleId = config.muzzleId ?? 0
-  const precision = config.precision ?? 0.09
-
-  // 解析子弹
-  const bulletId = SimulationEngine.getRealBulletKey(
-    config.bullet || null,
-    weapon,
-    params,
-    dm
-  )
-  if (!bulletId) return null
-
-  const weaponKey = tcm.makeWeaponKey(weaponId, config.id, barrelId, muzzleId, precision)
-  const defenderKey = tcm.makeDefenderKey(
-    params.armorLevel, params.armorValue,
-    params.helmetLevel, params.helmetValue
-  )
-
-  // 构建 hitRateMap
-  let hitRateMap = []
-  if (config.distance && config.hitRate &&
-      Array.isArray(config.distance) && Array.isArray(config.hitRate)) {
-    const len = Math.min(config.distance.length, config.hitRate.length)
-    for (let i = 0; i < len; i++) {
-      hitRateMap.push({ distance: config.distance[i], rate: config.hitRate[i] })
-    }
-  }
-
-  const scenarioKey = tcm.makeScenarioKey(
-    hitRateMap.length > 0 ? hitRateMap : params.hitRateMap,
-    params.hitProb,
-    params.triggerDelayEnable,
-    params.healthValue
-  )
-
-  return tcm.get(weaponKey, bulletId, defenderKey, scenarioKey)
-}
-
 // ============================================================
 // ⭐ 哈弗币消耗计算（全量）
 // ============================================================
-const computeHavocCosts = (enabledConfigs, dm, tcm, params) => {
-  if (!tcm) {
-    appStore.setHavocCosts({})
-    return
-  }
-
+const computeHavocCosts = async (enabledConfigs, dm, params) => {
   const havocCosts = {}
   let computed = 0
   let skipped = 0
 
-  for (const configRow of enabledConfigs) {
-    const weaponId = configRow._weaponId
-    const configId = configRow.configId || '#1'
+  const { armed, attachments } = buildArmedWeapons(enabledConfigs)
+
+  for (let i = 0; i < armed.length; i++) {
+    const weaponArmed = armed[i]
+    const attachment = attachments[i] || {}
+    const configId = attachment.configId || '#1'
+    const weaponId = weaponArmed.id
     const key = `${weaponId}_${configId}`
 
     const price = dm.getPriceByWeaponId(weaponId)
@@ -924,28 +938,64 @@ const computeHavocCosts = (enabledConfigs, dm, tcm, params) => {
       continue
     }
 
-    const keyPoints = getKeyPointsForConfig(weaponId, config, params, dm, tcm)
-    if (!keyPoints || keyPoints.length === 0) {
+    // 逐距离算 shots
+    const allShots = []
+
+    for (const d of distances.value) {
+      const single = await computeSingleTTK(weaponArmed, attachment, {
+        ...params,
+        distance: d,
+      }, dm)
+
+      if (single) {
+        allShots.push(single.shots)
+      }
+    }
+
+    if (allShots.length === 0) {
       skipped++
       continue
     }
 
-    try {
-      const cost = tcm.calculateHavocCostAverage(
-        keyPoints,
-        {
-          weaponPrice: config.price || 0,
-          kdRatio: params.kdRatio ?? 1.0,
-          extractRate: params.extractRate ?? 0.5,
-          extraCost: params.extraCost ?? 30
-        }
-      )
-      havocCosts[key] = cost
-      computed++
-    } catch (e) {
-      console.warn(`⚠️ 哈弗币消耗计算失败: ${key}`, e)
-      skipped++
+    // 子弹单价
+    let bulletPrice = 0
+    const bulletId = SimulationEngine.getRealBulletKey(
+      attachment.bulletType,
+      weaponArmed,
+      params,
+      dm
+    )
+    if (bulletId) {
+      const bullet = dm.getBulletById(bulletId)
+      bulletPrice = bullet?.price || 0
     }
+
+    const avgShots = allShots.reduce((a, b) => a + b, 0) / allShots.length
+
+    const weaponPrice = config.price || 0
+    const kdRatio = params.kdRatio ?? 1.0
+    const extractRate = params.extractRate ?? 0.5
+    const extraCost = params.extraCost ?? 30
+
+    const weaponLossCost = weaponPrice * (1 - extractRate)
+    const effectiveKd = kdRatio * 5
+    const effectiveShots = effectiveKd * avgShots + extraCost
+    const bulletCost = effectiveShots * bulletPrice
+    const totalCost = weaponLossCost + bulletCost
+
+    havocCosts[key] = {
+      totalCost,
+      weaponLossCost,
+      bulletCost,
+      weaponPrice,
+      avgShots,
+      bulletPrice,
+      effectiveShots,
+      kdRatio,
+      extractRate,
+      extraCost,
+    }
+    computed++
   }
 
   appStore.setHavocCosts(havocCosts)
@@ -985,28 +1035,7 @@ const handleDistanceChart = async () => {
     appStore.setScores(scores)
     console.log(`⭐ 评分原始数据已计算: ${Object.keys(scores).length} 条`)
 
-    let allZero = true
-    if (stats.length > 0 && stats[0].times) {
-      for (let i = 0; i < Math.min(stats[0].times.length, 10); i++) {
-        if (stats[0].times[i] > 0) {
-          allZero = false
-          break
-        }
-      }
-    }
-
-    if (stats.length > 0 && allZero) {
-      const mockStats = stats.map((s, i) => {
-        const baseTime = 200 + (i % 10) * 50
-        return {
-          ...s,
-          times: distances.value.map(d => baseTime + d * 1.2 + Math.random() * 30)
-        }
-      })
-      distanceStats.value = mockStats
-    } else {
-      distanceStats.value = stats
-    }
+    distanceStats.value = stats
 
     console.log(`✅ 折线图数据生成完成: ${stats.length} 个武器`)
 
@@ -1094,7 +1123,6 @@ const buildArmedWeapons = (configs) => {
 const buildDistanceStats = async (armed, attachments) => {
   const params = paramsStore.state
   const dm = dataStore.getDataManager()
-  const tcm = dm.getTtkCacheManager?.() || null
   const stats = []
 
   for (let idx = 0; idx < armed.length; idx++) {
@@ -1102,52 +1130,34 @@ const buildDistanceStats = async (armed, attachments) => {
     const attachment = attachments[idx] || {}
     const displayName = weapon._displayName || weapon.name
 
-    // ⭐⭐⭐ 前置检查：解析实际使用的子弹
-    const realBulletKey = SimulationEngine.getRealBulletKey(
-      attachment.bulletType,
-      weapon,
-      params,
-      dm
-    )
+    // 逐距离算
+    const times = []
+    const shots = []
+    let anySuccess = false
 
-    if (!realBulletKey) {
-      console.log(`⚠️ 折线图跳过 ${displayName}：无 Lv.${params.bulletLevel} 子弹`)
+    for (const d of distances.value) {
+      const single = await computeSingleTTK(weapon, attachment, {
+        ...params,
+        distance: d,
+      }, dm)
+
+      if (single) {
+        times.push(single.ttk)
+        shots.push(single.shots)
+        anySuccess = true
+      } else {
+        times.push(0)
+        shots.push(0)
+      }
+    }
+
+    if (!anySuccess) {
+      console.log(`⚠️ 折线图跳过 ${displayName}：无法计算`)
       appStore.updateCalcProgress(idx + 1)
       continue
     }
 
-    const bulletData = dm.getBulletById(realBulletKey)
-    if (!bulletData) {
-      console.log(`⚠️ 折线图跳过 ${displayName}：子弹 ${realBulletKey} 不存在`)
-      appStore.updateCalcProgress(idx + 1)
-      continue
-    }
-
-    // ⭐⭐⭐ 统一走 computeKeyPoints
-    const kp = await computeKeyPoints({
-      armedWeapon: weapon,
-      attachment,
-      bulletId: realBulletKey,
-      params,
-      dataManager: dm,
-      ttkCacheManager: tcm
-    })
-
-    if (!kp || !kp.keyPoints || kp.keyPoints.length === 0) {
-      console.log(`⚠️ 折线图跳过 ${displayName}：keyPoints 为空`)
-      appStore.updateCalcProgress(idx + 1)
-      continue
-    }
-
-    if (kp.fromCache) {
-      console.log(`💾 缓存命中: ${displayName}`)
-    } else {
-      console.log(`💾 已缓存: ${displayName} (${kp.keyPoints.length} 个关键点)`)
-    }
-
-    // 插值生成 101 个点的完整曲线
-    const times = distances.value.map(d => tcm.interpolateTTK(kp.keyPoints, d))
-
+    // 加权平均
     let weightedSum = 0
     let weightSum = 0
     distances.value.forEach((d, i) => {
@@ -1163,7 +1173,7 @@ const buildDistanceStats = async (armed, attachments) => {
     stats.push({
       weapon,
       times,
-      keyPoints: kp.keyPoints,
+      shots,
       displayName,
       weightedAvg
     })
@@ -1273,13 +1283,10 @@ const resetData = async () => {
     dataStore.refreshPrices()
     dataStore.refreshArmors()
 
-    // ⭐ 清空 ttkCache
-    const dm = dataStore.getDataManager()
-    const tcm = dm.getTtkCacheManager?.()
-    if (tcm) {
-      tcm.clearAll()
-      console.log('🗑️ 已清空 ttkCache')
-    }
+    // ⭐ 清空矩阵缓存
+    const { clearMatrix } = await import('@/core/FastTTK')
+    await clearMatrix()
+    console.log('🗑️ 已清空 TTK 矩阵缓存')
 
     setTimeout(() => {
       handleCalculate()

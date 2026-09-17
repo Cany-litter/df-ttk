@@ -39,15 +39,16 @@
  * - aimSpeed: 开镜时间（ms），默认 0，影响评分（不影响 TTK）
  * - enabled: 是否启用（默认 true）
  *
- * ⭐ 统一缓存（v2）：
- * - 所有 TTK 缓存统一走 ttkCache（四层嵌套）
- * - 旧的 config.cache 已废弃，加载时自动删除
- * - 由 TtkCacheManager 管理
+ * ⭐ 缓存（v2 → 已删除）：
+ * - 旧版 ttkCache 已废弃，改用 IndexedDB（见 TTKIndexedDB.js）
+ * - TTK 矩阵由 TTKMatrix.js 管理，不走 DataManager
  *
  * ⭐ 已删除的旧 API：
  * - setCacheManager / getCacheManager
  * - getConfigCache / saveConfigCache
  * - clearWeaponCache / clearAllCache / getCacheStats
+ * - setTtkCacheManager / getTtkCacheManager
+ * - getTtkCache / setTtkCache / getTtkCacheStats
  */
 
 // ============================================================
@@ -71,9 +72,7 @@ export class DataManager {
       weapons: [],
       bullets: [],
       prices: [],
-      armors: [],
-      // ⭐ 多维 TTK 缓存（唯一缓存，由 TtkCacheManager 管理）
-      ttkCache: { v1: {} }
+      armors: []
     };
     this.originalData = null;
     this.isLoaded = false;
@@ -89,37 +88,6 @@ export class DataManager {
 
     // 修改追踪
     this.modifiedWeaponIds = new Set();
-
-    // ⭐ 多维缓存管理器（由外部注入）
-    this._ttkCacheManager = null;
-  }
-
-  // ============================================================
-  // 0. 缓存管理器注入
-  // ============================================================
-
-  // ⭐ 多维缓存管理器
-  setTtkCacheManager(mgr) {
-    this._ttkCacheManager = mgr;
-  }
-
-  getTtkCacheManager() {
-    return this._ttkCacheManager;
-  }
-
-  // ⭐ 多维缓存读写
-  getTtkCache() {
-    if (!this.data.ttkCache) {
-      this.data.ttkCache = { v1: {} };
-    }
-    if (!this.data.ttkCache.v1) {
-      this.data.ttkCache.v1 = {};
-    }
-    return this.data.ttkCache;
-  }
-
-  setTtkCache(cache) {
-    this.data.ttkCache = cache || { v1: {} };
   }
 
   // ============================================================
@@ -149,13 +117,11 @@ export class DataManager {
       this.modifiedWeaponIds.clear();
 
       perf.mark('dataLoadDone', '数据加载完成');
-      const ttkStats = this.getTtkCacheStats();
       console.log(
         `✅ DataManager: 加载了 ${this.data.weapons.length} 把武器, ` +
         `${this.data.bullets.length} 种子弹, ` +
         `${this.data.prices.length} 条价格配置, ` +
-        `${this.data.armors.length} 条护甲数据, ` +
-        `TTK缓存 ${ttkStats.entryCount} 条`
+        `${this.data.armors.length} 条护甲数据`
       );
       return this.data;
 
@@ -178,11 +144,6 @@ export class DataManager {
       }
     }
 
-    // ⭐ ttkCache 可选，校验存在时是对象
-    if (data.ttkCache !== undefined && typeof data.ttkCache !== 'object') {
-      console.warn('⚠️ ttkCache 格式无效，将重置为空');
-    }
-
     return true;
   }
 
@@ -202,8 +163,8 @@ export class DataManager {
    * 10. 配置 enabled：缺失时补 true
    * 11. 护甲 armors：缺失时补空数组
    * 12. 护甲 enabled：缺失时补 true
-   * 13. ⭐ ttkCache：缺失时补 { v1: {} }
-   * 14. ⭐ config.cache：删除（旧缓存已废弃）
+   * 13. ⭐ 删除旧 ttkCache 字段（已废弃）
+   * 14. ⭐ 删除 config.cache（旧缓存已废弃）
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
@@ -261,7 +222,6 @@ export class DataManager {
           bullet.isDefault = false;
         }
 
-        // ⭐ 新增：enabled 默认 true
         if (bullet.enabled === undefined) {
           bullet.enabled = true;
         }
@@ -327,19 +287,15 @@ export class DataManager {
         if (typeof armor.price === 'string') {
           armor.price = parseFloat(armor.price) || 0;
         }
-        // ⭐ 新增：enabled 默认 true
         if (armor.enabled === undefined) {
           armor.enabled = true;
         }
       });
     }
 
-    // ---------- 5. ⭐ ttkCache 规范化 ----------
-    if (!normalized.ttkCache || typeof normalized.ttkCache !== 'object') {
-      normalized.ttkCache = { v1: {} };
-    }
-    if (!normalized.ttkCache.v1 || typeof normalized.ttkCache.v1 !== 'object') {
-      normalized.ttkCache.v1 = {};
+    // ---------- 5. ⭐ 删除旧 ttkCache 字段（已废弃） ----------
+    if (normalized.ttkCache !== undefined) {
+      delete normalized.ttkCache;
     }
 
     return normalized;
@@ -449,7 +405,6 @@ export class DataManager {
       b.caliber === caliber && String(b.level) === String(level)
     );
 
-    // ⭐ 过滤禁用的（除非显式要求包含）
     if (!includeDisabled) {
       candidates = candidates.filter(b => b.enabled !== false);
     }
@@ -466,10 +421,6 @@ export class DataManager {
    * 按口径查子弹
    *
    * ⭐ 默认只返回启用的子弹
-   *
-   * @param {string} caliber
-   * @param {boolean} [includeDisabled=false]
-   * @returns {Array}
    */
   getBulletsByCaliber(caliber, includeDisabled = false) {
     let bullets = this.data.bullets.filter(b => b.caliber === caliber);
@@ -543,10 +494,6 @@ export class DataManager {
    * 按类型获取护甲/头盔
    *
    * ⭐ 默认只返回启用的
-   *
-   * @param {string} type - 'armor' | 'helmet'
-   * @param {boolean} [includeDisabled=false]
-   * @returns {Array}
    */
   getArmorsByType(type, includeDisabled = false) {
     let armors = (this.data.armors || []).filter(a => a.type === type);
@@ -558,8 +505,6 @@ export class DataManager {
 
   /**
    * 获取所有启用的护甲/头盔
-   *
-   * @returns {Array}
    */
   getEnabledArmors() {
     return (this.data.armors || []).filter(a => a.enabled !== false);
@@ -616,10 +561,6 @@ export class DataManager {
 
   /**
    * ⭐ 批量启用/禁用护甲
-   *
-   * @param {string} type - 'armor' | 'helmet'
-   * @param {boolean} enabled
-   * @returns {number} 影响的条目数
    */
   setArmorsEnabledByType(type, enabled) {
     let count = 0;
@@ -1223,10 +1164,6 @@ export class DataManager {
 
   /**
    * ⭐ 批量启用/禁用子弹
-   *
-   * @param {boolean} enabled
-   * @param {string} [caliber] - 可选，只操作某口径
-   * @returns {number} 影响的条目数
    */
   setBulletsEnabled(enabled, caliber = null) {
     let count = 0;
@@ -1603,12 +1540,8 @@ export class DataManager {
 
       this._sortPricesForExport(dataToExport.prices, weaponsMap);
 
-      if (!includeCache) {
-        // ⭐ 清空 ttkCache
-        if (dataToExport.ttkCache) {
-          dataToExport.ttkCache = { v1: {} };
-        }
-      }
+      // ⭐ includeCache 参数保留兼容，但不再有 ttkCache
+      void includeCache;
 
       const serialized = this.serializeData(dataToExport);
 
@@ -1634,6 +1567,9 @@ export class DataManager {
   }
 
   _compressKeyPoints(json) {
+    // 兼容旧版：如果没有 keyPoints 字段，直接返回原 json
+    if (!json.includes('"keyPoints"')) return json;
+
     return json.replace(
       /"keyPoints":\s*\[\s*\n\s*((?:\{[^}]*\},\s*\n\s*)*\{[^}]*\})\s*\n\s*\]/g,
       (match, content) => {
@@ -1659,7 +1595,7 @@ export class DataManager {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log(`✅ 数据已导出到: ${a.download}${includeCache ? ' (含缓存)' : ' (不含缓存)'}`);
+    console.log(`✅ 数据已导出到: ${a.download}`);
   }
 
   importFromJSON(jsonStr) {
@@ -1676,12 +1612,10 @@ export class DataManager {
 
       this.clearAllModified();
 
-      const ttkStats = this.getTtkCacheStats();
       console.log(
         `✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ` +
         `${this.data.bullets.length} 种子弹, ` +
-        `${this.data.armors.length} 条护甲数据, ` +
-        `TTK缓存 ${ttkStats.entryCount} 条`
+        `${this.data.armors.length} 条护甲数据`
       );
       return this.data;
 
@@ -1742,7 +1676,6 @@ export class DataManager {
   // ============================================================
 
   getStats() {
-    const ttkStats = this.getTtkCacheStats();
     return {
       weaponCount: this.data.weapons.length,
       bulletCount: this.data.bullets.length,
@@ -1751,34 +1684,8 @@ export class DataManager {
       muzzleCount: this.muzzles.length,
       isLoaded: this.isLoaded,
       hasUnsavedChanges: this.hasUnsavedChanges(),
-      modifiedWeapons: this.modifiedWeaponIds.size,
-      ttkCacheEntries: ttkStats.entryCount || 0
+      modifiedWeapons: this.modifiedWeaponIds.size
     };
-  }
-
-  /**
-   * ⭐ 获取 ttkCache 统计（通过 TtkCacheManager）
-   */
-  getTtkCacheStats() {
-    if (this._ttkCacheManager) {
-      return this._ttkCacheManager.getStats();
-    }
-    // 降级：直接读数据结构
-    const cache = this.getTtkCache();
-    if (!cache?.v1) return { weaponCount: 0, bulletCount: 0, entryCount: 0, sizeKB: 0 };
-
-    let entryCount = 0;
-    const weaponKeys = Object.keys(cache.v1);
-    for (const wk of weaponKeys) {
-      const bullets = Object.keys(cache.v1[wk]);
-      for (const bid of bullets) {
-        const defenders = Object.keys(cache.v1[wk][bid]);
-        for (const dk of defenders) {
-          entryCount += Object.keys(cache.v1[wk][bid][dk]).length;
-        }
-      }
-    }
-    return { weaponCount: weaponKeys.length, entryCount };
   }
 
   /**

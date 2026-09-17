@@ -17,6 +17,18 @@ import {
  * - getRealBulletKey 会过滤 enabled === false 的子弹
  * - 如果指定了子弹 ID 但该子弹被禁用，仍然使用它（假想敌场景）
  * - 如果没有指定子弹，按口径+等级查找时只查启用的
+ *
+ * ⭐ 连发间隔语义（与 TTKDP 对齐）：
+ *   新连发首（shots % burstCount === 1 且 shots > burstCount）的间隔 = burstInterval
+ *   —— 连发间隔【取代】连发内间隔，不是叠加
+ *
+ *   逐发明细里：
+ *     - 普通发：shotIntervalBefore = 连发内间隔，burstGapBefore = 0
+ *     - 新连发首：shotIntervalBefore = 0，burstGapBefore = burstInterval
+ *
+ *   总时间公式 _calculateShootingIntervalTotal 用
+ *   "连发内间隔数 × 连发内间隔 + 连发间隔数 × 连发间隔" 表达，
+ *   与逐发明细一致（不会重复计算）。
  */
 export class SimulationEngine {
   /**
@@ -57,8 +69,12 @@ export class SimulationEngine {
    *   - 无 rofStages → 全程基础射速（向后兼容）
    *   - 连发模式（burst）→ 用 burstInternalROF，忽略 rofStages
    *
+   * ⭐ 边界语义（与 TTKDP 对齐）：
+   *   shot <= untilShot 表示"第 shot 个间隔"属于该阶段。
+   *   第 1 个间隔 = 第 1→2 发，第 2 个间隔 = 第 2→3 发，依此类推。
+   *
    * @param {Object} weapon - 武器对象（含 _current 或原始值）
-   * @param {number} shot - 当前起点发序号（从 1 开始）
+   * @param {number} shot - 起点发序号（从 1 开始）
    * @param {boolean} isBurstMode - 是否连发模式
    * @returns {number} 间隔时长（秒）
    * @private
@@ -80,7 +96,8 @@ export class SimulationEngine {
       return 60 / baseRof;
     }
 
-    // 找到该发所属的阶段
+    // 找到该间隔所属的阶段
+    // ⭐ 用 shot <= stage.untilShot（与 TTKDP 的 shotIndex <= untilShot 等价）
     let rofAdd = 0;
     for (const stage of stages) {
       // untilShot === undefined 表示"之后所有发"
@@ -103,6 +120,14 @@ export class SimulationEngine {
    *
    * 逐发累加：第 1 发之后到第 2 发之前…直到第 (shots-1) 发之后
    *
+   * ⭐ 连发模式下，用"连发内间隔数 × 连发内间隔 + 连发间隔数 × 连发间隔"表达：
+   *   - 连发内间隔数 = totalShots - 1 - burstIntervalCount
+   *   - 连发间隔数   = burstIntervalCount
+   *   其中 burstIntervalCount 由 _updateBurstInterval 累计。
+   *
+   *   这与逐发明细（新连发首 shotIntervalBefore=0、burstGapBefore=burstInterval）
+   *   完全一致，不会重复计算连发间隔。
+   *
    * @param {Object} weapon - 武器对象
    * @param {number} totalShots - 总射击数（含未命中）
    * @param {boolean} isBurstMode - 是否连发模式
@@ -114,8 +139,7 @@ export class SimulationEngine {
     if (totalShots <= 1) return 0;
 
     if (isBurstMode) {
-      // 连发模式：原逻辑
-      // 射击间隔时间 = 连发内部间隔 × (总射击数 - 1 - 连发间隔数)
+      // 连发模式：连发内间隔数 = 总间隔数 - 连发间隔数
       const burstIntervalCount = burstStats.count;
       const shotInterval = 60 / weapon.burstInternalROF;
       return shotInterval * (totalShots - 1 - burstIntervalCount);
@@ -276,16 +300,18 @@ export class SimulationEngine {
    * - 调用策略时传 collectDebug = true
    * - 结果用于弹窗展示，不参与批量统计
    *
-   * ⭐ 连发间隔标记：
+   * ⭐ 连发间隔标记（与 TTKDP 对齐）：
    *   - 每个连发周期第一发（shot % burstCount === 1 且 shot > 1）之前，
    *     插入一个连发间隔，时长 = weapon.burstInterval（秒）
    *   - 该时长写入该发 step 的 burstGapBefore 字段
    *   - 非连发武器 / 连发周期内其他发 → burstGapBefore = 0
    *
    * ⭐ 射击间隔标记（分段射速）：
-   *   - 第 shot 发之前等待的射击间隔，由第 (shot-1) 发所属的射速阶段决定
-   *   - 写入 step 的 shotIntervalBefore 字段（秒）
-   *   - 第 1 发没有前置射击间隔 → 0
+   *   - 普通发：第 shot 发之前等待的射击间隔，由第 (shot-1) 发所属的射速阶段决定
+   *     写入 step 的 shotIntervalBefore 字段（秒）
+   *   - 新连发首：shotIntervalBefore = 0
+   *     （这一发的间隔由 burstGapBefore 单独表达，两者不叠加）
+   *   - 第 1 发没有前置射击间隔 → shotIntervalBefore = 0
    *
    * ⭐ 种子控制：本方法不做种子处理，由调用方在调用前通过 setSeed() 控制。
    *
@@ -354,9 +380,12 @@ export class SimulationEngine {
 
       // ============================================================
       // ⭐ 计算本发之前的射击间隔（由上一发所属阶段决定）
+      //
+      // v2 修复：新连发首的间隔 = 连发间隔（burstGapBefore），
+      //          不再叠加连发内间隔（shotIntervalBefore 保持 0）。
       // ============================================================
       let shotIntervalBefore = 0;
-      if (shots > 1) {
+      if (shots > 1 && burstGapBefore === 0) {
         // 第 shot 发之前的间隔 = 第 (shot-1) 发之后的间隔
         shotIntervalBefore = this._getIntervalAfterShot(weapon, shots - 1, isBurstMode);
         // 连发模式下，连发间隔已单独计算，不重复累加内部间隔
