@@ -1,54 +1,69 @@
+// src/core/DataManager.js
 /**
  * 数据管理器
  * 负责数据的加载、保存、导入、导出和查询
- * 
+ *
  * 数据流向：
  * 1. 从 data.json 加载原始数据
  * 2. 数据存储在 this.data 中
  * 3. 导出时序列化 this.data（排序后导出，不影响内存数据）
  * 4. 导入时替换 this.data
  * 5. 重置时恢复 this.originalData
- * 
+ *
  * 修改追踪：
  * - modifiedWeaponIds: 记录被修改的武器 ID
  * - 用于增量计算，只重新计算被修改的武器
- * 
+ *
  * 导出排序：
  * - weapons: 按类型 → 名称 排序
  * - bullets: 按口径 → 等级 → 默认 排序
  * - prices: 按类型 → 武器名称 → 配置序号 排序
  * - armors: 按 type → level 排序
- * 
+ *
  * ⭐ 子弹 ID 规范（v2）：
  * - 格式：${caliber}#${序号}
  * - 序号：口径内递增，按 level 升序 + name 字典序分配
  * - 稳定：序号一旦分配，不随 level/name 变化
  * - 禁止修改 caliber / id
- * 
+ *
  * ⭐ 子弹字段（v2）：
  * - partMult: { head, chest, stomach, limbs } 各部位肉伤比例
  * - isDefault: 同 caliber+level 唯一，用于全局等级匹配
  * - enabled: 是否启用（默认 true）
  * - 已废弃：base / stMult
- * 
+ *
  * ⭐ 护甲/头盔字段（v2）：
  * - enabled: 是否启用（默认 true）
- * 
+ *
  * ⭐ 配置字段（v3）：
  * - aimSpeed: 开镜时间（ms），默认 0，影响评分（不影响 TTK）
  * - enabled: 是否启用（默认 true）
- * 
+ *
  * ⭐ 统一缓存（v2）：
  * - 所有 TTK 缓存统一走 ttkCache（四层嵌套）
  * - 旧的 config.cache 已废弃，加载时自动删除
  * - 由 TtkCacheManager 管理
- * 
+ *
  * ⭐ 已删除的旧 API：
  * - setCacheManager / getCacheManager
  * - getConfigCache / saveConfigCache
  * - clearWeaponCache / clearAllCache / getCacheStats
  */
-import perf from '../utils/performance.js';
+
+// ============================================================
+// 简化版性能监控（原 utils/performance.js 内联）
+// DataManager 只用到了 mark()，其他方法（report / getDuration 等）没被引用
+// ============================================================
+const perf = {
+  marks: {},
+  startTime: performance.now(),
+  mark(name, description = '') {
+    this.marks[name] = {
+      time: performance.now(),
+      description
+    }
+  }
+};
 
 export class DataManager {
   constructor() {
@@ -62,7 +77,7 @@ export class DataManager {
     };
     this.originalData = null;
     this.isLoaded = false;
-    
+
     // 枪口数据
     this.muzzles = [
       { id: 0, name: '无', mult: 0 },
@@ -71,10 +86,10 @@ export class DataManager {
       { id: 3, name: '冲锋枪回声消音器', mult: 0.30 }
     ];
     this.originalMuzzles = null;
-    
+
     // 修改追踪
     this.modifiedWeaponIds = new Set();
-    
+
     // ⭐ 多维缓存管理器（由外部注入）
     this._ttkCacheManager = null;
   }
@@ -113,26 +128,26 @@ export class DataManager {
 
   async loadFromJSON(url = './data.json') {
     perf.mark('dataLoadStart', '数据加载开始');
-    
+
     try {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const rawData = await response.json();
-      
+
       if (!this.validateData(rawData)) {
         throw new Error('数据格式无效，请检查 data.json 文件');
       }
-      
+
       this.data = this.normalizeData(rawData);
       this.originalData = JSON.parse(JSON.stringify(this.data));
       this.originalMuzzles = JSON.parse(JSON.stringify(this.muzzles));
       this.isLoaded = true;
-      
+
       this.modifiedWeaponIds.clear();
-      
+
       perf.mark('dataLoadDone', '数据加载完成');
       const ttkStats = this.getTtkCacheStats();
       console.log(
@@ -143,7 +158,7 @@ export class DataManager {
         `TTK缓存 ${ttkStats.entryCount} 条`
       );
       return this.data;
-      
+
     } catch (error) {
       console.error('❌ DataManager: 加载数据失败:', error);
       throw error;
@@ -155,7 +170,7 @@ export class DataManager {
     if (!Array.isArray(data.weapons) || data.weapons.length === 0) return false;
     if (!Array.isArray(data.bullets) || data.bullets.length === 0) return false;
     if (!Array.isArray(data.prices)) return false;
-    
+
     for (const weapon of data.weapons) {
       if (!weapon.id || !weapon.name || !weapon.allowedBullet) {
         console.warn('⚠️ 武器数据缺失必要字段:', weapon);
@@ -167,13 +182,13 @@ export class DataManager {
     if (data.ttkCache !== undefined && typeof data.ttkCache !== 'object') {
       console.warn('⚠️ ttkCache 格式无效，将重置为空');
     }
-    
+
     return true;
   }
 
   /**
    * 规范化数据
-   * 
+   *
    * ⭐ 统一处理：
    * 1. 武器 ranges：'Infinity' / null → Infinity
    * 2. 子弹 level：数字型字符串 → 数字
@@ -192,7 +207,7 @@ export class DataManager {
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
-    
+
     // ---------- 1. 武器 ranges 规范化 ----------
     if (Array.isArray(normalized.weapons)) {
       normalized.weapons.forEach(weapon => {
@@ -218,7 +233,7 @@ export class DataManager {
         }
       });
     }
-    
+
     // ---------- 2. 子弹规范化 ----------
     if (Array.isArray(normalized.bullets)) {
       normalized.bullets.forEach(bullet => {
@@ -326,7 +341,7 @@ export class DataManager {
     if (!normalized.ttkCache.v1 || typeof normalized.ttkCache.v1 !== 'object') {
       normalized.ttkCache.v1 = {};
     }
-    
+
     return normalized;
   }
 
@@ -408,7 +423,7 @@ export class DataManager {
 
   /**
    * 获取所有启用的子弹（enabled !== false）
-   * 
+   *
    * @returns {Array}
    */
   getEnabledBullets() {
@@ -421,16 +436,16 @@ export class DataManager {
 
   /**
    * 按口径 + 等级查子弹
-   * 
+   *
    * ⭐ 默认只返回启用的子弹（enabled !== false）
-   * 
+   *
    * @param {string} caliber
    * @param {number} level
    * @param {boolean} [includeDisabled=false] - 是否包含禁用的
    * @returns {Object|null}
    */
   getBulletByCaliberAndLevel(caliber, level, includeDisabled = false) {
-    let candidates = this.data.bullets.filter(b => 
+    let candidates = this.data.bullets.filter(b =>
       b.caliber === caliber && String(b.level) === String(level)
     );
 
@@ -449,9 +464,9 @@ export class DataManager {
 
   /**
    * 按口径查子弹
-   * 
+   *
    * ⭐ 默认只返回启用的子弹
-   * 
+   *
    * @param {string} caliber
    * @param {boolean} [includeDisabled=false]
    * @returns {Array}
@@ -466,7 +481,7 @@ export class DataManager {
 
   getNextBulletId(caliber) {
     if (!caliber) return ''
-    
+
     const sameCaliber = this.data.bullets.filter(b => b.caliber === caliber)
     if (sameCaliber.length === 0) {
       return `${caliber}#1`
@@ -492,7 +507,7 @@ export class DataManager {
   }
 
   getDefaultBullet(caliber, level) {
-    const candidates = this.data.bullets.filter(b => 
+    const candidates = this.data.bullets.filter(b =>
       b.caliber === caliber && String(b.level) === String(level)
     );
     if (candidates.length === 0) return null;
@@ -526,9 +541,9 @@ export class DataManager {
 
   /**
    * 按类型获取护甲/头盔
-   * 
+   *
    * ⭐ 默认只返回启用的
-   * 
+   *
    * @param {string} type - 'armor' | 'helmet'
    * @param {boolean} [includeDisabled=false]
    * @returns {Array}
@@ -543,7 +558,7 @@ export class DataManager {
 
   /**
    * 获取所有启用的护甲/头盔
-   * 
+   *
    * @returns {Array}
    */
   getEnabledArmors() {
@@ -601,7 +616,7 @@ export class DataManager {
 
   /**
    * ⭐ 批量启用/禁用护甲
-   * 
+   *
    * @param {string} type - 'armor' | 'helmet'
    * @param {boolean} enabled
    * @returns {number} 影响的条目数
@@ -661,26 +676,26 @@ export class DataManager {
     if (weaponId === undefined || weaponId === null) {
       return -1;
     }
-    
+
     const weapon = this.getWeaponById(weaponId);
     if (!weapon || !Array.isArray(weapon.barrels) || weapon.barrels.length === 0) {
       return -1;
     }
-    
+
     return weapon.barrels.findIndex(b => b.name === barrelName);
   }
 
   getPriceRowsForWeapon(weaponId) {
     const weapon = this.getWeaponById(weaponId);
     const price = this.getPriceByWeaponId(weaponId);
-    
+
     if (!weapon || !price) return [];
-    
+
     return price.configs.map(config => {
       // ---------- 解析枪管 ----------
       let barrelId = config.barrelId !== undefined ? config.barrelId : -1;
       let barrelName = '无';
-      
+
       if (barrelId === -1 || barrelId === undefined) {
         if (config.barrel && config.barrel !== '无') {
           const foundIndex = this.findBarrelIdByName(weaponId, config.barrel);
@@ -692,11 +707,11 @@ export class DataManager {
       } else if (barrelId >= 0 && weapon.barrels && weapon.barrels[barrelId]) {
         barrelName = weapon.barrels[barrelId].name || '无';
       }
-      
+
       if (barrelId === -1 || barrelId === undefined) {
         barrelName = '无';
       }
-      
+
       // ---------- 解析枪口 ----------
       let muzzleName = '无';
       const muzzleId = config.muzzleId !== undefined ? config.muzzleId : 0;
@@ -707,7 +722,7 @@ export class DataManager {
       if (config.muzzle && config.muzzle !== '无') {
         muzzleName = config.muzzle;
       }
-      
+
       // ---------- 解析子弹 ----------
       let bulletDisplay = '-';
       let bulletId = config.bullet || '';
@@ -717,7 +732,7 @@ export class DataManager {
           bulletDisplay = this.getBulletDisplay(bullet);
         }
       }
-      
+
       // ---------- 拼装命中率字符串 ----------
       let hitRateRaw = '';
       const distances = Array.isArray(config.distance) ? config.distance : [];
@@ -730,7 +745,7 @@ export class DataManager {
         }
         hitRateRaw = parts.join(',');
       }
-      
+
       // ---------- 精校 ----------
       const precision = (typeof config.precision === 'number' && !isNaN(config.precision))
         ? config.precision
@@ -740,7 +755,7 @@ export class DataManager {
       const aimSpeed = (typeof config.aimSpeed === 'number' && !isNaN(config.aimSpeed))
         ? config.aimSpeed
         : 0;
-      
+
       return {
         weaponName: weapon.name,
         configId: config.id || '#1',
@@ -767,12 +782,12 @@ export class DataManager {
   getPriceRows() {
     const rows = [];
     const prices = this.getPrices();
-    
+
     for (const price of prices) {
       const weaponRows = this.getPriceRowsForWeapon(price.weaponId);
       rows.push(...weaponRows);
     }
-    
+
     return rows;
   }
 
@@ -784,7 +799,7 @@ export class DataManager {
       }
       return typeof fallback === 'number' ? fallback : 0.85;
     }
-    
+
     const config = priceConfig.configs.find(c => c.id === configId);
     if (!config) {
       if (Array.isArray(fallback) && fallback.length > 0) {
@@ -792,8 +807,8 @@ export class DataManager {
       }
       return typeof fallback === 'number' ? fallback : 0.85;
     }
-    
-    if (!config.distance || !config.hitRate || 
+
+    if (!config.distance || !config.hitRate ||
         !Array.isArray(config.distance) || !Array.isArray(config.hitRate) ||
         config.distance.length === 0 || config.hitRate.length === 0) {
       if (Array.isArray(fallback) && fallback.length > 0) {
@@ -801,12 +816,12 @@ export class DataManager {
       }
       return typeof fallback === 'number' ? fallback : 0.85;
     }
-    
+
     const points = config.distance.map((d, i) => ({
       distance: d,
       rate: config.hitRate[i]
     }));
-    
+
     return this.getHitRateFromMap(points, distance, 0.85);
   }
 
@@ -816,16 +831,16 @@ export class DataManager {
     }
 
     const sorted = [...hitRateMap].sort((a, b) => a.distance - b.distance);
-    
-    const validPoints = sorted.filter(p => 
-      p.distance >= 0 && 
-      p.rate !== undefined && 
+
+    const validPoints = sorted.filter(p =>
+      p.distance >= 0 &&
+      p.rate !== undefined &&
       p.rate !== null &&
       !isNaN(p.rate) &&
-      p.rate >= 0 && 
+      p.rate >= 0 &&
       p.rate <= 1
     );
-    
+
     if (validPoints.length === 0) {
       return typeof fallback === 'number' ? fallback : 0.85;
     }
@@ -912,17 +927,17 @@ export class DataManager {
     if (!weapon) {
       return -1;
     }
-    
+
     if (!Array.isArray(weapon.barrels) || weapon.barrels.length === 0) {
       return -1;
     }
-    
+
     let bestIndex = -1;
     let bestScore = -Infinity;
-    
+
     weapon.barrels.forEach((barrel, index) => {
       let score = 0;
-      
+
       if (Array.isArray(barrel.ranges) && barrel.ranges.length > 0) {
         const firstRange = barrel.ranges[0];
         if (firstRange === Infinity) {
@@ -931,15 +946,15 @@ export class DataManager {
           score = firstRange;
         }
       }
-      
+
       if (barrel.rangeMult !== undefined && barrel.rangeMult !== null) {
         score = Math.max(score, (barrel.rangeMult || 1.0) * 100);
       }
-      
+
       if (barrel.rangeAdd !== undefined && barrel.rangeAdd !== null) {
         score += (barrel.rangeAdd || 0) * 0.5;
       }
-      
+
       if (barrel.name) {
         if (barrel.name.includes('超长') || barrel.name.includes('长枪管')) {
           score += 5;
@@ -948,25 +963,25 @@ export class DataManager {
           score += 3;
         }
       }
-      
+
       if (score > bestScore) {
         bestScore = score;
         bestIndex = index;
       }
     });
-    
+
     return bestIndex;
   }
 
   findBestBarrelName(weaponId) {
     const index = this.findBestBarrelIndex(weaponId);
     if (index === -1) return '无';
-    
+
     const weapon = this.getWeaponById(weaponId);
     if (!weapon || !Array.isArray(weapon.barrels) || index >= weapon.barrels.length) {
       return '无';
     }
-    
+
     return weapon.barrels[index].name || '无';
   }
 
@@ -977,7 +992,7 @@ export class DataManager {
   updateWeapon(weaponId, updates) {
     const weapon = this.getWeaponById(weaponId);
     if (!weapon) return false;
-    
+
     Object.assign(weapon, updates);
     this.markWeaponModified(weaponId);
     return true;
@@ -987,7 +1002,7 @@ export class DataManager {
     const weapon = this.getWeaponById(weaponId);
     if (!weapon || !Array.isArray(weapon.barrels)) return false;
     if (barrelIndex < 0 || barrelIndex >= weapon.barrels.length) return false;
-    
+
     Object.assign(weapon.barrels[barrelIndex], updates);
     this.markWeaponModified(weaponId);
     return true;
@@ -1008,7 +1023,7 @@ export class DataManager {
     const weapon = this.getWeaponById(weaponId);
     if (!weapon || !Array.isArray(weapon.barrels)) return false;
     if (barrelIndex < 0 || barrelIndex >= weapon.barrels.length) return false;
-    
+
     const price = this.getPriceByWeaponId(weaponId);
     if (price && Array.isArray(price.configs)) {
       price.configs.forEach(config => {
@@ -1019,7 +1034,7 @@ export class DataManager {
         }
       });
     }
-    
+
     weapon.barrels.splice(barrelIndex, 1);
     this.markWeaponModified(weaponId);
     return true;
@@ -1150,8 +1165,8 @@ export class DataManager {
   removeBullet(bulletId) {
     const index = this.data.bullets.findIndex(b => b.id === bulletId);
     if (index === -1) return false;
-    
-    const inUse = this.data.prices.some(p => 
+
+    const inUse = this.data.prices.some(p =>
       p.configs.some(c => c.bullet === bulletId)
     );
     if (inUse) {
@@ -1163,7 +1178,7 @@ export class DataManager {
     const caliber = removedBullet.caliber;
     const level = removedBullet.level;
     const wasDefault = removedBullet.isDefault === true;
-    
+
     this.data.bullets.splice(index, 1);
 
     if (wasDefault) {
@@ -1208,7 +1223,7 @@ export class DataManager {
 
   /**
    * ⭐ 批量启用/禁用子弹
-   * 
+   *
    * @param {boolean} enabled
    * @param {string} [caliber] - 可选，只操作某口径
    * @returns {number} 影响的条目数
@@ -1235,18 +1250,18 @@ export class DataManager {
       console.warn(`⚠️ 未找到武器 ${weaponId} 的价格配置`);
       return false;
     }
-    
+
     const config = price.configs.find(c => c.id === configId);
     if (!config) {
       console.warn(`⚠️ 未找到配置 ${configId}`);
       return false;
     }
-    
+
     const ttkAffectingKeys = ['barrelId', 'muzzleId', 'precision', 'bullet', 'distance', 'hitRate'];
-    const hasTtkAffectingChange = Object.keys(updates).some(key => 
+    const hasTtkAffectingChange = Object.keys(updates).some(key =>
       ttkAffectingKeys.includes(key)
     );
-    
+
     if (updates.barrelId !== undefined) {
       const weapon = this.getWeaponById(weaponId);
       if (weapon && weapon.barrels && weapon.barrels[updates.barrelId]) {
@@ -1255,18 +1270,18 @@ export class DataManager {
         updates.barrel = '无';
       }
     }
-    
+
     if (updates.muzzleId !== undefined) {
       const muzzle = this.getMuzzleById(updates.muzzleId);
       updates.muzzle = muzzle ? muzzle.name : '无';
     }
-    
+
     Object.assign(config, updates);
-    
+
     if (hasTtkAffectingChange) {
       this.markWeaponModified(weaponId);
     }
-    
+
     return true;
   }
 
@@ -1276,29 +1291,29 @@ export class DataManager {
       console.warn(`⚠️ 未找到武器 ${weaponId} 的价格配置`);
       return false;
     }
-    
+
     if (configData.enabled === undefined) {
       configData.enabled = true;
     }
-    
+
     if (configData.barrel === undefined) {
       const weapon = this.getWeaponById(weaponId);
-      if (configData.barrelId !== undefined && configData.barrelId >= 0 && 
+      if (configData.barrelId !== undefined && configData.barrelId >= 0 &&
           weapon?.barrels && weapon.barrels[configData.barrelId]) {
         configData.barrel = weapon.barrels[configData.barrelId].name || '无';
       } else {
         configData.barrel = '无';
       }
     }
-    
+
     if (configData.barrelId === undefined) {
       configData.barrelId = -1;
     }
-    
+
     if (configData.muzzle === undefined) {
       configData.muzzle = '无';
     }
-    
+
     if (configData.muzzleId === undefined) {
       configData.muzzleId = 0;
     }
@@ -1310,27 +1325,27 @@ export class DataManager {
     if (configData.aimSpeed === undefined) {
       configData.aimSpeed = 0;
     }
-    
+
     if (configData.bullet === undefined) {
       configData.bullet = '';
     }
-    
+
     if (!Array.isArray(configData.distance)) {
       configData.distance = [];
     }
     if (!Array.isArray(configData.hitRate)) {
       configData.hitRate = [];
     }
-    
+
     if (configData.distance.length === 0) {
       configData.distance = [30, 50, 100];
       configData.hitRate = [1.0, 0.9, 0.6];
     }
-    
+
     if (configData.buildCode === undefined) {
       configData.buildCode = '';
     }
-    
+
     if (configData.price === undefined) {
       configData.price = 0;
     }
@@ -1340,7 +1355,7 @@ export class DataManager {
       console.warn(`配置 ${configData.id} 已存在`);
       return false;
     }
-    
+
     price.configs.push(configData);
     this.markWeaponModified(weaponId);
     console.log(`✅ 已添加配置 ${configData.id} 到武器 ${weaponId}`);
@@ -1350,15 +1365,15 @@ export class DataManager {
   removePriceConfig(weaponId, configId) {
     const price = this.getPriceByWeaponId(weaponId);
     if (!price) return false;
-    
+
     const index = price.configs.findIndex(c => c.id === configId);
     if (index === -1) return false;
-    
+
     if (price.configs.length <= 1) {
       console.warn('每个武器至少保留一个价格配置');
       return false;
     }
-    
+
     price.configs.splice(index, 1);
     this.markWeaponModified(weaponId);
     return true;
@@ -1430,53 +1445,53 @@ export class DataManager {
 
   static getLevelWeight(level) {
     if (level === undefined || level === null) return 999;
-    
+
     if (typeof level === 'number' && level >= 1 && level <= 5) {
       return level;
     }
     if (typeof level === 'string' && /^[1-5]$/.test(level)) {
       return parseInt(level);
     }
-    
+
     const specialLevels = ['AP', 'BT+P', 'CT', 'Double', 'M61', 'RIP', 'ST4', 'ST5', 'SUPER'];
     const index = specialLevels.indexOf(String(level));
     if (index !== -1) {
       return 100 + index;
     }
-    
+
     return 999;
   }
 
   _sortWeaponsForExport(weapons) {
     if (!weapons || weapons.length === 0) return;
-    
+
     const typeOrder = DataManager.TYPE_ORDER;
-    
+
     weapons.sort((a, b) => {
       const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 99;
       const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 99;
       if (typeA !== typeB) return typeA - typeB;
-      
+
       return (a.name || '').localeCompare(b.name || '', 'zh-CN');
     });
   }
 
   _sortBulletsForExport(bullets) {
     if (!bullets || bullets.length === 0) return;
-    
+
     bullets.sort((a, b) => {
       const calA = a.caliber || '';
       const calB = b.caliber || '';
       const calCompare = calA.localeCompare(calB);
       if (calCompare !== 0) return calCompare;
-      
+
       const levelA = DataManager.getLevelWeight(a.level);
       const levelB = DataManager.getLevelWeight(b.level);
       if (levelA !== levelB) return levelA - levelB;
 
       if (a.isDefault && !b.isDefault) return -1;
       if (!a.isDefault && b.isDefault) return 1;
-      
+
       const idxA = this._extractIndexFromId(a.id);
       const idxB = this._extractIndexFromId(b.id);
       return idxA - idxB;
@@ -1485,40 +1500,40 @@ export class DataManager {
 
   _sortArmorsForExport(armors) {
     if (!armors || armors.length === 0) return;
-    
+
     const typeOrder = { 'armor': 0, 'helmet': 1 };
-    
+
     armors.sort((a, b) => {
       const typeA = typeOrder[a.type] !== undefined ? typeOrder[a.type] : 99;
       const typeB = typeOrder[b.type] !== undefined ? typeOrder[b.type] : 99;
       if (typeA !== typeB) return typeA - typeB;
-      
+
       const levelA = typeof a.level === 'number' ? a.level : parseInt(a.level) || 0;
       const levelB = typeof b.level === 'number' ? b.level : parseInt(b.level) || 0;
       if (levelA !== levelB) return levelB - levelA;
-      
+
       return (a.name || '').localeCompare(b.name || '', 'zh-CN');
     });
   }
 
   _sortPricesForExport(prices, weaponsMap) {
     if (!prices || prices.length === 0) return;
-    
+
     const typeOrder = DataManager.TYPE_ORDER;
-    
+
     prices.sort((a, b) => {
       const weaponA = weaponsMap.get(a.weaponId);
       const weaponB = weaponsMap.get(b.weaponId);
-      
+
       const typeA = weaponA ? (typeOrder[weaponA.type] !== undefined ? typeOrder[weaponA.type] : 99) : 99;
       const typeB = weaponB ? (typeOrder[weaponB.type] !== undefined ? typeOrder[weaponB.type] : 99) : 99;
       if (typeA !== typeB) return typeA - typeB;
-      
+
       const nameA = weaponA ? weaponA.name || '' : '';
       const nameB = weaponB ? weaponB.name || '' : '';
       const nameCompare = nameA.localeCompare(nameB, 'zh-CN');
       if (nameCompare !== 0) return nameCompare;
-      
+
       const getConfigNum = (config) => {
         const id = config.id || '';
         const match = id.match(/#(\d+)/);
@@ -1536,7 +1551,7 @@ export class DataManager {
 
   serializeData(data) {
     const serialized = JSON.parse(JSON.stringify(data));
-    
+
     if (Array.isArray(serialized.weapons)) {
       serialized.weapons.forEach(weapon => {
         if (Array.isArray(weapon.ranges)) {
@@ -1561,7 +1576,7 @@ export class DataManager {
         }
       });
     }
-    
+
     return serialized;
   }
 
@@ -1572,37 +1587,37 @@ export class DataManager {
   exportToJSON(includeCache = true) {
     try {
       const dataToExport = JSON.parse(JSON.stringify(this.data));
-      
+
       if (Array.isArray(dataToExport.weapons)) {
         dataToExport.weapons = dataToExport.weapons.filter(w => !w._isNewRow);
       }
-      
+
       this._sortWeaponsForExport(dataToExport.weapons);
       this._sortBulletsForExport(dataToExport.bullets);
       this._sortArmorsForExport(dataToExport.armors);
-      
+
       const weaponsMap = new Map();
       if (Array.isArray(dataToExport.weapons)) {
         dataToExport.weapons.forEach(w => weaponsMap.set(w.id, w));
       }
-      
+
       this._sortPricesForExport(dataToExport.prices, weaponsMap);
-      
+
       if (!includeCache) {
         // ⭐ 清空 ttkCache
         if (dataToExport.ttkCache) {
           dataToExport.ttkCache = { v1: {} };
         }
       }
-      
+
       const serialized = this.serializeData(dataToExport);
-      
+
       let json = JSON.stringify(serialized, null, 2);
       json = this._compressArmorData(json);
       json = this._compressKeyPoints(json);
-      
+
       return json;
-      
+
     } catch (error) {
       console.error('导出 JSON 失败:', error);
       throw error;
@@ -1624,7 +1639,7 @@ export class DataManager {
       (match, content) => {
         const points = content.match(/\{\s*"d":\s*([\d.]+),\s*"t":\s*([\d.]+)(?:,\s*"shots":\s*([\d.]+))?(?:,\s*"bulletPrice":\s*([\d.]+))?\s*\}/g);
         if (!points) return match;
-        
+
         const compressed = points.map(p => p.replace(/\s+/g, ' ').trim());
         return `"keyPoints": [${compressed.join(', ')}]`;
       }
@@ -1635,7 +1650,7 @@ export class DataManager {
     const jsonStr = this.exportToJSON(includeCache);
     const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = filename || `ttk_data_${new Date().toISOString().slice(0, 10)}.json`;
@@ -1643,7 +1658,7 @@ export class DataManager {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
+
     console.log(`✅ 数据已导出到: ${a.download}${includeCache ? ' (含缓存)' : ' (不含缓存)'}`);
   }
 
@@ -1653,14 +1668,14 @@ export class DataManager {
       if (!this.validateData(parsed)) {
         throw new Error('无效的数据格式');
       }
-      
+
       const normalized = this.normalizeData(parsed);
       this.data = normalized;
       this.originalData = JSON.parse(JSON.stringify(normalized));
       this.isLoaded = true;
-      
+
       this.clearAllModified();
-      
+
       const ttkStats = this.getTtkCacheStats();
       console.log(
         `✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ` +
@@ -1669,7 +1684,7 @@ export class DataManager {
         `TTK缓存 ${ttkStats.entryCount} 条`
       );
       return this.data;
-      
+
     } catch (error) {
       console.error('导入 JSON 失败:', error);
       throw error;
@@ -1703,12 +1718,12 @@ export class DataManager {
       console.warn('没有原始数据可重置');
       return this.data;
     }
-    
+
     this.data = JSON.parse(JSON.stringify(this.originalData));
     if (this.originalMuzzles) {
       this.muzzles = JSON.parse(JSON.stringify(this.originalMuzzles));
     }
-    
+
     this.clearAllModified();
     console.log('✅ 数据已重置为初始状态');
     return this.data;
@@ -1716,7 +1731,7 @@ export class DataManager {
 
   hasUnsavedChanges() {
     if (!this.originalData) return false;
-    
+
     const current = JSON.stringify(this.serializeData(this.data));
     const original = JSON.stringify(this.serializeData(this.originalData));
     return current !== original;
@@ -1751,7 +1766,7 @@ export class DataManager {
     // 降级：直接读数据结构
     const cache = this.getTtkCache();
     if (!cache?.v1) return { weaponCount: 0, bulletCount: 0, entryCount: 0, sizeKB: 0 };
-    
+
     let entryCount = 0;
     const weaponKeys = Object.keys(cache.v1);
     for (const wk of weaponKeys) {

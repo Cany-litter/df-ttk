@@ -9,7 +9,7 @@
       <span class="toolbar-divider"></span>
       <span class="control-hint">（点击新增后在表格顶部填写数据，然后点击"✅ 确认"保存）</span>
       <span class="count-badge">
-        共 {{ data.length }} 种子弹（启用 {{ enabledCount }}）
+        共 {{ data.length }} 种子弹（启用 {{ enabledCount }}/{{ data.length }}）
       </span>
     </div>
 
@@ -398,7 +398,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, inject } from 'vue'
-import { dataStore } from '@/stores/dataStore'
+import { dataStore } from '@/stores/stores'
 
 const props = defineProps({
   data: {

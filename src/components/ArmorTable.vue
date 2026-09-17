@@ -10,7 +10,7 @@
       <button class="btn-sm btn-outline" @click="disableAll">❌ 全部禁用</button>
       <span class="toolbar-divider"></span>
       <span class="toolbar-hint">（点击单元格直接编辑，失焦即保存；价格单位 W）</span>
-      <span class="count-badge">共 {{ data.length }} {{ typeUnit }}（启用 {{ enabledCount }}）</span>
+      <span class="count-badge">共 {{ data.length }} {{ typeUnit }}（启用 {{ enabledCount }}/{{ data.length }}）</span>
     </div>
 
     <!-- ============ ⭐ 桌面端：表格 ============ -->
@@ -259,7 +259,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, inject } from 'vue'
-import { dataStore } from '@/stores/dataStore'
+import { dataStore } from '@/stores/stores'
 
 const props = defineProps({
   data: {

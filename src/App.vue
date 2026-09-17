@@ -1,183 +1,182 @@
 ﻿<!-- src/App.vue -->
 <template>
   <div id="app">
-    <!-- 头部 -->
-    <AppHeader />
+    <!-- 布局：Header + 中间内容 + Footer -->
+    <AppLayout>
+      <!-- 参数面板 -->
+      <ParamsPanel
+        @calculate="handleCalculate"
+        @distance-chart="handleDistanceChart"
+        @export-data="exportData"
+        @import-data="importData"
+        @reset-data="resetData"
+      />
 
-    <!-- 参数面板 -->
-    <ParamsPanel
-      @calculate="handleCalculate"
-      @distance-chart="handleDistanceChart"
-      @export-data="exportData"
-      @import-data="importData"
-      @reset-data="resetData"
-    />
-
-    <!-- 图表区域 -->
-    <div class="charts-area">
-      <!-- 柱状图（TTK 对比） -->
-      <div class="chart-wrapper">
-        <div class="chart-header">
-          <h3 class="chart-title">📊 TTK 对比</h3>
-          <div class="chart-controls">
-            <label class="display-count-label">
-              <span>显示数量:</span>
-              <input
-                type="number"
-                v-model.number="barDisplayCount"
-                @blur="onBarDisplayCountBlur"
-                @keydown.enter="onDisplayCountEnter"
-                min="0"
-                step="1"
-                class="display-count-input"
-                title="输入 0 或留空表示显示全部"
-              />
-              <span>条</span>
-              <span class="hint">(0 = 全部)</span>
-            </label>
-          </div>
-        </div>
-        <TTKChart
-          :results="appStore.state.ttkResults"
-          :params="paramsStore.state"
-          :display-count="barDisplayCount"
-        />
-      </div>
-
-      <!-- 折线图（距离 - TTK） -->
-      <div class="chart-wrapper">
-        <div class="chart-header">
-          <h3 class="chart-title">📈 距离 - TTK 折线图</h3>
-          <div class="chart-controls">
-            <div class="custom-range">
-              <span class="range-label">自定义:</span>
-              <input
-                type="number"
-                v-model.number="customStart"
-                min="0"
-                max="100"
-                step="1"
-                class="range-input"
-                @keydown.enter="applyCustomRange"
-              />
-              <span class="range-sep">~</span>
-              <input
-                type="number"
-                v-model.number="customEnd"
-                min="0"
-                max="100"
-                step="1"
-                class="range-input"
-                @keydown.enter="applyCustomRange"
-              />
-              <span class="range-unit">m</span>
-              <button
-                class="range-apply-btn"
-                @click="applyCustomRange"
-              >
-                应用
-              </button>
+      <!-- 图表区域 -->
+      <div class="charts-area">
+        <!-- 柱状图（TTK 对比） -->
+        <div class="chart-wrapper">
+          <div class="chart-header">
+            <h3 class="chart-title">📊 TTK 对比</h3>
+            <div class="chart-controls">
+              <label class="display-count-label">
+                <span>显示数量:</span>
+                <input
+                  type="number"
+                  v-model.number="barDisplayCount"
+                  @blur="onBarDisplayCountBlur"
+                  @keydown.enter="onDisplayCountEnter"
+                  min="0"
+                  step="1"
+                  class="display-count-input"
+                  title="输入 0 或留空表示显示全部"
+                />
+                <span>条</span>
+                <span class="hint">(0 = 全部)</span>
+              </label>
             </div>
+          </div>
+          <TTKChart
+            :results="appStore.state.ttkResults"
+            :params="paramsStore.state"
+            :display-count="barDisplayCount"
+          />
+        </div>
 
-            <label class="display-count-label">
-              <span>显示数量:</span>
-              <input
-                type="number"
-                v-model.number="displayCount"
-                @blur="onDisplayCountBlur"
-                @keydown.enter="onDisplayCountEnter"
-                min="0"
-                step="1"
-                class="display-count-input"
-                title="输入 0 或留空表示显示全部"
-              />
-              <span>条</span>
-              <span class="hint">(0 = 全部)</span>
-            </label>
+        <!-- 折线图（距离 - TTK） -->
+        <div class="chart-wrapper">
+          <div class="chart-header">
+            <h3 class="chart-title">📈 距离 - TTK 折线图</h3>
+            <div class="chart-controls">
+              <div class="custom-range">
+                <span class="range-label">自定义:</span>
+                <input
+                  type="number"
+                  v-model.number="customStart"
+                  min="0"
+                  max="100"
+                  step="1"
+                  class="range-input"
+                  @keydown.enter="applyCustomRange"
+                />
+                <span class="range-sep">~</span>
+                <input
+                  type="number"
+                  v-model.number="customEnd"
+                  min="0"
+                  max="100"
+                  step="1"
+                  class="range-input"
+                  @keydown.enter="applyCustomRange"
+                />
+                <span class="range-unit">m</span>
+                <button
+                  class="range-apply-btn"
+                  @click="applyCustomRange"
+                >
+                  应用
+                </button>
+              </div>
+
+              <label class="display-count-label">
+                <span>显示数量:</span>
+                <input
+                  type="number"
+                  v-model.number="displayCount"
+                  @blur="onDisplayCountBlur"
+                  @keydown.enter="onDisplayCountEnter"
+                  min="0"
+                  step="1"
+                  class="display-count-input"
+                  title="输入 0 或留空表示显示全部"
+                />
+                <span>条</span>
+                <span class="hint">(0 = 全部)</span>
+              </label>
+            </div>
+          </div>
+          <DistanceChart
+            :stats="distanceStats"
+            :distances="distances"
+            :highlight-weapon="highlightWeapon"
+            :display-count="displayCount"
+            :segment="segmentProp"
+          />
+        </div>
+      </div>
+
+      <!-- ============ 表格区域 ============ -->
+      <div class="table-section">
+        <div class="table-tabs">
+          <button
+            class="tab-btn"
+            :class="{ active: appStore.state.currentTab === 'weapon' }"
+            @click="switchTab('weapon')"
+          >
+            🔫 枪械数据
+          </button>
+          <button
+            class="tab-btn"
+            :class="{ active: appStore.state.currentTab === 'items' }"
+            @click="switchTab('items')"
+          >
+            🛡️ 弹甲数据
+          </button>
+          <button
+            class="tab-btn"
+            :class="{ active: appStore.state.currentTab === 'rec' }"
+            @click="switchTab('rec')"
+          >
+            🎯 配装推荐
+          </button>
+        </div>
+
+        <div class="tab-content">
+          <!-- 枪械 Tab -->
+          <div
+            id="tab-weapon"
+            v-show="appStore.state.currentTab === 'weapon'"
+            class="tab-pane"
+          >
+            <WeaponTable
+              :data="weaponRows"
+              :muzzle-options="muzzleOptions"
+              :get-barrel-options="getWeaponBarrelOptions"
+              :caliber-options="caliberOptions"
+              @update="onWeaponUpdate"
+              @edit-barrel="openBarrelEditor"
+              @add-weapon="onAddWeapon"
+              @delete-weapon="onDeleteWeapon"
+              @show-damage-detail="onShowDamageDetail"
+              @update-ttk="onUpdateWeaponTTK"
+            />
+          </div>
+
+          <!-- 弹甲 Tab -->
+          <div
+            id="tab-items"
+            v-show="appStore.state.currentTab === 'items'"
+            class="tab-pane"
+          >
+            <ItemsPanel
+              :caliber-options="caliberOptions"
+              @update="onItemsUpdate"
+            />
+          </div>
+
+          <!-- ⭐ 配装推荐 Tab -->
+          <div
+            id="tab-rec"
+            v-show="appStore.state.currentTab === 'rec'"
+            class="tab-pane"
+          >
+            <RecPanel />
           </div>
         </div>
-        <DistanceChart
-          :stats="distanceStats"
-          :distances="distances"
-          :highlight-weapon="highlightWeapon"
-          :display-count="displayCount"
-          :segment="segmentProp"
-        />
       </div>
-    </div>
+    </AppLayout>
 
-    <!-- ============ 表格区域 ============ -->
-    <div class="table-section">
-      <div class="table-tabs">
-        <button
-          class="tab-btn"
-          :class="{ active: appStore.state.currentTab === 'weapon' }"
-          @click="switchTab('weapon')"
-        >
-          🔫 枪械数据
-        </button>
-        <button
-          class="tab-btn"
-          :class="{ active: appStore.state.currentTab === 'items' }"
-          @click="switchTab('items')"
-        >
-          🛡️ 弹甲数据
-        </button>
-        <button
-          class="tab-btn"
-          :class="{ active: appStore.state.currentTab === 'rec' }"
-          @click="switchTab('rec')"
-        >
-          🎯 配装推荐
-        </button>
-      </div>
-
-      <div class="tab-content">
-        <!-- 枪械 Tab -->
-        <div
-          id="tab-weapon"
-          v-show="appStore.state.currentTab === 'weapon'"
-          class="tab-pane"
-        >
-          <WeaponTable
-            :data="weaponRows"
-            :muzzle-options="muzzleOptions"
-            :get-barrel-options="getWeaponBarrelOptions"
-            :caliber-options="caliberOptions"
-            @update="onWeaponUpdate"
-            @edit-barrel="openBarrelEditor"
-            @add-weapon="onAddWeapon"
-            @delete-weapon="onDeleteWeapon"
-            @show-damage-detail="onShowDamageDetail"
-            @update-ttk="onUpdateWeaponTTK"
-          />
-        </div>
-
-        <!-- 弹甲 Tab -->
-        <div
-          id="tab-items"
-          v-show="appStore.state.currentTab === 'items'"
-          class="tab-pane"
-        >
-          <ItemsPanel
-            :caliber-options="caliberOptions"
-            @update="onItemsUpdate"
-          />
-        </div>
-
-        <!-- ⭐ 配装推荐 Tab -->
-        <div
-          id="tab-rec"
-          v-show="appStore.state.currentTab === 'rec'"
-          class="tab-pane"
-        >
-          <RecPanel />
-        </div>
-      </div>
-    </div>
-
-    <!-- 页脚 -->
-    <AppFooter />
+    <!-- ============ 弹窗（在 AppLayout 外，保持解耦） ============ -->
 
     <!-- 枪管编辑器弹窗 -->
     <BarrelEditor
@@ -242,17 +241,14 @@
 
 <script setup>
 import { ref, computed, onMounted, provide } from 'vue'
-import { dataStore } from '@/stores/dataStore'
-import { paramsStore } from '@/stores/paramsStore'
-import { appStore } from '@/stores/appStore'
+import { dataStore, paramsStore, appStore } from '@/stores/stores'
 import { SimulationEngine } from '@/core/SimulationEngine'
 import { computeKeyPoints } from '@/core/KeyPointsComputer'
 
 import { calculateCurrentValues } from '@/utils/weaponCalc'
 
 // 导入组件
-import AppHeader from '@/components/AppHeader.vue'
-import AppFooter from '@/components/AppFooter.vue'
+import AppLayout from '@/components/AppLayout.vue'
 import ParamsPanel from '@/components/ParamsPanel.vue'
 import TTKChart from '@/components/TTKChart.vue'
 import DistanceChart from '@/components/DistanceChart.vue'
@@ -847,7 +843,7 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
 
 /**
  * ⭐ 辅助：从 ttkCache 读取某配置的 keyPoints
- * 
+ *
  * @param {number} weaponId
  * @param {Object} config - 原始 config 对象
  * @param {Object} params - 战斗参数

@@ -150,7 +150,7 @@
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue'
-import { dataStore } from '@/stores/dataStore'
+import { dataStore } from '@/stores/stores'
 
 const props = defineProps({
   visible: {

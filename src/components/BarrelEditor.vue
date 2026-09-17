@@ -148,7 +148,7 @@
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue'
-import { dataStore } from '@/stores/dataStore'
+import { dataStore } from '@/stores/stores'
 
 const props = defineProps({
   visible: {
@@ -226,7 +226,7 @@ const parsePartMultAdd = (str) => {
 
 /**
  * 将 rofStages 数组转为显示字符串
- * 
+ *
  * 输入：[{ untilShot: 3, rofAdd: 100 }, { rofAdd: 0 }]
  * 输出："3:+100"
  */
@@ -641,21 +641,21 @@ const close = () => {
     width: 98vw;
     max-width: 98vw;
   }
-  
+
   .barrel-table {
     min-width: 1200px;
     font-size: var(--font-size-xs);
   }
-  
+
   .barrel-table thead th {
     font-size: 9px;
     padding: 3px 3px;
   }
-  
+
   .barrel-table tbody td {
     padding: 1px 2px;
   }
-  
+
   .cell-input,
   .cell-select {
     font-size: 10px;

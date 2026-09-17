@@ -174,8 +174,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { paramsStore } from '@/stores/paramsStore'
-import { appStore } from '@/stores/appStore'
+import { paramsStore, appStore } from '@/stores/stores'
 
 const emit = defineEmits(['calculate', 'distance-chart', 'export-data', 'import-data', 'reset-data'])
 

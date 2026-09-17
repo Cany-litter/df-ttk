@@ -221,7 +221,7 @@
     </div>
 
     <!-- ============================================================ -->
-    <!-- Top 3 卡片 -->
+    <!-- Top 3 卡片（原 RecCard 内联） -->
     <!-- ============================================================ -->
     <template v-if="recommendations && recommendations.topN.length > 0">
       <div class="section-title">
@@ -230,16 +230,115 @@
       </div>
 
       <div class="top3-grid">
-        <RecCard
+        <div
           v-for="rec in recommendations.topN"
           :key="rec.rank"
-          :rec="rec"
-        />
+          class="top3-card"
+          :class="`rank-${rec.rank}`"
+        >
+          <!-- 头部 -->
+          <div class="top3-header">
+            <div class="rank-label">
+              <span class="rank-num">{{ rankIcon(rec.rank) }}</span>
+              <span>推荐 #{{ rec.rank }}</span>
+            </div>
+            <span class="ratio-score">比值 {{ formatRatio(rec.ratio) }}</span>
+          </div>
+
+          <!-- 主体 -->
+          <div class="top3-body">
+            <!-- 装备 4 件套 -->
+            <div class="gear-row">
+              <span class="gear-icon">🔫</span>
+              <span class="gear-label">武器</span>
+              <span class="gear-value" :title="weaponLabel(rec)">
+                {{ weaponLabel(rec) }}
+              </span>
+              <span class="gear-price">{{ formatPrice(rec.gear.weapon.price) }}</span>
+            </div>
+
+            <div class="gear-row">
+              <span class="gear-icon">💊</span>
+              <span class="gear-label">子弹</span>
+              <span class="gear-value" :title="bulletLabel(rec)">
+                {{ bulletLabel(rec) }}
+              </span>
+              <span class="gear-price">{{ formatBulletPrice(rec.gear.bullet.price) }}/发</span>
+            </div>
+
+            <div class="gear-row">
+              <span class="gear-icon">🦺</span>
+              <span class="gear-label">护甲</span>
+              <span class="gear-value" :title="armorLabel(rec)">
+                {{ armorLabel(rec) }}
+              </span>
+              <span class="gear-price">{{ formatPrice(rec.gear.armor.price) }}</span>
+            </div>
+
+            <div class="gear-row">
+              <span class="gear-icon">⛑️</span>
+              <span class="gear-label">头盔</span>
+              <span class="gear-value" :title="helmetLabel(rec)">
+                {{ helmetLabel(rec) }}
+              </span>
+              <span class="gear-price">{{ formatPrice(rec.gear.helmet.price) }}</span>
+            </div>
+
+            <!-- 对敌明细 -->
+            <div class="enemy-ttk-detail">
+              <div class="enemy-ttk-detail-title">对敌明细</div>
+              <div
+                v-for="(e, idx) in rec.perEnemy"
+                :key="idx"
+                class="enemy-ttk-row"
+              >
+                <span class="enemy-name" :title="e.name">
+                  vs {{ e.name }}
+                </span>
+                <div class="ttk-pair">
+                  <span class="ttk-item">
+                    <span class="k">攻</span>
+                    <span class="v attack">{{ formatTTK(e.attackTTK) }}</span>
+                  </span>
+                  <span class="ttk-item">
+                    <span class="k">守</span>
+                    <span class="v defense">{{ formatTTK(e.defenseTTK) }}</span>
+                  </span>
+                </div>
+                <span class="ratio" :class="ratioClass(e.ratio)">
+                  {{ formatRatio(e.ratio) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- 指标行 -->
+            <div class="metrics-row">
+              <div class="metric">
+                <div class="metric-label">综合比值</div>
+                <div class="metric-value ratio" :class="ratioClass(rec.ratio)">
+                  {{ formatRatio(rec.ratio) }}
+                </div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">进攻TTK</div>
+                <div class="metric-value">
+                  {{ formatTTK(primaryAttackTTK(rec)) }}<small>ms</small>
+                </div>
+              </div>
+              <div class="metric">
+                <div class="metric-label">单局消耗</div>
+                <div class="metric-value" :class="costClass(rec.cost.totalW)">
+                  {{ rec.cost.totalW.toFixed(1) }}<small>W</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </template>
 
     <!-- ============================================================ -->
-    <!-- 第 4~10 名表格 -->
+    <!-- 第 4~10 名表格（原 RecTable 内联） -->
     <!-- ============================================================ -->
     <template v-if="recommendations && recommendations.rest.length > 0">
       <div class="section-title">
@@ -247,7 +346,78 @@
         <span class="badge">{{ recommendations.rest.length }} 套 · 按对敌比值排序</span>
       </div>
 
-      <RecTable :recs="recommendations.rest" />
+      <div class="topn-table-wrapper">
+        <table class="topn-table">
+          <thead>
+            <tr>
+              <th class="col-rank">排名</th>
+              <th class="col-weapon">武器配置</th>
+              <th class="col-bullet">子弹</th>
+              <th class="col-armor">护甲</th>
+              <th class="col-helmet">头盔</th>
+              <th class="col-num">进攻TTK</th>
+              <th class="col-num">生存TTK</th>
+              <th class="col-num">对敌比值</th>
+              <th class="col-num">单局消耗</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(rec, idx) in recommendations.rest" :key="rec.rank || idx">
+              <!-- 排名 -->
+              <td class="rank-cell">
+                <span class="rank-badge">{{ rec.rank }}</span>
+              </td>
+
+              <!-- 武器配置 -->
+              <td class="weapon-cell" :title="weaponLabel(rec)">
+                {{ weaponLabel(rec) }}
+              </td>
+
+              <!-- 子弹 -->
+              <td class="bullet-cell" :title="bulletLabel(rec)">
+                {{ bulletLabel(rec) }}
+              </td>
+
+              <!-- 护甲 -->
+              <td class="armor-cell" :title="armorLabel(rec)">
+                {{ armorLabel(rec) }}
+              </td>
+
+              <!-- 头盔 -->
+              <td class="armor-cell" :title="helmetLabel(rec)">
+                {{ helmetLabel(rec) }}
+              </td>
+
+              <!-- 进攻 TTK -->
+              <td class="num-cell ttk-attack">
+                {{ formatTTK(primaryAttackTTK(rec)) }} ms
+              </td>
+
+              <!-- 生存 TTK -->
+              <td class="num-cell ttk-defense">
+                {{ formatTTK(primaryDefenseTTK(rec)) }} ms
+              </td>
+
+              <!-- 对敌比值 -->
+              <td
+                class="num-cell ratio"
+                :class="ratioClass(rec.ratio)"
+                :title="ratioTooltip(rec)"
+              >
+                {{ formatRatio(rec.ratio) }}
+              </td>
+
+              <!-- 单局消耗 -->
+              <td
+                class="num-cell cost"
+                :class="costClass(rec.cost?.totalW)"
+              >
+                {{ formatCost(rec.cost?.totalW) }} W
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </template>
 
     <!-- ============================================================ -->
@@ -299,10 +469,7 @@
 
 <script setup>
 import { ref, computed, onMounted, inject, nextTick } from 'vue'
-import { dataStore } from '@/stores/dataStore'
-import { paramsStore } from '@/stores/paramsStore'
-import RecCard from './RecCard.vue'
-import RecTable from './RecTable.vue'
+import { dataStore, paramsStore } from '@/stores/stores'
 
 // ⭐ 注入通用弹窗
 const showAlert = inject('showAlert', null)
@@ -494,6 +661,139 @@ const championGearText = computed(() => {
 })
 
 // ============================================================
+// ⭐ 装备标签辅助（原 RecCard / RecTable 合并去重）
+// ============================================================
+
+const weaponLabel = (rec) => {
+  const w = rec?.gear?.weapon
+  if (!w) return '-'
+  const cfg = w.configId || ''
+  return `${w.name} ${cfg}`.trim()
+}
+
+const bulletLabel = (rec) => {
+  const b = rec?.gear?.bullet
+  if (!b) return '-'
+  const parts = []
+  if (b.name) parts.push(b.name)
+  if (b.level !== undefined && b.level !== null) parts.push(`Lv.${b.level}`)
+  return parts.join(' ') || '-'
+}
+
+const armorLabel = (rec) => {
+  const a = rec?.gear?.armor
+  if (!a) return '-'
+  return `${a.name} Lv.${a.level}（${a.value}）`
+}
+
+const helmetLabel = (rec) => {
+  const h = rec?.gear?.helmet
+  if (!h) return '-'
+  return `${h.name} Lv.${h.level}（${h.value}）`
+}
+
+/**
+ * 排名图标
+ */
+const rankIcon = (rank) => {
+  switch (rank) {
+    case 1: return '🥇'
+    case 2: return '🥈'
+    case 3: return '🥉'
+    default: return '🏅'
+  }
+}
+
+/**
+ * 取第一个敌人的进攻 TTK
+ */
+const primaryAttackTTK = (rec) => {
+  const arr = rec?.perEnemy
+  if (!arr || arr.length === 0) return 0
+  return arr[0].attackTTK || 0
+}
+
+/**
+ * 取第一个敌人的生存 TTK
+ */
+const primaryDefenseTTK = (rec) => {
+  const arr = rec?.perEnemy
+  if (!arr || arr.length === 0) return 0
+  return arr[0].defenseTTK || 0
+}
+
+/**
+ * 多敌人时的 tooltip（显示每个敌人的比值）
+ */
+const ratioTooltip = (rec) => {
+  const arr = rec?.perEnemy
+  if (!arr || arr.length === 0) return ''
+  if (arr.length === 1) return ''
+  return arr.map(e => `${e.name}: ${formatRatio(e.ratio)}`).join('\n')
+}
+
+// ============================================================
+// ⭐ 格式化辅助（原 RecCard / RecTable 合并去重）
+// ============================================================
+
+const formatRatio = (v) => {
+  if (v === undefined || v === null || !isFinite(v)) return '-'
+  return v.toFixed(2)
+}
+
+const formatTTK = (v) => {
+  if (v === undefined || v === null || !isFinite(v)) return '-'
+  return Math.round(v)
+}
+
+const formatCost = (v) => {
+  if (v === undefined || v === null || !isFinite(v)) return '-'
+  return v.toFixed(1)
+}
+
+const formatPrice = (v) => {
+  if (v === undefined || v === null || !isFinite(v) || v <= 0) return '-'
+  if (v >= 10000) return `¥${(v / 10000).toFixed(1)}W`
+  return `¥${Math.round(v)}`
+}
+
+const formatBulletPrice = (v) => {
+  if (v === undefined || v === null || !isFinite(v) || v <= 0) return '-'
+  if (v >= 1000) return `¥${(v / 1000).toFixed(1)}k`
+  return `¥${Math.round(v)}`
+}
+
+// ============================================================
+// ⭐ 颜色分档（原 RecCard / RecTable 合并去重）
+// ============================================================
+
+/**
+ * 比值颜色：
+ *   >= 1.0  绿色（有优势）
+ *   0.9~1.0 橙色（接近）
+ *   < 0.9   红色（劣势）
+ */
+const ratioClass = (v) => {
+  if (v === undefined || v === null || !isFinite(v)) return ''
+  if (v >= 1.0) return 'ratio-good'
+  if (v >= 0.9) return 'ratio-warn'
+  return 'ratio-bad'
+}
+
+/**
+ * 成本颜色：
+ *   <= 30W  绿色
+ *   <= 60W  橙色
+ *   > 60W   红色
+ */
+const costClass = (totalW) => {
+  if (totalW === undefined || totalW === null || !isFinite(totalW)) return ''
+  if (totalW <= 30) return 'cost-good'
+  if (totalW <= 60) return 'cost-warn'
+  return 'cost-bad'
+}
+
+// ============================================================
 // 推荐主流程
 // ============================================================
 
@@ -534,7 +834,7 @@ const buildEngineParams = () => {
 
 /**
  * 开始推荐
- * 
+ *
  * ⭐ 缓存策略：
  * - 不再每次推荐前 clearAll()，让 ttkCache 跨推荐复用
  * - 第一次推荐：全量计算（约 50 秒）
@@ -543,7 +843,7 @@ const buildEngineParams = () => {
  * - 改假想敌护甲：攻击侧重算、防御侧命中
  * - 改假想敌武器：攻击侧命中、防御侧重算
  * - 改场景参数（命中率/扳机/生命值）：全部重算
- * 
+ *
  * ⭐ 清空缓存的时机：
  * - 点「重置数据」时（App.vue 的 resetData 里处理）
  * - 手动调 window.__ttkCacheManager.clearAll()
@@ -1293,6 +1593,399 @@ onMounted(() => {
 }
 
 /* ============================================================
+   ⭐ Top3 卡片样式（原 RecCard.vue 内联）
+   ============================================================ */
+
+.top3-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 2px solid transparent;
+  overflow: hidden;
+  transition: all 0.15s;
+}
+
+.top3-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.top3-card.rank-1 { border-color: #ffc107; }
+.top3-card.rank-2 { border-color: #9e9e9e; }
+.top3-card.rank-3 { border-color: #cd7f32; }
+
+/* ---------- 头部 ---------- */
+.top3-header {
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.top3-card.rank-1 .top3-header {
+  background: linear-gradient(135deg, #ffc107, #ffd54f);
+  color: #7a5c00;
+}
+.top3-card.rank-2 .top3-header {
+  background: linear-gradient(135deg, #9e9e9e, #bdbdbd);
+}
+.top3-card.rank-3 .top3-header {
+  background: linear-gradient(135deg, #cd7f32, #d4a373);
+}
+
+.top3-header .rank-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.top3-header .rank-num {
+  font-size: 16px;
+}
+
+.top3-header .ratio-score {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+
+.top3-card.rank-1 .top3-header .ratio-score {
+  color: #7a5c00;
+}
+
+/* ---------- 主体 ---------- */
+.top3-body {
+  padding: 12px 14px;
+}
+
+/* ---------- 装备行 ---------- */
+.gear-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px dashed #f0f0f0;
+  font-size: 12px;
+}
+
+.gear-row:last-child {
+  border-bottom: none;
+}
+
+.gear-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.gear-label {
+  color: #888;
+  font-size: 11px;
+  flex-shrink: 0;
+  width: 36px;
+}
+
+.gear-value {
+  flex: 1;
+  font-weight: 500;
+  color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gear-price {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #e67e22;
+  flex-shrink: 0;
+}
+
+/* ---------- 对敌明细 ---------- */
+.enemy-ttk-detail {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.enemy-ttk-detail-title {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+.enemy-ttk-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 6px;
+  background: #fafbfd;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.enemy-ttk-row .enemy-name {
+  color: #555;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.enemy-ttk-row .ttk-pair {
+  display: flex;
+  gap: 6px;
+}
+
+.enemy-ttk-row .ttk-item {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.enemy-ttk-row .ttk-item .k {
+  font-family: var(--font-family);
+  font-size: 9px;
+  font-weight: 400;
+  color: #999;
+}
+
+.enemy-ttk-row .ttk-item .v.attack { color: #f44336; }
+.enemy-ttk-row .ttk-item .v.defense { color: #4caf50; }
+
+.enemy-ttk-row .ratio {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
+  padding: 1px 6px;
+  background: #eef2ff;
+  border-radius: 3px;
+}
+
+/* 比值颜色（对敌明细里的小标签） */
+.enemy-ttk-row .ratio.ratio-good {
+  color: #4caf50;
+  background: #e8f5e9;
+}
+.enemy-ttk-row .ratio.ratio-warn {
+  color: #ff9800;
+  background: #fff3e0;
+}
+.enemy-ttk-row .ratio.ratio-bad {
+  color: #f44336;
+  background: #ffebee;
+}
+
+/* ---------- 指标行 ---------- */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.metric {
+  text-align: center;
+  padding: 6px 4px;
+  background: #fafbfd;
+  border-radius: 6px;
+  border: 1px solid #eef0f3;
+}
+
+.metric-label {
+  font-size: 10px;
+  color: #999;
+  margin-bottom: 2px;
+}
+
+.metric-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.metric-value small {
+  font-size: 10px;
+  font-weight: 400;
+  color: #888;
+  margin-left: 2px;
+}
+
+.metric-value.ratio {
+  color: var(--color-primary);
+}
+
+.metric-value.ratio.ratio-good { color: #4caf50; }
+.metric-value.ratio.ratio-warn { color: #ff9800; }
+.metric-value.ratio.ratio-bad  { color: #f44336; }
+
+.metric-value.cost-good { color: #4caf50; }
+.metric-value.cost-warn { color: #ff9800; }
+.metric-value.cost-bad  { color: #f44336; }
+
+/* ============================================================
+   ⭐ 第 4~10 名表格样式（原 RecTable.vue 内联）
+   ============================================================ */
+
+.topn-table-wrapper {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px 18px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  border: 1px solid #ddd;
+  overflow-x: auto;
+}
+
+.topn-table-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.topn-table-wrapper::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 3px;
+}
+
+.topn-table-wrapper::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.topn-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+.topn-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 1100px;
+}
+
+.topn-table thead th {
+  background: #f0f4f8;
+  padding: 8px 10px;
+  border: 1px solid #e0e0e0;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topn-table tbody td {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border-light);
+  vertical-align: middle;
+}
+
+.topn-table tbody tr:hover {
+  background: #f8faff;
+}
+
+/* ---------- 列宽 ---------- */
+.col-rank { width: 50px; }
+.col-weapon { min-width: 140px; }
+.col-bullet { min-width: 140px; }
+.col-armor { min-width: 130px; }
+.col-helmet { min-width: 130px; }
+.col-num { text-align: right !important; min-width: 90px; }
+
+/* ---------- 单元格样式 ---------- */
+.rank-cell {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--color-primary);
+  text-align: center;
+  width: 40px;
+}
+
+.rank-cell .rank-badge {
+  display: inline-block;
+  min-width: 22px;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 4px;
+  background: #eef2ff;
+  color: var(--color-primary);
+  border-radius: 11px;
+  font-size: 11px;
+}
+
+.weapon-cell {
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.bullet-cell {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.armor-cell {
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.num-cell {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.num-cell.ttk-attack { color: #f44336; }
+.num-cell.ttk-defense { color: #4caf50; }
+.num-cell.cost { color: #e67e22; }
+
+.num-cell.ratio {
+  color: var(--color-primary);
+  font-weight: 700;
+  cursor: help;
+}
+
+.num-cell.ratio.ratio-good { color: #4caf50; }
+.num-cell.ratio.ratio-warn { color: #ff9800; }
+.num-cell.ratio.ratio-bad  { color: #f44336; }
+
+.num-cell.cost.cost-good { color: #4caf50; }
+.num-cell.cost.cost-warn { color: #ff9800; }
+.num-cell.cost.cost-bad  { color: #f44336; }
+
+/* ============================================================
    移动端适配
    ============================================================ */
 
@@ -1377,6 +2070,109 @@ onMounted(() => {
     padding: 20px 24px;
     min-width: 280px;
     max-width: 90vw;
+  }
+
+  /* ⭐ Top3 卡片移动端 */
+  .top3-header {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .top3-header .rank-num {
+    font-size: 14px;
+  }
+
+  .top3-header .ratio-score {
+    font-size: 12px;
+    padding: 1px 8px;
+  }
+
+  .top3-body {
+    padding: 10px 12px;
+  }
+
+  .gear-row {
+    font-size: 11px;
+    gap: 6px;
+    padding: 4px 0;
+  }
+
+  .gear-icon {
+    font-size: 14px;
+    width: 18px;
+  }
+
+  .gear-label {
+    font-size: 10px;
+    width: 32px;
+  }
+
+  .gear-price {
+    font-size: 10px;
+  }
+
+  .enemy-ttk-row {
+    font-size: 10px;
+    padding: 4px 5px;
+    gap: 6px;
+  }
+
+  .enemy-ttk-row .ttk-item {
+    font-size: 10px;
+  }
+
+  .enemy-ttk-row .ratio {
+    font-size: 11px;
+    padding: 1px 5px;
+  }
+
+  .metric {
+    padding: 4px 2px;
+  }
+
+  .metric-label {
+    font-size: 9px;
+  }
+
+  .metric-value {
+    font-size: 12px;
+  }
+
+  .metric-value small {
+    font-size: 9px;
+  }
+
+  /* ⭐ 表格移动端 */
+  .topn-table-wrapper {
+    padding: 10px 12px;
+  }
+
+  .topn-table {
+    font-size: 11px;
+    min-width: 900px;
+  }
+
+  .topn-table thead th {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .topn-table tbody td {
+    padding: 4px 6px;
+  }
+
+  .col-rank { width: 40px; }
+  .col-weapon { min-width: 110px; }
+  .col-bullet { min-width: 110px; }
+  .col-armor { min-width: 100px; }
+  .col-helmet { min-width: 100px; }
+  .col-num { min-width: 75px; }
+
+  .rank-cell .rank-badge {
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    font-size: 10px;
   }
 }
 </style>

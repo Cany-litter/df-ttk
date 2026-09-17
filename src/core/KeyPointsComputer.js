@@ -1,21 +1,22 @@
+// src/core/KeyPointsComputer.js
 /**
  * KeyPoints 计算器（统一缓存入口）
- * 
+ *
  * 职责：
  * 1. 根据 (武器+附件, 子弹, 甲头, 场景) 生成四层缓存 key
  * 2. 查 ttkCache，命中则直接返回
  * 3. 未命中则调 SimulationEngine 计算 keyPoints，并写入 ttkCache
  * 4. 返回 { keyPoints, avgBurstInterval, fromCache }
- * 
+ *
  * 不负责：
  * - 缓存的管理（由 TtkCacheManager 负责）
  * - 数据查询（由 DataManager 负责）
  * - UI（由组件负责）
- * 
+ *
  * ⭐ 被谁调用：
  * - App.vue 的 handleCalculate / handleDistanceChart / updateSingleWeaponTTK
  * - RecEngine 的 _computeAttackTTKs / _computeDefenseTTKs
- * 
+ *
  * ⭐ 统一缓存后：
  * - 所有"算 keyPoints"的地方都走这里
  * - 只有这里读写 ttkCache
@@ -23,17 +24,16 @@
  */
 
 import { SimulationEngine } from './SimulationEngine.js';
-import { BulletStrategyFactory } from './BulletStrategy.js';
-import { CHART_CONFIG, SIMULATION_CONFIG } from './config.js';
+import { BulletStrategyFactory, CHART_CONFIG, SIMULATION_CONFIG } from './CombatCore.js';
 
 /**
  * 生成关键距离点
- * 
+ *
  * 规则：
  * - 起点 0m
  * - 各射程分段点（r1 / r2 / r3 / r4）及其前 1m（r-1）
  * - 终点 100m
- * 
+ *
  * @param {Array} ranges - 武器射程数组（含 Infinity）
  * @param {number} maxDistance - 最大距离（默认 100）
  * @returns {Array<number>} 排序去重后的关键距离
@@ -62,12 +62,12 @@ export function getKeyDistances(ranges, maxDistance = 100) {
 
 /**
  * 计算某武器配置 + 子弹 + 甲头 + 场景下的 keyPoints
- * 
+ *
  * ⭐ 缓存策略：
  * - 先查 ttkCache
  * - 命中 → 直接返回
  * - 未命中 → 计算 → 写入 ttkCache → 返回
- * 
+ *
  * @param {Object} options
  * @param {Object} options.armedWeapon - 应用附件后的武器对象（含 _current）
  * @param {Object} options.attachment - 附件信息 { weaponId, configId, barrelIndex, muzzleIndex, precision, bulletType, hitRateMap }

@@ -65,8 +65,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { dataStore } from '@/stores/dataStore'
-import { appStore } from '@/stores/appStore'
+import { dataStore, appStore } from '@/stores/stores'
 import BulletTable from '@/components/BulletTable.vue'
 import ArmorTable from '@/components/ArmorTable.vue'
 

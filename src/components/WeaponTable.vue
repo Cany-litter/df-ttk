@@ -11,6 +11,7 @@
       <button class="btn-sm btn-danger" @click="disableAllConfigs">❌ 全部禁用</button>
       <span class="control-hint">（新增后在卡片内填写数据，点击"确认"保存）</span>
       <span class="count-badge">共 {{ data.length }} 把武器</span>
+      <span class="count-badge">配置启用 {{ globalEnabledConfigCount }}/{{ globalConfigCount }}</span>
     </div>
 
     <!-- ============================================================ -->
@@ -226,7 +227,7 @@
               </template>
             </button>
 
-            <button class="head-btn add" @click="addConfig(row)">➕ 新增配置 ({{ row._enabledCount }}/{{ row._configCount }})</button>
+            <button class="head-btn add" @click="addConfig(row)">➕ 新增配置</button>
             <button class="head-btn base" @click="editBase(index)">编辑属性</button>
             <button class="head-btn barrel" @click="editBarrel(index)">编辑枪管</button>
             <button class="head-btn del" @click="deleteWeapon(index)">删除</button>
@@ -765,9 +766,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, inject } from 'vue'
-import { dataStore } from '@/stores/dataStore'
-import { appStore } from '@/stores/appStore'
-import { paramsStore } from '@/stores/paramsStore'
+import { dataStore, appStore, paramsStore } from '@/stores/stores'
 import { calculateCurrentValues } from '@/utils/weaponCalc'
 
 const props = defineProps({
@@ -962,10 +961,10 @@ const fmtPrice = (v) => v >= 10000 ? `¥${(v / 10000).toFixed(1)}W` : `¥${v}`
 
 /**
  * ⭐ 倍率格式化（去掉浮点长尾小数）
- * 
+ *
  * 修复前：0.8999999999999999
  * 修复后：0.9
- * 
+ *
  * 逻辑：
  * - 非数字 / 非有限值 → 原样返回
  * - 其他 → 保留 2 位小数（去掉末尾多余的 0）
@@ -1187,6 +1186,36 @@ const rowsWithCurrent = computed(() => {
       _isNewRow: false
     }
   })
+})
+
+// ============================================================
+// ⭐ 全局配置统计（所有武器的配置启用数 / 总数）
+// ============================================================
+
+const globalConfigCount = computed(() => {
+  const prices = dataStore.state.prices || []
+  let total = 0
+  for (const price of prices) {
+    if (Array.isArray(price.configs)) {
+      total += price.configs.length
+    }
+  }
+  return total
+})
+
+const globalEnabledConfigCount = computed(() => {
+  const prices = dataStore.state.prices || []
+  let enabled = 0
+  for (const price of prices) {
+    if (Array.isArray(price.configs)) {
+      for (const config of price.configs) {
+        if (config.enabled !== false) {
+          enabled++
+        }
+      }
+    }
+  }
+  return enabled
 })
 
 // ============================================================
@@ -1557,11 +1586,19 @@ const cancelAdd = (index) => {
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   color: #666;
-  margin-left: auto;
   background: var(--color-secondary);
   padding: 0 8px;
   border-radius: 10px;
   font-weight: var(--font-weight-medium);
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  white-space: nowrap;
+}
+
+/* ⭐ 紧跟在 control-hint 后面的第一个 count-badge 推到右边 */
+.control-hint + .count-badge {
+  margin-left: auto;
 }
 
 .toolbar-divider {
@@ -1614,7 +1651,7 @@ const cancelAdd = (index) => {
 
 /* ============================================================
    ⭐ 武器头 Grid（名称 -20，衰减 +30）
-   
+
    列顺序：
      [折叠] [名称] [类型] [口径] [枪管] [枪口] [精校] [射速] [初速] [肉伤] [甲伤] [射程] [衰减] [倍率] [伤害]
    ============================================================ */
