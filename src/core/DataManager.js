@@ -42,6 +42,7 @@
  * ⭐ 缓存（v2 → 已删除）：
  * - 旧版 ttkCache 已废弃，改用 IndexedDB（见 TTKIndexedDB.js）
  * - TTK 矩阵由 TTKMatrix.js 管理，不走 DataManager
+ * - ⭐ 导出/导入不再包含"是否包含缓存"的选项（缓存已与 data.json 解耦）
  *
  * ⭐ 已删除的旧 API：
  * - setCacheManager / getCacheManager
@@ -1521,7 +1522,16 @@ export class DataManager {
   // 13. 数据导出/导入
   // ============================================================
 
-  exportToJSON(includeCache = true) {
+  /**
+   * ⭐ 导出为 JSON 字符串
+   *
+   * 注：不再有"是否包含缓存"的参数。
+   *     缓存存在 IndexedDB（见 TTKIndexedDB.js），
+   *     跟 data.json 完全解耦，导出时不涉及。
+   *
+   * @returns {string} JSON 字符串
+   */
+  exportToJSON() {
     try {
       const dataToExport = JSON.parse(JSON.stringify(this.data));
 
@@ -1539,9 +1549,6 @@ export class DataManager {
       }
 
       this._sortPricesForExport(dataToExport.prices, weaponsMap);
-
-      // ⭐ includeCache 参数保留兼容，但不再有 ttkCache
-      void includeCache;
 
       const serialized = this.serializeData(dataToExport);
 
@@ -1582,8 +1589,13 @@ export class DataManager {
     );
   }
 
-  exportToFile(filename = null, includeCache = true) {
-    const jsonStr = this.exportToJSON(includeCache);
+  /**
+   * ⭐ 导出为文件
+   *
+   * @param {string} [filename=null] - 文件名，默认 ttk_data_YYYY-MM-DD.json
+   */
+  exportToFile(filename = null) {
+    const jsonStr = this.exportToJSON();
     const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
 

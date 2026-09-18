@@ -1,25 +1,30 @@
 ﻿<!-- src/App.vue -->
 <!--
-  ⚠️ 维护提示：本文件有 3 处"101 距离点循环"，逻辑相似但用途不同：
+  ⚠️ 维护提示：本文件有 3 处"距离点循环"，逻辑相似但用途不同：
 
     1. handleCalculate() 里的循环
        - 只算 1 个距离点（params.distance）
        - 用于主表格的 TTK 结果
 
     2. handleDistanceChart() → buildDistanceStats()
-       - 算 101 个距离点
+       - ⭐ 改为「关键点 + 插值」（端点 / 命中率节点 / 射程衰减节点）
        - 用于折线图 + 评分（weightedAvg）
 
     3. computeHavocCosts()
-       - 算 101 个距离点
+       - ⭐ 改为「关键点」
        - 用于哈弗币消耗（avgShots）
 
     4. onUpdateWeaponTTK() → updateSingleWeaponTTK()
-       - 算 101 个距离点
+       - ⭐ 改为「关键点 + 插值」
        - 单枪更新时替代 1+2+3（局部刷新）
 
-  三处都调 computeSingleTTK()，公式一致。改 TTK 分解 / 哈弗币公式时，
-  记得同步这几处（或考虑抽公共函数）。
+  ⭐ 关键点算法（getKeyDistances）：
+    - 端点：0 / 100
+    - 命中率节点：config.distance[i] ± 1
+    - 射程衰减节点：weapon.ranges[i] ± 1（有限值）
+
+  ⭐ 插值（interpolateKeyPoints）：
+    - 关键点之间用线性插值，生成 101 个点
 -->
 <template>
   <div id="app">
@@ -314,6 +319,145 @@ const segmentProp = computed(() => ({
   start: customStart.value,
   end: customEnd.value
 }))
+
+// ============================================================
+// ⭐ 关键点插值工具
+// ============================================================
+
+/**
+ * 生成关键距离点
+ *
+ * 包含：
+ * - 端点：0, MAX
+ * - 命中率节点：config.distance 每个点 ±1
+ * - 射程衰减节点：weapon.ranges 每个有限值 ±1
+ *
+ * @param {Object} weapon - 已应用附件的武器（含 ranges）
+ * @param {Object} config - 价格配置（含 distance / hitRate）
+ * @param {number} maxDistance - 最大距离（默认 100）
+ * @returns {Array<number>} 升序去重的关键距离点
+ */
+const getKeyDistances = (weapon, config, maxDistance = 100) => {
+  const points = new Set([0, maxDistance])
+
+  // ---------- 命中率节点 ----------
+  const configDistances = config?.distance
+  if (Array.isArray(configDistances)) {
+    for (const d of configDistances) {
+      if (typeof d === 'number' && isFinite(d) && d > 0 && d < maxDistance) {
+        points.add(Math.max(0, d - 1))
+        points.add(d)
+        points.add(Math.min(maxDistance, d + 1))
+      }
+    }
+  }
+
+  // ---------- 射程衰减节点 ----------
+  const ranges = weapon?.ranges || weapon?._current?.ranges
+  if (Array.isArray(ranges)) {
+    for (const r of ranges) {
+      if (typeof r === 'number' && isFinite(r) && r > 0 && r < maxDistance) {
+        points.add(Math.max(0, r - 1))
+        points.add(r)
+        points.add(Math.min(maxDistance, r + 1))
+      }
+    }
+  }
+
+  return Array.from(points).sort((a, b) => a - b)
+}
+
+/**
+ * 线性插值（关键点 → 全量距离点）
+ *
+ * @param {Array<{d: number, ttk: number, shots: number}>} keyPoints - 关键点（d 升序）
+ * @param {Array<number>} fullDistances - 全量距离（如 0~100）
+ * @returns {Array<{ttk: number, shots: number}>}
+ */
+const interpolateKeyPoints = (keyPoints, fullDistances) => {
+  if (!keyPoints || keyPoints.length === 0) {
+    return fullDistances.map(() => ({ ttk: 0, shots: 0 }))
+  }
+
+  // 单点：直接用该点的值
+  if (keyPoints.length === 1) {
+    const p = keyPoints[0]
+    return fullDistances.map(() => ({ ttk: p.ttk, shots: p.shots }))
+  }
+
+  const result = []
+  let kpIdx = 0
+
+  for (const d of fullDistances) {
+    // 找到 d 所在的关键点区间
+    while (kpIdx < keyPoints.length - 1 && keyPoints[kpIdx + 1].d < d) {
+      kpIdx++
+    }
+
+    const p1 = keyPoints[kpIdx]
+    const p2 = keyPoints[kpIdx + 1] || p1
+
+    if (d === p1.d) {
+      result.push({ ttk: p1.ttk, shots: p1.shots })
+    } else if (p1.d === p2.d) {
+      // 边界情况（两个关键点 d 相同）
+      result.push({ ttk: p1.ttk, shots: p1.shots })
+    } else {
+      // 线性插值
+      const t = (d - p1.d) / (p2.d - p1.d)
+      result.push({
+        ttk: p1.ttk + t * (p2.ttk - p1.ttk),
+        shots: p1.shots + t * (p2.shots - p1.shots),
+      })
+    }
+  }
+
+  return result
+}
+
+/**
+ * ⭐ 统一封装：给一个武器 + 配置，算关键点 + 插值
+ *
+ * @param {Object} weapon - 已应用附件的武器
+ * @param {Object} attachment - { bulletType, hitRateMap, configId, ... }
+ * @param {Object} config - 价格配置（含 distance / hitRate）
+ * @param {Object} params - 全局参数
+ * @param {DataManager} dm
+ * @param {Array<number>} fullDistances - 全量距离
+ * @returns {Promise<{ times: Array<number>, shots: Array<number>, anySuccess: boolean }>}
+ */
+const computeDistanceSeries = async (weapon, attachment, config, params, dm, fullDistances) => {
+  const keyDistances = getKeyDistances(weapon, config)
+
+  // ---------- 算关键点 ----------
+  const keyPoints = []
+  for (const d of keyDistances) {
+    const single = await computeSingleTTK(weapon, attachment, {
+      ...params,
+      distance: d,
+    }, dm)
+    if (single) {
+      keyPoints.push({ d, ttk: single.ttk, shots: single.shots })
+    }
+  }
+
+  if (keyPoints.length === 0) {
+    return {
+      times: fullDistances.map(() => 0),
+      shots: fullDistances.map(() => 0),
+      anySuccess: false,
+    }
+  }
+
+  // ---------- 插值成全量 ----------
+  const interpolated = interpolateKeyPoints(keyPoints, fullDistances)
+
+  return {
+    times: interpolated.map(p => p.ttk),
+    shots: interpolated.map(p => p.shots),
+    anySuccess: true,
+  }
+}
 
 // ============================================================
 // ⭐ 通用确认弹窗（Promise 封装 + provide）
@@ -633,6 +777,8 @@ const handleCalculate = async () => {
 
 /**
  * 更新单把枪的完整 TTK 数据（所有配置）
+ *
+ * ⭐ 用「关键点 + 插值」
  */
 const updateSingleWeaponTTK = async (weaponId, onProgress) => {
   const dm = dataStore.getDataManager()
@@ -664,26 +810,15 @@ const updateSingleWeaponTTK = async (weaponId, onProgress) => {
     const config = price?.configs.find(c => c.id === configId)
 
     if (config) {
-      // ⭐ 逐距离算
-      const times = []
-      const shots = []
-      let anySuccess = false
-
-      for (const d of distances.value) {
-        const single = await computeSingleTTK(weaponArmed, attachment, {
-          ...params,
-          distance: d,
-        }, dm)
-
-        if (single) {
-          times.push(single.ttk)
-          shots.push(single.shots)
-          anySuccess = true
-        } else {
-          times.push(0)
-          shots.push(0)
-        }
-      }
+      // ⭐ 关键点 + 插值
+      const { times, shots, anySuccess } = await computeDistanceSeries(
+        weaponArmed,
+        attachment,
+        config,
+        params,
+        dm,
+        distances.value
+      )
 
       if (anySuccess && config.enabled !== false) {
         // 加权平均
@@ -911,6 +1046,8 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
 
 // ============================================================
 // ⭐ 哈弗币消耗计算（全量）
+//
+// ⭐ 用「关键点」求平均 shots（不插值，关键点平均即可）
 // ============================================================
 const computeHavocCosts = async (enabledConfigs, dm, params) => {
   const havocCosts = {}
@@ -938,10 +1075,11 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
       continue
     }
 
-    // 逐距离算 shots
+    // ⭐ 算关键点（不插值）
+    const keyDistances = getKeyDistances(weaponArmed, config)
     const allShots = []
 
-    for (const d of distances.value) {
+    for (const d of keyDistances) {
       const single = await computeSingleTTK(weaponArmed, attachment, {
         ...params,
         distance: d,
@@ -1004,6 +1142,8 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
 
 // ============================================================
 // ⭐ 折线图（全量）
+//
+// ⭐ 用「关键点 + 插值」
 // ============================================================
 const handleDistanceChart = async () => {
   try {
@@ -1119,6 +1259,8 @@ const buildArmedWeapons = (configs) => {
 
 // ============================================================
 // ⭐ 折线图数据构建（全量）
+//
+// ⭐ 用「关键点 + 插值」
 // ============================================================
 const buildDistanceStats = async (armed, attachments) => {
   const params = paramsStore.state
@@ -1130,26 +1272,21 @@ const buildDistanceStats = async (armed, attachments) => {
     const attachment = attachments[idx] || {}
     const displayName = weapon._displayName || weapon.name
 
-    // 逐距离算
-    const times = []
-    const shots = []
-    let anySuccess = false
+    // ⭐ 获取配置（用于关键点算法）
+    const weaponId = weapon.id
+    const configId = weapon._configId || '#1'
+    const price = dm.getPriceByWeaponId(weaponId)
+    const config = price?.configs.find(c => c.id === configId)
 
-    for (const d of distances.value) {
-      const single = await computeSingleTTK(weapon, attachment, {
-        ...params,
-        distance: d,
-      }, dm)
-
-      if (single) {
-        times.push(single.ttk)
-        shots.push(single.shots)
-        anySuccess = true
-      } else {
-        times.push(0)
-        shots.push(0)
-      }
-    }
+    // ⭐ 关键点 + 插值
+    const { times, shots, anySuccess } = await computeDistanceSeries(
+      weapon,
+      attachment,
+      config,
+      params,
+      dm,
+      distances.value
+    )
 
     if (!anySuccess) {
       console.log(`⚠️ 折线图跳过 ${displayName}：无法计算`)
@@ -1199,20 +1336,21 @@ const onWeaponUpdate = (payload) => {
 // ⭐ 数据管理（导出/导入/重置）
 // ============================================================
 
+/**
+ * ⭐ 导出数据（不再询问"是否包含缓存"）
+ */
 const exportData = async () => {
   try {
     const result = await showConfirm({
       title: '📤 导出数据',
-      message: '是否包含缓存数据？\n\n包含缓存：下次导入时可直接读取，无需重算\n不含缓存：文件更小，导入后需重新计算',
+      message: '确认导出当前所有数据？\n\n将下载一个 data.json 文件，包含所有武器 / 子弹 / 价格 / 护甲配置。',
       confirmText: '导出',
       cancelText: '取消',
-      confirmType: 'primary',
-      checkboxLabel: '包含缓存数据',
-      checkboxDefault: true
+      confirmType: 'primary'
     })
 
     if (result.confirmed) {
-      dataStore.exportData(result.checked)
+      dataStore.exportData()
     }
   } catch (error) {
     console.error('导出失败:', error)
@@ -1268,7 +1406,7 @@ const importData = () => {
 const resetData = async () => {
   const result = await showConfirm({
     title: '🔄 重置数据',
-    message: '⚠️ 确定要重置所有数据为默认值吗？\n\n当前的所有修改都将丢失！',
+    message: '⚠️ 确定要重置所有数据为默认值吗？\n\n当前的所有修改都将丢失！\n（同时会清空推荐缓存和假想敌配置）',
     confirmText: '重置',
     cancelText: '取消',
     confirmType: 'danger'
@@ -1287,6 +1425,11 @@ const resetData = async () => {
     const { clearMatrix } = await import('@/core/FastTTK')
     await clearMatrix()
     console.log('🗑️ 已清空 TTK 矩阵缓存')
+
+    // ⭐ 清空配装面板持久化状态（假想敌 + 预算）
+    const { clearRecPanelState } = await import('@/core/TTKIndexedDB')
+    await clearRecPanelState()
+    console.log('🗑️ 已清空配装面板状态（假想敌 + 预算）')
 
     setTimeout(() => {
       handleCalculate()

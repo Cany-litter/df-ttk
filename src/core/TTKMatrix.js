@@ -17,13 +17,21 @@
 //   让 IndexedDB 里的旧缓存自动失效。
 //
 //   v1 → v2：修复 DP 连发间隔重复计算 bug（新连发首多算了 50ms 连发内间隔）
-//   v2 → v3：修复 DP 分段射速边界 bug（rofStages 的"第 N 个间隔"被错算为 +0）
+//   v2 → v3：修复 DP 分段射速边界 bug
+//   v3 → v4：修复 RecEngine 未按名字反查 barrelId 的 bug
+//             （旧缓存里勇士等武器的 rangeMult 未应用，TTK 偏高）
+//   v4 → v5：修复攻击侧命中率用错假想敌的 bug
+//             （攻击侧应使用「我方配置的 hitRateMap」，不是「敌人的 hitRate」）
 //
-// 用法：
-//   import { buildAttackMatrix, buildDefenseMatrix, buildAllMatrix, getMatrixStats, clearMatrixCache } from './TTKMatrix.js'
+// ⭐ 命中率（v5 修复）：
+//   - 攻击侧：用「我方攻击配置的 hitRateMap」按距离插值
+//   - 防御侧：用「敌人的 hitRate」（敌人自己的命中率）
 //
-//   const result = await buildAllMatrix({ attacks, defenses, enemies, scenario, dataManager, onProgress })
-//   // result = { attackCount, defenseCount, fromCache, computed, timeMs }
+// ⭐ debug 收集（不持久化）：
+//   - 每次「新算」一条 TTK，把输入 / 输出存到模块级 _debugMap
+//   - 命中缓存的不收集（无 debug 数据）
+//   - 供 __recDebug() 在控制台查询
+//   - 用 clearDebugMap() 清空
 
 import { computeTTKWithDP } from './TTKDP.js'
 import { calculateCurrentValues } from '../utils/weaponCalc.js'
@@ -41,27 +49,70 @@ import {
 // 每个场景哈希的当前版本（改公式时递增，让旧缓存失效）
 // v1 → v2：修复 DP 连发间隔重复计算 bug
 // v2 → v3：修复 DP 分段射速边界 bug
-const MATRIX_VERSION = 3
+// v3 → v4：修复 RecEngine 未按名字反查 barrelId 的 bug
+// v4 → v5：修复攻击侧命中率用错假想敌的 bug
+const MATRIX_VERSION = 5
 
 // 批量写入大小（每 N 条写一次 IndexedDB）
 const BATCH_SIZE = 200
 
 // ============================================================
-// 对外 API
+// ⭐ 模块级 debug Map（不持久化）
+// ============================================================
+
+const _debugMap = new Map()
+
+/**
+ * 读取某条 debug 记录
+ */
+export function getDebugEntry(id) {
+  return _debugMap.get(id) || null
+}
+
+/**
+ * 清空 debug Map
+ */
+export function clearDebugMap() {
+  _debugMap.clear()
+}
+
+// ============================================================
+// ⭐ 内部工具：计算某条攻击侧在指定距离的命中率
+// ============================================================
+
+/**
+ * 攻击侧命中率
+ *
+ * 优先用「我方攻击配置的 hitRateMap」按距离插值；
+ * 没有 hitRateMap 时回退到「敌人的 hitRate」或「scenario.hitRate」。
+ *
+ * ⚠️ v5 修复：
+ *   旧代码直接用 enemy.hitRate（假想敌的命中率），
+ *   导致攻击侧 TTK 偏乐观（命中率偏高）。
+ *
+ * @param {Object} attack
+ * @param {Object} enemy
+ * @param {Object} scenario
+ * @param {DataManager} dataManager
+ * @returns {number} 命中率 [0, 1]
+ */
+function getAttackHitRate(attack, enemy, scenario, dataManager) {
+  const map = attack._attachment?.hitRateMap
+
+  if (Array.isArray(map) && map.length > 0 && dataManager?.getHitRateFromMap) {
+    return dataManager.getHitRateFromMap(map, enemy.distance, 0.85)
+  }
+
+  // 回退
+  return enemy.hitRate ?? scenario.hitRate ?? 0.85
+}
+
+// ============================================================
+// 对外 API：完整矩阵
 // ============================================================
 
 /**
  * 构建完整矩阵（攻击侧 + 防御侧）
- *
- * @param {Object} options
- * @param {Array} options.attacks - 攻击侧列表（来自 RecEngine._buildAttackSide）
- * @param {Array} options.defenses - 防御侧列表（来自 RecEngine._buildDefenseSide）
- * @param {Array} options.enemies - 敌人列表
- * @param {Object} options.scenario - 场景参数 { hitRateMap, hitProb, triggerDelayEnable, healthValue }
- * @param {DataManager} options.dataManager
- * @param {Function} [options.onProgress] - (phase, current, total) => void
- * @param {Object} [options.signal] - { cancelled: boolean }
- * @returns {Promise<Object>} 统计信息
  */
 export async function buildAllMatrix({
   attacks,
@@ -133,17 +184,7 @@ export async function buildAllMatrix({
 /**
  * 构建攻击侧矩阵
  *
- * 每个 (attack, enemy) → attackTTK
- *
- * @param {Object} options
- * @param {Array} options.attacks
- * @param {Array} options.enemies
- * @param {Object} options.scenario
- * @param {string} options.scenarioHash
- * @param {DataManager} options.dataManager
- * @param {Function} [options.onProgress] - (current, total) => void
- * @param {Object} [options.signal]
- * @returns {Promise<Object>} { total, computed, fromCache, errors }
+ * ⭐ v5 修复：命中率用「我方配置的 hitRateMap」按距离插值
  */
 export async function buildAttackMatrix({
   attacks,
@@ -187,6 +228,9 @@ export async function buildAttackMatrix({
         continue
       }
 
+      // ---------- ⭐ 计算命中率（我方配置的 hitRateMap） ----------
+      const hitRate = getAttackHitRate(attack, enemy, scenario, dataManager)
+
       // ---------- 未命中：算 ----------
       try {
         const result = computeTTKWithDP({
@@ -199,7 +243,7 @@ export async function buildAttackMatrix({
             helmetValue: enemy.helmetValue,
           },
           scenario: {
-            hitRate: enemy.hitRate ?? scenario.hitRate ?? 0.85,
+            hitRate,
             hitProb: scenario.hitProb,
             triggerDelayEnable: scenario.triggerDelayEnable,
             healthValue: scenario.healthValue,
@@ -230,9 +274,40 @@ export async function buildAttackMatrix({
           },
         })
 
+        // ⭐ 收集 debug（不持久化）
+        _debugMap.set(id, {
+          type: 'attack',
+          input: {
+            weaponId: attack.weaponId,
+            configId: attack.configId,
+            weaponName: attack.meta.weaponName,
+            bulletId: attack.bulletId,
+            bulletName: attack.bullet.name,
+            bulletLevel: attack.bullet.level,
+            _current: attack._armed._current,
+            hitRateMap: attack._attachment?.hitRateMap || [],
+            defender: {
+              armorLevel: enemy.armorLevel,
+              armorValue: enemy.armorValue,
+              helmetLevel: enemy.helmetLevel,
+              helmetValue: enemy.helmetValue,
+            },
+            hitRate,                     // ⭐ 实际传入 DP 的值
+            hitProb: scenario.hitProb,
+            triggerDelayEnable: scenario.triggerDelayEnable,
+            healthValue: scenario.healthValue,
+            distance: enemy.distance,
+          },
+          output: {
+            ttk: result.ttk,
+            shots: result.shots,
+            hits: result.hits,
+            debug: result.debug,
+          },
+        })
+
         computed++
 
-        // 批量写
         if (pendingBatch.length >= BATCH_SIZE) {
           await setMatrixEntries(pendingBatch)
           pendingBatch.length = 0
@@ -251,7 +326,6 @@ export async function buildAttackMatrix({
     if (signal?.cancelled) break
   }
 
-  // 写入剩余
   if (pendingBatch.length > 0) {
     await setMatrixEntries(pendingBatch)
     pendingBatch.length = 0
@@ -265,18 +339,8 @@ export async function buildAttackMatrix({
 /**
  * 构建防御侧矩阵
  *
- * 每个 (defense, enemy) → defenseTTK
- * （即：敌人打我方甲头组合的 TTK）
- *
- * @param {Object} options
- * @param {Array} options.defenses
- * @param {Array} options.enemies
- * @param {Object} options.scenario
- * @param {string} options.scenarioHash
- * @param {DataManager} options.dataManager
- * @param {Function} [options.onProgress]
- * @param {Object} [options.signal]
- * @returns {Promise<Object>} { total, computed, fromCache, errors }
+ * ⭐ 防御侧命中率 = enemy.hitRate（敌人自己的命中率）
+ *   —— 不需要改，因为防御侧本来就是「敌人打我方」，用敌人命中率是对的。
  */
 export async function buildDefenseMatrix({
   defenses,
@@ -303,8 +367,6 @@ export async function buildDefenseMatrix({
 
       const enemy = enemies[ei]
 
-      // 敌人打我方甲头组合
-      // 敌人用 enemy 的武器 + 子弹；我方用 defense 的甲头
       const enemyInfo = enemy._enemyArmed
       if (!enemyInfo) {
         errors++
@@ -332,6 +394,8 @@ export async function buildDefenseMatrix({
       }
 
       // ---------- 未命中：算 ----------
+      const hitRate = enemy.hitRate ?? scenario.hitRate ?? 0.85
+
       try {
         const result = computeTTKWithDP({
           weapon: enemyInfo.armed,
@@ -343,7 +407,7 @@ export async function buildDefenseMatrix({
             helmetValue: defense.helmet.value,
           },
           scenario: {
-            hitRate: enemy.hitRate ?? scenario.hitRate ?? 0.85,
+            hitRate,
             hitProb: scenario.hitProb,
             triggerDelayEnable: scenario.triggerDelayEnable,
             healthValue: scenario.healthValue,
@@ -370,6 +434,40 @@ export async function buildDefenseMatrix({
             distance: enemy.distance,
             scenarioHash,
             matrixVersion: MATRIX_VERSION,
+          },
+        })
+
+        // ⭐ 收集 debug（不持久化）
+        _debugMap.set(id, {
+          type: 'defense',
+          input: {
+            enemyWeaponId: enemy.weaponId,
+            enemyConfigId: enemy.configId,
+            enemyWeaponName: enemyInfo.armed.name,
+            enemyBulletId: enemy.bulletId,
+            enemyBulletName: enemyInfo.bulletData.name,
+            enemyBulletLevel: enemyInfo.bulletData.level,
+            enemy_current: enemyInfo.armed._current,
+            enemyHitRate: enemy.hitRate,
+            defender: {
+              armorLevel: defense.armor.level,
+              armorValue: defense.armor.value,
+              helmetLevel: defense.helmet.level,
+              helmetValue: defense.helmet.value,
+              armorName: defense.meta.armorName,
+              helmetName: defense.meta.helmetName,
+            },
+            hitRate,
+            hitProb: scenario.hitProb,
+            triggerDelayEnable: scenario.triggerDelayEnable,
+            healthValue: scenario.healthValue,
+            distance: enemy.distance,
+          },
+          output: {
+            ttk: result.ttk,
+            shots: result.shots,
+            hits: result.hits,
+            debug: result.debug,
           },
         })
 
@@ -407,17 +505,6 @@ export async function buildDefenseMatrix({
 // 查询 API（用于组合阶段）
 // ============================================================
 
-/**
- * 查询攻击侧 TTK
- *
- * @param {Object} options
- * @param {number} options.weaponId
- * @param {string} options.configId
- * @param {string} options.bulletId
- * @param {Object} options.enemy
- * @param {string} options.scenarioHash
- * @returns {Promise<Object|null>} { ttk, shots, hits, meta } 或 null
- */
 export async function getAttackTTK({
   weaponId,
   configId,
@@ -429,20 +516,6 @@ export async function getAttackTTK({
   return await getMatrixEntry(id)
 }
 
-/**
- * 查询防御侧 TTK
- *
- * @param {Object} options
- * @param {number} options.enemyWeaponId
- * @param {string} options.enemyConfigId
- * @param {string} options.enemyBulletId
- * @param {number} options.ourArmorLevel
- * @param {number} options.ourArmorValue
- * @param {number} options.ourHelmetLevel
- * @param {number} options.ourHelmetValue
- * @param {string} options.scenarioHash
- * @returns {Promise<Object|null>}
- */
 export async function getDefenseTTK({
   enemyWeaponId,
   enemyConfigId,
@@ -470,29 +543,19 @@ export async function getDefenseTTK({
 // 缓存管理
 // ============================================================
 
-/**
- * 获取矩阵缓存统计
- *
- * @returns {Promise<Object>} { count, sizeKB, sizeMB }
- */
 export async function getMatrixStats() {
   return await idbGetMatrixStats()
 }
 
-/**
- * 清空矩阵缓存
- *
- * @returns {Promise<boolean>}
- */
 export async function clearMatrixCache() {
   return await idbClearMatrix()
 }
 
 // ============================================================
-// 内部：ID 生成
+// ⭐ ID 生成（导出，供 RecEngine 查询 debug 用）
 // ============================================================
 
-function makeAttackId({ weaponId, configId, bulletId, enemy, scenarioHash }) {
+export function makeAttackId({ weaponId, configId, bulletId, enemy, scenarioHash }) {
   const cid = (configId || '#1').replace('#', '')
   const armorKey = `a${enemy.armorLevel ?? 4}v${enemy.armorValue ?? 0}`
   const helmetKey = `h${enemy.helmetLevel ?? 4}v${enemy.helmetValue ?? 0}`
@@ -500,7 +563,7 @@ function makeAttackId({ weaponId, configId, bulletId, enemy, scenarioHash }) {
   return `atk_${weaponId}_${cid}_${bulletId}_${armorKey}_${helmetKey}_${distKey}_${scenarioHash}`
 }
 
-function makeDefenseId({
+export function makeDefenseId({
   enemyWeaponId,
   enemyConfigId,
   enemyBulletId,
@@ -520,20 +583,9 @@ function makeDefenseId({
 // 内部：场景哈希
 // ============================================================
 
-/**
- * 把场景参数归一化成短字符串 hash
- *
- * 包含：
- * - hitRateMap（排序后）
- * - hitProb（头/胸/腹/肢）
- * - triggerDelayEnable
- * - healthValue
- * - MATRIX_VERSION
- */
-function makeScenarioHash(scenario) {
+export function makeScenarioHash(scenario) {
   const parts = []
 
-  // 命中率映射
   const hrMap = (scenario.hitRateMap || [])
     .slice()
     .sort((a, b) => a.distance - b.distance)
@@ -541,31 +593,21 @@ function makeScenarioHash(scenario) {
     .join(':')
   parts.push(hrMap || 'def')
 
-  // 命中分布
   const hp = scenario.hitProb || { head: 0.1, chest: 0.3, stomach: 0.3, limbs: 0.3 }
   parts.push(`${hp.head}:${hp.chest}:${hp.stomach}:${hp.limbs}`)
 
-  // 扳机开关
   parts.push(scenario.triggerDelayEnable !== false ? '1' : '0')
-
-  // 生命值
   parts.push(String(scenario.healthValue ?? 100))
-
-  // 矩阵版本
   parts.push(`v${MATRIX_VERSION}`)
 
-  // 简单 hash（把字符串转成短码）
   return simpleHash(parts.join('|'))
 }
 
-/**
- * 简单字符串 hash（32 位）
- */
 function simpleHash(str) {
   let h = 0
   for (let i = 0; i < str.length; i++) {
     h = ((h << 5) - h) + str.charCodeAt(i)
-    h = h & h  // 转 32 位整数
+    h = h & h
   }
   return Math.abs(h).toString(36)
 }

@@ -9,6 +9,10 @@
 //
 // ⭐ dataStore 依赖 DataManager 单例，在模块顶层获取
 //
+// ⭐ 缓存说明：
+//   - 旧版 ttkCache 已废弃（改用 IndexedDB，见 TTKIndexedDB.js）
+//   - exportData 不再有 includeCache 参数（缓存与 data.json 解耦）
+//
 // 本文件由原 dataStore.js / paramsStore.js / appStore.js 合并而来。
 
 import { reactive, readonly } from 'vue'
@@ -264,12 +268,19 @@ export const dataStore = {
   // ============================================================
   // 数据导入导出
   // ============================================================
+
   getDataManager() {
     return dm
   },
 
-  exportData(includeCache = true) {
-    dm.exportToFile(null, includeCache)
+  /**
+   * ⭐ 导出数据（不再有 includeCache 参数）
+   *
+   * 缓存存在 IndexedDB（见 TTKIndexedDB.js），
+   * 跟 data.json 完全解耦，导出时不涉及。
+   */
+  exportData() {
+    dm.exportToFile(null)
   },
 
   importData(jsonStr) {

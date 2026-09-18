@@ -54,10 +54,10 @@ const updateIsMobile = () => {
 
 /**
  * 在数组中找最接近目标值的索引
- * 
+ *
  * 因为自定义分段可能传非整数（如 20.5），indexOf 找不到，
  * 需要用"最接近"的索引。
- * 
+ *
  * @param {Array<number>} arr
  * @param {number} target
  * @returns {number} 索引，找不到返回 -1
@@ -215,14 +215,19 @@ const calculateYAxisRange = (series) => {
 
 // ============================================================
 // ⭐ 根据跨度计算 X 轴刻度间隔
+//
+//   规则：
+//     - PC 端：2m 一标点
+//     - 移动端：10m 一标点
 // ============================================================
 const getTickInterval = (start, end) => {
-  const span = end - start
-  if (span <= 10) return 1
-  if (span <= 25) return 2
-  if (span <= 50) return 5
-  if (span <= 80) return 10
-  return 20
+  // 移动端：10m
+  if (isMobile.value) {
+    return 10
+  }
+
+  // PC 端：2m
+  return 2
 }
 
 // ============================================================
@@ -326,19 +331,28 @@ const buildChartOption = () => {
   // 移动端配置调整
   const axisLabelFontSize = isMobile.value ? 9 : 10
   const axisNameFontSize = isMobile.value ? 10 : 11
-  const gridConfig = isMobile.value
-    ? { left: 50, right: 12, top: 12, bottom: 55 }
-    : { left: 60, right: 20, top: 15, bottom: 60 }
 
-  // ⭐ X 轴刻度：按跨度自适应
+  // ⭐ grid 配置（底部留白增加，容纳旋转标签）
+  const gridConfig = isMobile.value
+    ? { left: 50, right: 12, top: 12, bottom: 60 }
+    : { left: 60, right: 20, top: 15, bottom: 65 }
+
+  // ⭐ X 轴刻度：PC 2m / 移动 10m
   const tickInterval = getTickInterval(axisStart, axisEnd)
+
+  // ⭐ X 轴标签配置
+  //   PC 端 2m 一标 → 标签密集 → 旋转 45° 防重叠
+  //   移动端 10m 一标 → 标签宽松 → 也旋转 45°（视觉一致）
   const xAxisLabelConfig = {
     fontSize: axisLabelFontSize,
     formatter: (value) => {
       const num = Number(value)
       return num % tickInterval === 0 ? num : ''
     },
-    interval: 0
+    interval: 0,
+    rotate: 45,
+    align: 'right',
+    verticalAlign: 'top'
   }
 
   return {
@@ -388,11 +402,18 @@ const buildChartOption = () => {
       data: visibleDistances,
       name: '距离 (m)',
       nameLocation: 'center',
-      nameGap: isMobile.value ? 24 : 30,
+      nameGap: isMobile.value ? 30 : 36,
       nameTextStyle: { fontSize: axisNameFontSize },
       axisLabel: xAxisLabelConfig,
       splitLine: { show: false },
-      axisLine: { lineStyle: { color: '#ccc' } }
+      axisLine: { lineStyle: { color: '#ccc' } },
+      axisTick: {
+        // ⭐ 只在 tickInterval 的倍数处显示刻度线
+        interval: (index, value) => {
+          const num = Number(value)
+          return num % tickInterval === 0
+        }
+      }
     },
     yAxis: {
       type: 'value',

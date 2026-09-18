@@ -1,564 +1,567 @@
 <!-- src/components/RecPanel.vue -->
 <template>
   <div class="rec-panel">
-    <!-- ============================================================ -->
-    <!-- 顶部说明 -->
-    <!-- ============================================================ -->
-    <div class="explain-box">
-      <strong>📖 配装推荐说明：</strong>
-      ① 假想敌默认 1 个，最多 3 个，每个敌人有独立的<b>预算</b>和<b>交战距离</b><br>
-      ② 在预算内推荐最优的<b>枪械 / 子弹 / 护甲 / 头盔</b>组合<br>
-      ③ 评分：对每个敌人算<b>胜率</b>，再取所有敌人胜率的平均作为<b>综合胜率</b>（越大越好）<br>
-      ④ 展示：Top 3 卡片 + 第 4~30 名表格（可加载更多）
-    </div>
 
     <!-- ============================================================ -->
-    <!-- 假想敌配置区 -->
+    <!-- ⭐ 视图切换：空状态 / 完整界面 -->
     <!-- ============================================================ -->
-    <div class="panel">
-      <div class="enemies-header">
-        <div class="panel-title">
-          👥 假想敌配置
-          <span class="badge">{{ enemies.length }} 个敌人</span>
-        </div>
-        <button
-          class="add-enemy-btn"
-          :disabled="enemies.length >= MAX_ENEMIES"
-          @click="addEnemy"
-        >
-          <template v-if="enemies.length >= MAX_ENEMIES">
-            ⚠️ 已达上限 {{ MAX_ENEMIES }} 个
-          </template>
-          <template v-else>
-            ➕ 添加假想敌
-          </template>
-        </button>
-      </div>
+    <Transition name="rec-view-fade" mode="out-in">
 
-      <!-- ⭐ 空状态：无假想敌时显示大按钮 -->
-      <div v-if="enemies.length === 0" class="enemy-empty-state">
-        <div class="icon">👻</div>
-        <div class="title">暂无假想敌</div>
-        <div class="hint">点击下方按钮，自动生成一个符合预算的随机配装</div>
-        <div class="empty-actions">
-          <button class="btn-big-random" @click="addEnemy">
-            🎲 随机生成一个假想敌
+      <!-- ============ 状态 1：空状态（无假想敌） ============ -->
+      <div v-if="enemies.length === 0" key="empty" class="rec-empty-state">
+        <div class="rec-empty-card">
+          <div class="rec-empty-title">🎯 配装推荐</div>
+          <div class="rec-empty-hint">
+            设定预算，自动生成假想敌并推荐配装
+          </div>
+
+          <div class="rec-empty-budget-row">
+            <label class="rec-empty-budget-label">💰 预算</label>
+            <input
+              v-model.number="budget"
+              type="number"
+              class="rec-empty-budget-input"
+              min="1"
+              step="10"
+              @keydown.enter="runRecommend"
+            />
+            <span class="rec-empty-budget-unit">W 哈弗币</span>
+          </div>
+
+          <button
+            class="rec-empty-start-btn"
+            :disabled="isRunning"
+            @click="runRecommend"
+          >
+            <template v-if="isRunning">⏳ 推荐中...</template>
+            <template v-else>🔍 开始推荐</template>
           </button>
         </div>
       </div>
 
-      <!-- 假想敌卡片网格 -->
-      <div v-else class="enemies-grid">
-        <div
-          v-for="(enemy, index) in enemies"
-          :key="enemy._id"
-          class="enemy-card"
-          :data-index="index"
-        >
-          <!-- 头部 -->
-          <div class="enemy-header">
-            <span class="enemy-index">{{ index + 1 }}</span>
-            <input
-              v-model="enemy.name"
-              type="text"
-              class="enemy-name-input"
-              placeholder="假想敌名称"
-            />
+      <!-- ============ 状态 3：完整界面 ============ -->
+      <div v-else key="full" class="rec-full-view">
+
+        <!-- ---------- 假想敌配置区 ---------- -->
+        <div class="panel">
+          <div class="enemies-header">
+            <div class="panel-title">
+              👥 假想敌配置
+              <span class="badge">{{ enemies.length }} 个敌人</span>
+            </div>
             <button
-              class="btn-reroll"
-              title="按预算重新随机"
-              @click="rerollEnemy(index)"
+              class="add-enemy-btn"
+              :disabled="enemies.length >= MAX_ENEMIES"
+              :title="enemies.length >= MAX_ENEMIES ? '已达上限' : ''"
+              @click="addEnemy"
             >
-              🎲 重掷
-            </button>
-            <button
-              class="remove-enemy-btn"
-              title="删除"
-              @click="removeEnemy(index)"
-            >
-              ✕
+              <template v-if="enemies.length >= MAX_ENEMIES">
+                ⚠️ 已达上限 {{ MAX_ENEMIES }} 个
+              </template>
+              <template v-else>
+                ➕ 添加假想敌
+              </template>
             </button>
           </div>
 
-          <!-- 主体 -->
-          <div class="enemy-card-body">
-            <!-- 预算输入 -->
-            <div class="enemy-field budget-field">
-              <span class="label">💰 预算</span>
-              <input
-                v-model.number="enemy.budgetW"
-                type="number"
-                min="1"
-                step="5"
-                @input="markDirty"
-              />
-              <span class="unit">W</span>
-            </div>
-
-            <!-- 武器 -->
-            <div class="enemy-field">
-              <span class="label">武器</span>
-              <select v-model="enemy.weaponId" @change="onEnemyWeaponChange(index)">
-                <option :value="null" disabled>请选择武器</option>
-                <option
-                  v-for="w in weaponOptions"
-                  :key="w.id"
-                  :value="w.id"
-                >
-                  {{ w.name }}
-                </option>
-              </select>
-            </div>
-
-            <!-- 配置 -->
-            <div class="enemy-field">
-              <span class="label">配置</span>
-              <select
-                v-model="enemy.configId"
-                :disabled="!enemy.weaponId"
-                @change="markDirty"
-              >
-                <option :value="null" disabled>请选择配置</option>
-                <option
-                  v-for="c in getConfigOptions(enemy.weaponId)"
-                  :key="c.configId"
-                  :value="c.configId"
-                >
-                  {{ c.configId }} · {{ c.barrel || '无枪管' }}
-                </option>
-              </select>
-            </div>
-
-            <!-- 子弹 -->
-            <div class="enemy-field">
-              <span class="label">子弹</span>
-              <select
-                v-model="enemy.bulletId"
-                :disabled="!enemy.weaponId"
-                @change="markDirty"
-              >
-                <option :value="null" disabled>请选择子弹</option>
-                <option
-                  v-for="b in getBulletOptions(enemy.weaponId)"
-                  :key="b.id"
-                  :value="b.id"
-                >
-                  {{ b.display }}
-                </option>
-              </select>
-            </div>
-
-            <!-- 护甲 -->
-            <div class="enemy-field">
-              <span class="label">护甲</span>
-              <select v-model="enemy.armorId" @change="markDirty">
-                <option :value="null" disabled>请选择护甲</option>
-                <option
-                  v-for="a in armorOptions"
-                  :key="a.id"
-                  :value="a.id"
-                >
-                  {{ a.name }} Lv.{{ a.level }}（{{ a.value }}）
-                </option>
-              </select>
-            </div>
-
-            <!-- 头盔 -->
-            <div class="enemy-field">
-              <span class="label">头盔</span>
-              <select v-model="enemy.helmetId" @change="markDirty">
-                <option :value="null" disabled>请选择头盔</option>
-                <option
-                  v-for="h in helmetOptions"
-                  :key="h.id"
-                  :value="h.id"
-                >
-                  {{ h.name }} Lv.{{ h.level }}（{{ h.value }}）
-                </option>
-              </select>
-            </div>
-
-            <!-- 距离 -->
-            <div class="enemy-field">
-              <span class="label">距离</span>
-              <input
-                v-model.number="enemy.distance"
-                type="number"
-                class="distance-input"
-                min="0"
-                max="200"
-                step="1"
-                @input="markDirty"
-              />
-              <span class="unit">m</span>
-            </div>
-          </div>
-
-          <!-- 底部总价 -->
-          <div class="card-footer">
-            <span>总价</span>
-            <span
-              class="cost-total"
-              :class="{ over: isOverBudget(enemy) }"
+          <!-- 假想敌卡片网格 -->
+          <div class="enemies-grid">
+            <div
+              v-for="(enemy, index) in enemies"
+              :key="enemy._id"
+              class="enemy-card"
+              :data-index="index"
             >
-              ¥{{ formatCostW(calcEnemyCost(enemy)) }}
-              <template v-if="isOverBudget(enemy)">⚠️ 超预算</template>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 预算 + 开始推荐 -->
-      <div class="budget-row">
-        <div class="budget-group">
-          <label>💰 预算</label>
-          <input
-            v-model.number="budget"
-            type="number"
-            class="budget-input"
-            min="1"
-            step="10"
-            @input="markDirty"
-          />
-          <span class="budget-unit">W 哈弗币</span>
-        </div>
-
-        <button
-          class="calc-btn"
-          :disabled="isRunning || !canRun"
-          :title="calcButtonTitle"
-          @click="runRecommend"
-        >
-          <template v-if="isRunning">⏳ 推荐中...</template>
-          <template v-else>🔍 开始推荐</template>
-        </button>
-      </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- ⭐ 推荐结果区顶部：假想敌变更提示条 -->
-    <!-- ============================================================ -->
-    <div
-      v-if="recommendDirty && recommendations"
-      class="dirty-hint"
-    >
-      ⚠️ 假想敌或参数已变更，点击「🔍 开始推荐」刷新结果
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- Top 3 卡片 -->
-    <!-- ============================================================ -->
-    <template v-if="recommendations && recommendations.topN.length > 0">
-      <div class="section-title">
-        🏅 Top 3 推荐
-        <span class="badge">按综合胜率排序</span>
-      </div>
-
-      <div class="top3-grid">
-        <div
-          v-for="rec in recommendations.topN"
-          :key="rec.rank"
-          class="top3-card"
-          :class="`rank-${rec.rank}`"
-        >
-          <!-- 头部（胜率徽章） -->
-          <div class="top3-header">
-            <div class="rank-label">
-              <span class="rank-num">{{ rankIcon(rec.rank) }}</span>
-              <span>推荐 #{{ rec.rank }}</span>
-            </div>
-            <span class="winrate-badge">
-              {{ formatPct(rec.winRate) }}<span class="pct">胜率</span>
-            </span>
-          </div>
-
-          <!-- 主体 -->
-          <div class="top3-body">
-            <!-- 装备 4 件套 -->
-            <div class="gear-row">
-              <span class="gear-icon">🔫</span>
-              <span class="gear-label">武器</span>
-              <span class="gear-value" :title="weaponLabel(rec)">
-                {{ weaponLabel(rec) }}
-              </span>
-              <span class="gear-price">{{ formatPrice(rec.gear.weapon.price) }}</span>
-            </div>
-
-            <!-- 改枪码 -->
-            <div v-if="rec.gear.weapon.buildCode" class="gear-row buildcode-row">
-              <span class="gear-icon"></span>
-              <span class="gear-label">码</span>
-              <span class="gear-value buildcode-value" :title="rec.gear.weapon.buildCode">
-                {{ rec.gear.weapon.buildCode }}
-              </span>
-              <button
-                class="btn-copy-code"
-                :class="{ copied: copiedKey === `rec_${rec.rank}` }"
-                :title="copiedKey === `rec_${rec.rank}` ? '已复制' : '复制改枪码'"
-                @click="copyBuildCode(rec.gear.weapon.buildCode, `rec_${rec.rank}`)"
-              >
-                {{ copiedKey === `rec_${rec.rank}` ? '✅' : '📋' }}
-              </button>
-            </div>
-
-            <!-- 子弹 -->
-            <div class="gear-row bullet-row">
-              <span class="gear-icon">💊</span>
-              <span class="gear-label">子弹</span>
-              <span class="gear-value" :title="bulletTooltip(rec)">
-                {{ bulletLabel(rec) }}
-                <span v-if="rec.gear.bullet.carryCount > 0" class="bullet-qty">
-                  × {{ rec.gear.bullet.carryCount }}发
-                </span>
-              </span>
-              <span class="gear-price bullet-price-group">
-                <span class="bullet-unit-price">
-                  {{ formatBulletPrice(rec.gear.bullet.price) }}/发
-                </span>
-                <span class="bullet-total-price">
-                  {{ formatBulletCost(rec.cost.bulletCost) }}
-                </span>
-              </span>
-            </div>
-
-            <div class="gear-row">
-              <span class="gear-icon">🦺</span>
-              <span class="gear-label">护甲</span>
-              <span class="gear-value" :title="armorLabel(rec)">
-                {{ armorLabel(rec) }}
-              </span>
-              <span class="gear-price">{{ formatPrice(rec.gear.armor.price) }}</span>
-            </div>
-
-            <div class="gear-row">
-              <span class="gear-icon">⛑️</span>
-              <span class="gear-label">头盔</span>
-              <span class="gear-value" :title="helmetLabel(rec)">
-                {{ helmetLabel(rec) }}
-              </span>
-              <span class="gear-price">{{ formatPrice(rec.gear.helmet.price) }}</span>
-            </div>
-
-            <!-- 对敌明细 -->
-            <div class="enemy-ttk-detail">
-              <div class="enemy-ttk-detail-title">
-                <span>对敌明细</span>
-                <span class="avg-hint">
-                  平均攻 {{ formatTTK(avgAttackTTK(rec)) }}ms / 守 {{ formatTTK(avgDefenseTTK(rec)) }}ms
-                </span>
+              <!-- 头部 -->
+              <div class="enemy-header">
+                <span class="enemy-index">{{ index + 1 }}</span>
+                <input
+                  v-model="enemy.name"
+                  type="text"
+                  class="enemy-name-input"
+                  placeholder="假想敌名称"
+                />
+                <button
+                  class="btn-reroll"
+                  title="从推荐结果重新挑一个"
+                  @click="rerollEnemy(index)"
+                >
+                  🎲 重掷
+                </button>
+                <button
+                  class="remove-enemy-btn"
+                  title="删除"
+                  @click="removeEnemy(index)"
+                >
+                  ✕
+                </button>
               </div>
-              <div
-                v-for="(e, idx) in rec.perEnemy"
-                :key="idx"
-                class="enemy-ttk-row"
-                :class="{ 'is-weakest': idx === weakestEnemyIdx(rec) }"
-              >
-                <span class="enemy-name" :title="e.name">
-                  vs {{ e.name }}
-                  <span v-if="idx === weakestEnemyIdx(rec)" class="weakest-tag">最弱</span>
-                </span>
-                <div class="ttk-pair">
-                  <span class="ttk-item">
-                    <span class="k">攻</span>
-                    <span class="v attack">{{ formatTTK(e.attackTTK) }}</span>
-                  </span>
-                  <span class="ttk-item">
-                    <span class="k">守</span>
-                    <span class="v defense">{{ formatTTK(e.defenseTTK) }}</span>
-                  </span>
+
+              <!-- 主体 -->
+              <div class="enemy-card-body">
+                <!-- 预算输入 -->
+                <div class="enemy-field budget-field">
+                  <span class="label">💰 预算</span>
+                  <input
+                    v-model.number="enemy.budgetW"
+                    type="number"
+                    min="1"
+                    step="5"
+                    @input="markDirty"
+                  />
+                  <span class="unit">W</span>
                 </div>
-                <span class="winrate-cell" :class="rateClass(e.winRate)">
-                  {{ formatPct(e.winRate) }}
-                </span>
-              </div>
-            </div>
 
-            <!-- 指标行（4 列） -->
-            <div class="metrics-row">
-              <div class="metric">
-                <div class="metric-label">综合胜率</div>
-                <div class="metric-value" :class="rateClass(rec.winRate)">
-                  {{ formatPct(rec.winRate) }}
+                <!-- 武器 -->
+                <div class="enemy-field">
+                  <span class="label">武器</span>
+                  <select v-model="enemy.weaponId" @change="onEnemyWeaponChange(index)">
+                    <option :value="null" disabled>请选择武器</option>
+                    <option
+                      v-for="w in weaponOptions"
+                      :key="w.id"
+                      :value="w.id"
+                    >
+                      {{ w.name }}
+                    </option>
+                  </select>
                 </div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">平均进攻TTK</div>
-                <div class="metric-value">
-                  {{ formatTTK(avgAttackTTK(rec)) }}<small>ms</small>
-                </div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">平均生存TTK</div>
-                <div class="metric-value">
-                  {{ formatTTK(avgDefenseTTK(rec)) }}<small>ms</small>
-                </div>
-              </div>
-              <div class="metric">
-                <div class="metric-label">总价</div>
-                <div class="metric-value gear-total">
-                  {{ rec.cost.gearTotalW.toFixed(1) }}<small>W</small>
-                </div>
-              </div>
-            </div>
 
-            <!-- ⭐ 添加为假想敌 -->
-            <div class="top3-actions">
-              <button
-                class="btn-add-as-enemy"
-                :disabled="enemies.length >= MAX_ENEMIES"
-                :title="enemies.length >= MAX_ENEMIES ? '假想敌数量已满，请先移除一个' : '用该配装添加一个新假想敌'"
-                @click="addAsEnemy(rec)"
-              >
-                ➕ 添加为假想敌
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </template>
-
-    <!-- ============================================================ -->
-    <!-- 第 4~30 名表格 -->
-    <!-- ============================================================ -->
-    <template v-if="recommendations && recommendations.rest.length > 0">
-      <div class="section-title">
-        📊 第 4~{{ Math.min(3 + visibleRestCount, 3 + recommendations.rest.length) }} 名
-        <span class="badge">
-          {{ visibleRestCount }} / {{ recommendations.rest.length }} 套 · 按综合胜率排序
-        </span>
-      </div>
-
-      <div class="topn-table-wrapper">
-        <table class="topn-table">
-          <thead>
-            <tr>
-              <th class="col-rank">排名</th>
-              <th class="col-weapon">武器配置</th>
-              <th class="col-bullet">子弹</th>
-              <th class="col-armor">护甲</th>
-              <th class="col-helmet">头盔</th>
-              <th class="col-num">平均进攻TTK</th>
-              <th class="col-num">平均生存TTK</th>
-              <th class="col-num">综合胜率</th>
-              <th class="col-num">总价</th>
-              <th class="col-action">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(rec, idx) in displayedRest"
-              :key="rec.rank || idx"
-            >
-              <!-- 排名 -->
-              <td class="rank-cell">
-                <span class="rank-badge">{{ rec.rank }}</span>
-              </td>
-
-              <!-- 武器配置 -->
-              <td class="weapon-cell" :title="weaponCellTooltip(rec)">
-                <div class="cell-main">
-                  <span class="cell-main-text">{{ weaponLabel(rec) }}</span>
-                  <button
-                    v-if="rec.gear.weapon.buildCode"
-                    class="btn-copy-mini"
-                    :class="{ copied: copiedKey === `table_${rec.rank}` }"
-                    :title="copiedKey === `table_${rec.rank}` ? '已复制' : '复制改枪码'"
-                    @click.stop="copyBuildCode(rec.gear.weapon.buildCode, `table_${rec.rank}`)"
+                <!-- 配置 -->
+                <div class="enemy-field">
+                  <span class="label">配置</span>
+                  <select
+                    v-model="enemy.configId"
+                    :disabled="!enemy.weaponId"
+                    @change="markDirty"
                   >
-                    {{ copiedKey === `table_${rec.rank}` ? '✅' : '📋' }}
+                    <option :value="null" disabled>请选择配置</option>
+                    <option
+                      v-for="c in getConfigOptions(enemy.weaponId)"
+                      :key="c.configId"
+                      :value="c.configId"
+                    >
+                      {{ c.configId }} · {{ c.barrel || '无枪管' }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- 子弹 -->
+                <div class="enemy-field">
+                  <span class="label">子弹</span>
+                  <select
+                    v-model="enemy.bulletId"
+                    :disabled="!enemy.weaponId"
+                    @change="markDirty"
+                  >
+                    <option :value="null" disabled>请选择子弹</option>
+                    <option
+                      v-for="b in getBulletOptions(enemy.weaponId)"
+                      :key="b.id"
+                      :value="b.id"
+                    >
+                      {{ b.display }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- 护甲 -->
+                <div class="enemy-field">
+                  <span class="label">护甲</span>
+                  <select v-model="enemy.armorId" @change="markDirty">
+                    <option :value="null" disabled>请选择护甲</option>
+                    <option
+                      v-for="a in armorOptions"
+                      :key="a.id"
+                      :value="a.id"
+                    >
+                      {{ a.name }} Lv.{{ a.level }}（{{ a.value }}）
+                    </option>
+                  </select>
+                </div>
+
+                <!-- 头盔 -->
+                <div class="enemy-field">
+                  <span class="label">头盔</span>
+                  <select v-model="enemy.helmetId" @change="markDirty">
+                    <option :value="null" disabled>请选择头盔</option>
+                    <option
+                      v-for="h in helmetOptions"
+                      :key="h.id"
+                      :value="h.id"
+                    >
+                      {{ h.name }} Lv.{{ h.level }}（{{ h.value }}）
+                    </option>
+                  </select>
+                </div>
+
+                <!-- 距离 -->
+                <div class="enemy-field">
+                  <span class="label">距离</span>
+                  <input
+                    v-model.number="enemy.distance"
+                    type="number"
+                    class="distance-input"
+                    min="0"
+                    max="200"
+                    step="1"
+                    @input="markDirty"
+                  />
+                  <span class="unit">m</span>
+                </div>
+              </div>
+
+              <!-- 底部：携带发数 + 总价 -->
+              <div class="card-footer">
+                <span>总价</span>
+                <span
+                  class="cost-total"
+                  :class="{ over: isOverBudget(enemy) }"
+                >
+                  <span class="carry-count">{{ getCarryCount(enemy) }}发</span>
+                  <span class="cost-sep">·</span>
+                  ¥{{ formatCostW(calcEnemyCost(enemy)) }}
+                  <template v-if="isOverBudget(enemy)">⚠️</template>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 预算 + 开始推荐 -->
+          <div class="budget-row">
+            <div class="budget-group">
+              <label>💰 预算</label>
+              <input
+                v-model.number="budget"
+                type="number"
+                class="budget-input"
+                min="1"
+                step="10"
+                @input="markDirty"
+              />
+              <span class="budget-unit">W 哈弗币</span>
+            </div>
+
+            <button
+              class="calc-btn"
+              :disabled="isRunning"
+              :title="calcButtonTitle"
+              @click="runRecommend"
+            >
+              <template v-if="isRunning">⏳ 推荐中...</template>
+              <template v-else>🔍 开始推荐</template>
+            </button>
+          </div>
+        </div>
+
+        <!-- ---------- 无推荐结果提示 ---------- -->
+        <div
+          v-if="!recommendations"
+          class="no-rec-hint"
+        >
+          💡 点击上方「🔍 开始推荐」获取推荐结果
+        </div>
+
+        <!-- ---------- 假想敌变更提示条 ---------- -->
+        <div
+          v-if="recommendDirty && recommendations"
+          class="dirty-hint"
+        >
+          ⚠️ 假想敌或参数已变更，点击「🔍 开始推荐」刷新结果
+        </div>
+
+        <!-- ---------- Top 3 卡片 ---------- -->
+        <template v-if="recommendations && recommendations.topN.length > 0">
+          <div class="section-title">
+            🏅 Top 3 推荐
+            <span class="badge">按综合胜率排序</span>
+          </div>
+
+          <div class="top3-grid">
+            <div
+              v-for="rec in recommendations.topN"
+              :key="rec.rank"
+              class="top3-card"
+              :class="`rank-${rec.rank}`"
+            >
+              <div class="top3-header">
+                <div class="rank-label">
+                  <span class="rank-num">{{ rankIcon(rec.rank) }}</span>
+                  <span>推荐 #{{ rec.rank }}</span>
+                </div>
+                <span class="winrate-badge">
+                  {{ formatPct(rec.winRate) }}<span class="pct">胜率</span>
+                </span>
+              </div>
+
+              <div class="top3-body">
+                <div class="gear-row">
+                  <span class="gear-icon">🔫</span>
+                  <span class="gear-label">武器</span>
+                  <span class="gear-value" :title="weaponLabel(rec)">
+                    {{ weaponLabel(rec) }}
+                  </span>
+                  <span class="gear-price">{{ formatPrice(rec.gear.weapon.price) }}</span>
+                </div>
+
+                <div v-if="rec.gear.weapon.buildCode" class="gear-row buildcode-row">
+                  <span class="gear-icon"></span>
+                  <span class="gear-label">码</span>
+                  <span class="gear-value buildcode-value" :title="rec.gear.weapon.buildCode">
+                    {{ rec.gear.weapon.buildCode }}
+                  </span>
+                  <button
+                    class="btn-copy-code"
+                    :class="{ copied: copiedKey === `rec_${rec.rank}` }"
+                    :title="copiedKey === `rec_${rec.rank}` ? '已复制' : '复制改枪码'"
+                    @click="copyBuildCode(rec.gear.weapon.buildCode, `rec_${rec.rank}`)"
+                  >
+                    {{ copiedKey === `rec_${rec.rank}` ? '✅' : '📋' }}
                   </button>
                 </div>
-                <div class="cell-sub cell-price">{{ formatPrice(rec.gear.weapon.price) }}</div>
-              </td>
 
-              <!-- 子弹 -->
-              <td class="bullet-cell" :title="bulletTooltip(rec)">
-                <div class="cell-main">
-                  <span class="cell-main-text">{{ bulletLabel(rec) }}</span>
-                  <span v-if="rec.gear.bullet.carryCount > 0" class="bullet-qty-inline">
-                    ×{{ rec.gear.bullet.carryCount }}
+                <div class="gear-row bullet-row">
+                  <span class="gear-icon">💊</span>
+                  <span class="gear-label">子弹</span>
+                  <span class="gear-value" :title="bulletTooltip(rec)">
+                    {{ bulletLabel(rec) }}
+                    <span v-if="rec.gear.bullet.carryCount > 0" class="bullet-qty">
+                      × {{ rec.gear.bullet.carryCount }}发
+                    </span>
+                  </span>
+                  <span class="gear-price bullet-price-group">
+                    <span class="bullet-unit-price">
+                      {{ formatBulletPrice(rec.gear.bullet.price) }}/发
+                    </span>
+                    <span class="bullet-total-price">
+                      {{ formatBulletCost(rec.cost.bulletCost) }}
+                    </span>
                   </span>
                 </div>
-                <div class="cell-sub">
-                  <span class="bullet-unit-price-mini">{{ formatBulletPrice(rec.gear.bullet.price) }}/发</span>
-                  <span class="bullet-total-price-mini">{{ formatBulletCost(rec.cost.bulletCost) }}</span>
+
+                <div class="gear-row">
+                  <span class="gear-icon">🦺</span>
+                  <span class="gear-label">护甲</span>
+                  <span class="gear-value" :title="armorLabel(rec)">
+                    {{ armorLabel(rec) }}
+                  </span>
+                  <span class="gear-price">{{ formatPrice(rec.gear.armor.price) }}</span>
                 </div>
-              </td>
 
-              <!-- 护甲 -->
-              <td class="armor-cell" :title="armorLabel(rec)">
-                <div class="cell-main">
-                  <span class="cell-main-text">{{ armorLabel(rec) }}</span>
+                <div class="gear-row">
+                  <span class="gear-icon">⛑️</span>
+                  <span class="gear-label">头盔</span>
+                  <span class="gear-value" :title="helmetLabel(rec)">
+                    {{ helmetLabel(rec) }}
+                  </span>
+                  <span class="gear-price">{{ formatPrice(rec.gear.helmet.price) }}</span>
                 </div>
-                <div class="cell-sub cell-price">{{ formatPrice(rec.gear.armor.price) }}</div>
-              </td>
 
-              <!-- 头盔 -->
-              <td class="armor-cell" :title="helmetLabel(rec)">
-                <div class="cell-main">
-                  <span class="cell-main-text">{{ helmetLabel(rec) }}</span>
+                <!-- 对敌明细 -->
+                <div class="enemy-ttk-detail">
+                  <div class="enemy-ttk-detail-title">
+                    <span>对敌明细</span>
+                    <span class="avg-hint">
+                      平均攻 {{ formatTTK(avgAttackTTK(rec)) }}ms / 守 {{ formatTTK(avgDefenseTTK(rec)) }}ms
+                    </span>
+                  </div>
+                  <div
+                    v-for="(e, idx) in rec.perEnemy"
+                    :key="idx"
+                    class="enemy-ttk-row"
+                    :class="{ 'is-weakest': idx === weakestEnemyIdx(rec) }"
+                  >
+                    <span class="enemy-name" :title="e.name">
+                      vs {{ e.name }}
+                    </span>
+                    <div class="ttk-pair">
+                      <span class="ttk-item">
+                        <span class="k">攻</span>
+                        <span class="v attack">{{ formatTTK(e.attackTTK) }}</span>
+                      </span>
+                      <span class="ttk-item">
+                        <span class="k">守</span>
+                        <span class="v defense">{{ formatTTK(e.defenseTTK) }}</span>
+                      </span>
+                    </div>
+                    <span class="winrate-cell" :class="rateClass(e.winRate)">
+                      {{ formatPct(e.winRate) }}
+                    </span>
+                  </div>
                 </div>
-                <div class="cell-sub cell-price">{{ formatPrice(rec.gear.helmet.price) }}</div>
-              </td>
 
-              <!-- 平均进攻 TTK -->
-              <td class="num-cell ttk-attack">
-                {{ formatTTK(avgAttackTTK(rec)) }} ms
-              </td>
+                <div class="metrics-row">
+                  <div class="metric">
+                    <div class="metric-label">综合胜率</div>
+                    <div class="metric-value" :class="rateClass(rec.winRate)">
+                      {{ formatPct(rec.winRate) }}
+                    </div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">平均进攻TTK</div>
+                    <div class="metric-value">
+                      {{ formatTTK(avgAttackTTK(rec)) }}<small>ms</small>
+                    </div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">平均生存TTK</div>
+                    <div class="metric-value">
+                      {{ formatTTK(avgDefenseTTK(rec)) }}<small>ms</small>
+                    </div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">总价</div>
+                    <div class="metric-value gear-total">
+                      {{ rec.cost.gearTotalW.toFixed(1) }}<small>W</small>
+                    </div>
+                  </div>
+                </div>
 
-              <!-- 平均生存 TTK -->
-              <td class="num-cell ttk-defense">
-                {{ formatTTK(avgDefenseTTK(rec)) }} ms
-              </td>
+                <div class="top3-actions">
+                  <button
+                    class="btn-add-as-enemy"
+                    :disabled="enemies.length >= MAX_ENEMIES"
+                    :title="enemies.length >= MAX_ENEMIES ? '假想敌数量已满，请先移除一个' : '用该配装添加一个新假想敌'"
+                    @click="addAsEnemy(rec)"
+                  >
+                    ➕ 添加为假想敌
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
 
-              <!-- 综合胜率 -->
-              <td
-                class="num-cell winrate"
-                :class="rateClass(rec.winRate)"
-              >
-                {{ formatPct(rec.winRate) }}
-              </td>
+        <!-- ---------- 第 4~30 名表格 ---------- -->
+        <template v-if="recommendations && recommendations.rest.length > 0">
+          <div class="section-title">
+            📊 第 4~{{ Math.min(3 + visibleRestCount, 3 + recommendations.rest.length) }} 名
+            <span class="badge">
+              {{ visibleRestCount }} / {{ recommendations.rest.length }} 套 · 按综合胜率排序
+            </span>
+          </div>
 
-              <!-- 总价 -->
-              <td class="num-cell gear-total">
-                {{ formatCost(rec.cost?.gearTotalW) }} W
-              </td>
-
-              <!-- ⭐ 操作 -->
-              <td class="action-cell">
-                <button
-                  class="btn-add-as-enemy-mini"
-                  :disabled="enemies.length >= MAX_ENEMIES"
-                  :title="enemies.length >= MAX_ENEMIES ? '假想敌数量已满，请先移除一个' : '用该配装添加一个新假想敌'"
-                  @click="addAsEnemy(rec)"
+          <div class="topn-table-wrapper">
+            <table class="topn-table">
+              <thead>
+                <tr>
+                  <th class="col-rank">排名</th>
+                  <th class="col-weapon">武器配置</th>
+                  <th class="col-bullet">子弹</th>
+                  <th class="col-armor">护甲</th>
+                  <th class="col-helmet">头盔</th>
+                  <th class="col-num">平均进攻TTK</th>
+                  <th class="col-num">平均生存TTK</th>
+                  <th class="col-num">综合胜率</th>
+                  <th class="col-num">总价</th>
+                  <th class="col-action">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(rec, idx) in displayedRest"
+                  :key="rec.rank || idx"
                 >
-                  ➕
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  <td class="rank-cell">
+                    <span class="rank-badge">{{ rec.rank }}</span>
+                  </td>
 
-      <!-- ⭐ 加载更多 -->
-      <div v-if="visibleRestCount < recommendations.rest.length" class="load-more-row">
-        <button class="btn-load-more" @click="handleLoadMore">
-          ➕ 加载更多（显示到 Top {{ Math.min(3 + visibleRestCount + LOAD_MORE_STEP, 3 + recommendations.rest.length) }}）
-        </button>
-      </div>
-    </template>
+                  <td class="weapon-cell" :title="weaponCellTooltip(rec)">
+                    <div class="cell-main">
+                      <span class="cell-main-text">{{ weaponLabel(rec) }}</span>
+                      <button
+                        v-if="rec.gear.weapon.buildCode"
+                        class="btn-copy-mini"
+                        :class="{ copied: copiedKey === `table_${rec.rank}` }"
+                        :title="copiedKey === `table_${rec.rank}` ? '已复制' : '复制改枪码'"
+                        @click.stop="copyBuildCode(rec.gear.weapon.buildCode, `table_${rec.rank}`)"
+                      >
+                        {{ copiedKey === `table_${rec.rank}` ? '✅' : '📋' }}
+                      </button>
+                    </div>
+                    <div class="cell-sub cell-price">{{ formatPrice(rec.gear.weapon.price) }}</div>
+                  </td>
 
-    <!-- ============================================================ -->
-    <!-- 空状态（推荐完成后无结果） -->
-    <!-- ============================================================ -->
-    <div
-      v-if="recommendations && recommendations.topN.length === 0"
-      class="empty-state"
-    >
-      <div class="icon">😢</div>
-      <div>没有找到符合条件的方案</div>
-      <div class="hint">请提高预算或调整假想敌配置</div>
-    </div>
+                  <td class="bullet-cell" :title="bulletTooltip(rec)">
+                    <div class="cell-main">
+                      <span class="cell-main-text">{{ bulletLabel(rec) }}</span>
+                      <span v-if="rec.gear.bullet.carryCount > 0" class="bullet-qty-inline">
+                        ×{{ rec.gear.bullet.carryCount }}
+                      </span>
+                    </div>
+                    <div class="cell-sub">
+                      <span class="bullet-unit-price-mini">{{ formatBulletPrice(rec.gear.bullet.price) }}/发</span>
+                      <span class="bullet-total-price-mini">{{ formatBulletCost(rec.cost.bulletCost) }}</span>
+                    </div>
+                  </td>
+
+                  <td class="armor-cell" :title="armorLabel(rec)">
+                    <div class="cell-main">
+                      <span class="cell-main-text">{{ armorLabel(rec) }}</span>
+                    </div>
+                    <div class="cell-sub cell-price">{{ formatPrice(rec.gear.armor.price) }}</div>
+                  </td>
+
+                  <td class="armor-cell" :title="helmetLabel(rec)">
+                    <div class="cell-main">
+                      <span class="cell-main-text">{{ helmetLabel(rec) }}</span>
+                    </div>
+                    <div class="cell-sub cell-price">{{ formatPrice(rec.gear.helmet.price) }}</div>
+                  </td>
+
+                  <td class="num-cell ttk-attack">
+                    {{ formatTTK(avgAttackTTK(rec)) }} ms
+                  </td>
+
+                  <td class="num-cell ttk-defense">
+                    {{ formatTTK(avgDefenseTTK(rec)) }} ms
+                  </td>
+
+                  <td
+                    class="num-cell winrate"
+                    :class="rateClass(rec.winRate)"
+                  >
+                    {{ formatPct(rec.winRate) }}
+                  </td>
+
+                  <td class="num-cell gear-total">
+                    {{ formatCost(rec.cost?.gearTotalW) }} W
+                  </td>
+
+                  <td class="action-cell">
+                    <button
+                      class="btn-add-as-enemy-mini"
+                      :disabled="enemies.length >= MAX_ENEMIES"
+                      :title="enemies.length >= MAX_ENEMIES ? '假想敌数量已满，请先移除一个' : '用该配装添加一个新假想敌'"
+                      @click="addAsEnemy(rec)"
+                    >
+                      ➕
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div v-if="visibleRestCount < recommendations.rest.length" class="load-more-row">
+            <button class="btn-load-more" @click="handleLoadMore">
+              ➕ 加载更多（显示到 Top {{ Math.min(3 + visibleRestCount + LOAD_MORE_STEP, 3 + recommendations.rest.length) }}）
+            </button>
+          </div>
+        </template>
+
+        <!-- ---------- 空状态（推荐完成后无结果） ---------- -->
+        <div
+          v-if="recommendations && recommendations.topN.length === 0"
+          class="empty-state"
+        >
+          <div class="icon">😢</div>
+          <div>没有找到符合条件的方案</div>
+          <div class="hint">请提高预算或调整假想敌配置</div>
+        </div>
+
+      </div>
+    </Transition>
 
     <!-- ============================================================ -->
     <!-- 进度遮罩 -->
@@ -593,8 +596,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, inject, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, inject, nextTick, watch } from 'vue'
 import { dataStore, paramsStore } from '@/stores/stores'
+import {
+  saveRecPanelState,
+  loadRecPanelState,
+} from '@/core/TTKIndexedDB'
 
 // ⭐ 注入通用弹窗
 const showAlert = inject('showAlert', null)
@@ -605,16 +612,14 @@ const showAlert = inject('showAlert', null)
 
 const MAX_ENEMIES = 3
 const DEFAULT_BUDGET_W = 100
-const BULLET_CARRY_COUNT = 60
+const DEFAULT_CARRY_COUNT = 120
 
-// ⭐ 随机配装采样参数
 const RANDOM_SAMPLE_COUNT = 100
 const RANDOM_TOP_RATIO = 0.3
 
-// ⭐ 加载更多：每次新增多少条
 const LOAD_MORE_STEP = 20
+const PERSIST_DEBOUNCE_MS = 500
 
-// ⭐ 头盔等级偏移权重（相对护甲）
 const HELMET_OFFSET_WEIGHTS = [
   { offset: -1, weight: 0.05 },
   { offset:  0, weight: 0.45 },
@@ -631,26 +636,16 @@ const budget = ref(100)
 const isRunning = ref(false)
 const recommendations = ref(null)
 
-// ⭐ 推荐结果是否"脏"（假想敌或参数变更后为 true）
 const recommendDirty = ref(false)
-
-// ⭐ 表格默认显示多少条（不包含 Top 3）
 const visibleRestCount = ref(10)
 
-// ⭐ 复制改枪码的临时状态
 const copiedKey = ref(null)
 let copiedTimer = null
 
-/**
- * 假想敌列表
- */
 const enemies = ref([])
 
 let _enemyIdCounter = 0
 
-/**
- * 进度状态
- */
 const progress = ref({
   visible: false,
   title: '推荐中...',
@@ -659,6 +654,8 @@ const progress = ref({
   total: 0,
   percent: 0
 })
+
+let persistTimer = null
 
 // ============================================================
 // 数据选项
@@ -694,7 +691,7 @@ const getBulletOptions = (weaponId) => {
 }
 
 // ============================================================
-// ⭐ 随机配装工具
+// 随机配装工具
 // ============================================================
 
 const rand = (min, max) => Math.random() * (max - min) + min
@@ -744,6 +741,13 @@ const pickHelmetForArmor = (armor, helmets) => {
   return closest
 }
 
+const getCarryCount = (enemy) => {
+  if (enemy && typeof enemy.carryCount === 'number' && enemy.carryCount > 0) {
+    return enemy.carryCount
+  }
+  return DEFAULT_CARRY_COUNT
+}
+
 const calcEnemyCost = (enemy) => {
   if (!enemy || !enemy.weaponId) return Infinity
 
@@ -765,7 +769,8 @@ const calcEnemyCost = (enemy) => {
   const helmet = dm.getArmorById(enemy.helmetId)
   const helmetPrice = helmet?.price || 0
 
-  const bulletCost = bulletPrice * BULLET_CARRY_COUNT
+  const carryCount = getCarryCount(enemy)
+  const bulletCost = bulletPrice * carryCount
 
   return configPrice + bulletCost + armorPrice + helmetPrice
 }
@@ -819,6 +824,7 @@ const randomEnemyOnce = () => {
     armorId: armor.id,
     helmetId: helmet.id,
     distance,
+    carryCount: DEFAULT_CARRY_COUNT,
   }
 }
 
@@ -851,7 +857,81 @@ const randomEnemy = (budgetYuan) => {
 }
 
 // ============================================================
-// ⭐ 脏标记
+// 从推荐结果挑假想敌
+// ============================================================
+
+const pickFromRecommendations = (recs) => {
+  if (!recs) return null
+
+  const all = [
+    ...(recs.topN || []),
+    ...(recs.rest || []),
+  ]
+  if (all.length === 0) return null
+
+  const rec = all[Math.floor(Math.random() * all.length)]
+
+  const weaponId = rec.gear.weapon.id
+  const configId = rec.gear.weapon.configId
+  const bulletId = rec.gear.bullet.id
+  const armorId = rec.gear.armor.id
+  const helmetId = rec.gear.helmet.id
+
+  if (!weaponId || !configId || !bulletId || !armorId || !helmetId) {
+    console.warn('⚠️ pickFromRecommendations: 推荐结果缺少必要字段', rec)
+    return null
+  }
+
+  const weapon = dataStore.getWeaponById(weaponId)
+  const distance = randomDistanceByType(weapon?.type || '步枪')
+
+  _enemyIdCounter += 1
+
+  return {
+    _id: `enemy_${Date.now()}_${_enemyIdCounter}`,
+    name: '',
+    budgetW: budget.value,
+    weaponId,
+    configId,
+    bulletId,
+    armorId,
+    helmetId,
+    distance,
+    carryCount: rec.gear.bullet.carryCount || DEFAULT_CARRY_COUNT,
+  }
+}
+
+// ============================================================
+// 持久化
+// ============================================================
+
+const schedulePersist = () => {
+  clearTimeout(persistTimer)
+  persistTimer = setTimeout(async () => {
+    try {
+      await saveRecPanelState({
+        enemies: enemies.value,
+        budget: budget.value,
+      })
+    } catch (e) {
+      console.warn('⚠️ 保存配装面板状态失败:', e)
+    }
+  }, PERSIST_DEBOUNCE_MS)
+}
+
+const persistNow = async () => {
+  try {
+    await saveRecPanelState({
+      enemies: enemies.value,
+      budget: budget.value,
+    })
+  } catch (e) {
+    console.warn('⚠️ 保存配装面板状态失败:', e)
+  }
+}
+
+// ============================================================
+// 脏标记
 // ============================================================
 
 const markDirty = () => {
@@ -881,34 +961,51 @@ const createEnemy = (index = 0) => {
     bulletId: null,
     armorId: null,
     helmetId: null,
-    distance: 30
+    distance: 30,
+    carryCount: DEFAULT_CARRY_COUNT,
   }
 }
 
 const addEnemy = () => {
   if (enemies.value.length >= MAX_ENEMIES) return
+  if (enemies.value.length === 0) return   // 空状态下不允许手动添加
+
   enemies.value.push(createEnemy(enemies.value.length))
   markDirty()
+  schedulePersist()
 }
 
 const removeEnemy = (index) => {
   if (enemies.value.length <= 1) return
   enemies.value.splice(index, 1)
   markDirty()
+  schedulePersist()
 }
 
 const rerollEnemy = (index) => {
   const enemy = enemies.value[index]
   if (!enemy) return
 
-  const budgetYuan = (enemy.budgetW || DEFAULT_BUDGET_W) * 10000
   const oldName = enemy.name
 
+  if (recommendations.value && recommendations.value.topN.length > 0) {
+    const picked = pickFromRecommendations(recommendations.value)
+    if (picked) {
+      picked.name = oldName || `假想敌 ${index + 1}`
+      enemies.value[index] = picked
+      markDirty()
+      schedulePersist()
+      return
+    }
+  }
+
+  const budgetYuan = (enemy.budgetW || DEFAULT_BUDGET_W) * 10000
   const newEnemy = randomEnemy(budgetYuan)
   if (newEnemy) {
     newEnemy.name = oldName || `假想敌 ${index + 1}`
     enemies.value[index] = newEnemy
     markDirty()
+    schedulePersist()
   } else {
     const msg = `⚠️ 预算 ¥${enemy.budgetW || DEFAULT_BUDGET_W}W 太小，无法生成配装`
     if (showAlert) showAlert(msg)
@@ -940,15 +1037,9 @@ const onEnemyWeaponChange = (index) => {
   }
 
   markDirty()
+  schedulePersist()
 }
 
-/**
- * ⭐ 从推荐结果"添加为假想敌"
- *
- * - 假想敌数量 < 3 时：追加一个新假想敌
- * - 假想敌数量 = 3 时：提示"数量已满"
- * - 添加后不自动重跑推荐，只标记 dirty
- */
 const addAsEnemy = (rec) => {
   if (!rec) return
 
@@ -959,14 +1050,12 @@ const addAsEnemy = (rec) => {
     return
   }
 
-  // 从 rec 提取字段
   const weaponId = rec.gear.weapon.id
   const configId = rec.gear.weapon.configId
   const bulletId = rec.gear.bullet.id
   const armorId = rec.gear.armor.id
   const helmetId = rec.gear.helmet.id
 
-  // 缺失字段检查
   if (!weaponId || !configId || !bulletId || !armorId || !helmetId) {
     console.warn('⚠️ addAsEnemy: 推荐结果缺少必要字段', rec)
     const msg = '⚠️ 该推荐结果缺少必要字段，无法添加'
@@ -975,7 +1064,6 @@ const addAsEnemy = (rec) => {
     return
   }
 
-  // 按武器类型随机距离
   const weapon = dataStore.getWeaponById(weaponId)
   const distance = randomDistanceByType(weapon?.type || '步枪')
 
@@ -991,16 +1079,18 @@ const addAsEnemy = (rec) => {
     armorId,
     helmetId,
     distance,
+    carryCount: rec.gear.bullet.carryCount || DEFAULT_CARRY_COUNT,
   }
 
   enemies.value.push(newEnemy)
   markDirty()
+  schedulePersist()
 
   console.log(`➕ 已添加为假想敌: ${rec.gear.weapon.name} ${configId} / ${rec.gear.bullet.name} Lv.${rec.gear.bullet.level}`)
 }
 
 // ============================================================
-// ⭐ 加载更多
+// 加载更多
 // ============================================================
 
 const displayedRest = computed(() => {
@@ -1017,7 +1107,7 @@ const handleLoadMore = () => {
 }
 
 // ============================================================
-// ⭐ 复制改枪码
+// 复制改枪码
 // ============================================================
 
 const copyBuildCode = async (code, key) => {
@@ -1063,27 +1153,13 @@ const copyBuildCode = async (code, key) => {
 // 计算属性
 // ============================================================
 
-const canRun = computed(() => {
-  if (enemies.value.length === 0) return false
-
-  return enemies.value.every(e =>
-    e.weaponId &&
-    e.configId &&
-    e.bulletId &&
-    e.armorId &&
-    e.helmetId &&
-    e.distance >= 0
-  )
-})
-
 const calcButtonTitle = computed(() => {
   if (isRunning.value) return '推荐中...'
-  if (!canRun.value) return '请完整配置所有假想敌'
   return '开始推荐配装'
 })
 
 // ============================================================
-// ⭐ 装备标签辅助
+// 装备标签辅助
 // ============================================================
 
 const weaponLabel = (rec) => {
@@ -1150,7 +1226,7 @@ const rankIcon = (rank) => {
 }
 
 // ============================================================
-// ⭐ 胜率相关辅助
+// 胜率相关辅助
 // ============================================================
 
 const avgAttackTTK = (rec) => {
@@ -1186,7 +1262,7 @@ const rateClass = (rate) => {
 }
 
 // ============================================================
-// ⭐ 格式化辅助
+// 格式化辅助
 // ============================================================
 
 const formatPct = (v) => {
@@ -1255,14 +1331,60 @@ const buildEngineParams = () => {
   }
 }
 
+const runRecommendInternal = async (enemiesList, progressRange = null) => {
+  const engine = window.__recEngine
+  if (!engine) return null
+
+  const input = {
+    budget: budget.value,
+    enemies: enemiesList,
+    params: buildEngineParams(),
+    kdRatio: paramsStore.state.kdRatio ?? 1.0,
+    extraCost: paramsStore.state.extraCost ?? 30
+  }
+
+  let onProgress = null
+  if (progressRange) {
+    const [start, end] = progressRange
+    onProgress = (current, total, phase) => {
+      const localPercent = total > 0 ? Math.round((current / total) * 100) : 0
+      const globalPercent = start + Math.round((end - start) * localPercent / 100)
+
+      progress.value.current = current
+      progress.value.total = total
+      progress.value.percent = globalPercent
+
+      let phaseText = ''
+      switch (phase) {
+        case 'enumerating':
+          phaseText = '① 枚举攻击侧 / 防御侧配置'
+          break
+        case 'attack':
+          phaseText = '② 计算攻击侧 TTK 矩阵'
+          break
+        case 'defense':
+          phaseText = '③ 计算防御侧 TTK 矩阵'
+          break
+        default:
+          phaseText = phase || ''
+      }
+      progress.value.phase = phaseText
+    }
+  }
+
+  const result = await engine.recommend(input, { onProgress, recordLog: false })
+  return result
+}
+
+const createTempEnemyForFirstRecommend = () => {
+  const tempEnemy = randomEnemy(budget.value * 10000)
+  if (!tempEnemy) return null
+  tempEnemy.name = '临时假想敌'
+  return tempEnemy
+}
+
 const runRecommend = async () => {
   if (isRunning.value) return
-  if (!canRun.value) {
-    if (showAlert) {
-      await showAlert('⚠️ 请完整配置所有假想敌（武器/配置/子弹/护甲/头盔/距离）')
-    }
-    return
-  }
 
   const engine = window.__recEngine
   if (!engine) {
@@ -1275,9 +1397,6 @@ const runRecommend = async () => {
   isRunning.value = true
   recommendations.value = null
 
-  // ⭐ 重置加载更多计数
-  visibleRestCount.value = 10
-
   progress.value.visible = true
   progress.value.title = '推荐中...'
   progress.value.phase = '准备中...'
@@ -1288,54 +1407,93 @@ const runRecommend = async () => {
   await nextTick()
   await new Promise(resolve => setTimeout(resolve, 150))
 
-  const input = {
-    budget: budget.value,
-    enemies: buildEngineEnemies(),
-    params: buildEngineParams(),
-    kdRatio: paramsStore.state.kdRatio ?? 1.0,
-    extraCost: paramsStore.state.extraCost ?? 30
-  }
-
-  console.log('📋 推荐输入:', input)
-
-  const onProgress = (current, total, phase) => {
-    const percent = total > 0 ? Math.round((current / total) * 100) : 0
-
-    progress.value.current = current
-    progress.value.total = total
-    progress.value.percent = percent
-
-    let phaseText = ''
-    switch (phase) {
-      case 'enumerating':
-        phaseText = '① 枚举攻击侧 / 防御侧配置'
-        break
-      case 'attack':
-        phaseText = '② 计算攻击侧 TTK 矩阵'
-        break
-      case 'defense':
-        phaseText = '③ 计算防御侧 TTK 矩阵'
-        break
-      default:
-        phaseText = phase || ''
-    }
-
-    progress.value.phase = phaseText
-  }
-
   try {
-    const result = await engine.recommend(input, { onProgress, recordLog: true })
+    if (enemies.value.length === 0) {
+      // ============================================================
+      // 空 enemies：首次推荐的完整流程
+      // ============================================================
+      progress.value.title = '正在初始化...'
+      progress.value.phase = '生成初始假想敌'
+      progress.value.percent = 5
 
-    recommendations.value = result.recommendations
+      const tempEnemy = createTempEnemyForFirstRecommend()
+      if (!tempEnemy) {
+        throw new Error('无法生成初始假想敌，请检查数据')
+      }
 
-    // ⭐ 推荐完成 → 清除 dirty
-    recommendDirty.value = false
+      const tempEnemiesEngine = [{
+        name: tempEnemy.name,
+        weaponId: tempEnemy.weaponId,
+        configId: tempEnemy.configId,
+        bulletId: tempEnemy.bulletId,
+        armorLevel: dataStore.getArmorById(tempEnemy.armorId)?.level ?? 4,
+        armorValue: dataStore.getArmorById(tempEnemy.armorId)?.value ?? 0,
+        helmetLevel: dataStore.getArmorById(tempEnemy.helmetId)?.level ?? 4,
+        helmetValue: dataStore.getArmorById(tempEnemy.helmetId)?.value ?? 0,
+        distance: tempEnemy.distance,
+      }]
 
-    engine.printResult(result)
+      progress.value.phase = '计算初始推荐'
+      progress.value.percent = 10
 
-    window.__lastRecResult = result
-    console.log('💡 提示：可通过 window.__lastRecResult 获取完整结果')
-    console.log('💡 提示：可调用 window.__recEngine.exportResult(window.__lastRecResult) 导出 JSON')
+      const firstResult = await runRecommendInternal(tempEnemiesEngine, [10, 55])
+
+      if (!firstResult || !firstResult.recommendations) {
+        throw new Error('初始推荐失败')
+      }
+
+      progress.value.phase = '生成最终假想敌'
+      progress.value.percent = 60
+
+      const picked = pickFromRecommendations(firstResult.recommendations)
+
+      if (picked) {
+        picked.name = '假想敌 1'
+        enemies.value = [picked]
+      } else {
+        tempEnemy.name = '假想敌 1'
+        enemies.value = [tempEnemy]
+      }
+
+      progress.value.phase = '计算最终推荐'
+      progress.value.percent = 65
+
+      const finalEnemiesEngine = buildEngineEnemies()
+      const finalResult = await runRecommendInternal(finalEnemiesEngine, [65, 100])
+
+      if (finalResult && finalResult.recommendations) {
+        recommendations.value = finalResult.recommendations
+        recommendDirty.value = false
+        visibleRestCount.value = 10
+
+        if (engine.printResult) {
+          engine.printResult(finalResult)
+        }
+
+        window.__lastRecResult = finalResult
+      }
+
+      await persistNow()
+
+    } else {
+      // ============================================================
+      // 非空 enemies：直接跑推荐
+      // ============================================================
+      const enemiesEngine = buildEngineEnemies()
+      const result = await runRecommendInternal(enemiesEngine, [0, 100])
+
+      if (result && result.recommendations) {
+        recommendations.value = result.recommendations
+        recommendDirty.value = false
+        visibleRestCount.value = 10
+
+        if (engine.printResult) {
+          engine.printResult(result)
+        }
+
+        window.__lastRecResult = result
+      }
+    }
 
   } catch (error) {
     console.error('❌ 推荐失败:', error)
@@ -1356,14 +1514,78 @@ const runRecommend = async () => {
 // 初始化
 // ============================================================
 
+const initPanel = async () => {
+  try {
+    const state = await loadRecPanelState()
+
+    if (state && Array.isArray(state.enemies) && state.enemies.length > 0) {
+      enemies.value = state.enemies
+      budget.value = typeof state.budget === 'number' ? state.budget : DEFAULT_BUDGET_W
+
+      let maxId = 0
+      for (const e of state.enemies) {
+        const match = String(e._id || '').match(/_(\d+)$/)
+        if (match) {
+          const n = parseInt(match[1], 10)
+          if (n > maxId) maxId = n
+        }
+      }
+      _enemyIdCounter = maxId
+
+      console.log(`✅ 已恢复配装面板状态：${enemies.value.length} 个假想敌，预算 ${budget.value}W`)
+    } else {
+      enemies.value = []
+      budget.value = DEFAULT_BUDGET_W
+      console.log('ℹ️ 无持久化状态，显示空状态')
+    }
+  } catch (e) {
+    console.warn('⚠️ 恢复配装面板状态失败:', e)
+    enemies.value = []
+    budget.value = DEFAULT_BUDGET_W
+  }
+}
+
+// ============================================================
+// Watch：持久化触发
+// ============================================================
+
+watch(
+  () => [enemies.value.length, budget.value],
+  () => {
+    if (enemies.value.length > 0) {
+      schedulePersist()
+    }
+  },
+  { deep: false }
+)
+
+watch(
+  enemies,
+  () => {
+    if (enemies.value.length > 0) {
+      schedulePersist()
+    }
+  },
+  { deep: true }
+)
+
+// ============================================================
+// 生命周期
+// ============================================================
+
 onMounted(() => {
   if (!dataStore.state.isLoaded) {
     setTimeout(() => {
-      enemies.value = [createEnemy(0)]
+      initPanel()
     }, 800)
   } else {
-    enemies.value = [createEnemy(0)]
+    initPanel()
   }
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(persistTimer)
+  if (copiedTimer) clearTimeout(copiedTimer)
 })
 </script>
 
@@ -1377,26 +1599,163 @@ onMounted(() => {
 }
 
 /* ============================================================
-   说明框
+   ⭐ 视图切换过渡动画
    ============================================================ */
 
-.explain-box {
-  background: #f8f9ff;
-  border-left: 3px solid var(--color-primary);
-  padding: 10px 14px;
-  margin-bottom: 16px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #555;
-  line-height: 1.7;
+.rec-view-fade-enter-active {
+  transition: all 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
-.explain-box strong {
-  color: var(--color-text);
+.rec-view-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.rec-view-fade-enter-from {
+  opacity: 0;
+  transform: scale(0.96) translateY(12px);
+}
+
+.rec-view-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.96) translateY(-12px);
 }
 
 /* ============================================================
-   面板
+   ⭐ 空状态（居中卡片）
+   ============================================================ */
+
+.rec-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  padding: 40px 20px;
+}
+
+.rec-empty-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px 44px 36px;
+  box-shadow: 0 8px 40px rgba(74, 108, 247, 0.10),
+              0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e8ecf5;
+  text-align: center;
+  max-width: 440px;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.rec-empty-title {
+  font-family: var(--font-family);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+
+.rec-empty-hint {
+  font-family: var(--font-family);
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+.rec-empty-budget-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fff8e1;
+  border: 1px solid #ffe0a8;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.rec-empty-budget-label {
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+  color: #e65100;
+  white-space: nowrap;
+}
+
+.rec-empty-budget-input {
+  width: 100px;
+  padding: 8px 12px;
+  border: 1px solid #ffcc80;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  background: #fff;
+  color: var(--color-text);
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.rec-empty-budget-input:focus {
+  border-color: #ff9800;
+  box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.12);
+}
+
+.rec-empty-budget-unit {
+  font-family: var(--font-family);
+  font-size: 13px;
+  color: #e65100;
+  white-space: nowrap;
+}
+
+.rec-empty-start-btn {
+  width: 100%;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #4a6cf7, #6a8cf7);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(74, 108, 247, 0.25);
+  letter-spacing: 0.5px;
+}
+
+.rec-empty-start-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3a5cd7, #5a7ce7);
+  box-shadow: 0 6px 20px rgba(74, 108, 247, 0.35);
+  transform: translateY(-1px);
+}
+
+.rec-empty-start-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(74, 108, 247, 0.25);
+}
+
+.rec-empty-start-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================================
+   ⭐ 完整界面容器
+   ============================================================ */
+
+.rec-full-view {
+  width: 100%;
+}
+
+/* ============================================================
+   假想敌配置区
    ============================================================ */
 
 .panel {
@@ -1425,10 +1784,6 @@ onMounted(() => {
   padding: 2px 8px;
   border-radius: 10px;
 }
-
-/* ============================================================
-   假想敌区
-   ============================================================ */
 
 .enemies-header {
   display: flex;
@@ -1462,63 +1817,6 @@ onMounted(() => {
   border-color: #e0e0e0;
   cursor: not-allowed;
 }
-
-/* ---------- 空状态 ---------- */
-.enemy-empty-state {
-  width: 100%;
-  text-align: center;
-  padding: 40px 20px;
-  color: #999;
-  font-size: 13px;
-  border: 2px dashed #ddd;
-  border-radius: 8px;
-  margin-bottom: 14px;
-}
-
-.enemy-empty-state .icon {
-  font-size: 42px;
-  margin-bottom: 12px;
-  opacity: 0.45;
-}
-
-.enemy-empty-state .title {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 6px;
-  font-weight: 500;
-}
-
-.enemy-empty-state .hint {
-  font-size: 11px;
-  color: #bbb;
-  margin-bottom: 20px;
-}
-
-.empty-actions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.btn-big-random {
-  padding: 10px 24px;
-  background: #9c27b0;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-family: var(--font-family);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.btn-big-random:hover { background: #7b1fa2; }
-.btn-big-random:active { transform: scale(0.97); }
 
 /* ---------- 敌人卡片容器 ---------- */
 .enemies-grid {
@@ -1649,7 +1947,6 @@ onMounted(() => {
   color: #f44336;
 }
 
-/* ---------- 卡片主体 ---------- */
 .enemy-card-body {
   flex: 1;
   display: flex;
@@ -1757,10 +2054,23 @@ onMounted(() => {
   font-weight: 700;
   font-size: 12px;
   color: #e67e22;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .card-footer .cost-total.over {
   color: #f44336;
+}
+
+.card-footer .carry-count {
+  color: #4a6cf7;
+  font-weight: 600;
+}
+
+.card-footer .cost-sep {
+  color: #ccc;
+  font-weight: 400;
 }
 
 /* ============================================================
@@ -1840,7 +2150,26 @@ onMounted(() => {
 }
 
 /* ============================================================
-   ⭐ 脏标记提示条
+   无推荐结果提示
+   ============================================================ */
+
+.no-rec-hint {
+  background: #f0f4ff;
+  border: 1px solid #d0ddff;
+  color: #4a6cf7;
+  border-radius: 6px;
+  padding: 16px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ============================================================
+   脏标记提示条
    ============================================================ */
 
 .dirty-hint {
@@ -1898,7 +2227,7 @@ onMounted(() => {
 }
 
 /* ============================================================
-   空状态（推荐完成后）
+   空状态（推荐完成后无结果）
    ============================================================ */
 
 .empty-state {
@@ -2223,7 +2552,6 @@ onMounted(() => {
   font-weight: 700;
 }
 
-/* ---------- 对敌明细 ---------- */
 .enemy-ttk-detail {
   margin-top: 10px;
   padding-top: 10px;
@@ -2281,16 +2609,6 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.weakest-tag {
-  font-size: 9px;
-  background: #ff9800;
-  color: #fff;
-  padding: 1px 5px;
-  border-radius: 3px;
-  flex-shrink: 0;
-  font-weight: 500;
-}
-
 .enemy-ttk-row .ttk-pair {
   display: flex;
   gap: 6px;
@@ -2338,7 +2656,6 @@ onMounted(() => {
   background: #ffebee;
 }
 
-/* ---------- 指标行 ---------- */
 .metrics-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2385,7 +2702,6 @@ onMounted(() => {
   color: #e67e22;
 }
 
-/* ---------- ⭐ Top3 底部操作 ---------- */
 .top3-actions {
   margin-top: 10px;
   padding-top: 10px;
@@ -2428,7 +2744,7 @@ onMounted(() => {
 }
 
 /* ============================================================
-   ⭐ 第 4~30 名表格
+   第 4~30 名表格
    ============================================================ */
 
 .topn-table-wrapper {
@@ -2608,7 +2924,6 @@ onMounted(() => {
 .num-cell.winrate.rate-warn { color: #ff9800; }
 .num-cell.winrate.rate-bad  { color: #f44336; }
 
-/* ⭐ 操作列 */
 .action-cell {
   text-align: center !important;
   padding: 4px 6px;
@@ -2648,7 +2963,6 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-/* ⭐ 加载更多 */
 .load-more-row {
   display: flex;
   justify-content: center;
@@ -2687,14 +3001,46 @@ onMounted(() => {
    ============================================================ */
 
 @media (max-width: 768px) {
-  .panel {
-    padding: 10px 12px;
+  /* ⭐ 空状态移动端 */
+  .rec-empty-state {
+    min-height: 300px;
+    padding: 24px 16px;
   }
 
-  .explain-box {
-    padding: 8px 12px;
-    font-size: 11px;
-    line-height: 1.6;
+  .rec-empty-card {
+    padding: 28px 24px 24px;
+    border-radius: 12px;
+  }
+
+  .rec-empty-title {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+
+  .rec-empty-hint {
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+
+  .rec-empty-budget-row {
+    padding: 10px 12px;
+    margin-bottom: 16px;
+  }
+
+  .rec-empty-budget-input {
+    width: 80px;
+    padding: 6px 10px;
+    font-size: 15px;
+  }
+
+  .rec-empty-start-btn {
+    padding: 11px 20px;
+    font-size: 14px;
+  }
+
+  /* ⭐ 完整界面移动端 */
+  .panel {
+    padding: 10px 12px;
   }
 
   .enemies-grid {
@@ -2717,25 +3063,6 @@ onMounted(() => {
     height: 26px;
   }
 
-  .enemy-empty-state {
-    padding: 30px 16px;
-  }
-
-  .enemy-empty-state .icon {
-    font-size: 36px;
-  }
-
-  .btn-big-random {
-    width: 100%;
-    justify-content: center;
-    padding: 10px 16px;
-  }
-
-  .empty-actions {
-    flex-direction: column;
-    gap: 8px;
-  }
-
   .budget-row {
     gap: 6px 12px;
   }
@@ -2749,6 +3076,11 @@ onMounted(() => {
     width: 100%;
     margin-left: 0;
     padding: 8px 16px;
+  }
+
+  .no-rec-hint {
+    padding: 12px;
+    font-size: 12px;
   }
 
   .dirty-hint {

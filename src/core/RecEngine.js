@@ -17,30 +17,28 @@
 // - 攻击侧/防御侧 TTK 都是精确值（DP，< 0.01% 误差）
 //
 // ⭐ 场景哈希（_makeScenarioHash）：
-//   必须与 TTKMatrix.makeScenarioHash 保持完全一致。
-//   任何一处改动（字段、顺序、版本号）都要同步另一处。
+//   已改为引用 TTKMatrix.makeScenarioHash，保证完全一致。
 //
-//   v1 → v2：同步 TTKMatrix.MATRIX_VERSION = 2
-//           （修复 DP 连发间隔重复计算 bug）
-//   v2 → v3：同步 TTKMatrix.MATRIX_VERSION = 3
-//           （修复 DP 分段射速边界 bug）
+// ⭐ 附件解析（v6 修复）：
+//   config.barrelId 可能是 -1 / undefined，但 config.barrel 有名字。
+//   改用 getPriceRowsForWeapon（内部已按名字反查 barrelId）→ 保证枪管正确应用。
+//
+//   ⚠️ 之前的 bug：
+//     - _buildAttackSide / _prepareEnemies 直接用 price.configs.find(...)
+//     - config.barrelId 是 undefined → barrel = null → 枪管 rangeMult 没应用
+//     - 结果：勇士 #1 的 rangeMult 1.3 没生效 → 22m 用错 decay
 //
 // ⭐ 去重规则（v2 新增）：
 //   同一武器配置（weaponId + configId）只保留一条，取胜率最高的。
 //   防御侧（护甲/头盔）不参与去重 —— 保留胜率最高的甲头组合。
 //
-//   目的：避免 Top 10 被同一把武器的不同甲头组合刷屏。
-//
 // ⭐ 评分：单敌人胜率（v3 重构）
 //
 //   旧逻辑：ratio = defenseTTK / attackTTK，取 min
-//           → "最差情况"主导，容易被单个短板拖垮
-//
 //   新逻辑：
 //     1. 对每个敌人算胜率（Logistic 曲线）：
 //          winRate_i = 1 / (1 + exp(-(defenseTTK - attackTTK) / K))
 //        K 控制曲线陡峭程度（默认 100ms）
-//
 //     2. 综合胜率 = 所有敌人胜率的聚合
 //          支持 avg / min / geo / harmonic（默认 avg）
 //
@@ -50,64 +48,35 @@
 //   - rest 从 slice(3, 10) → slice(3, 30)，支持"加载更多到 Top 30"
 //   - gear.bullet / gear.armor / gear.helmet 输出 id（供"添加为假想敌"用）
 //
-// ⭐ 成本口径（两个指标）：
-//   1. 单局消耗（cost.total）：
-//        枪价 × (1 - 撤离率) + 子弹消耗
-//        —— 打一局平均亏多少
-//
-//   2. 总价（cost.gearTotal）：
-//        枪价 + 甲价 + 头价 + 子弹成本
-//        —— 买齐这套要花多少
-//
-//     其中 子弹成本 = 子弹单价 × 携带数量
-//          携带数量 = (KD × 5 × avgShots + extraCost) × 2
+// ⭐ debug 收集（v5 新增）：
+//   - recommend() 返回 _debug 字段（含每个 combo 的详细输入/输出）
+//   - 数据来自 TTKMatrix 的模块级 _debugMap（不持久化）
+//   - 供 __recDebug() 在控制台按 rank / weaponId / weaponName 查询
 
-import { computeTTKMatrix, queryAttackTTK, queryDefenseTTK } from './FastTTK.js'
+import {
+  computeTTKMatrix,
+  queryAttackTTK,
+  queryDefenseTTK,
+} from './FastTTK.js'
+import {
+  getDebugEntry,
+  makeAttackId,
+  makeDefenseId,
+  makeScenarioHash,
+} from './TTKMatrix.js'
 import { calculateCurrentValues } from '../utils/weaponCalc.js'
 
 // ============================================================
 // 评分参数
 // ============================================================
 
-/**
- * 胜率曲线的陡峭程度（ms）
- *
- *   K 越小 → 曲线越陡 → 微小时间差导致胜率大幅变化
- *   K 越大 → 曲线越平 → 胜率对时间差不敏感
- *
- * 默认 100ms：
- *   时间差 +100ms → 胜率 ~73%
- *   时间差 +200ms → 胜率 ~88%
- *   时间差 +400ms → 胜率 ~98%
- */
 const WIN_RATE_K = 100
-
-/**
- * 综合胜率的聚合方式
- *
- *   'avg'      → 算术平均（推荐）
- *   'min'      → 最小值（保守）
- *   'geo'      → 几何平均
- *   'harmonic' → 调和平均
- */
 const WIN_RATE_AGG_METHOD = 'avg'
 
 // ============================================================
 // 评分工具
 // ============================================================
 
-/**
- * 单敌人胜率（Logistic 曲线）
- *
- *   diff = defenseTTK - attackTTK
- *     正数 → 我方击杀更快 → 胜率 > 50%
- *     负数 → 敌方击杀更快 → 胜率 < 50%
- *
- * @param {number} attackTTK  - 我方击杀敌人的时间（ms）
- * @param {number} defenseTTK - 敌人击杀我方的时间（ms）
- * @param {number} K          - 曲线陡峭度（ms）
- * @returns {number} 胜率 [0, 1]
- */
 function calcWinRate(attackTTK, defenseTTK, K = WIN_RATE_K) {
   if (!isFinite(attackTTK) || !isFinite(defenseTTK)) return 0.5
   if (attackTTK <= 0 || defenseTTK <= 0) return 0.5
@@ -116,13 +85,6 @@ function calcWinRate(attackTTK, defenseTTK, K = WIN_RATE_K) {
   return 1 / (1 + Math.exp(-diff / K))
 }
 
-/**
- * 综合胜率（多个敌人胜率的聚合）
- *
- * @param {Array<number>} rates
- * @param {string} method - 'avg' | 'min' | 'geo' | 'harmonic'
- * @returns {number}
- */
 function aggregateWinRates(rates, method = WIN_RATE_AGG_METHOD) {
   if (!Array.isArray(rates) || rates.length === 0) return 0
 
@@ -152,34 +114,38 @@ function aggregateWinRates(rates, method = WIN_RATE_AGG_METHOD) {
 // ============================================================
 
 export class RecEngine {
-  /**
-   * @param {DataManager} dataManager
-   */
   constructor(dataManager) {
     this.dm = dataManager
+  }
+
+  // ============================================================
+  // 0. ⭐ 辅助：查"已反查 barrelId"的配置 row
+  // ============================================================
+
+  /**
+   * 用 getPriceRowsForWeapon 返回的 row（含反查后的 barrelId / muzzleId / precision）
+   *
+   * ⚠️ 为什么不用 price.configs.find(...)？
+   *   - data.json 里 config.barrelId 可能是 -1 或 undefined
+   *   - 但 config.barrel 有名字（如 "勇士海狸枪管"）
+   *   - getPriceRowsForWeapon 内部会按名字反查 barrelId
+   *
+   * 直接 price.configs.find 会拿到 barrelId = -1 或 undefined
+   * → barrel = null → 枪管 rangeMult 没应用
+   *
+   * @param {number} weaponId
+   * @param {string} configId
+   * @returns {Object|null}
+   */
+  _findRowForConfig(weaponId, configId) {
+    const rows = this.dm.getPriceRowsForWeapon(weaponId) || []
+    return rows.find(r => r.configId === configId) || null
   }
 
   // ============================================================
   // 1. 主入口
   // ============================================================
 
-  /**
-   * 执行推荐
-   *
-   * @param {Object} input - {
-   *   budget: number,        // 采购成本上限（万）
-   *   enemies: Array,        // 1~3 个假想敌
-   *   params: Object,        // 全局参数
-   *   kdRatio: number,       // KD（默认 1.0）
-   *   extraCost: number,     // 其他消耗发数（默认 30）
-   * }
-   * @param {Object} options - {
-   *   recordLog: boolean,
-   *   onProgress: Function,
-   *   signal: { cancelled: boolean },
-   * }
-   * @returns {Promise<Object>} { recommendations, log }
-   */
   async recommend(input, options = {}) {
     const t0 = performance.now()
 
@@ -258,7 +224,11 @@ export class RecEngine {
 
       console.log(`✅ 推荐完成: ${log.totalTimeMs}ms, Top ${recommendations.topN.length} + ${recommendations.rest.length}`)
 
-      return { recommendations, log }
+      return {
+        recommendations,
+        log,
+        _debug: recommendations._debug,
+      }
 
     } catch (error) {
       log.totalTimeMs = Math.round(performance.now() - t0)
@@ -272,20 +242,6 @@ export class RecEngine {
   // 2. 枚举攻击侧
   // ============================================================
 
-  /**
-   * 构建攻击侧列表
-   *
-   * 每条攻击侧 = 一个 (武器配置, 子弹等级) 组合
-   *
-   * @returns {Array} [{
-   *   weaponId, configId, bulletId, bullet,
-   *   weapon, config,
-   *   _armed,        // 应用附件后的武器对象（含 _current）
-   *   _attachment,   // 附件信息
-   *   _price,        // 配置价格
-   *   meta: { weaponId, weaponName, configId, buildCode, bulletId, bulletName, bulletLevel, bulletPrice }
-   * }]
-   */
   _buildAttackSide() {
     const attacks = []
     const weapons = this.dm.getWeapons()
@@ -295,15 +251,16 @@ export class RecEngine {
       if (!price) continue
 
       for (const config of price.configs) {
-        // 只枚举 enabled
         if (config.enabled === false) continue
 
-        // 解析附件
-        const barrelId = config.barrelId ?? -1
-        const muzzleId = config.muzzleId ?? 0
-        const precision = config.precision ?? 0.09
+        // ⭐ 用 getPriceRowsForWeapon 返回的 row（已反查 barrelId / muzzleId / precision）
+        const row = this._findRowForConfig(weapon.id, config.id)
+        if (!row) continue
 
-        // 应用附件后的武器（用于计算）
+        const barrelId = row.barrelId ?? -1
+        const muzzleId = row.muzzleId ?? 0
+        const precision = row.precision ?? 0.09
+
         let barrel = null
         if (barrelId >= 0 && weapon.barrels && weapon.barrels[barrelId]) {
           barrel = weapon.barrels[barrelId]
@@ -317,16 +274,16 @@ export class RecEngine {
           _configId: config.id || '#1',
         }
 
-        // 附件信息（用于 hitRateMap）
+        // hitRateMap（从 row 里拿，跟 getPriceRowsForWeapon 一致）
         let hitRateMap = []
-        if (config.distance && config.hitRate &&
-            Array.isArray(config.distance) && Array.isArray(config.hitRate) &&
-            config.distance.length > 0 && config.hitRate.length > 0) {
-          const len = Math.min(config.distance.length, config.hitRate.length)
+        if (row.distance && row.hitRate &&
+            Array.isArray(row.distance) && Array.isArray(row.hitRate) &&
+            row.distance.length > 0 && row.hitRate.length > 0) {
+          const len = Math.min(row.distance.length, row.hitRate.length)
           for (let i = 0; i < len; i++) {
             hitRateMap.push({
-              distance: config.distance[i],
-              rate: config.hitRate[i]
+              distance: row.distance[i],
+              rate: row.hitRate[i]
             })
           }
         }
@@ -342,7 +299,6 @@ export class RecEngine {
           displayName: armedWeapon._displayName
         }
 
-        // 枚举子弹等级 Lv.1 ~ Lv.5
         for (let level = 1; level <= 5; level++) {
           const bullet = this.dm.getBulletByCaliberAndLevel(weapon.allowedBullet, level)
           if (!bullet) continue
@@ -380,15 +336,6 @@ export class RecEngine {
   // 3. 枚举防御侧
   // ============================================================
 
-  /**
-   * 构建防御侧列表（全枚举护甲 × 头盔）
-   *
-   * @returns {Array} [{
-   *   armor, helmet,
-   *   meta: { armorId, armorName, armorLevel, armorValue, armorPrice,
-   *           helmetId, helmetName, helmetLevel, helmetValue, helmetPrice }
-   * }]
-   */
   _buildDefenseSide() {
     const defenses = []
     const armors = this.dm.getArmorsByType('armor')
@@ -422,14 +369,6 @@ export class RecEngine {
   // 4. 准备敌人
   // ============================================================
 
-  /**
-   * 准备敌人列表（含 _enemyArmed）
-   *
-   * 敌人的武器/子弹不受 enabled 影响（假想敌明确指定）
-   *
-   * @param {Array} enemyInputs - UI 输入的敌人列表
-   * @returns {Array} [{ ..., _enemyArmed: { armed, bulletData, weaponKey } }]
-   */
   _prepareEnemies(enemyInputs) {
     return enemyInputs.map(e => {
       const weapon = this.dm.getWeaponById(e.weaponId)
@@ -438,16 +377,16 @@ export class RecEngine {
         return null
       }
 
-      const price = this.dm.getPriceByWeaponId(e.weaponId)
-      const config = price?.configs.find(c => c.id === e.configId)
-      if (!config) {
+      // ⭐ 用 getPriceRowsForWeapon 返回的 row
+      const row = this._findRowForConfig(e.weaponId, e.configId)
+      if (!row) {
         console.warn(`⚠️ 敌人配置不存在: ${e.weaponId} ${e.configId}`)
         return null
       }
 
-      const barrelId = config.barrelId ?? -1
-      const muzzleId = config.muzzleId ?? 0
-      const precision = config.precision ?? 0.09
+      const barrelId = row.barrelId ?? -1
+      const muzzleId = row.muzzleId ?? 0
+      const precision = row.precision ?? 0.09
 
       let barrel = null
       if (barrelId >= 0 && weapon.barrels && weapon.barrels[barrelId]) {
@@ -459,8 +398,8 @@ export class RecEngine {
         ...weapon,
         ...current,
         _current: current,
-        _displayName: `${weapon.name} ${config.id}`.trim(),
-        _configId: config.id || '#1',
+        _displayName: `${weapon.name} ${e.configId}`.trim(),
+        _configId: e.configId || '#1',
       }
 
       const bulletData = this.dm.getBulletById(e.bulletId)
@@ -469,11 +408,11 @@ export class RecEngine {
         return null
       }
 
-      // 敌人自己的命中率（可选）
+      // 敌人自己的命中率（从 row 拿）
       let hitRate = null
-      if (config.distance && config.hitRate &&
-          Array.isArray(config.distance) && Array.isArray(config.hitRate)) {
-        const map = config.distance.map((d, i) => ({ distance: d, rate: config.hitRate[i] }))
+      if (row.distance && row.hitRate &&
+          Array.isArray(row.distance) && Array.isArray(row.hitRate)) {
+        const map = row.distance.map((d, i) => ({ distance: d, rate: row.hitRate[i] }))
         hitRate = this.dm.getHitRateFromMap(map, e.distance, 0.85)
       }
 
@@ -500,9 +439,6 @@ export class RecEngine {
   // 5. 组合推荐（从 IndexedDB 读）
   // ============================================================
 
-  /**
-   * 从 IndexedDB 读回矩阵，组合推荐
-   */
   async _buildRecommendationsFromMatrix(
     attacks,
     defenses,
@@ -516,8 +452,7 @@ export class RecEngine {
     const kdRatio = input.kdRatio ?? 1.0
     const extraCost = input.extraCost ?? 30
 
-    // 计算 scenario hash（和 TTKMatrix 里一致）
-    const scenarioHash = this._makeScenarioHash(scenario)
+    const scenarioHash = makeScenarioHash(scenario)
 
     // ============================================================
     // 5.1 读攻击侧矩阵
@@ -600,7 +535,6 @@ export class RecEngine {
       const avgShots = firstEnemy.shots
       const bulletPrice = attackData.meta.bulletPrice || 0
 
-      // 子弹成本：携带数量 = (KD × 5 × avgShots + extraCost) × 2
       const avgConsumption = kdRatio * 5 * avgShots + extraCost
       const carryCount = avgConsumption * 2
       const bulletCost = Math.round(bulletPrice * carryCount)
@@ -658,9 +592,6 @@ export class RecEngine {
 
         withinBudget++
 
-        // ============================================================
-        // ⭐ 计算每个敌人的胜率 + 综合胜率
-        // ============================================================
         let valid = true
         const perEnemyWinRates = {}
         const winRates = []
@@ -707,7 +638,7 @@ export class RecEngine {
     }
 
     // ============================================================
-    // 5.6 排序（按综合胜率降序）
+    // 5.6 排序
     // ============================================================
     allCombos.sort((a, b) => {
       if (b.winRate !== a.winRate) return b.winRate - a.winRate
@@ -726,11 +657,7 @@ export class RecEngine {
     console.log(`📐 评分: K=${WIN_RATE_K}ms, 聚合=${WIN_RATE_AGG_METHOD}`)
 
     // ============================================================
-    // ⭐ 5.6.1 去重：同一武器配置只出现一次
-    //
-    //   - 去重键：weaponId + configId
-    //   - 保留：每组第一条（即 allCombos 已按综合胜率排序后的最高胜率）
-    //   - 防御侧不参与去重（保留胜率最高的甲头组合）
+    // 5.6.1 去重
     // ============================================================
     const seenWeaponConfig = new Set()
     const dedupedCombos = []
@@ -749,7 +676,6 @@ export class RecEngine {
     // 5.7 构建推荐输出
     // ============================================================
     const formatCombo = (combo, rank) => {
-      // ⭐ 总价 = 枪价 + 甲价 + 头价 + 子弹成本（携带数量口径）
       const gearTotal =
         combo.cost.gunPrice +
         combo.cost.bulletCost +
@@ -767,7 +693,7 @@ export class RecEngine {
             buildCode: combo.attackMeta.buildCode || '',
           },
           bullet: {
-            id: combo.attackMeta.bulletId,          // ⭐ 新增（供"添加为假想敌"用）
+            id: combo.attackMeta.bulletId,
             name: combo.attackMeta.bulletName,
             level: combo.attackMeta.bulletLevel,
             price: combo.cost.bulletPrice,
@@ -777,14 +703,14 @@ export class RecEngine {
               : 0
           },
           armor: {
-            id: combo.defenseMeta.armorId,          // ⭐ 新增
+            id: combo.defenseMeta.armorId,
             name: combo.defenseMeta.armorName,
             level: combo.defenseMeta.armorLevel,
             value: combo.defenseMeta.armorValue,
             price: combo.cost.armorPrice
           },
           helmet: {
-            id: combo.defenseMeta.helmetId,         // ⭐ 新增
+            id: combo.defenseMeta.helmetId,
             name: combo.defenseMeta.helmetName,
             level: combo.defenseMeta.helmetLevel,
             value: combo.defenseMeta.helmetValue,
@@ -811,63 +737,85 @@ export class RecEngine {
       }
     }
 
-    // ⭐ 从 dedupedCombos 取
-    //    - Top 3 → 卡片
-    //    - 第 4~30 → 表格（支持"加载更多"）
     const topN = dedupedCombos.slice(0, 3).map((c, i) => formatCombo(c, i + 1))
     const rest = dedupedCombos.slice(3, 30).map((c, i) => formatCombo(c, i + 4))
+
+    // ============================================================
+    // 5.8 ⭐ 收集 debug 数据（每个 combo）
+    // ============================================================
+    const debugCombos = dedupedCombos.slice(0, 30).map((combo, i) => {
+      const rank = i + 1
+
+      const perEnemy = enemies.map(enemy => {
+        const attackId = makeAttackId({
+          weaponId: combo.attackMeta.weaponId,
+          configId: combo.attackMeta.configId,
+          bulletId: combo.attackMeta.bulletId,
+          enemy,
+          scenarioHash,
+        })
+
+        const defenseId = makeDefenseId({
+          enemyWeaponId: enemy.weaponId,
+          enemyConfigId: enemy.configId,
+          enemyBulletId: enemy.bulletId,
+          ourArmorLevel: combo.defenseMeta.armorLevel,
+          ourArmorValue: combo.defenseMeta.armorValue,
+          ourHelmetLevel: combo.defenseMeta.helmetLevel,
+          ourHelmetValue: combo.defenseMeta.helmetValue,
+          scenarioHash,
+        })
+
+        const attackDebug = getDebugEntry(attackId)
+        const defenseDebug = getDebugEntry(defenseId)
+
+        const attackTTK = combo.attackPerEnemy[enemy.name]?.ttk || 0
+        const defenseTTK = combo.defensePerEnemy[enemy.name]?.ttk || 0
+        const winRate = combo.perEnemyWinRates[enemy.name] || 0
+
+        return {
+          enemyName: enemy.name,
+          attackId,
+          defenseId,
+          attackTTK,
+          defenseTTK,
+          diff: defenseTTK - attackTTK,
+          winRate,
+          attackDebug,
+          defenseDebug,
+        }
+      })
+
+      return {
+        rank,
+        attackMeta: combo.attackMeta,
+        defenseMeta: combo.defenseMeta,
+        combinedWinRate: combo.winRate,
+        cost: combo.cost,
+        perEnemy,
+      }
+    })
 
     return {
       topN,
       rest,
-      allCount: dedupedCombos.length
+      allCount: dedupedCombos.length,
+      _debug: {
+        scenarioHash,
+        winRateK: WIN_RATE_K,
+        winRateAggMethod: WIN_RATE_AGG_METHOD,
+        enemyCount: enemies.length,
+        combos: debugCombos,
+      },
     }
   }
 
   // ============================================================
-  // 6. 工具：场景哈希
+  // 6. 场景哈希（转发到 TTKMatrix）
   // ============================================================
 
-  /**
-   * 和 TTKMatrix 里保持一致
-   *
-   * ⚠️ 必须与 TTKMatrix.makeScenarioHash 完全一致：
-   *    - 相同的字段
-   *    - 相同的顺序
-   *    - 相同的版本号（v3）
-   *
-   * v1 → v2：同步 TTKMatrix.MATRIX_VERSION = 2
-   * v2 → v3：同步 TTKMatrix.MATRIX_VERSION = 3
-   */
   _makeScenarioHash(scenario) {
-    const parts = []
-
-    const hrMap = (scenario.hitRateMap || [])
-      .slice()
-      .sort((a, b) => a.distance - b.distance)
-      .map(p => `${p.distance}:${p.rate}`)
-      .join(':')
-    parts.push(hrMap || 'def')
-
-    const hp = scenario.hitProb || { head: 0.1, chest: 0.3, stomach: 0.3, limbs: 0.3 }
-    parts.push(`${hp.head}:${hp.chest}:${hp.stomach}:${hp.limbs}`)
-
-    parts.push(scenario.triggerDelayEnable !== false ? '1' : '0')
-    parts.push(String(scenario.healthValue ?? 100))
-
-    // ⭐ 矩阵版本（和 TTKMatrix.MATRIX_VERSION 保持一致）
-    parts.push('v3')
-
-    return this._simpleHash(parts.join('|'))
-  }
-
-  _simpleHash(str) {
-    let h = 0
-    for (let i = 0; i < str.length; i++) {
-      h = ((h << 5) - h) + str.charCodeAt(i)
-      h = h & h
-    }
-    return Math.abs(h).toString(36)
+    return makeScenarioHash(scenario)
   }
 
   // ============================================================
@@ -897,9 +845,6 @@ export class RecEngine {
   // 8. 导出推荐结果
   // ============================================================
 
-  /**
-   * 导出推荐结果 + 日志为 JSON 文件
-   */
   exportResult(result, input = null, options = {}) {
     const data = {
       version: '1.0',
@@ -927,9 +872,6 @@ export class RecEngine {
     console.log(`✅ 推荐结果已导出: ${filename} (${(json.length / 1024).toFixed(1)} KB)`)
   }
 
-  /**
-   * 打印推荐结果到控制台
-   */
   printResult(result) {
     const { recommendations, log } = result
 
