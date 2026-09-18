@@ -22,11 +22,9 @@
 //             （旧缓存里勇士等武器的 rangeMult 未应用，TTK 偏高）
 //   v4 → v5：修复攻击侧命中率用错假想敌的 bug
 //             （攻击侧应使用「我方配置的 hitRateMap」，不是「敌人的 hitRate」）
-//   v5 → v6：修复防御侧缓存 ID 未含 distance / hitRate 的 bug
-//             （改假想敌距离后，防御侧命中旧缓存，TTK 用错距离）
 //
-// ⭐ 命中率：
-//   - 攻击侧：用「我方攻击配置的 hitRateMap」按距离插值（v5 修复）
+// ⭐ 命中率（v5 修复）：
+//   - 攻击侧：用「我方攻击配置的 hitRateMap」按距离插值
 //   - 防御侧：用「敌人的 hitRate」（敌人自己的命中率）
 //
 // ⭐ debug 收集（不持久化）：
@@ -53,8 +51,7 @@ import {
 // v2 → v3：修复 DP 分段射速边界 bug
 // v3 → v4：修复 RecEngine 未按名字反查 barrelId 的 bug
 // v4 → v5：修复攻击侧命中率用错假想敌的 bug
-// v5 → v6：修复防御侧缓存 ID 未含 distance / hitRate 的 bug
-const MATRIX_VERSION = 6
+const MATRIX_VERSION = 5
 
 // 批量写入大小（每 N 条写一次 IndexedDB）
 const BATCH_SIZE = 200
@@ -107,22 +104,6 @@ function getAttackHitRate(attack, enemy, scenario, dataManager) {
   }
 
   // 回退
-  return enemy.hitRate ?? scenario.hitRate ?? 0.85
-}
-
-/**
- * 防御侧命中率
- *
- * 防御侧是「敌人打我方」，命中率用「敌人自己的命中率」。
- *
- * ⚠️ 必须与 RecEngine._buildRecommendationsFromMatrix 里查询时的算法完全一致，
- *    否则写入和读取的 ID 不一样，查不到缓存。
- *
- * @param {Object} enemy
- * @param {Object} scenario
- * @returns {number} 命中率 [0, 1]
- */
-function getDefenseHitRate(enemy, scenario) {
   return enemy.hitRate ?? scenario.hitRate ?? 0.85
 }
 
@@ -360,10 +341,6 @@ export async function buildAttackMatrix({
  *
  * ⭐ 防御侧命中率 = enemy.hitRate（敌人自己的命中率）
  *   —— 不需要改，因为防御侧本来就是「敌人打我方」，用敌人命中率是对的。
- *
- * ⭐ v6 修复：makeDefenseId 加入 distance 和 hitRate
- *   - 先把 hitRate 算出来，再生成 ID
- *   - 保证「距离变 → ID 变 → 缓存失效 → 重算」
  */
 export async function buildDefenseMatrix({
   defenses,
@@ -396,10 +373,6 @@ export async function buildDefenseMatrix({
         continue
       }
 
-      // ---------- ⭐ v6：先算 hitRate（原位置在 makeDefenseId 之后） ----------
-      const hitRate = getDefenseHitRate(enemy, scenario)
-
-      // ---------- ⭐ v6：生成 ID（含 distance + hitRate） ----------
       const id = makeDefenseId({
         enemyWeaponId: enemy.weaponId,
         enemyConfigId: enemy.configId,
@@ -408,8 +381,6 @@ export async function buildDefenseMatrix({
         ourArmorValue: defense.armor.value,
         ourHelmetLevel: defense.helmet.level,
         ourHelmetValue: defense.helmet.value,
-        distance: enemy.distance,   // ⭐ 新增
-        hitRate,                    // ⭐ 新增
         scenarioHash,
       })
 
@@ -423,6 +394,8 @@ export async function buildDefenseMatrix({
       }
 
       // ---------- 未命中：算 ----------
+      const hitRate = enemy.hitRate ?? scenario.hitRate ?? 0.85
+
       try {
         const result = computeTTKWithDP({
           weapon: enemyInfo.armed,
@@ -543,11 +516,6 @@ export async function getAttackTTK({
   return await getMatrixEntry(id)
 }
 
-/**
- * 查询防御侧 TTK
- *
- * ⭐ v6：调用方必须传 distance 和 hitRate（与 buildDefenseMatrix 一致）
- */
 export async function getDefenseTTK({
   enemyWeaponId,
   enemyConfigId,
@@ -556,8 +524,6 @@ export async function getDefenseTTK({
   ourArmorValue,
   ourHelmetLevel,
   ourHelmetValue,
-  distance,        // ⭐ v6 新增
-  hitRate,         // ⭐ v6 新增
   scenarioHash,
 }) {
   const id = makeDefenseId({
@@ -568,8 +534,6 @@ export async function getDefenseTTK({
     ourArmorValue,
     ourHelmetLevel,
     ourHelmetValue,
-    distance,      // ⭐ v6 新增
-    hitRate,       // ⭐ v6 新增
     scenarioHash,
   })
   return await getMatrixEntry(id)
@@ -599,23 +563,6 @@ export function makeAttackId({ weaponId, configId, bulletId, enemy, scenarioHash
   return `atk_${weaponId}_${cid}_${bulletId}_${armorKey}_${helmetKey}_${distKey}_${scenarioHash}`
 }
 
-/**
- * 生成防御侧缓存 ID
- *
- * ⭐ v6 修复：加入 distance 和 hitRate
- *   - 防御侧命中率来自 enemy.hitRate（由 enemy.distance 插值得到），
- *     但 distance 和 hitRate 原本都不在 ID 里，导致改距离后命中旧缓存。
- *   - distance 影响 decay（武器射程衰减）
- *   - hitRate  影响期望射击数
- *   二者都必须进 ID，否则改距离后 TTK 会算错。
- *
- *   ⚠️ 为什么 distance 和 hitRate 都要加？
- *     - 两个不同距离可能插值出同一个 hitRate（如 30m 和 100m 都是 1.0）
- *       → 只加 hitRate 会漏（decay 不同，TTK 不同）
- *     - 两个不同距离也可能 decay 相同（射程内）但 hitRate 不同
- *       → 只加 distance 会漏（hitRate 不同，TTK 不同）
- *     所以两个都加最稳。
- */
 export function makeDefenseId({
   enemyWeaponId,
   enemyConfigId,
@@ -624,16 +571,12 @@ export function makeDefenseId({
   ourArmorValue,
   ourHelmetLevel,
   ourHelmetValue,
-  distance,        // ⭐ v6 新增
-  hitRate,         // ⭐ v6 新增
   scenarioHash,
 }) {
   const cid = (enemyConfigId || '#1').replace('#', '')
   const armorKey = `a${ourArmorLevel ?? 4}v${ourArmorValue ?? 0}`
   const helmetKey = `h${ourHelmetLevel ?? 4}v${ourHelmetValue ?? 0}`
-  const distKey = `d${Math.round(distance ?? 30)}`                          // ⭐ v6 新增
-  const hrKey = `hr${(hitRate ?? 0.85).toFixed(4)}`                         // ⭐ v6 新增
-  return `def_${enemyWeaponId}_${cid}_${enemyBulletId}_${armorKey}_${helmetKey}_${distKey}_${hrKey}_${scenarioHash}`
+  return `def_${enemyWeaponId}_${cid}_${enemyBulletId}_${armorKey}_${helmetKey}_${scenarioHash}`
 }
 
 // ============================================================

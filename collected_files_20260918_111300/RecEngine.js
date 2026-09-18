@@ -52,11 +52,6 @@
 //   - recommend() 返回 _debug 字段（含每个 combo 的详细输入/输出）
 //   - 数据来自 TTKMatrix 的模块级 _debugMap（不持久化）
 //   - 供 __recDebug() 在控制台按 rank / weaponId / weaponName 查询
-//
-// ⭐ 防御侧缓存 ID（v6 修复）：
-//   - makeDefenseId 现在含 distance + hitRate
-//   - 查询时（queryDefenseTTK）必须传这两个字段，与 buildDefenseMatrix 一致
-//   - 否则改假想敌距离后会命中旧缓存，TTK 用错距离
 
 import {
   computeTTKMatrix,
@@ -495,8 +490,6 @@ export class RecEngine {
 
     // ============================================================
     // 5.2 读防御侧矩阵
-    //
-    // ⭐ v6：查询时必须传 distance + hitRate，与 buildDefenseMatrix 一致
     // ============================================================
     const defenseMap = new Map()
 
@@ -505,9 +498,6 @@ export class RecEngine {
       const perEnemy = {}
 
       for (const enemy of enemies) {
-        // ⭐ 防御侧命中率 = 敌人自己的命中率（与 TTKMatrix.getDefenseHitRate 一致）
-        const hitRate = enemy.hitRate ?? scenario.hitRate ?? 0.85
-
         const entry = await queryDefenseTTK({
           enemyWeaponId: enemy.weaponId,
           enemyConfigId: enemy.configId,
@@ -516,8 +506,6 @@ export class RecEngine {
           ourArmorValue: defense.armor.value,
           ourHelmetLevel: defense.helmet.level,
           ourHelmetValue: defense.helmet.value,
-          distance: enemy.distance,   // ⭐ v6 新增
-          hitRate,                    // ⭐ v6 新增
           scenarioHash,
         })
 
@@ -754,8 +742,6 @@ export class RecEngine {
 
     // ============================================================
     // 5.8 ⭐ 收集 debug 数据（每个 combo）
-    //
-    // ⭐ v6：makeDefenseId 必须传 distance + hitRate，与 TTKMatrix 一致
     // ============================================================
     const debugCombos = dedupedCombos.slice(0, 30).map((combo, i) => {
       const rank = i + 1
@@ -769,9 +755,6 @@ export class RecEngine {
           scenarioHash,
         })
 
-        // ⭐ v6：防御侧 ID 含 distance + hitRate
-        const defenseHitRate = enemy.hitRate ?? scenario.hitRate ?? 0.85
-
         const defenseId = makeDefenseId({
           enemyWeaponId: enemy.weaponId,
           enemyConfigId: enemy.configId,
@@ -780,8 +763,6 @@ export class RecEngine {
           ourArmorValue: combo.defenseMeta.armorValue,
           ourHelmetLevel: combo.defenseMeta.helmetLevel,
           ourHelmetValue: combo.defenseMeta.helmetValue,
-          distance: enemy.distance,     // ⭐ v6 新增
-          hitRate: defenseHitRate,      // ⭐ v6 新增
           scenarioHash,
         })
 
