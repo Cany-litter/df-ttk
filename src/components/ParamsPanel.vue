@@ -117,7 +117,7 @@
 
     <!-- 第三行：操作按钮 -->
     <div class="params-row buttons-row">
-      <!-- ⭐ 计算 TTK（互斥禁用） -->
+      <!-- ⭐ 计算 TTK（含折线图数据） -->
       <button
         class="btn-primary"
         @click="onCalculate"
@@ -127,16 +127,6 @@
         <template v-if="isGlobalCalculating">⏳ 计算中...</template>
         <template v-else-if="isAnyUpdating">⏳ 更新中...</template>
         <template v-else>📊 计算 TTK</template>
-      </button>
-
-      <!-- ⭐ 生成折线图（互斥禁用） -->
-      <button
-        class="btn-secondary"
-        @click="onDistanceChart"
-        :disabled="isAnyUpdating || isGlobalCalculating"
-        :title="getChartButtonTitle()"
-      >
-        📈 生成折线图
       </button>
 
       <!-- ⭐ 导出数据（互斥禁用） -->
@@ -176,7 +166,8 @@
 import { ref, computed, watch } from 'vue'
 import { paramsStore, appStore } from '@/stores/stores'
 
-const emit = defineEmits(['calculate', 'distance-chart', 'export-data', 'import-data', 'reset-data'])
+// ⭐ 删除 'distance-chart'（已合并到 calculate）
+const emit = defineEmits(['calculate', 'export-data', 'import-data', 'reset-data'])
 
 // ---------- 本地参数（可写） ----------
 const localParams = ref({
@@ -309,13 +300,7 @@ watch(() => paramsStore.state, (newState) => {
 const getCalcButtonTitle = () => {
   if (isGlobalCalculating.value) return '全局计算中...'
   if (isAnyUpdating.value) return '正在更新单枪数据，请稍候'
-  return '计算所有启用配置的 TTK'
-}
-
-const getChartButtonTitle = () => {
-  if (isGlobalCalculating.value) return '全局计算中...'
-  if (isAnyUpdating.value) return '正在更新单枪数据，请稍候'
-  return '生成距离-TTK 折线图数据'
+  return '计算所有启用配置的 TTK（同时生成折线图数据）'
 }
 
 // ---------- 事件触发 ----------
@@ -323,12 +308,6 @@ const onCalculate = () => {
   if (isAnyBusy.value) return
   syncParams()
   emit('calculate')
-}
-
-const onDistanceChart = () => {
-  if (isAnyBusy.value) return
-  syncParams()
-  emit('distance-chart')
 }
 
 const onExportData = () => {

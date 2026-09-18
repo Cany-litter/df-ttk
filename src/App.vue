@@ -2,21 +2,18 @@
 <!--
   ⚠️ 维护提示：本文件有 3 处"距离点循环"，逻辑相似但用途不同：
 
-    1. handleCalculate() 里的循环
-       - 只算 1 个距离点（params.distance）
-       - 用于主表格的 TTK 结果
+    1. handleCalculate() → handleDistanceChart() → buildDistanceStats()
+       - ⭐ 主力：算 101 个距离点，生成折线图数据
+       - 同时写 scores（加权平均）
+       - ⭐ v3 改动：柱状图数据从折线图数据里提取（不再单独算单距离点）
 
-    2. handleDistanceChart() → buildDistanceStats()
-       - ⭐ 改为「关键点 + 插值」（端点 / 命中率节点 / 射程衰减节点）
-       - 用于折线图 + 评分（weightedAvg）
+    2. computeHavocCosts()
+       - ⭐ 用「关键点」求平均 shots（不插值，关键点平均即可）
+       - 用于哈弗币消耗
 
-    3. computeHavocCosts()
-       - ⭐ 改为「关键点」
-       - 用于哈弗币消耗（avgShots）
-
-    4. onUpdateWeaponTTK() → updateSingleWeaponTTK()
+    3. onUpdateWeaponTTK() → updateSingleWeaponTTK()
        - ⭐ 改为「关键点 + 插值」
-       - 单枪更新时替代 1+2+3（局部刷新）
+       - 单枪更新时替代 1+2（局部刷新）
 
   ⭐ 关键点算法（getKeyDistances）：
     - 端点：0 / 100
@@ -25,6 +22,31 @@
 
   ⭐ 插值（interpolateKeyPoints）：
     - 关键点之间用线性插值，生成 101 个点
+
+  ⭐ 参数导出/导入（v3）：
+    - 导出：exportData() 把 paramsStore.state 作为 extra.params 传给 dataStore.exportData
+    - 导入：importData() 接收 { data, params }，params 非空时 paramsStore.updateAll(params)
+
+  ⭐ 启动时自动加载参数（v3）：
+    - onMounted 里 dataStore.loadData() 返回 { params }
+    - data.json 顶层若有 params 字段，会在这里被写入 paramsStore
+    - 老文件没有 params → params 为 null → 保留硬编码默认值
+
+  ⭐ 图表布局（v3）：
+    - PC 端：两个图表默认并排（grid 1fr 1fr），更矮（16:9 / 260px）
+    - 放大按钮（PC only）：点击后该图表铺满整行，另一个 v-show 隐藏
+    - ⭐ 关键：.charts-area 通过 .has-expanded 切换为单列（grid-template-columns: 1fr）
+      —— 否则 grid 仍是 2 列，剩下的图表只占一半宽
+    - 放大时高度恢复 2:1 / 420px
+    - 移动端：单列（沿用组件自带样式），隐藏放大按钮
+    - 高度覆盖：靠 App.vue 全局样式覆盖 .chart-container
+
+  ⭐ 计算流程合并（v3）：
+    - 「计算 TTK」和「生成折线图」两个按钮合并为一个
+    - handleCalculate() 内：先 buildDistanceStats() 生成折线图数据
+      → 从 distanceStats 提取柱状图数据（params.distance 那个点）
+      → computeHavocCosts()
+    - handleDistanceChart() 降级为内部函数，返回 stats
 -->
 <template>
   <div id="app">
@@ -33,16 +55,24 @@
       <!-- 参数面板 -->
       <ParamsPanel
         @calculate="handleCalculate"
-        @distance-chart="handleDistanceChart"
         @export-data="exportData"
         @import-data="importData"
         @reset-data="resetData"
       />
 
-      <!-- 图表区域 -->
-      <div class="charts-area">
-        <!-- 柱状图（TTK 对比） -->
-        <div class="chart-wrapper">
+      <!-- ============ 图表区域 ============ -->
+      <!-- ⭐ has-expanded：有图表被放大时切换到单列布局 -->
+      <div
+        class="charts-area"
+        :class="{ 'has-expanded': expandedChart !== null }"
+      >
+
+        <!-- ---------- 柱状图 ---------- -->
+        <div
+          class="chart-wrapper"
+          v-show="expandedChart !== 'line'"
+          :class="{ 'is-expanded': expandedChart === 'bar' }"
+        >
           <div class="chart-header">
             <h3 class="chart-title">📊 TTK 对比</h3>
             <div class="chart-controls">
@@ -61,17 +91,32 @@
                 <span>条</span>
                 <span class="hint">(0 = 全部)</span>
               </label>
+
+              <!-- ⭐ 放大按钮（PC only） -->
+              <button
+                v-if="!isMobile"
+                class="chart-expand-btn"
+                :class="{ active: expandedChart === 'bar' }"
+                @click="toggleExpand('bar')"
+              >
+                {{ expandedChart === 'bar' ? '🔍 还原' : '🔍 放大' }}
+              </button>
             </div>
           </div>
           <TTKChart
+            ref="barChartRef"
             :results="appStore.state.ttkResults"
             :params="paramsStore.state"
             :display-count="barDisplayCount"
           />
         </div>
 
-        <!-- 折线图（距离 - TTK） -->
-        <div class="chart-wrapper">
+        <!-- ---------- 折线图 ---------- -->
+        <div
+          class="chart-wrapper"
+          v-show="expandedChart !== 'bar'"
+          :class="{ 'is-expanded': expandedChart === 'line' }"
+        >
           <div class="chart-header">
             <h3 class="chart-title">📈 距离 - TTK 折线图</h3>
             <div class="chart-controls">
@@ -120,9 +165,20 @@
                 <span>条</span>
                 <span class="hint">(0 = 全部)</span>
               </label>
+
+              <!-- ⭐ 放大按钮（PC only） -->
+              <button
+                v-if="!isMobile"
+                class="chart-expand-btn"
+                :class="{ active: expandedChart === 'line' }"
+                @click="toggleExpand('line')"
+              >
+                {{ expandedChart === 'line' ? '🔍 还原' : '🔍 放大' }}
+              </button>
             </div>
           </div>
           <DistanceChart
+            ref="lineChartRef"
             :stats="distanceStats"
             :distances="distances"
             :highlight-weapon="highlightWeapon"
@@ -130,6 +186,7 @@
             :segment="segmentProp"
           />
         </div>
+
       </div>
 
       <!-- ============ 表格区域 ============ -->
@@ -267,7 +324,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, provide } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, provide, nextTick } from 'vue'
 import { dataStore, paramsStore, appStore } from '@/stores/stores'
 import { SimulationEngine } from '@/core/SimulationEngine'
 import { computeTTK } from '@/core/FastTTK'
@@ -302,6 +359,46 @@ const customEnd = ref(100)
 const showDamageDetail = ref(false)
 const detailWeaponId = ref(null)
 const detailConfigId = ref('#1')
+
+// ⭐ 图表放大相关
+const barChartRef = ref(null)
+const lineChartRef = ref(null)
+const expandedChart = ref(null)   // null | 'bar' | 'line'
+const isMobile = ref(false)
+
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+/**
+ * ⭐ 放大 / 还原图表
+ *
+ * 行为：
+ * - 点击同一图表的按钮 → 还原（恢复并排）
+ * - 点击另一图表的按钮 → 切换到该图表放大
+ * - 放大时另一个图表 v-show 隐藏，.charts-area 加 .has-expanded 切单列 → 铺满整行
+ *
+ * ⭐ resize 时机：
+ * - 过渡动画 0.25s 期间容器尺寸渐变
+ * - nextTick + rAF 读到的是中间值，ECharts 会画错
+ * - 所以用 setTimeout(300) 等过渡结束再 resize
+ */
+const toggleExpand = async (which) => {
+  expandedChart.value = (expandedChart.value === which) ? null : which
+
+  await nextTick()
+
+  // ① 过渡开始前先 resize 一次（让 ECharts 提前感知，减少变形）
+  barChartRef.value?.resize?.()
+  lineChartRef.value?.resize?.()
+
+  // ② 等过渡结束（0.25s）后再 resize 一次，拿到最终尺寸
+  //    transition: all 0.25s ease → 300ms 缓冲
+  setTimeout(() => {
+    barChartRef.value?.resize?.()
+    lineChartRef.value?.resize?.()
+  }, 300)
+}
 
 // ---------- 计算属性 ----------
 const weaponRows = computed(() => {
@@ -673,7 +770,65 @@ const computeSingleTTK = async (armedWeapon, attachment, params, dm) => {
 }
 
 // ============================================================
-// ⭐ TTK 计算（全局）
+// ⭐ 折线图数据生成（内部函数，被 handleCalculate 调用）
+//
+// 职责：
+//   1. buildDistanceStats() → stats（101 点 + weightedAvg）
+//   2. 写 scores（从 weightedAvg 提取）
+//   3. 写 distanceStats.value
+//   4. 返回 stats（供调用方提取柱状图数据）
+// ============================================================
+const handleDistanceChart = async () => {
+  try {
+    const enabledConfigs = getEnabledConfigs()
+    if (enabledConfigs.length === 0) return []
+
+    const { armed, attachments } = buildArmedWeapons(enabledConfigs)
+
+    const stats = await buildDistanceStats(armed, attachments)
+
+    const dm = dataStore.getDataManager()
+    const scores = {}
+    for (const s of stats) {
+      const weaponId = s.weapon.id
+      const configId = s.weapon._configId || '#1'
+      const key = `${weaponId}_${configId}`
+
+      const price = dm.getPriceByWeaponId(weaponId)
+      const config = price?.configs.find(c => c.id === configId)
+      const aimSpeed = config?.aimSpeed || 0
+
+      scores[key] = {
+        ttk: s.weightedAvg,
+        aim: aimSpeed
+      }
+    }
+    appStore.setScores(scores)
+    console.log(`⭐ 评分原始数据已计算: ${Object.keys(scores).length} 条`)
+
+    distanceStats.value = stats
+
+    console.log(`✅ 折线图数据生成完成: ${stats.length} 个武器`)
+
+    return stats
+  } catch (error) {
+    console.error('生成折线图失败:', error)
+    return []
+  }
+}
+
+const getEnabledConfigs = () => {
+  const rows = dataStore.getPriceRows()
+  return rows.filter(row => row.enabled !== false)
+}
+
+// ============================================================
+// ⭐ TTK 计算（全局，v3：先折线图 → 再提取柱状图）
+//
+// 流程：
+//   ① handleDistanceChart() → stats（101 点 + weightedAvg）+ scores + distanceStats
+//   ② 从 stats 里提取 params.distance 那个点 → ttkResults（柱状图）
+//   ③ computeHavocCosts() → havocCosts
 // ============================================================
 const handleCalculate = async () => {
   // ⭐ 互斥：单枪更新中时不允许全局计算
@@ -695,70 +850,66 @@ const handleCalculate = async () => {
       return
     }
 
-    const { armed, attachments } = buildArmedWeapons(enabledConfigs)
     const dm = dataStore.getDataManager()
     const params = paramsStore.state
 
-    const total = armed.length
-    appStore.showCalcProgress('计算 TTK 中...', total)
+    // ============================================================
+    // ① 先生成折线图数据（内部会写 scores + distanceStats）
+    // ============================================================
+    appStore.showCalcProgress('计算 TTK 中...', enabledConfigs.length)
+
+    const stats = await handleDistanceChart()
+
+    if (!stats || stats.length === 0) {
+      console.warn('⚠️ 折线图数据为空，跳过柱状图提取')
+      return
+    }
+
+    // ============================================================
+    // ② 从折线图数据提取柱状图数据（params.distance 那个点）
+    //
+    // distances = [0, 1, 2, ..., 100]，所以 params.distance 直接当索引用
+    // （如果 params.distance 是小数，用 round 兜底）
+    // ============================================================
+    const distIdx = Math.max(0, Math.min(100, Math.round(params.distance)))
 
     const results = []
-    let skippedCount = 0
+    for (const stat of stats) {
+      const weaponArmed = stat.weapon
+      const ttkAtDistance = stat.times[distIdx] || 0
+      const shotsAtDistance = stat.shots[distIdx] || 0
 
-    for (let i = 0; i < armed.length; i++) {
-      const weapon = armed[i]
-      const attachment = attachments[i] || {}
-
-      const single = await computeSingleTTK(weapon, attachment, {
-        ...params,
-        distance: params.distance,
-      }, dm)
-
-      if (!single) {
-        console.log(`⚠️ 跳过 ${weapon._displayName || weapon.name}：无法计算`)
-        skippedCount++
-        appStore.updateCalcProgress(i + 1)
-        continue
-      }
-
-      // ============================================================
-      // 计算 TTK 分解（5 段）
-      // ============================================================
-      const totalTimeMs = single.ttk
-      const avgShots = single.shots
-      const burstIntervalMs = 0   // DP 里已包含在 ttk 中
-
-      const triggerDelay = params.triggerDelayEnable ? (weapon.triggerDelay || 0) : 0
-      const velocity = weapon.velocity || 500
+      // TTK 分解（5 段）
+      const triggerDelay = params.triggerDelayEnable ? (weaponArmed.triggerDelay || 0) : 0
+      const velocity = weaponArmed.velocity || 500
       const flight = (params.distance / velocity) * 1000
 
-      const nonShotPart = flight + triggerDelay + burstIntervalMs
-      const remaining = Math.max(0, totalTimeMs - nonShotPart)
+      const nonShotPart = flight + triggerDelay
+      const remaining = Math.max(0, ttkAtDistance - nonShotPart)
       const noMissFireDelay = remaining * (0.5 / 0.7)
       const emptyDelay = remaining * (0.2 / 0.7)
 
       results.push({
-        name: weapon._displayName || weapon.name,
-        weapon,
-        totalTime: totalTimeMs || 0,
+        name: stat.displayName,
+        weapon: weaponArmed,
+        totalTime: ttkAtDistance || 0,
         noMissFireDelay: noMissFireDelay || 0,
-        burstInterval: burstIntervalMs,
+        burstInterval: 0,
         emptyDelay: emptyDelay || 0,
         flight: flight || 0,
         triggerDelay: triggerDelay || 0,
-        avgShots: avgShots || 0,
+        avgShots: shotsAtDistance || 0,
       })
-
-      appStore.updateCalcProgress(i + 1)
-      await new Promise(resolve => setTimeout(resolve, 0))
     }
 
     results.sort((a, b) => a.totalTime - b.totalTime)
     appStore.setTtkResults(results)
 
-    console.log(`✅ TTK 计算完成: ${results.length} 个配置 (跳过 ${skippedCount})`)
+    console.log(`✅ 柱状图数据已从折线图数据提取: ${results.length} 个配置 @ ${params.distance}m`)
 
-    await handleDistanceChart()
+    // ============================================================
+    // ③ 哈弗币消耗（保持不变：用「关键点」算平均 shots）
+    // ============================================================
     await computeHavocCosts(enabledConfigs, dm, params)
 
   } catch (error) {
@@ -1141,57 +1292,6 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
 }
 
 // ============================================================
-// ⭐ 折线图（全量）
-//
-// ⭐ 用「关键点 + 插值」
-// ============================================================
-const handleDistanceChart = async () => {
-  try {
-    const enabledConfigs = getEnabledConfigs()
-    if (enabledConfigs.length === 0) return
-
-    const { armed, attachments } = buildArmedWeapons(enabledConfigs)
-
-    appStore.showCalcProgress('生成折线图数据中...', armed.length)
-
-    const stats = await buildDistanceStats(armed, attachments)
-
-    const dm = dataStore.getDataManager()
-    const scores = {}
-    for (const s of stats) {
-      const weaponId = s.weapon.id
-      const configId = s.weapon._configId || '#1'
-      const key = `${weaponId}_${configId}`
-
-      const price = dm.getPriceByWeaponId(weaponId)
-      const config = price?.configs.find(c => c.id === configId)
-      const aimSpeed = config?.aimSpeed || 0
-
-      scores[key] = {
-        ttk: s.weightedAvg,
-        aim: aimSpeed
-      }
-    }
-    appStore.setScores(scores)
-    console.log(`⭐ 评分原始数据已计算: ${Object.keys(scores).length} 条`)
-
-    distanceStats.value = stats
-
-    console.log(`✅ 折线图数据生成完成: ${stats.length} 个武器`)
-
-    appStore.hideCalcProgress()
-  } catch (error) {
-    console.error('生成折线图失败:', error)
-    appStore.hideCalcProgress()
-  }
-}
-
-const getEnabledConfigs = () => {
-  const rows = dataStore.getPriceRows()
-  return rows.filter(row => row.enabled !== false)
-}
-
-// ============================================================
 // ⭐ 构建武装武器
 // ============================================================
 const buildArmedWeapons = (configs) => {
@@ -1337,20 +1437,28 @@ const onWeaponUpdate = (payload) => {
 // ============================================================
 
 /**
- * ⭐ 导出数据（不再询问"是否包含缓存"）
+ * ⭐ 导出数据
+ *
+ * ⭐ v3：把 paramsStore.state 作为 extra.params 一起导出
+ *   - 这样导出的文件包含：weapons / bullets / prices / armors + params
+ *   - 导入时可以一并恢复参数
  */
 const exportData = async () => {
   try {
     const result = await showConfirm({
       title: '📤 导出数据',
-      message: '确认导出当前所有数据？\n\n将下载一个 data.json 文件，包含所有武器 / 子弹 / 价格 / 护甲配置。',
+      message: '确认导出当前所有数据？\n\n将下载一个 data.json 文件，包含：\n· 武器 / 子弹 / 价格 / 护甲配置\n· 页面顶部的参数（KD、撤离率、其他消耗等）',
       confirmText: '导出',
       cancelText: '取消',
       confirmType: 'primary'
     })
 
     if (result.confirmed) {
-      dataStore.exportData()
+      // ⭐ 组装 extra.params（浅拷贝，防止后续 state 变化影响已导出内容）
+      const extra = {
+        params: { ...paramsStore.state }
+      }
+      dataStore.exportData(extra)
     }
   } catch (error) {
     console.error('导出失败:', error)
@@ -1358,6 +1466,13 @@ const exportData = async () => {
   }
 }
 
+/**
+ * ⭐ 导入数据
+ *
+ * ⭐ v3：接收 { data, params }，params 非空时写入 paramsStore
+ *   - 老文件没有 params 字段 → params 为 null，跳过参数更新
+ *   - 参数更新在刷新 state 之后，避免计算用旧参数
+ */
 const importData = () => {
   const input = document.createElement('input')
   input.type = 'file'
@@ -1369,7 +1484,7 @@ const importData = () => {
     try {
       const result = await showConfirm({
         title: '📥 导入数据',
-        message: `即将导入文件「${file.name}」\n\n导入将覆盖当前所有数据，确定继续吗？`,
+        message: `即将导入文件「${file.name}」\n\n导入将覆盖当前所有数据（含参数，如果文件里有），确定继续吗？`,
         confirmText: '导入',
         cancelText: '取消',
         confirmType: 'warning'
@@ -1380,11 +1495,22 @@ const importData = () => {
       const reader = new FileReader()
       reader.onload = async (event) => {
         try {
-          dataStore.importData(event.target.result)
+          // ⭐ 接收 { data, params }
+          const { params } = dataStore.importData(event.target.result)
+
           dataStore.refreshWeapons()
           dataStore.refreshBullets()
           dataStore.refreshPrices()
           dataStore.refreshArmors()
+
+          // ⭐ params 非空时写入 paramsStore
+          if (params && typeof params === 'object') {
+            paramsStore.updateAll(params)
+            console.log('✅ 已恢复页面顶部参数')
+          } else {
+            console.log('ℹ️ 导入文件不含参数，保留当前参数')
+          }
+
           await showAlert('✅ 数据导入成功！')
         } catch (error) {
           console.error('导入失败:', error)
@@ -1604,10 +1730,22 @@ const onBaseSaved = () => {
   console.log('✅ 基础属性已保存，武器数据已刷新')
 }
 
-// ---------- 初始化 ----------
+// ---------- 生命周期：移动端检测 ----------
 onMounted(async () => {
+  // ⭐ 初始化移动端检测
+  updateIsMobile()
+  window.addEventListener('resize', updateIsMobile)
+
   try {
-    await dataStore.loadData()
+    // ⭐ v3：接收 { params }
+    const { params } = await dataStore.loadData()
+
+    // ⭐ data.json 里有 params → 套用（覆盖 paramsStore 硬编码默认值）
+    //    老文件没有 params → params 为 null → 保留默认值
+    if (params && typeof params === 'object') {
+      paramsStore.updateAll(params)
+      console.log('✅ 已从 data.json 恢复页面顶部参数')
+    }
 
     const bullets = dataStore.state.bullets
     const calibers = new Set()
@@ -1630,11 +1768,15 @@ onMounted(async () => {
     showAlert('数据加载失败，请检查 data.json 文件是否存在')
   }
 })
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateIsMobile)
+})
 </script>
 
 <style>
 /* ============================================================
-   App 组件专用样式（不变）
+   App 组件专用样式
    ============================================================ */
 * {
   margin: 0;
@@ -1654,11 +1796,23 @@ body {
   padding: 8px 24px 20px;
 }
 
+/* ============================================================
+   ⭐ 图表区域：默认并排（grid 1fr 1fr）
+   ============================================================ */
 .charts-area {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--spacing-lg);
   margin: 6px 0;
+  /* ⭐ 切换 grid 列数时的过渡（平滑） */
+  transition: grid-template-columns 0.25s ease;
+}
+
+/* ⭐ 有图表被放大 → 单列铺满
+   - 必须显式切成 1fr，否则 grid 仍按 2 列排，剩下的图表只占一半宽
+   - 用动态 class（.has-expanded）而非 :has()，兼容性更好 */
+.charts-area.has-expanded {
+  grid-template-columns: 1fr;
 }
 
 .chart-wrapper {
@@ -1667,6 +1821,9 @@ body {
   padding: 16px;
   box-shadow: var(--shadow-sm);
   border: 1px solid #ddd;
+  min-width: 0;
+  /* ⭐ 过渡：只过渡视觉属性，避免容器尺寸渐变导致 ECharts resize 读错 */
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .chart-title {
@@ -1798,6 +1955,67 @@ body {
   color: var(--color-primary);
 }
 
+/* ============================================================
+   ⭐ 放大按钮
+   ============================================================ */
+.chart-expand-btn {
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg-white);
+  font-family: var(--font-family);
+  font-size: 12px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.chart-expand-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: #f0f4ff;
+}
+
+.chart-expand-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.chart-expand-btn.active:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+/* ============================================================
+   ⭐ 图表高度覆盖（关键）
+   - App.vue 的 <style> 非 scoped，可覆盖子组件 .chart-container
+   - 并排（未放大）：16:9 / 260px
+   - 放大：2:1 / 420px
+   - 移动端：统一 2:1 / 260px
+   ============================================================ */
+
+/* 并排（未放大）：更矮 */
+.charts-area .chart-wrapper:not(.is-expanded) .chart-container {
+  aspect-ratio: 16 / 9;
+  min-height: 260px;
+}
+
+/* 放大：恢复默认高度 */
+.charts-area .chart-wrapper.is-expanded .chart-container {
+  aspect-ratio: 2 / 1;
+  min-height: 420px;
+}
+
+/* ============================================================
+   表格区域
+   ============================================================ */
 .table-section {
   background: var(--color-bg-white);
   border-radius: var(--radius-lg);
@@ -1847,6 +2065,9 @@ body {
   width: 100%;
 }
 
+/* ============================================================
+   计算进度遮罩
+   ============================================================ */
 .calc-progress-overlay {
   position: fixed;
   top: 0;
@@ -1920,13 +2141,36 @@ body {
   color: #4a6cf7;
 }
 
+/* ============================================================
+   ⭐ 移动端：单列 + 隐藏放大按钮 + 统一高度
+   ============================================================ */
 @media (max-width: 768px) {
   #app {
     padding: 4px 8px 12px;
   }
 
+  /* 图表区域：强制单列 */
+  .charts-area {
+    grid-template-columns: 1fr;
+    transition: none;   /* 移动端不需要过渡 */
+  }
+
   .chart-wrapper {
     padding: 10px;
+    transition: none;
+  }
+
+  /* 隐藏放大按钮 */
+  .chart-expand-btn {
+    display: none;
+  }
+
+  /* ⭐ 高度覆盖：移动端统一 */
+  .charts-area .chart-wrapper .chart-container,
+  .charts-area .chart-wrapper:not(.is-expanded) .chart-container,
+  .charts-area .chart-wrapper.is-expanded .chart-container {
+    aspect-ratio: 2 / 1;
+    min-height: 260px;
   }
 
   .chart-title {

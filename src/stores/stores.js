@@ -13,6 +13,17 @@
 //   - 旧版 ttkCache 已废弃（改用 IndexedDB，见 TTKIndexedDB.js）
 //   - exportData 不再有 includeCache 参数（缓存与 data.json 解耦）
 //
+// ⭐ 参数导出/导入（v3）：
+//   - exportData(extra) 支持 extra 参数，把 params 一起导出
+//   - importData(jsonStr) 返回 { data, params }，params 由调用方（App.vue）写 paramsStore
+//   - DataManager 保持纯净，不直接依赖 paramsStore
+//
+// ⭐ 启动时自动加载参数（v3）：
+//   - loadData() 返回 { params }，透传 DataManager.loadFromJSON 的 params
+//   - data.json 顶层若有 params 字段，会被提取并返回
+//   - 调用方（App.vue）负责把 params 写入 paramsStore
+//   - 若 dm.isLoaded 已为 true（重复调用），返回 { params: null }
+//
 // 本文件由原 dataStore.js / paramsStore.js / appStore.js 合并而来。
 
 import { reactive, readonly } from 'vue'
@@ -47,19 +58,39 @@ export const dataStore = {
 
   // ============================================================
   // 数据加载
+  //
+  // ⭐ v3：返回值改为 { params }
+  //   - params 来自 data.json 顶层 params 字段（可为 null）
+  //   - 调用方（App.vue）负责写入 paramsStore
+  //   - 若 dm.isLoaded 已为 true（重复调用），跳过 loadFromJSON，返回 { params: null }
   // ============================================================
   async loadData() {
     try {
       if (!dm.isLoaded) {
-        await dm.loadFromJSON('./data.json')
+        // ⭐ 接收 { data, params }
+        const { params } = await dm.loadFromJSON('./data.json')
+
+        dataState.weapons = [...dm.getWeapons()]
+        dataState.bullets = [...dm.getBullets()]
+        dataState.prices = [...dm.getPrices()]
+        dataState.armors = [...dm.getArmors()]
+        dataState.isLoaded = true
+        dataState.loadingError = null
+
+        console.log(`✅ 数据加载完成: ${dataState.weapons.length} 把武器, ${dataState.bullets.length} 种子弹, ${dataState.prices.length} 条价格配置, ${dataState.armors.length} 条护甲数据`)
+
+        return { params }
+      } else {
+        // 已加载过：只刷新 state，不重复加载数据，也不返回 params（避免重复应用）
+        dataState.weapons = [...dm.getWeapons()]
+        dataState.bullets = [...dm.getBullets()]
+        dataState.prices = [...dm.getPrices()]
+        dataState.armors = [...dm.getArmors()]
+        dataState.isLoaded = true
+        dataState.loadingError = null
+
+        return { params: null }
       }
-      dataState.weapons = [...dm.getWeapons()]
-      dataState.bullets = [...dm.getBullets()]
-      dataState.prices = [...dm.getPrices()]
-      dataState.armors = [...dm.getArmors()]
-      dataState.isLoaded = true
-      dataState.loadingError = null
-      console.log(`✅ 数据加载完成: ${dataState.weapons.length} 把武器, ${dataState.bullets.length} 种子弹, ${dataState.prices.length} 条价格配置, ${dataState.armors.length} 条护甲数据`)
     } catch (error) {
       dataState.loadingError = error.message
       console.error('❌ 数据加载失败:', error)
@@ -278,17 +309,38 @@ export const dataStore = {
    *
    * 缓存存在 IndexedDB（见 TTKIndexedDB.js），
    * 跟 data.json 完全解耦，导出时不涉及。
+   *
+   * ⭐ 参数导出（v3）：
+   *   - extra 参数可携带页面顶部的参数（params）
+   *   - 结构：{ params: { ... } }
+   *   - 调用方（App.vue）负责组装 extra.params
+   *
+   * @param {Object} [extra] - 额外数据（目前支持 { params }）
    */
-  exportData() {
-    dm.exportToFile(null)
+  exportData(extra = {}) {
+    dm.exportToFile(null, extra)
   },
 
+  /**
+   * ⭐ 导入数据
+   *
+   * ⭐ 参数导入（v3）：
+   *   - 返回值透传 DataManager.importFromJSON 的 { data, params }
+   *   - params 由调用方（App.vue）负责写入 paramsStore
+   *   - DataManager 保持纯净，不直接依赖 paramsStore
+   *
+   * @param {string} jsonStr
+   * @returns {{ data: Object, params: Object|null }}
+   */
   importData(jsonStr) {
-    dm.importFromJSON(jsonStr)
+    const result = dm.importFromJSON(jsonStr)
+
     dataState.weapons = [...dm.getWeapons()]
     dataState.bullets = [...dm.getBullets()]
     dataState.prices = [...dm.getPrices()]
     dataState.armors = [...dm.getArmors()]
+
+    return result
   },
 
   resetData() {

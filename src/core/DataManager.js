@@ -44,6 +44,17 @@
  * - TTK 矩阵由 TTKMatrix.js 管理，不走 DataManager
  * - ⭐ 导出/导入不再包含"是否包含缓存"的选项（缓存已与 data.json 解耦）
  *
+ * ⭐ 参数导出/导入（v3）：
+ * - exportToJSON / exportToFile 支持 extra 参数，可把页面顶部的参数（params）一起导出
+ * - importFromJSON 返回 { data, params }，params 由调用方（App.vue）负责写入 paramsStore
+ * - DataManager 保持纯净，不直接依赖 paramsStore
+ * - 老文件没有 params 字段 → params 为 null，调用方跳过更新
+ *
+ * ⭐ 启动时自动加载参数（v3）：
+ * - loadFromJSON 返回 { data, params }（与 importFromJSON 对齐）
+ * - data.json 顶层若有 params 字段，会被提取并返回
+ * - 调用方（App.vue）负责把 params 写入 paramsStore
+ *
  * ⭐ 已删除的旧 API：
  * - setCacheManager / getCacheManager
  * - getConfigCache / saveConfigCache
@@ -95,6 +106,18 @@ export class DataManager {
   // 1. 数据加载
   // ============================================================
 
+  /**
+   * ⭐ 从 URL 加载数据
+   *
+   * ⭐ 返回值 { data, params }（与 importFromJSON 对齐）
+   *   - data:   规范化后的数据（weapons / bullets / prices / armors）
+   *   - params: data.json 顶层 params 字段（页面顶部参数快照）
+   *             老文件没有 params → params 为 null
+   *   - 调用方（App.vue）负责把 params 写入 paramsStore
+   *
+   * @param {string} url
+   * @returns {Promise<{ data: Object, params: Object|null }>}
+   */
   async loadFromJSON(url = './data.json') {
     perf.mark('dataLoadStart', '数据加载开始');
 
@@ -110,6 +133,13 @@ export class DataManager {
         throw new Error('数据格式无效，请检查 data.json 文件');
       }
 
+      // ⭐ 提取 params（必须在 normalizeData 之前，
+      //    因为 normalizeData 只保留已知字段，会丢弃 params）
+      let params = null;
+      if (rawData.params && typeof rawData.params === 'object') {
+        params = JSON.parse(JSON.stringify(rawData.params));
+      }
+
       this.data = this.normalizeData(rawData);
       this.originalData = JSON.parse(JSON.stringify(this.data));
       this.originalMuzzles = JSON.parse(JSON.stringify(this.muzzles));
@@ -122,9 +152,11 @@ export class DataManager {
         `✅ DataManager: 加载了 ${this.data.weapons.length} 把武器, ` +
         `${this.data.bullets.length} 种子弹, ` +
         `${this.data.prices.length} 条价格配置, ` +
-        `${this.data.armors.length} 条护甲数据`
+        `${this.data.armors.length} 条护甲数据` +
+        (params ? `, 含参数快照` : '')
       );
-      return this.data;
+
+      return { data: this.data, params };
 
     } catch (error) {
       console.error('❌ DataManager: 加载数据失败:', error);
@@ -166,6 +198,9 @@ export class DataManager {
    * 12. 护甲 enabled：缺失时补 true
    * 13. ⭐ 删除旧 ttkCache 字段（已废弃）
    * 14. ⭐ 删除 config.cache（旧缓存已废弃）
+   *
+   * ⚠️ 注意：normalizeData 只保留已知字段（weapons / bullets / prices / armors），
+   *    params 等未知字段会被丢弃。需要 params 的调用方请从 rawData 里取。
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
@@ -1529,9 +1564,16 @@ export class DataManager {
    *     缓存存在 IndexedDB（见 TTKIndexedDB.js），
    *     跟 data.json 完全解耦，导出时不涉及。
    *
+   * ⭐ 参数导出（v3）：
+   *   - extra 参数可携带页面顶部的参数（params）
+   *   - 结构：{ params: { ... } }
+   *   - extra 为空 / 无 params → 不写 params 字段（保持文件干净）
+   *
+   * @param {Object} [extra] - 额外数据（目前支持 { params }）
+   * @param {Object} [extra.params] - 页面顶部参数快照
    * @returns {string} JSON 字符串
    */
-  exportToJSON() {
+  exportToJSON(extra = {}) {
     try {
       const dataToExport = JSON.parse(JSON.stringify(this.data));
 
@@ -1552,7 +1594,17 @@ export class DataManager {
 
       const serialized = this.serializeData(dataToExport);
 
-      let json = JSON.stringify(serialized, null, 2);
+      // ⭐ 组装最终导出对象
+      const output = {
+        ...serialized,
+      };
+
+      // ⭐ params：只有非空时才写入
+      if (extra && extra.params && typeof extra.params === 'object') {
+        output.params = extra.params;
+      }
+
+      let json = JSON.stringify(output, null, 2);
       json = this._compressArmorData(json);
       json = this._compressKeyPoints(json);
 
@@ -1592,10 +1644,14 @@ export class DataManager {
   /**
    * ⭐ 导出为文件
    *
+   * ⭐ 参数导出（v3）：
+   *   - extra 参数可携带页面顶部的参数（params）
+   *
    * @param {string} [filename=null] - 文件名，默认 ttk_data_YYYY-MM-DD.json
+   * @param {Object} [extra] - 额外数据（目前支持 { params }）
    */
-  exportToFile(filename = null) {
-    const jsonStr = this.exportToJSON();
+  exportToFile(filename = null, extra = {}) {
+    const jsonStr = this.exportToJSON(extra);
     const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
 
@@ -1610,6 +1666,18 @@ export class DataManager {
     console.log(`✅ 数据已导出到: ${a.download}`);
   }
 
+  /**
+   * ⭐ 从 JSON 字符串导入
+   *
+   * ⭐ 参数导入（v3）：
+   *   - 返回值改为 { data, params }
+   *   - params 由调用方（App.vue）负责写入 paramsStore
+   *   - DataManager 保持纯净，不直接依赖 paramsStore
+   *   - 老文件没有 params 字段 → params 为 null
+   *
+   * @param {string} jsonStr
+   * @returns {{ data: Object, params: Object|null }}
+   */
   importFromJSON(jsonStr) {
     try {
       const parsed = JSON.parse(jsonStr);
@@ -1624,12 +1692,20 @@ export class DataManager {
 
       this.clearAllModified();
 
+      // ⭐ 提取 params（如果有）
+      let params = null;
+      if (parsed.params && typeof parsed.params === 'object') {
+        params = JSON.parse(JSON.stringify(parsed.params));
+      }
+
       console.log(
         `✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ` +
         `${this.data.bullets.length} 种子弹, ` +
-        `${this.data.armors.length} 条护甲数据`
+        `${this.data.armors.length} 条护甲数据` +
+        (params ? `, 含参数快照` : '')
       );
-      return this.data;
+
+      return { data: this.data, params };
 
     } catch (error) {
       console.error('导入 JSON 失败:', error);
@@ -1637,13 +1713,21 @@ export class DataManager {
     }
   }
 
+  /**
+   * ⭐ 从文件导入
+   *
+   * ⭐ 返回值改为 { data, params }
+   *
+   * @param {File} file
+   * @returns {Promise<{ data: Object, params: Object|null }>}
+   */
   importFromFile(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
-          const data = this.importFromJSON(event.target.result);
-          resolve(data);
+          const result = this.importFromJSON(event.target.result);
+          resolve(result);
         } catch (error) {
           reject(error);
         }
