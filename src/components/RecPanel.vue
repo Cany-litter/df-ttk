@@ -70,6 +70,7 @@
               v-for="(enemy, index) in enemies"
               :key="enemy._id"
               class="enemy-card"
+              :class="{ 'is-rerolling': rerollingIndex === index }"
               :data-index="index"
             >
               <!-- 头部 -->
@@ -84,14 +85,16 @@
                 <button
                   class="btn-reroll"
                   title="从推荐结果重新挑一个"
-                  :disabled="isRunning"
+                  :disabled="isRunning || rerollingIndex !== null"
                   @click="rerollEnemy(index)"
                 >
-                  🎲 重掷
+                  <template v-if="rerollingIndex === index">⏳ 重掷中</template>
+                  <template v-else>🎲 重掷</template>
                 </button>
                 <button
                   class="remove-enemy-btn"
                   title="删除"
+                  :disabled="rerollingIndex !== null"
                   @click="removeEnemy(index)"
                 >
                   ✕
@@ -647,6 +650,9 @@ let copiedTimer = null
 
 const enemies = ref([])
 
+// ⭐ v4：重掷中的假想敌索引（用于按钮 loading + 阻止清空 enemies）
+const rerollingIndex = ref(null)
+
 let _enemyIdCounter = 0
 
 const progress = ref({
@@ -992,17 +998,26 @@ const markDirty = () => {
  *
  * ⚠️ 需要 await，因为可能触发刷新推荐池
  *
+ * ⭐ v4：新增 excludeIndex 参数
+ *   - 用于 rerollEnemy 场景：排除"正在被重掷"的那个假想敌
+ *   - usedKeys 计算时 filter 掉 excludeIndex
+ *   - 避免重掷成自己
+ *
  * @param {number} index - 假想敌序号（用于命名）
+ * @param {number} [excludeIndex=-1] - 要排除的假想敌索引（-1 = 不排除）
  * @returns {Promise<Object|null>} 假想敌对象
  */
-const createEnemy = async (index = 0) => {
+const createEnemy = async (index = 0, excludeIndex = -1) => {
   const newName = `假想敌 ${index + 1}`
 
   // ⭐ ① 有推荐结果 → 从推荐池挑
   if (recommendations.value) {
-    // 实时算 usedKeys（当前已有假想敌的 weaponId_configId）
+    // ⭐ v4：实时算 usedKeys（当前已有假想敌的 weaponId_configId）
+    //    排除 excludeIndex 指向的那个
     const usedKeys = new Set(
-      enemies.value.map(e => `${e.weaponId}_${e.configId}`)
+      enemies.value
+        .filter((_, i) => i !== excludeIndex)
+        .map(e => `${e.weaponId}_${e.configId}`)
     )
 
     // 尝试从推荐池挑（带去重）
@@ -1054,10 +1069,11 @@ const createEnemy = async (index = 0) => {
   }
 }
 
-// ⭐ 添加假想敌
+// ⭐ 添加假想敌（新增，不是替换）
 const addEnemy = async () => {
   if (enemies.value.length >= MAX_ENEMIES) return
   if (enemies.value.length === 0) return   // 空状态下不允许手动添加
+  if (rerollingIndex.value !== null) return
 
   const enemy = await createEnemy(enemies.value.length)
   if (!enemy) return
@@ -1067,40 +1083,50 @@ const addEnemy = async () => {
   schedulePersist()
 }
 
-// ⭐ 重掷假想敌
+/**
+ * ⭐ 重掷假想敌（v4：不清空 enemies，原地替换）
+ *
+ * 流程：
+ * ① 设置 rerollingIndex（按钮 loading）
+ * ② 调 createEnemy(index, excludeIndex=index) —— 排除自己
+ * ③ 完成后 enemies.value.splice(index, 1, newEnemy) 原地替换
+ * ④ 清空 rerollingIndex
+ *
+ * ⚠️ v4 之前：先清空 enemies → 触发空状态 v-if → 画面消失又出现
+ * ⚠️ v4 之后：enemies 保持不变 → 只原地替换 → 无闪烁
+ */
 const rerollEnemy = async (index) => {
   const enemy = enemies.value[index]
   if (!enemy) return
+  if (rerollingIndex.value !== null) return
+  if (isRunning.value) return
 
   const oldName = enemy.name
 
-  // ⭐ 临时把当前假想敌从 enemies 里排除（避免重掷成自己）
-  const saved = enemies.value
-  enemies.value = saved.filter((_, i) => i !== index)
+  rerollingIndex.value = index
 
   try {
-    const newEnemy = await createEnemy(index)
+    // ⭐ excludeIndex = index（排除自己，避免重掷成自己）
+    const newEnemy = await createEnemy(index, index)
     if (!newEnemy) return
 
     newEnemy.name = oldName || `假想敌 ${index + 1}`
 
-    // 恢复 enemies（用新假想敌替换原位置）
-    const restored = [...enemies.value]
-    restored.splice(index, 0, newEnemy)
-    enemies.value = restored
+    // ⭐ 原地替换（不清空）
+    enemies.value.splice(index, 1, newEnemy)
 
     markDirty()
     schedulePersist()
+  } catch (e) {
+    console.error('❌ 重掷失败:', e)
   } finally {
-    // 保险：如果出错，确保 enemies 恢复
-    if (enemies.value.length !== saved.length) {
-      enemies.value = saved
-    }
+    rerollingIndex.value = null
   }
 }
 
 const removeEnemy = (index) => {
   if (enemies.value.length <= 1) return
+  if (rerollingIndex.value !== null) return
   enemies.value.splice(index, 1)
   markDirty()
   schedulePersist()
@@ -1136,6 +1162,7 @@ const onEnemyWeaponChange = (index) => {
 // ⭐ 从推荐结果直接添加为假想敌
 const addAsEnemy = (rec) => {
   if (!rec) return
+  if (rerollingIndex.value !== null) return
 
   if (enemies.value.length >= MAX_ENEMIES) {
     const msg = `⚠️ 假想敌数量已满（${MAX_ENEMIES} 个），请先移除一个再添加`
@@ -1993,6 +2020,12 @@ onBeforeUnmount(() => {
   border-color: var(--color-primary);
 }
 
+/* ⭐ v4：重掷中，卡片半透明 + 禁止交互 */
+.enemy-card.is-rerolling {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 /* ⭐ 6 种卡片颜色（index 0~5） */
 .enemy-card[data-index="0"] { border-left: 4px solid #f44336; }  /* 红 */
 .enemy-card[data-index="1"] { border-left: 4px solid #ff9800; }  /* 橙 */
@@ -2104,9 +2137,14 @@ onBeforeUnmount(() => {
   transition: all 0.15s;
 }
 
-.remove-enemy-btn:hover {
+.remove-enemy-btn:hover:not(:disabled) {
   background: #ffebee;
   color: #f44336;
+}
+
+.remove-enemy-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .enemy-card-body {

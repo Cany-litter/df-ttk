@@ -19,6 +19,7 @@
  * - bullets: 按口径 → 等级 → 默认 排序
  * - prices: 按类型 → 武器名称 → 配置序号 排序
  * - armors: 按 type → level 排序
+ * - otherItems: 按 category → 名称 排序
  *
  * ⭐ 子弹 ID 规范（v2）：
  * - 格式：${caliber}#${序号}
@@ -55,6 +56,18 @@
  * - data.json 顶层若有 params 字段，会被提取并返回
  * - 调用方（App.vue）负责把 params 写入 paramsStore
  *
+ * ⭐ 精校与枪管一致性（v4）：
+ * - 无枪管（barrelId === -1）时，精校（precision）必须为 0
+ * - normalizeData 里自动修正历史数据（barrelId === -1 但 precision !== 0）
+ * - 保证「UI 显示 0%」和「计算用 0」一致
+ *
+ * ⭐ 其他物品（v5）：
+ * - data.json 顶层新增 otherItems 数组
+ * - 字段：id / name / category / price / description / enabled
+ * - category 枚举：背包 / 胸挂 / 治疗 / 维修 / 其他
+ * - 不参与 TTK 计算，仅展示
+ * - CRUD：getOtherItems / addOtherItem / updateOtherItem / removeOtherItem
+ *
  * ⭐ 已删除的旧 API：
  * - setCacheManager / getCacheManager
  * - getConfigCache / saveConfigCache
@@ -84,7 +97,8 @@ export class DataManager {
       weapons: [],
       bullets: [],
       prices: [],
-      armors: []
+      armors: [],
+      otherItems: []    // ⭐ v5：其他物品（背包/胸挂/治疗/维修/其他）
     };
     this.originalData = null;
     this.isLoaded = false;
@@ -110,7 +124,7 @@ export class DataManager {
    * ⭐ 从 URL 加载数据
    *
    * ⭐ 返回值 { data, params }（与 importFromJSON 对齐）
-   *   - data:   规范化后的数据（weapons / bullets / prices / armors）
+   *   - data:   规范化后的数据（weapons / bullets / prices / armors / otherItems）
    *   - params: data.json 顶层 params 字段（页面顶部参数快照）
    *             老文件没有 params → params 为 null
    *   - 调用方（App.vue）负责把 params 写入 paramsStore
@@ -152,7 +166,8 @@ export class DataManager {
         `✅ DataManager: 加载了 ${this.data.weapons.length} 把武器, ` +
         `${this.data.bullets.length} 种子弹, ` +
         `${this.data.prices.length} 条价格配置, ` +
-        `${this.data.armors.length} 条护甲数据` +
+        `${this.data.armors.length} 条护甲数据, ` +
+        `${this.data.otherItems.length} 条其他物品` +
         (params ? `, 含参数快照` : '')
       );
 
@@ -196,10 +211,13 @@ export class DataManager {
    * 10. 配置 enabled：缺失时补 true
    * 11. 护甲 armors：缺失时补空数组
    * 12. 护甲 enabled：缺失时补 true
-   * 13. ⭐ 删除旧 ttkCache 字段（已废弃）
-   * 14. ⭐ 删除 config.cache（旧缓存已废弃）
+   * 13. ⭐ v5：其他物品 otherItems：缺失时补空数组
+   * 14. ⭐ v5：其他物品 id / name / category / price / description / enabled 规范化
+   * 15. ⭐ 删除旧 ttkCache 字段（已废弃）
+   * 16. ⭐ 删除 config.cache（旧缓存已废弃）
+   * 17. ⭐ v4：无枪管（barrelId === -1）时，精校归零
    *
-   * ⚠️ 注意：normalizeData 只保留已知字段（weapons / bullets / prices / armors），
+   * ⚠️ 注意：normalizeData 只保留已知字段（weapons / bullets / prices / armors / otherItems），
    *    params 等未知字段会被丢弃。需要 params 的调用方请从 rawData 里取。
    */
   normalizeData(data) {
@@ -280,7 +298,8 @@ export class DataManager {
       this._enforceDefaultUniqueness(normalized.bullets);
     }
 
-    // ---------- 3. 配置规范化（precision + aimSpeed + enabled + ⭐ 删除旧缓存） ----------
+    // ---------- 3. 配置规范化 ----------
+    // precision + aimSpeed + enabled + ⭐ 删除旧缓存 + ⭐ 无枪管精校归零
     if (Array.isArray(normalized.prices)) {
       normalized.prices.forEach(price => {
         if (Array.isArray(price.configs)) {
@@ -300,6 +319,14 @@ export class DataManager {
             // ⭐ 删除旧缓存 config.cache（已废弃）
             if (config.cache !== undefined) {
               delete config.cache;
+            }
+
+            // ⭐ v4：无枪管（barrelId === -1）时，精校必须归零
+            //    - barrelId 缺失视为 -1
+            //    - 无枪管时精校无意义，保证「UI 显示 0%」和「计算用 0」一致
+            const barrelId = (config.barrelId !== undefined) ? config.barrelId : -1;
+            if (barrelId === -1 && config.precision !== 0) {
+              config.precision = 0;
             }
           });
         }
@@ -329,7 +356,44 @@ export class DataManager {
       });
     }
 
-    // ---------- 5. ⭐ 删除旧 ttkCache 字段（已废弃） ----------
+    // ---------- 5. ⭐ v5：其他物品 otherItems 规范化 ----------
+    if (!Array.isArray(normalized.otherItems)) {
+      normalized.otherItems = [];
+    } else {
+      const VALID_CATEGORIES = ['背包', '胸挂', '治疗', '维修', '其他'];
+
+      normalized.otherItems.forEach((item, idx) => {
+        // id：缺失时自动生成
+        if (!item.id) {
+          item.id = `other_${Date.now()}_${idx}`;
+        }
+        // name
+        if (item.name === undefined || item.name === null) {
+          item.name = '';
+        }
+        // category
+        if (typeof item.category !== 'string' || item.category.trim() === '') {
+          item.category = '其他';
+        }
+        // price
+        if (typeof item.price === 'string') {
+          item.price = parseFloat(item.price) || 0;
+        }
+        if (typeof item.price !== 'number' || !isFinite(item.price) || item.price < 0) {
+          item.price = 0;
+        }
+        // description
+        if (item.description === undefined || item.description === null) {
+          item.description = '';
+        }
+        // enabled
+        if (item.enabled === undefined) {
+          item.enabled = true;
+        }
+      });
+    }
+
+    // ---------- 6. ⭐ 删除旧 ttkCache 字段（已废弃） ----------
     if (normalized.ttkCache !== undefined) {
       delete normalized.ttkCache;
     }
@@ -610,6 +674,180 @@ export class DataManager {
   }
 
   // ============================================================
+  // 3.7. ⭐ v5：数据获取 - 其他物品（背包 / 胸挂 / 治疗 / 维修 / 其他）
+  // ============================================================
+
+  /**
+   * 获取所有其他物品
+   *
+   * @param {boolean} [includeDisabled=false] - 是否包含禁用的
+   * @returns {Array}
+   */
+  getOtherItems(includeDisabled = false) {
+    let items = this.data.otherItems || [];
+    if (!includeDisabled) {
+      items = items.filter(item => item.enabled !== false);
+    }
+    return items;
+  }
+
+  /**
+   * 按类别获取其他物品
+   *
+   * @param {string} category - 背包 / 胸挂 / 治疗 / 维修 / 其他
+   * @param {boolean} [includeDisabled=false]
+   * @returns {Array}
+   */
+  getOtherItemsByCategory(category, includeDisabled = false) {
+    let items = (this.data.otherItems || []).filter(item => item.category === category);
+    if (!includeDisabled) {
+      items = items.filter(item => item.enabled !== false);
+    }
+    return items;
+  }
+
+  getOtherItemById(id) {
+    return (this.data.otherItems || []).find(item => item.id === id) || null;
+  }
+
+  /**
+   * 生成下一个其他物品 ID
+   *
+   * 格式：other_${序号}（序号递增，找现有 other_数字 的最大值 + 1）
+   * 如果现有 ID 都不是 other_数字 格式，用时间戳
+   *
+   * @returns {string}
+   */
+  getNextOtherItemId() {
+    const items = this.data.otherItems || [];
+    let maxIndex = 0;
+
+    for (const item of items) {
+      const match = String(item.id || '').match(/^other_(\d+)$/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (!isNaN(n) && n > maxIndex) maxIndex = n;
+      }
+    }
+
+    return `other_${maxIndex + 1}`;
+  }
+
+  /**
+   * 新增其他物品
+   *
+   * @param {Object} itemData - { id?, name, category, price?, description?, enabled? }
+   * @returns {boolean}
+   */
+  addOtherItem(itemData) {
+    if (!itemData) return false;
+
+    // id：缺失时自动生成
+    if (!itemData.id) {
+      itemData.id = this.getNextOtherItemId();
+    }
+
+    const existing = this.getOtherItemById(itemData.id);
+    if (existing) {
+      console.warn(`⚠️ 其他物品 ${itemData.id} 已存在`);
+      return false;
+    }
+
+    const item = {
+      id: itemData.id,
+      name: itemData.name || '未命名',
+      category: itemData.category || '其他',
+      price: (typeof itemData.price === 'number' && isFinite(itemData.price) && itemData.price >= 0)
+        ? itemData.price
+        : 0,
+      description: itemData.description || '',
+      enabled: itemData.enabled !== false
+    };
+
+    if (!Array.isArray(this.data.otherItems)) {
+      this.data.otherItems = [];
+    }
+    this.data.otherItems.push(item);
+    return true;
+  }
+
+  /**
+   * 更新其他物品
+   *
+   * @param {string} id
+   * @param {Object} updates
+   * @returns {boolean}
+   */
+  updateOtherItem(id, updates) {
+    const item = this.getOtherItemById(id);
+    if (!item) {
+      console.warn(`⚠️ 未找到其他物品 ${id}`);
+      return false;
+    }
+
+    // 禁止修改 id
+    if (updates.id !== undefined && updates.id !== item.id) {
+      console.warn(`⚠️ 禁止修改其他物品 ID`);
+      delete updates.id;
+    }
+
+    // price 校验
+    if (updates.price !== undefined) {
+      if (typeof updates.price === 'string') {
+        updates.price = parseFloat(updates.price) || 0;
+      }
+      if (typeof updates.price !== 'number' || !isFinite(updates.price) || updates.price < 0) {
+        delete updates.price;
+      }
+    }
+
+    // category 兜底
+    if (updates.category !== undefined && (typeof updates.category !== 'string' || updates.category.trim() === '')) {
+      updates.category = '其他';
+    }
+
+    Object.assign(item, updates);
+    return true;
+  }
+
+  /**
+   * 删除其他物品
+   *
+   * @param {string} id
+   * @returns {boolean}
+   */
+  removeOtherItem(id) {
+    const idx = (this.data.otherItems || []).findIndex(item => item.id === id);
+    if (idx === -1) return false;
+    this.data.otherItems.splice(idx, 1);
+    return true;
+  }
+
+  /**
+   * ⭐ 批量启用/禁用其他物品
+   */
+  setOtherItemsEnabled(enabled, category = null) {
+    let count = 0;
+    for (const item of this.data.otherItems) {
+      if (category && item.category !== category) continue;
+      if (item.enabled !== enabled) {
+        item.enabled = enabled;
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * 获取所有类别（去重，保持预定义顺序）
+   *
+   * @returns {Array<string>}
+   */
+  getOtherItemCategories() {
+    return ['背包', '胸挂', '治疗', '维修', '其他'];
+  }
+
+  // ============================================================
   // 4. 数据获取 - 枪口
   // ============================================================
 
@@ -724,9 +962,14 @@ export class DataManager {
       }
 
       // ---------- 精校 ----------
-      const precision = (typeof config.precision === 'number' && !isNaN(config.precision))
+      let precision = (typeof config.precision === 'number' && !isNaN(config.precision))
         ? config.precision
         : 0.09;
+
+      // ⭐ v4：无枪管时，精校强制显示 0（与 normalizeData 一致）
+      if (barrelId === -1) {
+        precision = 0;
+      }
 
       // 开镜速度
       const aimSpeed = (typeof config.aimSpeed === 'number' && !isNaN(config.aimSpeed))
@@ -1242,6 +1485,11 @@ export class DataManager {
       } else {
         updates.barrel = '无';
       }
+
+      // ⭐ v4：无枪管时，自动把精校归零（保证数据一致性）
+      if (updates.barrelId === -1) {
+        updates.precision = 0;
+      }
     }
 
     if (updates.muzzleId !== undefined) {
@@ -1293,6 +1541,11 @@ export class DataManager {
 
     if (configData.precision === undefined) {
       configData.precision = 0.09;
+    }
+
+    // ⭐ v4：无枪管时，精校归零
+    if (configData.barrelId === -1) {
+      configData.precision = 0;
     }
 
     if (configData.aimSpeed === undefined) {
@@ -1435,6 +1688,16 @@ export class DataManager {
     return 999;
   }
 
+  static get CATEGORY_ORDER() {
+    return {
+      '背包': 0,
+      '胸挂': 1,
+      '治疗': 2,
+      '维修': 3,
+      '其他': 4
+    };
+  }
+
   _sortWeaponsForExport(weapons) {
     if (!weapons || weapons.length === 0) return;
 
@@ -1484,6 +1747,23 @@ export class DataManager {
       const levelA = typeof a.level === 'number' ? a.level : parseInt(a.level) || 0;
       const levelB = typeof b.level === 'number' ? b.level : parseInt(b.level) || 0;
       if (levelA !== levelB) return levelB - levelA;
+
+      return (a.name || '').localeCompare(b.name || '', 'zh-CN');
+    });
+  }
+
+  /**
+   * ⭐ v5：其他物品导出排序（按 category → name）
+   */
+  _sortOtherItemsForExport(items) {
+    if (!items || items.length === 0) return;
+
+    const categoryOrder = DataManager.CATEGORY_ORDER;
+
+    items.sort((a, b) => {
+      const catA = categoryOrder[a.category] !== undefined ? categoryOrder[a.category] : 99;
+      const catB = categoryOrder[b.category] !== undefined ? categoryOrder[b.category] : 99;
+      if (catA !== catB) return catA - catB;
 
       return (a.name || '').localeCompare(b.name || '', 'zh-CN');
     });
@@ -1569,6 +1849,8 @@ export class DataManager {
    *   - 结构：{ params: { ... } }
    *   - extra 为空 / 无 params → 不写 params 字段（保持文件干净）
    *
+   * ⭐ v5：导出包含 otherItems
+   *
    * @param {Object} [extra] - 额外数据（目前支持 { params }）
    * @param {Object} [extra.params] - 页面顶部参数快照
    * @returns {string} JSON 字符串
@@ -1584,6 +1866,7 @@ export class DataManager {
       this._sortWeaponsForExport(dataToExport.weapons);
       this._sortBulletsForExport(dataToExport.bullets);
       this._sortArmorsForExport(dataToExport.armors);
+      this._sortOtherItemsForExport(dataToExport.otherItems);   // ⭐ v5
 
       const weaponsMap = new Map();
       if (Array.isArray(dataToExport.weapons)) {
@@ -1675,6 +1958,8 @@ export class DataManager {
    *   - DataManager 保持纯净，不直接依赖 paramsStore
    *   - 老文件没有 params 字段 → params 为 null
    *
+   * ⭐ v5：导入包含 otherItems
+   *
    * @param {string} jsonStr
    * @returns {{ data: Object, params: Object|null }}
    */
@@ -1701,7 +1986,8 @@ export class DataManager {
       console.log(
         `✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ` +
         `${this.data.bullets.length} 种子弹, ` +
-        `${this.data.armors.length} 条护甲数据` +
+        `${this.data.armors.length} 条护甲数据, ` +
+        `${this.data.otherItems.length} 条其他物品` +
         (params ? `, 含参数快照` : '')
       );
 
@@ -1777,6 +2063,7 @@ export class DataManager {
       bulletCount: this.data.bullets.length,
       priceCount: this.data.prices.length,
       armorCount: this.data.armors.length,
+      otherItemCount: this.data.otherItems.length,   // ⭐ v5
       muzzleCount: this.muzzles.length,
       isLoaded: this.isLoaded,
       hasUnsavedChanges: this.hasUnsavedChanges(),

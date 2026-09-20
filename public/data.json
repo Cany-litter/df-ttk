@@ -757,6 +757,62 @@
       "allowedBullet": "5.45x39mm"
     },
     {
+      "id": 51,
+      "name": "M16A4",
+      "type": "步枪",
+      "allowedBullet": "5.56x45mm",
+      "ranges": [
+        55,
+        90,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.85,
+        0.7,
+        0.7,
+        0.7
+      ],
+      "velocity": 575,
+      "flesh": 33,
+      "armor": 39,
+      "rof": 508,
+      "triggerDelay": 0,
+      "barrels": [
+        {
+          "name": "AR加百列长枪管组合",
+          "rangeMult": 1.3,
+          "rangeAdd": 0,
+          "velocityAdd": 0,
+          "rofMult": 1,
+          "damageBonus": 0,
+          "armorDamageBonus": 0,
+          "triggerDelayDelta": 0
+        },
+        {
+          "name": "AR碳纤维枪管组合",
+          "rangeMult": 1.18,
+          "rangeAdd": 0,
+          "velocityAdd": 0,
+          "rofMult": 1,
+          "damageBonus": 0,
+          "armorDamageBonus": 0,
+          "triggerDelayDelta": 0
+        }
+      ],
+      "mult": {
+        "head": 1.9,
+        "chest": 1,
+        "stomach": 0.9,
+        "limbs": 0.4
+      },
+      "fireMode": "burst",
+      "burstCount": 3,
+      "burstInternalROF": 900,
+      "burstInterval": 0.22
+    },
+    {
       "id": 17,
       "name": "M4A1",
       "type": "步枪",
@@ -2496,12 +2552,30 @@
       "pen": 1,
       "price": 587,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2521,12 +2595,30 @@
       "pen": 1,
       "price": 2317,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2546,12 +2638,30 @@
       "pen": 1,
       "price": 5718,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0.5 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2571,12 +2681,30 @@
       "pen": 0.75,
       "price": 162,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -2596,12 +2724,30 @@
       "pen": 1,
       "price": 419,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2621,12 +2767,30 @@
       "pen": 0,
       "price": 248,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.15, "pen": 0 },
-        "5": { "armorMult": 0.15, "pen": 0 },
-        "6": { "armorMult": 0.15, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.15,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.15,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.15,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 0.4,
@@ -2646,12 +2810,30 @@
       "pen": 1,
       "price": 590,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2671,12 +2853,30 @@
       "pen": 0.5,
       "price": 43,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -2696,12 +2896,30 @@
       "pen": 0.75,
       "price": 116,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -2721,12 +2939,30 @@
       "pen": 1,
       "price": 596,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2746,12 +2982,30 @@
       "pen": 0,
       "price": 935,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 0 },
-        "2": { "armorMult": 0.9, "pen": 0 },
-        "3": { "armorMult": 0.9, "pen": 0 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.35,
@@ -2771,12 +3025,30 @@
       "pen": 1,
       "price": 2555,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2796,12 +3068,30 @@
       "pen": 1,
       "price": 5652,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0.5 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 0.85,
@@ -2821,12 +3111,30 @@
       "pen": 0.75,
       "price": 164,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -2846,12 +3154,30 @@
       "pen": 1,
       "price": 584,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -2871,12 +3197,30 @@
       "pen": 1,
       "price": 1145,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2896,12 +3240,30 @@
       "pen": 0.5,
       "price": 23,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.05,
@@ -2921,12 +3283,30 @@
       "pen": 0,
       "price": 133,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.2, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 5.5,
@@ -2946,12 +3326,30 @@
       "pen": 0.75,
       "price": 65,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 4.8,
@@ -2971,12 +3369,30 @@
       "pen": 1,
       "price": 519,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2996,12 +3412,30 @@
       "pen": 0,
       "price": 378,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.15, "pen": 0 },
-        "5": { "armorMult": 0.15, "pen": 0 },
-        "6": { "armorMult": 0.15, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.15,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.15,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.15,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.3,
@@ -3021,12 +3455,30 @@
       "pen": 1,
       "price": 433,
       "armorData": {
-        "1": { "armorMult": 0.75, "pen": 1 },
-        "2": { "armorMult": 0.75, "pen": 0.75 },
-        "3": { "armorMult": 0.75, "pen": 0.5 },
-        "4": { "armorMult": 0.75, "pen": 0 },
-        "5": { "armorMult": 0.43, "pen": 0 },
-        "6": { "armorMult": 0.35, "pen": 0 }
+        "1": {
+          "armorMult": 0.75,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.75,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.75,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.75,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.43,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.35,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 0.85,
@@ -3046,12 +3498,30 @@
       "pen": 1,
       "price": 551,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 4.8,
@@ -3071,12 +3541,30 @@
       "pen": 0,
       "price": 1760,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.6, "pen": 0 },
-        "4": { "armorMult": 0.6, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3096,12 +3584,30 @@
       "pen": 1,
       "price": 440,
       "armorData": {
-        "1": { "armorMult": 0.75, "pen": 1 },
-        "2": { "armorMult": 0.75, "pen": 0.75 },
-        "3": { "armorMult": 0.75, "pen": 0.5 },
-        "4": { "armorMult": 0.75, "pen": 0 },
-        "5": { "armorMult": 0.43, "pen": 0 },
-        "6": { "armorMult": 0.35, "pen": 0 }
+        "1": {
+          "armorMult": 0.75,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.75,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.75,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.75,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.43,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.35,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 0.85,
@@ -3121,12 +3627,30 @@
       "pen": 1,
       "price": 589,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3146,12 +3670,30 @@
       "pen": 1,
       "price": 2707,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3171,12 +3713,30 @@
       "pen": 1,
       "price": 3067,
       "armorData": {
-        "1": { "armorMult": 0.1, "pen": 1 },
-        "2": { "armorMult": 0.1, "pen": 1 },
-        "3": { "armorMult": 0.1, "pen": 0.75 },
-        "4": { "armorMult": 0.1, "pen": 0.5 },
-        "5": { "armorMult": 0.1, "pen": 0.4 },
-        "6": { "armorMult": 0.1, "pen": 0.3 }
+        "1": {
+          "armorMult": 0.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 0.1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 0.1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 0.1,
+          "pen": 0.4
+        },
+        "6": {
+          "armorMult": 0.1,
+          "pen": 0.3
+        }
       },
       "partMult": {
         "head": 1.32,
@@ -3196,12 +3756,30 @@
       "pen": 1,
       "price": 5683,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3221,12 +3799,30 @@
       "pen": 1,
       "price": 207,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3246,12 +3842,30 @@
       "pen": 1,
       "price": 1170,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3271,12 +3885,30 @@
       "pen": 1,
       "price": 2253,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3296,12 +3928,30 @@
       "pen": 1,
       "price": 822,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.25,
@@ -3321,12 +3971,30 @@
       "pen": 1,
       "price": 4162,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3346,12 +4014,30 @@
       "pen": 1,
       "price": 3821,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0.5 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.25,
@@ -3371,12 +4057,30 @@
       "pen": 0,
       "price": 764,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.2, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.5,
@@ -3396,12 +4100,30 @@
       "pen": 1,
       "price": 1213,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3421,12 +4143,30 @@
       "pen": 1,
       "price": 3275,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0.5 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3446,12 +4186,30 @@
       "pen": 0.5,
       "price": 40,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3471,12 +4229,30 @@
       "pen": 0.75,
       "price": 100,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3496,12 +4272,30 @@
       "pen": 1,
       "price": 384,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3521,12 +4315,30 @@
       "pen": 1,
       "price": 1891,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3546,12 +4358,30 @@
       "pen": 1,
       "price": 5189,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3571,12 +4401,30 @@
       "pen": 0.5,
       "price": 35,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3596,12 +4444,30 @@
       "pen": 0.75,
       "price": 79,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3621,12 +4487,30 @@
       "pen": 1,
       "price": 526,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3646,12 +4530,30 @@
       "pen": 1,
       "price": 1941,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3671,12 +4573,30 @@
       "pen": 1,
       "price": 5317,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3696,12 +4616,30 @@
       "pen": 0.5,
       "price": 38,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3721,12 +4659,30 @@
       "pen": 0.75,
       "price": 97,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3746,12 +4702,30 @@
       "pen": 1,
       "price": 540,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3771,12 +4745,30 @@
       "pen": 0,
       "price": 547,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.2, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.4,
@@ -3796,12 +4788,30 @@
       "pen": 1,
       "price": 2343,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3821,12 +4831,30 @@
       "pen": 1,
       "price": 5417,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3846,12 +4874,30 @@
       "pen": 0.75,
       "price": 99,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3871,12 +4917,30 @@
       "pen": 1,
       "price": 568,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3896,12 +4960,30 @@
       "pen": 1,
       "price": 2723,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3921,12 +5003,30 @@
       "pen": 1,
       "price": 5845,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3946,12 +5046,30 @@
       "pen": 1,
       "price": 2744,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3971,12 +5089,30 @@
       "pen": 1,
       "price": 5454,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3996,12 +5132,30 @@
       "pen": 0.5,
       "price": 43,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4021,12 +5175,30 @@
       "pen": 0.75,
       "price": 111,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4046,12 +5218,30 @@
       "pen": 1,
       "price": 506,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 0.75 },
-        "3": { "armorMult": 1, "pen": 0.5 },
-        "4": { "armorMult": 1, "pen": 0 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4071,12 +5261,30 @@
       "pen": 1,
       "price": 1821,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4096,12 +5304,30 @@
       "pen": 1,
       "price": 5646,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4121,12 +5347,30 @@
       "pen": 0.75,
       "price": 114,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4146,12 +5390,30 @@
       "pen": 1,
       "price": 628,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 0.75 },
-        "3": { "armorMult": 1, "pen": 0.5 },
-        "4": { "armorMult": 1, "pen": 0 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4171,12 +5433,30 @@
       "pen": 1,
       "price": 1418,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4196,12 +5476,30 @@
       "pen": 1,
       "price": 6067,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4221,12 +5519,30 @@
       "pen": 1,
       "price": 602,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 0.75 },
-        "3": { "armorMult": 1, "pen": 0.5 },
-        "4": { "armorMult": 1, "pen": 0 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4246,12 +5562,30 @@
       "pen": 1,
       "price": 2410,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4271,12 +5605,30 @@
       "pen": 1,
       "price": 5854,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4296,12 +5648,30 @@
       "pen": 0.5,
       "price": 32,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4321,12 +5691,30 @@
       "pen": 0.75,
       "price": 85,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4346,12 +5734,30 @@
       "pen": 1,
       "price": 501,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4371,12 +5777,30 @@
       "pen": 0,
       "price": 698,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.2, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.4,
@@ -4396,12 +5820,30 @@
       "pen": 1,
       "price": 1816,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4421,12 +5863,30 @@
       "pen": 1,
       "price": 344,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4446,12 +5906,30 @@
       "pen": 1,
       "price": 2481,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4471,12 +5949,30 @@
       "pen": 1,
       "price": 4939,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0.5 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4496,12 +5992,30 @@
       "pen": 1,
       "price": 799,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.9 },
-        "3": { "armorMult": 0.9, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.9
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4521,12 +6035,30 @@
       "pen": 1,
       "price": 1994,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.9 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.9
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4546,12 +6078,30 @@
       "pen": 1,
       "price": 6664,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.9 },
-        "5": { "armorMult": 1.1, "pen": 0.75 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.9
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4839,8 +6389,31 @@
             0.5
           ],
           "enabled": true,
-          "precision": 0.09,
+          "precision": 0,
           "aimSpeed": 270
+        },
+        {
+          "id": "#2",
+          "barrelId": -1,
+          "barrel": "无",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0,
+          "aimSpeed": 0,
+          "buildCode": "AKS-74U突击步枪-烽火地带-6LBAUDO05506E7BV9G8G5",
+          "price": 0,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.7,
+            0.5,
+            0.25
+          ],
+          "bullet": "",
+          "enabled": true
         }
       ]
     },
@@ -5094,6 +6667,29 @@
           ],
           "bullet": "",
           "enabled": true
+        },
+        {
+          "id": "#6",
+          "barrelId": -1,
+          "barrel": "无",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0,
+          "aimSpeed": 314,
+          "buildCode": "CAR-15突击步枪-烽火地带-6LB8QVO05506E7BV9G8G5",
+          "price": 20000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.8,
+            0.5,
+            0.25
+          ],
+          "bullet": "",
+          "enabled": true
         }
       ]
     },
@@ -5290,6 +6886,58 @@
           "hitRate": [
             1,
             0.95,
+            0.6
+          ],
+          "bullet": "",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "weaponId": 51,
+      "weaponName": "M16A4",
+      "configs": [
+        {
+          "id": "#1",
+          "barrelId": 0,
+          "barrel": "AR加百列长枪管组合",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0.09,
+          "aimSpeed": 309,
+          "buildCode": "M16A4突击步枪-烽火地带-6LBBFO805506E7BV9G8G5",
+          "price": 340000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.95,
+            0.85
+          ],
+          "bullet": "",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrelId": 1,
+          "barrel": "AR碳纤维枪管组合",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0.09,
+          "aimSpeed": 359,
+          "buildCode": "M16A4突击步枪-烽火地带-6LBBG3405506E7BV9G8G5",
+          "price": 90000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.9,
             0.6
           ],
           "bullet": "",
@@ -5832,18 +7480,18 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0.09,
-          "aimSpeed": 293,
-          "buildCode": "汤姆逊冲锋枪-烽火地带-6LAEARC05506E7BV9G8G5",
-          "price": 170000,
+          "aimSpeed": 280,
+          "buildCode": "汤姆逊冲锋枪-烽火地带-6LB7JG005506E7BV9G8G5",
+          "price": 130000,
           "distance": [
             30,
             50,
             100
           ],
           "hitRate": [
-            0.8,
-            0.6,
-            0.3
+            0.9,
+            0.7,
+            0.4
           ],
           "bullet": "",
           "enabled": true
@@ -5873,6 +7521,29 @@
           "enabled": true,
           "precision": 0.09,
           "aimSpeed": 308
+        },
+        {
+          "id": "#2",
+          "barrelId": 0,
+          "barrel": "野牛刀锋超长枪管",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0.09,
+          "aimSpeed": 289,
+          "buildCode": "野牛冲锋枪-烽火地带-6LBAVR005506E7BV9G8G5",
+          "price": 0,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.8,
+            0.5,
+            0.25
+          ],
+          "bullet": "",
+          "enabled": true
         }
       ]
     },
@@ -6145,6 +7816,52 @@
           "aimSpeed": 296,
           "barrelId": 2,
           "muzzleId": 3
+        },
+        {
+          "id": "#3",
+          "barrelId": -1,
+          "barrel": "无",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0,
+          "aimSpeed": 218,
+          "buildCode": "SMG-45冲锋枪-烽火地带-6LBB6OK05506E7BV9G8G5",
+          "price": 80000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.85,
+            0.6
+          ],
+          "bullet": "",
+          "enabled": true
+        },
+        {
+          "id": "#4",
+          "barrelId": 2,
+          "barrel": "长弩超长枪管",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0.09,
+          "aimSpeed": 265,
+          "buildCode": "SMG-45冲锋枪-烽火地带-6LBB73S05506E7BV9G8G5",
+          "price": 120000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.95,
+            0.7
+          ],
+          "bullet": "",
+          "enabled": true
         }
       ]
     },
@@ -6200,6 +7917,29 @@
           "aimSpeed": 363,
           "muzzleId": 3,
           "barrelId": 1
+        },
+        {
+          "id": "#3",
+          "barrelId": -1,
+          "barrel": "无",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0,
+          "aimSpeed": 250,
+          "buildCode": "UZI冲锋枪-烽火地带-6LBB1OC05506E7BV9G8G5",
+          "price": 20000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            0.8,
+            0.6,
+            0.25
+          ],
+          "bullet": "",
+          "enabled": true
         }
       ]
     },
@@ -6239,8 +7979,33 @@
           "id": "#1",
           "barrel": "犀牛长枪管",
           "muzzle": "无",
-          "buildCode": "M249轻机枪-烽火地带-6L3TJGC0CCNDBQDO7A8E4",
-          "price": 440000,
+          "buildCode": "M249轻机枪-烽火地带-6LBB4E405506E7BV9G8G5",
+          "price": 350000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.95,
+            0.7
+          ],
+          "enabled": true,
+          "precision": 0.09,
+          "aimSpeed": 343,
+          "muzzleId": 0
+        },
+        {
+          "id": "#2",
+          "barrelId": 0,
+          "barrel": "犀牛长枪管",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0.09,
+          "aimSpeed": 338,
+          "buildCode": "M249轻机枪-烽火地带-6LBB2VO05506E7BV9G8G5",
+          "price": 130000,
           "distance": [
             30,
             50,
@@ -6249,11 +8014,10 @@
           "hitRate": [
             1,
             0.85,
-            0.5
+            0.4
           ],
-          "enabled": true,
-          "precision": 0.09,
-          "aimSpeed": 0
+          "bullet": "",
+          "enabled": true
         }
       ]
     },
@@ -6980,6 +8744,316 @@
       "enabled": false
     }
   ],
+  "otherItems": [
+    {
+      "id": "other_bag_1",
+      "name": "DG运动背包",
+      "category": "背包",
+      "price": 5000,
+      "description": "1级白包，12格容量，跑刀卡战备必备"
+    },
+    {
+      "id": "other_bag_2",
+      "name": "突袭战术背包",
+      "category": "背包",
+      "price": 12000,
+      "description": "2级绿包，15格（3×5），可放1把步枪+1个6格大红"
+    },
+    {
+      "id": "other_bag_3",
+      "name": "GA野战背包",
+      "category": "背包",
+      "price": 27000,
+      "description": "3级蓝包，20格（5×4），无移速惩罚，能塞两把2×5长枪，三级包唯一真神"
+    },
+    {
+      "id": "other_bag_4",
+      "name": "D2战术登山包",
+      "category": "背包",
+      "price": 65000,
+      "description": "4级紫包，24格（4×6），放两把2×5长枪还能塞滑膛枪，移速仅-1%"
+    },
+    {
+      "id": "other_bag_5",
+      "name": "GT5野战背包",
+      "category": "背包",
+      "price": 150000,
+      "description": "5级金包，30格（5×6），能同时装3把2×5长枪，清图流首选"
+    },
+    {
+      "id": "other_bag_6",
+      "name": "D3战术登山包",
+      "category": "背包",
+      "price": 130000,
+      "description": "5级金包，28格（4×7），D2升级版，预算有限选它"
+    },
+    {
+      "id": "other_bag_7",
+      "name": "雨林猎手背包",
+      "category": "背包",
+      "price": 35000,
+      "description": "21格，3×7窄长布局，能塞两个3×3大红，只能放一把武器（俗称棺材包）"
+    },
+    {
+      "id": "other_bag_8",
+      "name": "重型登山包",
+      "category": "背包",
+      "price": 400000,
+      "description": "6级红包，40格，唯一可交易大红包，能塞下所有高价值物资"
+    },
+    {
+      "id": "other_bag_9",
+      "name": "GTO重型战术包",
+      "category": "背包",
+      "price": 0,
+      "description": "6级红包，45格，无内部隔断，可自由摆放大型物资，禁止交易"
+    },
+    {
+      "id": "other_bag_10",
+      "name": "D7战术包",
+      "category": "背包",
+      "price": 0,
+      "description": "6级红包，35格，D3升级版，非卖品"
+    },
+    {
+      "id": "other_chest_1",
+      "name": "通用战术胸挂",
+      "category": "胸挂",
+      "price": 8000,
+      "description": "8格，刚好塞入两格手术包/急救包/甲修，纯战斗用低级胸挂性价比最高"
+    },
+    {
+      "id": "other_chest_2",
+      "name": "DSA战术胸挂",
+      "category": "胸挂",
+      "price": 35000,
+      "description": "蓝色胸挂，12格全是2×2排列，性价比最高最实用，支持高强度拉锯战"
+    },
+    {
+      "id": "other_chest_3",
+      "name": "G01战术胸挂",
+      "category": "胸挂",
+      "price": 55000,
+      "description": "蓝色胸挂，13格，多一个3格横向排列，可放紫色医疗包，最后可军需处兑换的胸挂"
+    },
+    {
+      "id": "other_chest_4",
+      "name": "强袭战术背心",
+      "category": "胸挂",
+      "price": 90000,
+      "description": "紫色胸挂，容量较大，价格开始断崖式上涨"
+    },
+    {
+      "id": "other_chest_5",
+      "name": "DAR突击手胸挂",
+      "category": "胸挂",
+      "price": 250000,
+      "description": "金色胸挂，大容量，金色胸挂中的性价比之王，跑刀/丢包撤的神"
+    },
+    {
+      "id": "other_heal_1",
+      "name": "CAT止血带",
+      "category": "治疗",
+      "price": 3000,
+      "description": "止血，2.5秒使用，秒止流血，全图必备"
+    },
+    {
+      "id": "other_heal_2",
+      "name": "弹力绷带",
+      "category": "治疗",
+      "price": 1500,
+      "description": "止血，3秒使用，应急止血，性价比低"
+    },
+    {
+      "id": "other_heal_3",
+      "name": "强效注射器",
+      "category": "治疗",
+      "price": 6000,
+      "description": "回血，3秒使用，启动最快，掉血30以内用它"
+    },
+    {
+      "id": "other_heal_4",
+      "name": "简易注射器",
+      "category": "治疗",
+      "price": 2000,
+      "description": "回血，3.5秒使用，30耐久，不耐用也不好用"
+    },
+    {
+      "id": "other_heal_5",
+      "name": "野战急救包",
+      "category": "治疗",
+      "price": 8000,
+      "description": "回血，6秒使用，小幅度回血"
+    },
+    {
+      "id": "other_heal_6",
+      "name": "户外医疗箱",
+      "category": "治疗",
+      "price": 56255,
+      "description": "回血+手术+止痛，4秒使用，350耐久，每秒回20血，捡来的好用买来的算了（占3格）"
+    },
+    {
+      "id": "other_heal_7",
+      "name": "战地医疗箱",
+      "category": "治疗",
+      "price": 178000,
+      "description": "回血+手术+止痛，3.5秒使用，800耐久，每秒回30血，最贵但最好用，猛攻首选"
+    },
+    {
+      "id": "other_heal_8",
+      "name": "简易手术包",
+      "category": "治疗",
+      "price": 3000,
+      "description": "手术，10秒使用，基础修复，最多用2次"
+    },
+    {
+      "id": "other_heal_9",
+      "name": "战术快拆手术包",
+      "category": "治疗",
+      "price": 8943,
+      "description": "手术，7秒使用，修复1处伤口最多用两次，日常够用"
+    },
+    {
+      "id": "other_heal_10",
+      "name": "DEK野战手术包",
+      "category": "治疗",
+      "price": 28000,
+      "description": "手术，5秒使用，可修复一个部位所有异常状态，最快最强，高端局必备"
+    },
+    {
+      "id": "other_heal_11",
+      "name": "DVE止疼片",
+      "category": "治疗",
+      "price": 24000,
+      "description": "止痛，持续6分钟，屏蔽疼痛模糊"
+    },
+    {
+      "id": "other_heal_12",
+      "name": "瓶装抗生素",
+      "category": "治疗",
+      "price": 6680,
+      "description": "止痛，作战前服用，屏蔽骨折/受伤影响"
+    },
+    {
+      "id": "other_heal_13",
+      "name": "缓释止痛片",
+      "category": "治疗",
+      "price": 2065,
+      "description": "止痛，短时间减少疼痛效果"
+    },
+    {
+      "id": "other_repair_1",
+      "name": "自制护甲维修包",
+      "category": "维修",
+      "price": 21000,
+      "description": "蓝色，50维修点数，可越级修高级甲，适合修三级甲"
+    },
+    {
+      "id": "other_repair_2",
+      "name": "标准护甲维修包",
+      "category": "维修",
+      "price": 55000,
+      "description": "紫色，75维修点数，适合修四级甲"
+    },
+    {
+      "id": "other_repair_3",
+      "name": "精密护甲维修包",
+      "category": "维修",
+      "price": 175400,
+      "description": "金色，120维修点数，适合修五级甲"
+    },
+    {
+      "id": "other_repair_4",
+      "name": "高级护甲维修组合",
+      "category": "维修",
+      "price": 306000,
+      "description": "红色，200维修点数，适合修六级甲，已降价"
+    },
+    {
+      "id": "other_repair_5",
+      "name": "自制头盔维修包",
+      "category": "维修",
+      "price": 17600,
+      "description": "蓝色，适合修三级头"
+    },
+    {
+      "id": "other_repair_6",
+      "name": "标准头盔维修包",
+      "category": "维修",
+      "price": 57800,
+      "description": "紫色，适合修四级头"
+    },
+    {
+      "id": "other_repair_7",
+      "name": "精密头盔维修包",
+      "category": "维修",
+      "price": 138000,
+      "description": "金色，适合修五级头"
+    },
+    {
+      "id": "other_repair_8",
+      "name": "高级头盔维修组合",
+      "category": "维修",
+      "price": 310000,
+      "description": "红色，适合修六级头"
+    },
+    {
+      "id": "other_misc_1",
+      "name": "OE2战斗兴奋剂",
+      "category": "其他",
+      "price": 15000,
+      "description": "瞬回满体力，可使用三次"
+    },
+    {
+      "id": "other_misc_2",
+      "name": "体能强化剂",
+      "category": "其他",
+      "price": 60000,
+      "description": "紫色针剂，提升体力上限+恢复速度，持续5分钟"
+    },
+    {
+      "id": "other_misc_3",
+      "name": "感知强化剂",
+      "category": "其他",
+      "price": 46000,
+      "description": "紫色针剂，增加听力范围，持续5分钟"
+    },
+    {
+      "id": "other_misc_4",
+      "name": "M2肌肉注射剂",
+      "category": "其他",
+      "price": 45000,
+      "description": "紫色针剂，增加负重，持续5分钟"
+    },
+    {
+      "id": "other_misc_5",
+      "name": "基础安全箱",
+      "category": "其他",
+      "price": 0,
+      "description": "1×2容量，每个干员永久拥有"
+    },
+    {
+      "id": "other_misc_6",
+      "name": "进阶安全箱",
+      "category": "其他",
+      "price": 1800000,
+      "description": "2×2容量，通行证35级免费领取；或180万哈夫币购买7天"
+    },
+    {
+      "id": "other_misc_7",
+      "name": "高级安全箱",
+      "category": "其他",
+      "price": 0,
+      "description": "3×2容量，解锁烽火地带限定版/豪华版通行证"
+    },
+    {
+      "id": "other_misc_8",
+      "name": "顶级安全箱",
+      "category": "其他",
+      "price": 0,
+      "description": "3×3容量，完成赛季任务（行动计划+收集者+命运契约）"
+    }
+  ],
   "params": {
     "bulletLevel": 4,
     "armorLevel": 4,
@@ -7010,8 +9084,8 @@
     },
     "triggerDelayEnable": true,
     "kdRatio": 1,
-    "extractRate": 0.33,
-    "extraCost": 60,
+    "extractRate": 0.5,
+    "extraCost": 30,
     "aimWeight": 0.4
   }
 }

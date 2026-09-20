@@ -24,6 +24,11 @@
 //   - 调用方（App.vue）负责把 params 写入 paramsStore
 //   - 若 dm.isLoaded 已为 true（重复调用），返回 { params: null }
 //
+// ⭐ 其他物品（v5）：
+//   - dataState.otherItems + refreshOtherItems()
+//   - loadData / importData / resetData 里同步刷新
+//   - 转发 DataManager 的 CRUD 方法
+//
 // 本文件由原 dataStore.js / paramsStore.js / appStore.js 合并而来。
 
 import { reactive, readonly } from 'vue'
@@ -43,6 +48,7 @@ const dataState = reactive({
   bullets: [],
   prices: [],
   armors: [],       // ⭐ 护甲/头盔数据
+  otherItems: [],   // ⭐ v5：其他物品（背包 / 胸挂 / 治疗 / 维修 / 其他）
   isLoaded: false,
   loadingError: null,
 
@@ -74,10 +80,11 @@ export const dataStore = {
         dataState.bullets = [...dm.getBullets()]
         dataState.prices = [...dm.getPrices()]
         dataState.armors = [...dm.getArmors()]
+        dataState.otherItems = [...dm.getOtherItems(true)]   // ⭐ v5：包含禁用
         dataState.isLoaded = true
         dataState.loadingError = null
 
-        console.log(`✅ 数据加载完成: ${dataState.weapons.length} 把武器, ${dataState.bullets.length} 种子弹, ${dataState.prices.length} 条价格配置, ${dataState.armors.length} 条护甲数据`)
+        console.log(`✅ 数据加载完成: ${dataState.weapons.length} 把武器, ${dataState.bullets.length} 种子弹, ${dataState.prices.length} 条价格配置, ${dataState.armors.length} 条护甲数据, ${dataState.otherItems.length} 条其他物品`)
 
         return { params }
       } else {
@@ -86,6 +93,7 @@ export const dataStore = {
         dataState.bullets = [...dm.getBullets()]
         dataState.prices = [...dm.getPrices()]
         dataState.armors = [...dm.getArmors()]
+        dataState.otherItems = [...dm.getOtherItems(true)]   // ⭐ v5
         dataState.isLoaded = true
         dataState.loadingError = null
 
@@ -115,6 +123,11 @@ export const dataStore = {
 
   refreshArmors() {
     dataState.armors = [...dm.getArmors()]
+  },
+
+  // ⭐ v5：刷新其他物品（包含禁用，让 UI 能显示）
+  refreshOtherItems() {
+    dataState.otherItems = [...dm.getOtherItems(true)]
   },
 
   // ============================================================
@@ -221,6 +234,45 @@ export const dataStore = {
 
   removeArmor(id) {
     return dm.removeArmor(id)
+  },
+
+  // ============================================================
+  // ⭐ v5：其他物品
+  // ============================================================
+  getOtherItems(includeDisabled = false) {
+    return dm.getOtherItems(includeDisabled)
+  },
+
+  getOtherItemsByCategory(category, includeDisabled = false) {
+    return dm.getOtherItemsByCategory(category, includeDisabled)
+  },
+
+  getOtherItemById(id) {
+    return dm.getOtherItemById(id)
+  },
+
+  getNextOtherItemId() {
+    return dm.getNextOtherItemId()
+  },
+
+  addOtherItem(itemData) {
+    return dm.addOtherItem(itemData)
+  },
+
+  updateOtherItem(id, updates) {
+    return dm.updateOtherItem(id, updates)
+  },
+
+  removeOtherItem(id) {
+    return dm.removeOtherItem(id)
+  },
+
+  setOtherItemsEnabled(enabled, category = null) {
+    return dm.setOtherItemsEnabled(enabled, category)
+  },
+
+  getOtherItemCategories() {
+    return dm.getOtherItemCategories()
   },
 
   // ============================================================
@@ -339,6 +391,7 @@ export const dataStore = {
     dataState.bullets = [...dm.getBullets()]
     dataState.prices = [...dm.getPrices()]
     dataState.armors = [...dm.getArmors()]
+    dataState.otherItems = [...dm.getOtherItems(true)]   // ⭐ v5
 
     return result
   },
@@ -349,6 +402,7 @@ export const dataStore = {
     dataState.bullets = [...dm.getBullets()]
     dataState.prices = [...dm.getPrices()]
     dataState.armors = [...dm.getArmors()]
+    dataState.otherItems = [...dm.getOtherItems(true)]   // ⭐ v5
   }
 }
 
@@ -453,7 +507,7 @@ const appState = reactive({
   // ⭐ 主 Tab：'weapon'（枪械数据） | 'items'（弹甲数据） | 'rec'（配装推荐）
   currentTab: 'weapon',
 
-  // ⭐ 子 Tab（仅用于 items）：'bullet' | 'armor' | 'helmet'
+  // ⭐ 子 Tab（仅用于 items）：'bullet' | 'armor' | 'helmet' | 'other'
   currentSubTab: 'bullet',
 
   ttkResults: [],
@@ -514,10 +568,10 @@ export const appStore = {
 
   // ============================================================
   // ⭐ 子 Tab 切换（弹甲数据内部）
-  // 白名单：'bullet' | 'armor' | 'helmet'
+  // 白名单：'bullet' | 'armor' | 'helmet' | 'other'
   // ============================================================
   switchSubTab(sub) {
-    if (['bullet', 'armor', 'helmet'].includes(sub)) {
+    if (['bullet', 'armor', 'helmet', 'other'].includes(sub)) {
       appState.currentSubTab = sub
     }
   },

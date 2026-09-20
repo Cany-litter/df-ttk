@@ -36,10 +36,8 @@
     - PC 端：两个图表默认并排（grid 1fr 1fr），更矮（16:9 / 260px）
     - 放大按钮（PC only）：点击后该图表铺满整行，另一个 v-show 隐藏
     - ⭐ 关键：.charts-area 通过 .has-expanded 切换为单列（grid-template-columns: 1fr）
-      —— 否则 grid 仍是 2 列，剩下的图表只占一半宽
     - 放大时高度恢复 2:1 / 420px
     - 移动端：单列（沿用组件自带样式），隐藏放大按钮
-    - 高度覆盖：靠 App.vue 全局样式覆盖 .chart-container
 
   ⭐ 计算流程合并（v3）：
     - 「计算 TTK」和「生成折线图」两个按钮合并为一个
@@ -47,6 +45,12 @@
       → 从 distanceStats 提取柱状图数据（params.distance 那个点）
       → computeHavocCosts()
     - handleDistanceChart() 降级为内部函数，返回 stats
+
+  ⭐ 滚动到顶部/返回（v4）：
+    - 右下角悬浮按钮（纯图标 ⬆️ / ⬇️）
+    - 滚动超过 400px 显示「⬆️」按钮
+    - 点击 ⬆️：记录当前 scrollY → 平滑滚到顶部 → 按钮变 ⬇️
+    - 点击 ⬇️：平滑滚回记录的位置 → 按钮变 ⬆️（或隐藏）
 -->
 <template>
   <div id="app">
@@ -321,6 +325,23 @@
       </div>
     </div>
   </Teleport>
+
+  <!-- ============================================================ -->
+  <!-- ⭐ 滚动悬浮按钮（纯图标 ⬆️ / ⬇️） -->
+  <!-- ============================================================ -->
+  <Teleport to="body">
+    <Transition name="scroll-btn-fade">
+      <button
+        v-if="showScrollBtn"
+        class="scroll-float-btn"
+        :class="{ 'is-return': canReturn }"
+        :title="canReturn ? '回到刚才的位置' : '回到顶部'"
+        @click="handleScrollBtnClick"
+      >
+        {{ canReturn ? '⬇️' : '⬆️' }}
+      </button>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
@@ -370,6 +391,56 @@ const updateIsMobile = () => {
   isMobile.value = window.innerWidth <= 768
 }
 
+// ============================================================
+// ⭐ 滚动到顶部 / 返回
+// ============================================================
+
+/** 是否在顶部附近（< 50px 视为顶部） */
+const isAtTop = ref(true)
+
+/** 是否显示悬浮按钮 */
+const showScrollBtn = ref(false)
+
+/** 保存的位置（null 表示无记录） */
+const savedScrollY = ref(null)
+
+/** 当前是否处于「已回顶，可返回」状态 */
+const canReturn = computed(() => isAtTop.value && savedScrollY.value !== null)
+
+/** 滚动阈值：超过这个距离才显示"回顶"按钮 */
+const SCROLL_THRESHOLD = 400
+
+/** 顶部判定阈值 */
+const TOP_THRESHOLD = 50
+
+const onScroll = () => {
+  const y = window.scrollY || window.pageYOffset || 0
+  isAtTop.value = y < TOP_THRESHOLD
+  showScrollBtn.value = y > SCROLL_THRESHOLD || savedScrollY.value !== null
+}
+
+/**
+ * 点击悬浮按钮
+ * - canReturn（已回顶且有记录）→ 滚回记录位置
+ * - 否则 → 记录当前位置，滚到顶部
+ */
+const handleScrollBtnClick = () => {
+  if (canReturn.value) {
+    // 返回刚才的位置
+    const targetY = savedScrollY.value
+    savedScrollY.value = null
+    window.scrollTo({ top: targetY, behavior: 'smooth' })
+  } else {
+    // 回顶：先记录当前位置
+    savedScrollY.value = window.scrollY || window.pageYOffset || 0
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+// ============================================================
+// ⭐ 图表放大 / 还原
+// ============================================================
+
 /**
  * ⭐ 放大 / 还原图表
  *
@@ -393,7 +464,6 @@ const toggleExpand = async (which) => {
   lineChartRef.value?.resize?.()
 
   // ② 等过渡结束（0.25s）后再 resize 一次，拿到最终尺寸
-  //    transition: all 0.25s ease → 300ms 缓冲
   setTimeout(() => {
     barChartRef.value?.resize?.()
     lineChartRef.value?.resize?.()
@@ -1730,11 +1800,15 @@ const onBaseSaved = () => {
   console.log('✅ 基础属性已保存，武器数据已刷新')
 }
 
-// ---------- 生命周期：移动端检测 ----------
+// ---------- 生命周期：移动端检测 + 滚动监听 ----------
 onMounted(async () => {
   // ⭐ 初始化移动端检测
   updateIsMobile()
   window.addEventListener('resize', updateIsMobile)
+
+  // ⭐ 初始化滚动监听
+  window.addEventListener('scroll', onScroll, { passive: true })
+  onScroll()   // 立即同步一次状态
 
   try {
     // ⭐ v3：接收 { params }
@@ -1771,6 +1845,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateIsMobile)
+  window.removeEventListener('scroll', onScroll)
 })
 </script>
 
@@ -2142,6 +2217,70 @@ body {
 }
 
 /* ============================================================
+   ⭐ 滚动悬浮按钮（⬆️ / ⬇️）
+   ============================================================ */
+.scroll-float-btn {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9000;
+
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  font-family: var(--font-family);
+
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 4px 12px rgba(74, 108, 247, 0.35);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+  user-select: none;
+}
+
+.scroll-float-btn:hover {
+  background: var(--color-primary-hover);
+  box-shadow: 0 6px 16px rgba(74, 108, 247, 0.45);
+  transform: translateY(-2px);
+}
+
+.scroll-float-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+/* ⭐ 返回态（橙色） */
+.scroll-float-btn.is-return {
+  background: #ff9800;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.35);
+}
+
+.scroll-float-btn.is-return:hover {
+  background: #e68900;
+  box-shadow: 0 6px 16px rgba(255, 152, 0, 0.45);
+}
+
+/* ⭐ 过渡动画 */
+.scroll-btn-fade-enter-active,
+.scroll-btn-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.scroll-btn-fade-enter-from,
+.scroll-btn-fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+}
+
+/* ============================================================
    ⭐ 移动端：单列 + 隐藏放大按钮 + 统一高度
    ============================================================ */
 @media (max-width: 768px) {
@@ -2219,6 +2358,15 @@ body {
     padding: 20px 24px;
     min-width: 280px;
     max-width: 90vw;
+  }
+
+  /* ⭐ 移动端：滚动按钮小一点 */
+  .scroll-float-btn {
+    right: 12px;
+    bottom: 12px;
+    width: 38px;
+    height: 38px;
+    font-size: 17px;
   }
 }
 </style>

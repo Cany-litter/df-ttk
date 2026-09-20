@@ -1,25 +1,117 @@
 <!-- src/components/WeaponTable.vue -->
 <template>
   <div class="weapon-table-wrapper">
-    <!-- 工具栏 -->
+    <!-- ============================================================ -->
+    <!-- ⭐ 工具栏（一行：操作按钮 + 搜索/筛选/排序） -->
+    <!-- ============================================================ -->
     <div class="table-controls">
-      <button class="btn-sm btn-primary" @click="addWeapon">➕ 新增枪械</button>
-      <button class="btn-sm btn-outline" @click="expandAll">🔽 全部展开</button>
-      <button class="btn-sm btn-outline" @click="collapseAll">🔼 全部收起</button>
-      <span class="toolbar-divider"></span>
-      <button class="btn-sm btn-success" @click="enableAllConfigs">✅ 全部启用</button>
-      <button class="btn-sm btn-danger" @click="disableAllConfigs">❌ 全部禁用</button>
-      <span class="control-hint">（新增后在卡片内填写数据，点击"确认"保存）</span>
-      <span class="count-badge">共 {{ data.length }} 把武器</span>
-      <span class="count-badge">配置启用 {{ globalEnabledConfigCount }}/{{ globalConfigCount }}</span>
+      <!-- ============ 左组：操作按钮 ============ -->
+      <div class="controls-left">
+        <button class="btn-sm btn-primary" @click="addWeapon">➕ 新增枪械</button>
+        <button class="btn-sm btn-outline" @click="expandAll">
+          {{ hasActiveFilter ? '🔽 展开筛选' : '🔽 全部展开' }}
+        </button>
+        <button class="btn-sm btn-outline" @click="collapseAll">
+          {{ hasActiveFilter ? '🔼 收起筛选' : '🔼 全部收起' }}
+        </button>
+        <span class="toolbar-divider"></span>
+        <button class="btn-sm btn-success" @click="enableAllConfigs">
+          {{ hasActiveFilter ? '✅ 启用筛选' : '✅ 全部启用' }}
+        </button>
+        <button class="btn-sm btn-danger" @click="disableAllConfigs">
+          {{ hasActiveFilter ? '❌ 禁用筛选' : '❌ 全部禁用' }}
+        </button>
+        <span class="control-hint">（新增后在卡片内填写数据，点击"确认"保存）</span>
+        <span class="count-badge">共 {{ totalCount }} 把武器</span>
+        <span class="count-badge">配置启用 {{ globalEnabledConfigCount }}/{{ globalConfigCount }}</span>
+      </div>
+
+      <!-- ============ 右组：搜索 + 筛选 + 排序 ============ -->
+      <div class="controls-right">
+        <!-- 搜索框 -->
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            v-model="searchQuery"
+            type="text"
+            class="search-input"
+            placeholder="搜索武器名…"
+          />
+          <button
+            v-if="searchQuery"
+            class="search-clear-btn"
+            title="清除"
+            @click="searchQuery = ''"
+          >✕</button>
+        </div>
+
+        <!-- 排序 -->
+        <label class="filter-item">
+          <span class="filter-label">排序:</span>
+          <select v-model="sortKey" class="filter-select">
+            <option value="default">默认</option>
+            <option value="aim_asc">开镜 ↑</option>
+            <option value="aim_desc">开镜 ↓</option>
+            <option value="price_asc">价格 ↑</option>
+            <option value="price_desc">价格 ↓</option>
+            <option value="score_asc">评分 ↑</option>
+            <option value="score_desc">评分 ↓</option>
+            <option value="havoc_asc">哈弗币 ↑</option>
+            <option value="havoc_desc">哈弗币 ↓</option>
+            <option value="ttk_asc">TTK ↑</option>
+            <option value="ttk_desc">TTK ↓</option>
+          </select>
+        </label>
+
+        <!-- 口径筛选 -->
+        <label class="filter-item">
+          <span class="filter-label">口径:</span>
+          <select v-model="filterCaliber" class="filter-select">
+            <option value="all">全部口径</option>
+            <option
+              v-for="cal in caliberFilterOptions"
+              :key="cal"
+              :value="cal"
+            >{{ cal }}</option>
+          </select>
+        </label>
+
+        <!-- 清空筛选 -->
+        <button
+          v-if="hasActiveFilter"
+          class="clear-filter-btn"
+          title="清空所有搜索/筛选/排序"
+          @click="clearFilters"
+        >✕ 清空筛选</button>
+
+        <!-- 显示计数 -->
+        <span
+          class="display-count"
+          :class="{ 'is-filtered': hasActiveFilter }"
+        >
+          显示 {{ filteredCount }}/{{ totalCount }} 把
+        </span>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ⭐ 空结果提示 -->
+    <!-- ============================================================ -->
+    <div v-if="displayedRows.length === 0" class="empty-result">
+      <div class="icon">😶</div>
+      <div>没有匹配的武器</div>
+      <div class="hint">试试调整搜索词或筛选条件</div>
+      <button class="btn-sm btn-outline empty-reset-btn" @click="clearFilters">
+        ✕ 清空筛选
+      </button>
     </div>
 
     <!-- ============================================================ -->
     <!-- ⭐ 桌面端：卡片列表 -->
     <!-- ============================================================ -->
-    <div v-if="!isMobile" class="weapon-card-list">
+    <div v-if="!isMobile && displayedRows.length > 0" class="weapon-card-list">
       <div
-        v-for="(row, index) in rowsWithCurrent"
+        v-for="(row, index) in displayedRows"
         :key="row.id || index"
         class="weapon-card"
         :class="{ 'new-row': row._isNewRow }"
@@ -68,7 +160,7 @@
               @change="onActiveConfigFieldChange(index, 'barrelId', parseInt($event.target.value))"
             >
               <option v-for="(b, i) in row.barrels" :key="i" :value="i">{{ b.name }}</option>
-              <option :value="-1" v-if="row.barrels.length === 0">无</option>
+              <option :value="-1">无</option>
             </select>
           </div>
 
@@ -83,16 +175,23 @@
             </select>
           </div>
 
-          <div class="wh-precision">
+          <!-- ⭐ 精校（无枪管时禁用） -->
+          <div
+            class="wh-precision"
+            :class="{ 'is-disabled': isNoBarrel(row.activeConfig) }"
+          >
             <span class="k">精校</span>
             <input
               type="range"
               min="-0.09" max="0.09" step="0.01"
-              :value="row.activeConfig?.precision ?? 0.09"
+              :value="isNoBarrel(row.activeConfig) ? 0 : (row.activeConfig?.precision ?? 0.09)"
+              :disabled="isNoBarrel(row.activeConfig)"
               @input="onPrecisionInput(index, $event)"
               @change="onPrecisionCommit(index, $event)"
             />
-            <span class="val">{{ Math.round((row.activeConfig?.precision ?? 0.09) * 100) }}%</span>
+            <span class="val">
+              {{ isNoBarrel(row.activeConfig) ? 0 : Math.round((row.activeConfig?.precision ?? 0.09) * 100) }}%
+            </span>
           </div>
 
           <!-- ⭐ 属性列：只显示当前值，tooltip 显示原值 → 当前值 -->
@@ -292,7 +391,7 @@
                   @change="updateConfigField(index, cfg.configId, 'barrelId', parseInt($event.target.value))"
                 >
                   <option v-for="(b, i) in row.barrels" :key="i" :value="i">{{ b.name }}</option>
-                  <option :value="-1" v-if="row.barrels.length === 0">无</option>
+                  <option :value="-1">无</option>
                 </select>
               </span>
 
@@ -417,9 +516,9 @@
     <!-- ============================================================ -->
     <!-- ⭐ 移动端：卡片列表 -->
     <!-- ============================================================ -->
-    <div v-else class="weapon-card-list mobile">
+    <div v-if="isMobile && displayedRows.length > 0" class="weapon-card-list mobile">
       <div
-        v-for="(row, index) in rowsWithCurrent"
+        v-for="(row, index) in displayedRows"
         :key="row.id || index"
         class="weapon-card"
         :class="{ 'new-row': row._isNewRow }"
@@ -495,7 +594,7 @@
                 @change="onActiveConfigFieldChange(index, 'barrelId', parseInt($event.target.value))"
               >
                 <option v-for="(b, i) in row.barrels" :key="i" :value="i">{{ b.name }}</option>
-                <option :value="-1" v-if="row.barrels.length === 0">无</option>
+                <option :value="-1">无</option>
               </select>
             </div>
 
@@ -510,17 +609,24 @@
               </select>
             </div>
 
+            <!-- ⭐ 精校（无枪管时禁用） -->
             <div class="card-row">
               <span class="row-label">精校</span>
-              <div class="precision-input-wrap">
+              <div
+                class="precision-input-wrap"
+                :class="{ 'is-disabled': isNoBarrel(row.activeConfig) }"
+              >
                 <input
                   type="range"
                   min="-0.09" max="0.09" step="0.01"
-                  :value="row.activeConfig?.precision ?? 0.09"
+                  :value="isNoBarrel(row.activeConfig) ? 0 : (row.activeConfig?.precision ?? 0.09)"
+                  :disabled="isNoBarrel(row.activeConfig)"
                   @input="onPrecisionInput(index, $event)"
                   @change="onPrecisionCommit(index, $event)"
                 />
-                <span class="val">{{ Math.round((row.activeConfig?.precision ?? 0.09) * 100) }}%</span>
+                <span class="val">
+                  {{ isNoBarrel(row.activeConfig) ? 0 : Math.round((row.activeConfig?.precision ?? 0.09) * 100) }}%
+                </span>
               </div>
             </div>
 
@@ -639,7 +745,7 @@
                       @change="updateConfigField(index, cfg.configId, 'barrelId', parseInt($event.target.value))"
                     >
                       <option v-for="(b, i) in row.barrels" :key="i" :value="i">{{ b.name }}</option>
-                      <option :value="-1" v-if="row.barrels.length === 0">无</option>
+                      <option :value="-1">无</option>
                     </select>
                   </div>
                   <div class="cfg-mobile-row">
@@ -825,6 +931,155 @@ onBeforeUnmount(() => {
 })
 
 // ============================================================
+// ⭐ 无枪管判断
+// ============================================================
+
+/**
+ * 判断配置是否为「无枪管」
+ *
+ * @param {Object|null} config - 价格配置（activeConfig 或 configRows 里的一行）
+ * @returns {boolean}
+ */
+const isNoBarrel = (config) => {
+  if (!config) return false
+  const barrelId = (config.barrelId !== undefined) ? config.barrelId : -1
+  return barrelId === -1
+}
+
+// ============================================================
+// ⭐ 搜索 / 筛选 / 排序（v4）
+// ============================================================
+
+/** 搜索词（武器名，包含匹配 + 忽略大小写） */
+const searchQuery = ref('')
+
+/** 口径筛选：'all' 或具体口径 */
+const filterCaliber = ref('all')
+
+/** 排序 key：'default' / '{field}_{asc|desc}' */
+const sortKey = ref('default')
+
+/** 是否有激活的筛选/搜索/排序（用于按钮文案和显示计数） */
+const hasActiveFilter = computed(() => {
+  return searchQuery.value.trim() !== '' ||
+         filterCaliber.value !== 'all' ||
+         sortKey.value !== 'default'
+})
+
+/** 口径下拉选项（从数据动态提取，去重排序） */
+const caliberFilterOptions = computed(() => {
+  const weapons = dataStore.state.weapons || []
+  const set = new Set()
+  for (const w of weapons) {
+    if (w.allowedBullet) set.add(w.allowedBullet)
+  }
+  return Array.from(set).sort()
+})
+
+/**
+ * 从武器卡片里取排序字段的"代表值"（最优配置）
+ *
+ * 规则：
+ * - 升序（_asc）：取卡片内**最小**值
+ * - 降序（_desc）：取卡片内**最大**值
+ * - 空值统一视为 Infinity（排最后）
+ *
+ * @param {Object} row - 武器行
+ * @param {string} key - sortKey
+ * @returns {number} 排序值
+ */
+const getSortFieldValue = (row, key) => {
+  if (!key || key === 'default') return 0
+
+  const [field, dir] = key.split('_')
+  const isAsc = dir === 'asc'
+  const configs = row._configRows || []
+
+  if (configs.length === 0) return Infinity
+
+  const values = configs
+    .map(cfg => getSortFieldValueForConfig(cfg, field))
+    .filter(v => v != null && isFinite(v))
+
+  if (values.length === 0) return Infinity
+
+  return isAsc ? Math.min(...values) : Math.max(...values)
+}
+
+/**
+ * 从配置里取排序字段值
+ *
+ * @param {Object} cfg - 配置行
+ * @param {string} field - 'aim' / 'price' / 'score' / 'havoc' / 'ttk'
+ * @returns {number|null}
+ */
+const getSortFieldValueForConfig = (cfg, field) => {
+  switch (field) {
+    case 'aim':
+      // aimSpeed === 0 视为有效值（开镜最快）
+      return (typeof cfg.aimSpeed === 'number' && !isNaN(cfg.aimSpeed))
+        ? cfg.aimSpeed
+        : null
+
+    case 'price':
+      return (typeof cfg.price === 'number' && isFinite(cfg.price) && cfg.price > 0)
+        ? cfg.price
+        : null
+
+    case 'score':
+      // 假 TTK（越小越好）
+      return (cfg.fakeTTK != null && isFinite(cfg.fakeTTK))
+        ? cfg.fakeTTK
+        : null
+
+    case 'havoc':
+      return (cfg.havocCost != null && isFinite(cfg.havocCost))
+        ? cfg.havocCost
+        : null
+
+    case 'ttk':
+      return (cfg._scoreTtk != null && isFinite(cfg._scoreTtk))
+        ? cfg._scoreTtk
+        : null
+
+    default:
+      return null
+  }
+}
+
+/** 排序方向：1 = 升序，-1 = 降序 */
+const getSortDirection = (key) => {
+  if (!key || key === 'default') return 1
+  return key.endsWith('_desc') ? -1 : 1
+}
+
+/**
+ * ⭐ 通用比较函数
+ *
+ * - null / Infinity 排最后
+ * - 升序 / 降序由 key 决定
+ */
+const compareBySortKey = (a, b, key) => {
+  if (key === 'default') return 0
+
+  const [field] = key.split('_')
+  const dir = getSortDirection(key)
+
+  const va = getSortFieldValueForConfig(a, field)
+  const vb = getSortFieldValueForConfig(b, field)
+
+  const aNull = (va == null || !isFinite(va))
+  const bNull = (vb == null || !isFinite(vb))
+
+  // null 排最后（无论升序降序）
+  if (aNull && bNull) return 0
+  if (aNull) return 1
+  if (bNull) return -1
+
+  return (va - vb) * dir
+}
+
+// ============================================================
 // 收起/展开状态
 // ============================================================
 const collapsedMap = reactive({})
@@ -842,26 +1097,46 @@ const toggleCollapse = (weaponId) => {
 }
 
 const expandAll = () => {
-  Object.keys(collapsedMap).forEach(k => delete collapsedMap[k])
+  // ⭐ 只对筛选后显示的武器生效
+  for (const row of displayedRows.value) {
+    if (!row._isNewRow) {
+      delete collapsedMap[row.id]
+    }
+  }
 }
 
 const collapseAll = () => {
-  props.data.forEach(w => {
-    if (!w._isNewRow) {
-      collapsedMap[w.id] = true
+  // ⭐ 只对筛选后显示的武器生效
+  for (const row of displayedRows.value) {
+    if (!row._isNewRow) {
+      collapsedMap[row.id] = true
     }
-  })
+  }
 }
 
 // ============================================================
 // 全部启用 / 全部禁用配置
 // ============================================================
+
+/**
+ * ⭐ 启用所有（或筛选后的）配置
+ *
+ * - 无筛选：对所有配置生效
+ * - 有筛选：只对筛选后显示的武器配置生效
+ */
 const enableAllConfigs = () => {
   const dm = dataStore.getDataManager()
-  const prices = dm.getPrices()
+  const weapons = dataStore.getWeapons()
   let count = 0
 
-  for (const price of prices) {
+  // ⭐ 筛选用武器 ID 集合
+  const visibleWeaponIds = hasActiveFilter.value
+    ? new Set(displayedRows.value.filter(r => !r._isNewRow).map(r => r.id))
+    : null
+
+  for (const price of dm.getPrices()) {
+    if (visibleWeaponIds && !visibleWeaponIds.has(price.weaponId)) continue
+
     for (const config of price.configs) {
       if (config.enabled === false) {
         dm.updatePriceConfig(price.weaponId, config.id, { enabled: true })
@@ -872,18 +1147,27 @@ const enableAllConfigs = () => {
 
   if (count > 0) {
     dataStore.refreshPrices()
-    console.log(`✅ 已启用 ${count} 个配置`)
+    console.log(`✅ 已启用 ${count} 个配置` + (visibleWeaponIds ? '（筛选结果）' : ''))
   } else {
     console.log('ℹ️ 所有配置已启用')
   }
 }
 
+/**
+ * ⭐ 禁用所有（或筛选后的）配置
+ */
 const disableAllConfigs = () => {
   const dm = dataStore.getDataManager()
-  const prices = dm.getPrices()
   let count = 0
 
-  for (const price of prices) {
+  // ⭐ 筛选用武器 ID 集合
+  const visibleWeaponIds = hasActiveFilter.value
+    ? new Set(displayedRows.value.filter(r => !r._isNewRow).map(r => r.id))
+    : null
+
+  for (const price of dm.getPrices()) {
+    if (visibleWeaponIds && !visibleWeaponIds.has(price.weaponId)) continue
+
     for (const config of price.configs) {
       if (config.enabled !== false) {
         dm.updatePriceConfig(price.weaponId, config.id, { enabled: false })
@@ -894,10 +1178,19 @@ const disableAllConfigs = () => {
 
   if (count > 0) {
     dataStore.refreshPrices()
-    console.log(`❌ 已禁用 ${count} 个配置`)
+    console.log(`❌ 已禁用 ${count} 个配置` + (visibleWeaponIds ? '（筛选结果）' : ''))
   } else {
     console.log('ℹ️ 所有配置已禁用')
   }
+}
+
+// ============================================================
+// ⭐ 清空筛选
+// ============================================================
+const clearFilters = () => {
+  searchQuery.value = ''
+  filterCaliber.value = 'all'
+  sortKey.value = 'default'
 }
 
 // ============================================================
@@ -961,22 +1254,10 @@ const fmtPrice = (v) => v >= 10000 ? `¥${(v / 10000).toFixed(1)}W` : `¥${v}`
 
 /**
  * ⭐ 倍率格式化（去掉浮点长尾小数）
- *
- * 修复前：0.8999999999999999
- * 修复后：0.9
- *
- * 逻辑：
- * - 非数字 / 非有限值 → 原样返回
- * - 其他 → 保留 2 位小数（去掉末尾多余的 0）
- *   - 1.00  → 1
- *   - 0.90  → 0.9
- *   - 1.82  → 1.82
- *   - 0.8999999999999999 → 0.9
  */
 const fmtMult = (v) => {
   if (typeof v !== 'number' || !isFinite(v)) return v
   const rounded = Math.round((v + Number.EPSILON) * 100) / 100
-  // Number() 会自动去掉末尾多余的 0，如 1.00 → 1，0.90 → 0.9
   return rounded
 }
 
@@ -988,16 +1269,10 @@ const havocColor = (v) => {
   return 'havoc-green'
 }
 
-/**
- * ⭐ 属性 tooltip（原值 → 当前值）
- */
 const getAttrTooltip = (label, original, current) => {
   return `${label}\n${original} → ${current}`
 }
 
-/**
- * ⭐ 评分颜色
- */
 const scoreColor = (fakeTTK) => {
   if (fakeTTK == null || !isFinite(fakeTTK)) return 'score-empty'
 
@@ -1094,7 +1369,8 @@ const getUpdateButtonTitle = (weaponId) => {
 }
 
 const updateWeaponTTK = (index) => {
-  const row = rowsWithCurrent.value[index]
+  // ⭐ index 是 displayedRows 里的索引
+  const row = displayedRows.value[index]
   if (!row || row._isNewRow) return
   if (isWeaponUpdating(row.id)) return
   if (isGlobalCalculating.value) return
@@ -1103,7 +1379,7 @@ const updateWeaponTTK = (index) => {
 }
 
 // ============================================================
-// 核心：rowsWithCurrent
+// 核心：rowsWithCurrent（未筛选/未排序的原始行）
 // ============================================================
 const rowsWithCurrent = computed(() => {
   const weapons = dataStore.state.weapons
@@ -1142,7 +1418,7 @@ const rowsWithCurrent = computed(() => {
 
     const dps = calcDPSBySegment(current)
 
-    const configsWithHavoc = configRows.map(cfg => {
+    let configsWithHavoc = configRows.map(cfg => {
       const key = `${weapon.id}_${cfg.configId}`
       const cost = havocCosts[key] || null
       const scoreData = scores[key] || null
@@ -1163,6 +1439,13 @@ const rowsWithCurrent = computed(() => {
         _scoreAim: scoreData?.aim || 0
       }
     })
+
+    // ⭐ v4：卡片内配置按当前排序 key 排序
+    if (sortKey.value !== 'default') {
+      configsWithHavoc = [...configsWithHavoc].sort((a, b) =>
+        compareBySortKey(a, b, sortKey.value)
+      )
+    }
 
     const enabledCount = configsWithHavoc.filter(c => c.enabled !== false).length
 
@@ -1186,6 +1469,73 @@ const rowsWithCurrent = computed(() => {
       _isNewRow: false
     }
   })
+})
+
+// ============================================================
+// ⭐ displayedRows：搜索 → 口径筛选 → 卡片排序
+// ============================================================
+const displayedRows = computed(() => {
+  let rows = rowsWithCurrent.value
+
+  // ---------- 1. 名称搜索（包含匹配 + 忽略大小写） ----------
+  const q = searchQuery.value.trim().toLowerCase()
+  if (q) {
+    rows = rows.filter(r => {
+      if (r._isNewRow) return true   // 新增行总是显示
+      return (r.name || '').toLowerCase().includes(q)
+    })
+  }
+
+  // ---------- 2. 口径筛选 ----------
+  if (filterCaliber.value !== 'all') {
+    rows = rows.filter(r => {
+      if (r._isNewRow) return true   // 新增行总是显示
+      return r.allowedBullet === filterCaliber.value
+    })
+  }
+
+  // ---------- 3. 卡片排序（按代表值） ----------
+  if (sortKey.value !== 'default') {
+    rows = [...rows].sort((a, b) => {
+      // 新增行永远在第一位（方便填写）
+      if (a._isNewRow && !b._isNewRow) return -1
+      if (!a._isNewRow && b._isNewRow) return 1
+      if (a._isNewRow && b._isNewRow) return 0
+
+      const va = getSortFieldValue(a, sortKey.value)
+      const vb = getSortFieldValue(b, sortKey.value)
+      const dir = getSortDirection(sortKey.value)
+
+      const aNull = !isFinite(va)
+      const bNull = !isFinite(vb)
+
+      // null 排最后（无论升降序）
+      if (aNull && bNull) return 0
+      if (aNull) return 1
+      if (bNull) return -1
+
+      return (va - vb) * dir
+    })
+  } else {
+    // 默认：新增行置顶
+    rows = [...rows].sort((a, b) => {
+      if (a._isNewRow && !b._isNewRow) return -1
+      if (!a._isNewRow && b._isNewRow) return 1
+      return 0
+    })
+  }
+
+  return rows
+})
+
+/** 显示数量 / 总数（用于计数提示） */
+const filteredCount = computed(() => {
+  // 新增行不算在内
+  return displayedRows.value.filter(r => !r._isNewRow).length
+})
+
+const totalCount = computed(() => {
+  return (dataStore.state.weapons || []).filter(w => !w._isNewRow).length
 })
 
 // ============================================================
@@ -1261,8 +1611,11 @@ const parseMult = (row) => {
 const precisionLocalMap = ref({})
 
 const onPrecisionInput = (index, event) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
+  // ⭐ 无枪管时，精校控件禁用，理论上不会触发 input
+  if (isNoBarrel(row.activeConfig)) return
+
   const val = parseFloat(event.target.value)
   const el = event.target.nextElementSibling
   if (el) el.textContent = Math.round(val * 100) + '%'
@@ -1270,8 +1623,11 @@ const onPrecisionInput = (index, event) => {
 }
 
 const onPrecisionCommit = (index, event) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row || !row.activeConfig) return
+  // ⭐ 无枪管时，精校控件禁用，理论上不会触发 change
+  if (isNoBarrel(row.activeConfig)) return
+
   const val = parseFloat(event.target.value)
   updateConfigField(index, row.activeConfigId, 'precision', val)
   delete precisionLocalMap.value[row.id]
@@ -1283,13 +1639,13 @@ const onPrecisionCommit = (index, event) => {
 const getConfigKey = (weaponId, configId) => `${weaponId}_${configId}`
 
 const selectConfig = (index, configId) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
   activeConfigMap[row.id] = configId
 }
 
 const toggleConfig = (index, configId, enabled) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
   const dm = dataStore.getDataManager()
   dm.updatePriceConfig(row.id, configId, { enabled })
@@ -1297,22 +1653,54 @@ const toggleConfig = (index, configId, enabled) => {
 }
 
 const onActiveConfigFieldChange = (index, field, value) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row || !row.activeConfigId) return
   updateConfigField(index, row.activeConfigId, field, value)
 }
 
+/**
+ * ⭐ 更新配置字段
+ *
+ * ⭐ v4：切换枪管时同步处理精校
+ *   - 切到无枪管（-1）：DataManager 会自动把 precision 归零
+ *   - 无枪管 → 有枪管：恢复默认精校 0.09
+ *   - 枪管 → 枪管：保持当前 precision（不传）
+ *
+ * @param {number} index - displayedRows 的行索引
+ * @param {string} configId - 配置 ID
+ * @param {string} field - 字段名
+ * @param {*} value - 新值
+ */
 const updateConfigField = (index, configId, field, value) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
   const dm = dataStore.getDataManager()
-  dm.updatePriceConfig(row.id, configId, { [field]: value })
+
+  if (field === 'barrelId') {
+    // ⭐ 判断切换前是否为「无枪管」
+    const wasNoBarrel = (row.activeConfig?.barrelId ?? -1) === -1
+    const willBeNoBarrel = value === -1
+
+    if (willBeNoBarrel) {
+      // 切到无枪管 → DataManager 自动把 precision 归零
+      dm.updatePriceConfig(row.id, configId, { barrelId: -1, precision: 0 })
+    } else if (wasNoBarrel) {
+      // 无枪管 → 有枪管 → 恢复默认精校 0.09
+      dm.updatePriceConfig(row.id, configId, { barrelId: value, precision: 0.09 })
+    } else {
+      // 枪管 → 枪管 → 保持当前 precision
+      dm.updatePriceConfig(row.id, configId, { barrelId: value })
+    }
+  } else {
+    dm.updatePriceConfig(row.id, configId, { [field]: value })
+  }
+
   dataStore.refreshPrices()
   emit('update', { index, type: field, value, weaponId: row.id })
 }
 
 const onHitRateChange = (index, configId, str) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
   const parsed = parseHitRateString(str)
   const dm = dataStore.getDataManager()
@@ -1344,7 +1732,7 @@ const parseHitRateString = (str) => {
 }
 
 const onBulletChange = (index, configId, bulletId) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
   const dm = dataStore.getDataManager()
 
@@ -1425,15 +1813,18 @@ const addConfig = async (row) => {
   const nextId = dm.getNextConfigId(row.id)
   const defaultBarrelIndex = dm.findBestBarrelIndex(row.id)
 
+  // ⭐ v4：默认精校根据枪管同步
+  const isNoBarrelDefault = (defaultBarrelIndex < 0)
+
   const newConfig = {
     id: nextId,
-    barrelId: defaultBarrelIndex >= 0 ? defaultBarrelIndex : -1,
-    barrel: defaultBarrelIndex >= 0 && row.barrels[defaultBarrelIndex]
+    barrelId: isNoBarrelDefault ? -1 : defaultBarrelIndex,
+    barrel: !isNoBarrelDefault && row.barrels[defaultBarrelIndex]
       ? row.barrels[defaultBarrelIndex].name
       : '无',
     muzzleId: 0,
     muzzle: '无',
-    precision: 0.09,
+    precision: isNoBarrelDefault ? 0 : 0.09,
     aimSpeed: 0,
     buildCode: '',
     price: 0,
@@ -1454,7 +1845,7 @@ const addConfig = async (row) => {
 }
 
 const deleteConfig = async (index, configId) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
 
   let confirmed = true
@@ -1486,19 +1877,19 @@ const deleteConfig = async (index, configId) => {
 // 武器级操作
 // ============================================================
 const editBarrel = (index) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
   emit('edit-barrel', row.id)
 }
 
 const editBase = (index) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
   appStore.openBaseEditor(row.id)
 }
 
 const deleteWeapon = async (index) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
 
   let confirmed = true
@@ -1529,7 +1920,7 @@ const deleteWeapon = async (index) => {
 }
 
 const showDetail = (index, configId) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
   emit('show-damage-detail', { weaponId: row.id, configId })
 }
@@ -1542,7 +1933,7 @@ const addWeapon = () => {
 }
 
 const confirmAdd = async (index) => {
-  const row = rowsWithCurrent.value[index]
+  const row = displayedRows.value[index]
   if (!row) return
   if (!row.name || row.name.trim() === '') {
     if (showAlert) await showAlert('⚠️ 请输入武器名称')
@@ -1565,7 +1956,9 @@ const cancelAdd = (index) => {
   width: 100%;
 }
 
-/* ============ 工具栏 ============ */
+/* ============================================================
+   ⭐ 工具栏（一行：左组 + 右组）
+   ============================================================ */
 .table-controls {
   display: flex;
   align-items: center;
@@ -1574,14 +1967,36 @@ const cancelAdd = (index) => {
   background: #f8f9fa;
   border-radius: var(--radius-md);
   margin-bottom: 6px;
-  flex-wrap: wrap;
+  flex-wrap: wrap;   /* ⭐ 屏幕不够宽时自动换行 */
   border: 1px solid var(--color-border-light);
+  row-gap: 6px;
 }
+
+/* 左组：操作按钮 */
+.controls-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* 右组：搜索 + 筛选 + 排序 */
+.controls-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;   /* ⭐ 推到右边 */
+  min-width: 0;
+}
+
 .control-hint {
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
+
 .count-badge {
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
@@ -1594,11 +2009,6 @@ const cancelAdd = (index) => {
   align-items: center;
   height: 20px;
   white-space: nowrap;
-}
-
-/* ⭐ 紧跟在 control-hint 后面的第一个 count-badge 推到右边 */
-.control-hint + .count-badge {
-  margin-left: auto;
 }
 
 .toolbar-divider {
@@ -1628,6 +2038,191 @@ const cancelAdd = (index) => {
   border-color: #d32f2f;
 }
 
+/* ============================================================
+   ⭐ 搜索框
+   ============================================================ */
+.search-box {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  min-width: 160px;
+  max-width: 220px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search-box:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(74,108,247,0.12);
+}
+
+.search-icon {
+  padding: 0 4px 0 8px;
+  font-size: 12px;
+  color: #999;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  height: 100%;
+  padding: 0;
+}
+
+.search-input::placeholder {
+  color: #bbb;
+}
+
+.search-clear-btn {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-right: 3px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #999;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.search-clear-btn:hover {
+  background: #f0f0f0;
+  color: #666;
+}
+
+/* ============================================================
+   ⭐ 排序 / 口径筛选
+   ============================================================ */
+.filter-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.filter-label {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: #666;
+  flex-shrink: 0;
+}
+
+.filter-select {
+  height: 26px;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.filter-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(74,108,247,0.12);
+}
+
+/* ============================================================
+   ⭐ 清空筛选按钮
+   ============================================================ */
+.clear-filter-btn {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  background: #ffebee;
+  color: #c62828;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.clear-filter-btn:hover {
+  background: #ffcdd2;
+  border-color: #ef9a9a;
+}
+.clear-filter-btn:active {
+  transform: scale(0.97);
+}
+
+/* ============================================================
+   ⭐ 显示计数
+   ============================================================ */
+.display-count {
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  color: #666;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.display-count.is-filtered {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ============================================================
+   ⭐ 空结果提示
+   ============================================================ */
+.empty-result {
+  text-align: center;
+  padding: 60px 20px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
+  margin-top: 10px;
+}
+
+.empty-result .icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-result > div {
+  font-family: var(--font-family);
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.empty-result .hint {
+  font-size: 12px;
+  color: #bbb;
+  margin-bottom: 16px;
+}
+
+.empty-reset-btn {
+  margin-top: 8px;
+  height: 28px;
+  padding: 0 16px;
+}
+
 /* ============ 卡片列表 ============ */
 .weapon-card-list {
   display: flex;
@@ -1650,10 +2245,7 @@ const cancelAdd = (index) => {
 }
 
 /* ============================================================
-   ⭐ 武器头 Grid（名称 -20，衰减 +30）
-
-   列顺序：
-     [折叠] [名称] [类型] [口径] [枪管] [枪口] [精校] [射速] [初速] [肉伤] [甲伤] [射程] [衰减] [倍率] [伤害]
+   ⭐ 武器头 Grid
    ============================================================ */
 .weapon-head {
   display: grid;
@@ -1814,6 +2406,21 @@ const cancelAdd = (index) => {
   flex-shrink: 0;
   min-width: 30px;
   text-align: right;
+}
+
+/* ⭐ v4：无枪管时，精校整体灰化 */
+.wh-precision.is-disabled {
+  opacity: 0.45;
+}
+.wh-precision.is-disabled .k {
+  color: #bbb;
+}
+.wh-precision.is-disabled input[type="range"] {
+  cursor: not-allowed;
+  accent-color: #ccc;
+}
+.wh-precision.is-disabled .val {
+  color: #bbb;
 }
 
 /* ⭐ 属性列（只显示当前值，tooltip 显示原值 → 当前值） */
@@ -2040,21 +2647,24 @@ const cancelAdd = (index) => {
   gap: 4px;
 }
 
+/* ============================================================
+   配置行 grid
+   ============================================================ */
 .config-item {
   display: grid;
   grid-template-columns:
-    28px
-    50px
-    400px
-    140px
-    110px
-    300px
-    80px
-    90px
-    140px
-    90px
-    80px
-    minmax(110px, 1fr);
+    28px     /* 启用 */
+    50px     /* configId */
+    350px    /* 改枪码 */
+    190px    /* 枪管 */
+    160px    /* 枪口 */
+    200px    /* 命中率 */
+    80px     /* 开镜 */
+    110px    /* 价格 */
+    140px    /* 子弹 */
+    90px     /* 哈弗币 */
+    80px     /* 评分 */
+    minmax(110px, 1fr);   /* 操作 */
   align-items: center;
   column-gap: 8px;
 
@@ -2064,7 +2674,7 @@ const cancelAdd = (index) => {
   border-radius: 6px;
   transition: all 0.15s;
   cursor: pointer;
-  min-width: 1560px;
+  min-width: 1530px;
 }
 
 .config-item.enabled { border-left: 3px solid var(--color-success); }
@@ -2291,6 +2901,7 @@ const cancelAdd = (index) => {
   font-size: 10px;
   color: #999;
   flex-shrink: 0;
+  font-weight: 600;
 }
 
 .config-actions {
@@ -2365,7 +2976,7 @@ const cancelAdd = (index) => {
 }
 
 /* ============================================================
-   响应式（名称 -15，衰减 +30 同步调整断点）
+   响应式（武器头 grid）
    ============================================================ */
 @media (max-width: 1600px) {
   .weapon-head {
@@ -2489,6 +3100,18 @@ const cancelAdd = (index) => {
   color: var(--color-primary);
   min-width: 40px;
   text-align: right;
+}
+
+/* ⭐ v4：移动端无枪管时，精校灰化 */
+.precision-input-wrap.is-disabled {
+  opacity: 0.45;
+}
+.precision-input-wrap.is-disabled input[type="range"] {
+  cursor: not-allowed;
+  accent-color: #ccc;
+}
+.precision-input-wrap.is-disabled .val {
+  color: #bbb;
 }
 
 .row-dps {
@@ -2630,5 +3253,42 @@ const cancelAdd = (index) => {
   line-height: 1;
   margin-left: 3px;
   animation: dirty-pulse 1.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   ⭐ 移动端：工具栏紧凑
+   ============================================================ */
+@media (max-width: 768px) {
+  .table-controls {
+    padding: 5px 8px;
+    row-gap: 5px;
+  }
+
+  .controls-left,
+  .controls-right {
+    gap: 4px;
+  }
+
+  .controls-right {
+    margin-left: 0;   /* 移动端不推右，直接换行 */
+    width: 100%;
+  }
+
+  .search-box {
+    min-width: 130px;
+    flex: 1;
+  }
+
+  .control-hint {
+    display: none;   /* 移动端隐藏提示，省空间 */
+  }
+
+  .filter-label {
+    display: none;   /* 移动端隐藏"排序:"/"口径:"标签 */
+  }
+
+  .display-count {
+    font-size: 11px;
+  }
 }
 </style>

@@ -27,6 +27,15 @@
         ⛑️ 头盔
         <span class="count">{{ helmetRows.length }}</span>
       </button>
+      <!-- ⭐ v5：其他物品 -->
+      <button
+        class="sub-tab"
+        :class="{ active: currentSubTab === 'other' }"
+        @click="switchSubTab('other')"
+      >
+        🧰 其他物品
+        <span class="count">{{ otherItemsRows.length }}</span>
+      </button>
     </div>
 
     <!-- ============ 子 Tab 内容 ============ -->
@@ -59,6 +68,14 @@
           @update="onArmorUpdate"
         />
       </div>
+
+      <!-- ⭐ v5：其他物品 -->
+      <div v-show="currentSubTab === 'other'" class="sub-pane">
+        <OtherItemsTable
+          :data="otherItemsRows"
+          @update="onOtherItemsUpdate"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -68,6 +85,7 @@ import { computed } from 'vue'
 import { dataStore, appStore } from '@/stores/stores'
 import BulletTable from '@/components/BulletTable.vue'
 import ArmorTable from '@/components/ArmorTable.vue'
+import OtherItemsTable from '@/components/OtherItemsTable.vue'   // ⭐ v5
 
 const props = defineProps({
   caliberOptions: {
@@ -91,6 +109,11 @@ const armorRows = computed(() => {
 
 const helmetRows = computed(() => {
   return (dataStore.state.armors || []).filter(a => a.type === 'helmet')
+})
+
+// ⭐ v5：其他物品（包含禁用的，让 UI 能看到）
+const otherItemsRows = computed(() => {
+  return dataStore.state.otherItems || []
 })
 
 // ---------- 子 Tab 切换 ----------
@@ -130,6 +153,14 @@ const onArmorUpdate = () => {
   dataStore.refreshArmors()
   emit('update')
 }
+
+// ============================================================
+// ⭐ v5：其他物品事件（OtherItemsTable 内部已处理，只需刷新）
+// ============================================================
+const onOtherItemsUpdate = () => {
+  dataStore.refreshOtherItems()
+  emit('update')
+}
 </script>
 
 <style scoped>
@@ -146,6 +177,7 @@ const onArmorUpdate = () => {
   margin-bottom: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--color-border-light, #e8e8e8);
+  flex-wrap: wrap;
 }
 
 .sub-tab {
