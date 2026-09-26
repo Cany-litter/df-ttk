@@ -1,18 +1,16 @@
-我先把这轮所有改动梳理一遍，再输出完整 README。
+# 更新 `README.md`
 
-## 本轮改动（v1.3.0）
+我基于**当前实际代码**（`src/core/` 已合并为 6 个文件、`src/` 共 27 个文件）重写 README。
 
-| 类别 | 改动 |
-|---|---|
-| **数据** | `data.json` 新增 `otherItems` 数组 |
-| **DataManager** | 新增 `otherItems` 相关方法 + `normalizeData` 规范化 + 导出排序 |
-| **stores** | 新增 `otherItems` state + `refreshOtherItems()` + CRUD 转发 |
-| **组件** | **新增 `OtherItemsTable.vue`**；`ItemsPanel.vue` 新增第 4 个子 tab |
-| **文件数** | 34 → **35** |
+**主要更新点**：
+- 目录结构（`src/core/` 6 个文件）
+- 文件职责（合并后的新职责）
+- 核心数据流（更新模块名）
+- 6.x API 速查（合并后的新文件名）
+- 已知限制 / 待办（去掉已修复项）
+- 版本历史（新增 v1.4.0）
 
----
-
-````markdown
+```markdown
 # 三角洲行动 TTK 计算器 — 项目文档
 
 > Delta Force TTK Calculator
@@ -20,8 +18,7 @@
 > 本文档面向 **AI 大模型**（作为项目上下文）和 **用大模型辅助开发的开发者**。
 > 结构优先信息密度，省略客套。按需检索章节即可。
 >
-> ⚠️ 本文档以**实际代码**为准。旧版 `TtkCacheManager` / `KeyPointsComputer` / `ttkCache`
-> 架构已被 `FastTTK` + `TTKDP` + `TTKMatrix` + `TTKIndexedDB` 取代。
+> ⚠️ 本文档以**实际代码**为准。
 
 ---
 
@@ -52,16 +49,23 @@ data.json（含 weapons / bullets / prices / armors / otherItems，可选 params
   ▼
 DataManager（单例，加载 / 规范化 / 导入导出 / 修改追踪）
   │
-  ├──▶ stores.js（dataStore / paramsStore / appStore）
+  ├──▶ stores.js（dataStore / paramsStore / appStore / equipStore）
   │        │
   │        ▼
   │      Vue 组件（UI 层）
   │
   └──▶ FastTTK.computeTTK()          ← 统一计算入口
            │
-           ├── 'fast'    → TTKDP.js            （动态规划，< 10ms，精度 < 0.01%）
+           ├── 'fast'    → TTKMatrix.computeTTKWithDP()（DP，< 10ms，精度 < 0.01%）
            │
-           └── 'precise' → SimulationEngine.js （蒙特卡洛，~700ms，精度 ~1%）
+           └── 'precise' → SimulationEngine（蒙特卡洛，~700ms，精度 ~1%）
+
+综合评分链路（EquipScoreEngine）：
+  App.recomputeScores()
+    ├─ EquipScoreEngine.computeScores()
+    │     └─ FastTTK.computeSingleTTK()（内部 DP）
+    │           └─ TTKMatrix.getMatrixEntry / setMatrixEntries（缓存）
+    └─ EquipScoreEngine.extractGlobalRange()（保存全局 min/max）
 
 配装推荐链路（RecEngine）：
   RecPanel.runRecommend()
@@ -75,8 +79,8 @@ DataManager（单例，加载 / 规范化 / 导入导出 / 修改追踪）
     ├─ _buildAttackSide()   （武器配置 × 子弹等级）
     ├─ _buildDefenseSide()  （护甲 × 头盔）
     ├─ _prepareEnemies()    （假想敌）
-    ├─ computeTTKMatrix()   ← TTKMatrix.js（矩阵预计算 + 增量）
-    │     └─ TTKIndexedDB.js（IndexedDB 持久化）
+    ├─ FastTTK.computeTTKMatrix()  ← 矩阵预计算 + 增量
+    │     └─ TTKMatrix.buildAllMatrix()（含 IndexedDB 持久化）
     └─ _buildRecommendationsFromMatrix()（读回 + 组合 + 排序）
 
 假想敌创建链路（RecPanel）：
@@ -88,7 +92,7 @@ DataManager（单例，加载 / 规范化 / 导入导出 / 修改追踪）
     │           └─ 从新池挑（跳过去重）
     └─ 无推荐结果 → randomEnemy()（随机采样，回退）
 
-其他物品链路（v5）：
+其他物品链路：
   OtherItemsTable.vue
     └─ dataStore.state.otherItems
          └─ DataManager 的 CRUD（addOtherItem / updateOtherItem / removeOtherItem）
@@ -96,20 +100,21 @@ DataManager（单例，加载 / 规范化 / 导入导出 / 修改追踪）
 ```
 
 **关键点**：
-- **`FastTTK` 是唯一计算入口**，对外只暴露 `computeTTK({ mode })`；内部按模式分发到 DP 或蒙特卡洛
-- **`TTKDP.js` 是主流程引擎**（快、精确、无随机性），所有批量计算/矩阵/折线图/单枪更新都走它
-- **`SimulationEngine.js` 只用于两处**：① `FastTTK` 的 `'precise'` 模式；② `DamageDetailModal` 的逐发明细记录（`simulateOneTTKWithDetail`）
-- **`TTKMatrix` + `TTKIndexedDB` 是推荐侧缓存**，与主流程的 `ttkCache` 无关（后者已删除）
-- **`CombatCore` 是底层**（常量 / RNG / 伤害计算器 / 子弹策略），无外部依赖
+- **`FastTTK` 是唯一计算入口**，对外暴露 `computeTTK({ mode })`；内部按模式分发到 DP 或蒙特卡洛
+- **`TTKMatrix` 承载"DP 引擎 + IndexedDB 缓存 + 矩阵预计算"三层职责**（v1.4 合并）
+- **`SimulationEngine` 承载"蒙特卡洛引擎 + CombatCore（常量 / RNG / 计算器 / 策略）"两层职责**（v1.4 合并）
+- **`EquipScoreEngine` 承载"综合评分 + 评分缓存"两层职责**（v1.4 合并）
+- **`FastTTK` 承载"统一入口 + 关键点算法 + 插值 + 武装武器"**（v1.4 合并）
+- **`CombatCore` 是底层**（常量 / RNG / 伤害计算器 / 子弹策略），已并入 `SimulationEngine`
 - **假想敌来源双轨**：有推荐结果时从推荐池挑（质量高、带真实 `carryCount`），无推荐结果时随机采样（回退）
 - **`otherItems` 是纯展示数据**，不参与 TTK 计算、矩阵缓存、推荐
 
-### 0.4 文件数（配额内 35 个）
+### 0.4 文件数（配额内 27 个）
 
 | 目录 | 数量 |
 |---|---|
-| `src/components/` | 14 |
-| `src/core/` | 8 |
+| `src/components/` | 16 |
+| `src/core/` | 6 |
 | `src/stores/` | 1 |
 | `src/utils/` | 1 |
 | `src/styles/` | 1 |
@@ -118,8 +123,8 @@ DataManager（单例，加载 / 规范化 / 导入导出 / 修改追踪）
 | 根目录 | 7 |
 | **合计** | **35** |
 
-> **不计入配额**：`assets/`（5 个）、`.github/workflows/deploy.yml`、`collect_files.py`、`tree.py`、`verify_merge.py`、`migrate_structure.py`、`add_other_items.py`、`node_modules/`。
-> 配额上限 50，当前 35，留出 15 个额度。
+> **不计入配额**：`assets/`、`.github/workflows/deploy.yml`、`tools/`（价格爬取工具）、`collect_files.py`、`tree.py`、`node_modules/`。
+> 配额上限 50，当前 **27**（`src/` 内），留出 23 个额度。
 
 ### 0.5 快速启动
 
@@ -134,13 +139,15 @@ npm run preview  # 预览构建结果
 
 ### 0.6 当前数据规模（data.json）
 
-- 武器：50 把
-- 子弹：80+ 颗（按口径分组，每口径 1~5 级）
-- 护甲：20 件（1~6 级）
-- 头盔：24 顶（1~6 级）
-- 价格配置：约 50 组（每把武器至少 1 个配置）
-- **其他物品**：5 件（背包 / 胸挂 / 治疗 / 维修 / 其他 各 1 条示例）
-- **可选 `params`**：页面顶部参数快照（KD / 撤离率 / 其他消耗 / 开镜权重 / 距离 / 命中率映射 / 命中概率 / 扳机延迟等）
+- 武器：46 把
+- 子弹：83 颗（按口径分组，每口径 1~5 级）
+- 护甲：22 件（1~6 级）
+- 头盔：23 顶（1~6 级）
+- 价格配置：约 46 组（每把武器至少 1 个配置）
+- **其他物品**：44 件（背包 / 胸挂 / 治疗 / 维修 / 其他）
+- **可选 `params`**：页面顶部参数快照
+- **可选 `equipState`**：装备状态（计算装备 + 评分参考）
+- **可选 `weaponScores`**：综合评分导出数据
 
 ---
 
@@ -154,38 +161,33 @@ df-ttk/
 │   └── workflows/
 │       └── deploy.yml                  [不计配额]
 ├── assets/                             [不计配额]
-│   ├── libs/
-│   │   ├── chart.umd.min.js
-│   │   └── chartjs-plugin-datalabels.min.js
-│   ├── Version.txt
-│   ├── bili.png
-│   └── ss.avif
+│   └── bili.png
 ├── public/
 │   └── data.json                       (1)
 ├── src/
-│   ├── components/                     (14)
+│   ├── components/                     (16)
 │   │   ├── AppLayout.vue
-│   │   ├── ParamsPanel.vue
-│   │   ├── TTKChart.vue
-│   │   ├── DistanceChart.vue
-│   │   ├── WeaponTable.vue
-│   │   ├── ItemsPanel.vue
-│   │   ├── BulletTable.vue
 │   │   ├── ArmorTable.vue
-│   │   ├── OtherItemsTable.vue         ⭐ v5 新增
 │   │   ├── BarrelEditor.vue
-│   │   ├── WeaponBaseEditor.vue
+│   │   ├── BulletTable.vue
 │   │   ├── ConfirmDialog.vue
 │   │   ├── DamageDetailModal.vue
-│   │   └── RecPanel.vue
-│   ├── core/                           (8)
-│   │   ├── CombatCore.js
+│   │   ├── DistanceChart.vue
+│   │   ├── EquipMatrixModal.vue
+│   │   ├── ImportModeDialog.vue
+│   │   ├── ItemsPanel.vue
+│   │   ├── OtherItemsTable.vue
+│   │   ├── ParamsPanel.vue
+│   │   ├── RecPanel.vue
+│   │   ├── TTKChart.vue
+│   │   ├── WeaponBaseEditor.vue
+│   │   └── WeaponTable.vue
+│   ├── core/                           (6)
 │   │   ├── DataManager.js
+│   │   ├── EquipScoreEngine.js
 │   │   ├── FastTTK.js
 │   │   ├── RecEngine.js
 │   │   ├── SimulationEngine.js
-│   │   ├── TTKDP.js
-│   │   ├── TTKIndexedDB.js
 │   │   └── TTKMatrix.js
 │   ├── stores/                         (1)
 │   │   └── stores.js
@@ -196,62 +198,66 @@ df-ttk/
 │   ├── App.vue
 │   └── main.js
 │                                       (2)
+├── tools/                              [不计配额]
+│   ├── README.md
+│   ├── config.py
+│   ├── extract_tasks.py
+│   ├── merge_prices.py
+│   ├── requirements.txt
+│   ├── scrape_prices.py
+│   ├── scraped_prices.json
+│   └── tasks.json
 ├── .gitignore
 ├── index.html
 ├── LICENSE
 ├── package.json
 ├── package-lock.json
 ├── README.md
-├── vite.config.js
-│                                       (7)
-├── collect_files.py                    [不计配额]
-├── tree.py                             [不计配额]
-├── verify_merge.py                     [不计配额]
-├── migrate_structure.py                [不计配额]
-└── add_other_items.py                  [不计配额]
+└── vite.config.js
 
-配额内合计：1 + 14 + 8 + 1 + 1 + 1 + 2 + 7 = 35
+src/ 配额内合计：1 + 16 + 6 + 1 + 1 + 1 + 2 = 28
+（实际 27，因为 src/ 根 2 个是 App.vue + main.js，算 1 组）
 ```
 
 ### 1.2 每个文件职责
 
-#### `src/components/`（14 个）
+#### `src/components/`（16 个）
 
 | 文件 | 职责 | 关键 props / emits |
 |---|---|---|
 | `AppLayout.vue` | 页面布局（Header + slot + Footer） | 无 props，用 `<slot />` 承载中间内容 |
-| `ParamsPanel.vue` | 参数面板 + 操作按钮 | emits: `calculate` / `export-data` / `import-data` / `reset-data` |
+| `ParamsPanel.vue` | 参数面板 + 操作按钮 + 装备双模式切换 | emits: `calculate` / `export-data` / `import-data` / `reset-data` / `equip-changed` |
 | `TTKChart.vue` | TTK 堆叠柱状图（5 段分解） | props: `results` / `params` / `displayCount`；暴露 `resize()` |
 | `DistanceChart.vue` | 距离-TTK 折线图 | props: `stats` / `distances` / `highlightWeapon` / `displayCount` / `segment`；暴露 `resize()` |
 | `WeaponTable.vue` | 枪械数据表（卡片式，含秒伤、配置列表、搜索/排序/筛选） | props: `data` / `muzzleOptions` / `getBarrelOptions` / `caliberOptions`；emits: `update` / `edit-barrel` / `add-weapon` / `delete-weapon` / `show-damage-detail` / `update-ttk` |
-| `ItemsPanel.vue` | 弹甲数据容器（子 Tab：子弹 / 护甲 / 头盔 / **其他物品**） | props: `caliberOptions`；emits: `update` |
+| `ItemsPanel.vue` | 弹甲数据容器（子 Tab：子弹 / 护甲 / 头盔 / 其他物品） | props: `caliberOptions`；emits: `update` |
 | `BulletTable.vue` | 子弹数据表 | props: `data` / `caliberOptions` / `levelOptions`；emits: `update` / `add-bullet` / `delete-bullet` |
 | `ArmorTable.vue` | 护甲/头盔数据表（用 `type` 区分） | props: `data` / `type`（`'armor'` / `'helmet'`）；emits: `update` |
-| **`OtherItemsTable.vue`** ⭐ | **其他物品数据表（背包 / 胸挂 / 治疗 / 维修 / 其他）** | **props: `data`；emits: `update`** |
+| `OtherItemsTable.vue` | 其他物品数据表（背包 / 胸挂 / 治疗 / 维修 / 其他） | props: `data`；emits: `update` |
 | `BarrelEditor.vue` | 枪管编辑器弹窗 | props: `visible` / `weaponId`；emits: `update:visible` / `saved` |
 | `WeaponBaseEditor.vue` | 武器基础属性编辑器弹窗 | props: `visible` / `weaponId` / `caliberOptions`；emits: `update:visible` / `saved` |
+| `EquipMatrixModal.vue` | 装备矩阵选择弹窗（双模式：calc / score） | props: `visible` / `mode`；emits: `update:visible` / `confirm` / `cancel` |
 | `ConfirmDialog.vue` | 通用确认弹窗（Promise 封装） | props: `visible` / `title` / `message` / `confirmText` / `cancelText` / `confirmType` / `checkboxLabel` / `checkboxDefault`；emits: `update:visible` / `confirm` / `cancel` |
+| `ImportModeDialog.vue` | 导入模式选择弹窗（全量 / 增量） | props: `visible` / `fileName`；emits: `update:visible` / `confirm` / `cancel` |
 | `DamageDetailModal.vue` | 单次伤害模拟弹窗（逐发明细） | props: `visible` / `weaponId` / `configId` / `distance`；emits: `update:visible` |
 | `RecPanel.vue` | 配装推荐面板（含 Top3 卡片 + 第 4~30 名表格） | 无 props |
 
-#### `src/core/`（8 个）
+#### `src/core/`（6 个）
 
 | 文件 | 职责 |
 |---|---|
-| `CombatCore.js` | 底层核心：常量 + RNG + 4 个计算器类 + 3 个子弹策略类 |
 | `DataManager.js` | 数据管理单例：加载 / 规范化 / 导入导出 / 修改追踪 / 内联 perf |
-| `FastTTK.js` | **统一计算入口**：对外只暴露 `computeTTK()` / `computeTTKMatrix()` / 缓存管理 |
-| `TTKDP.js` | DP 引擎：状态机 `(health, headHits, bodyHits, limbHits, burstPos, lastPart)` |
-| `TTKMatrix.js` | 矩阵预计算：枚举攻击侧 × 防御侧 × 敌人，调 DP 算每条 TTK，写 IndexedDB（增量） |
-| `TTKIndexedDB.js` | IndexedDB 封装（基于 idb）：get / set / delete / clear / getAllKeys / count / stats |
-| `SimulationEngine.js` | 蒙特卡洛引擎：单次模拟 / 记录模式 / 批量统计 / 子弹解析 |
-| `RecEngine.js` | 配装推荐引擎：枚举攻击/防御侧 → 调 `computeTTKMatrix` → 组合排序 |
+| `EquipScoreEngine.js` | **综合评分引擎 + 评分缓存**（含 `makeScoreCacheId` / `makeScoreCacheMeta` / `ScoreCacheScheduler` / `getEquipScoreEngine`） |
+| `FastTTK.js` | **TTK 计算统一入口 + 关键点算法 + 插值 + 武装武器构建**（含 `computeSingleTTK` / `getKeyDistances` / `interpolateKeyPoints` / `computeDistanceSeries` / `buildArmedWeapons` / `computeDistanceWeightedAvg`） |
+| `RecEngine.js` | 配装推荐引擎：枚举攻击/防御侧 → 调 `FastTTK.computeTTKMatrix` → 组合排序 |
+| `SimulationEngine.js` | **蒙特卡洛引擎 + CombatCore**（常量 / RNG / 距离衰减 / 护甲减伤 / 命中部位选择 / 子弹策略） |
+| `TTKMatrix.js` | **DP 引擎 + IndexedDB 封装 + 矩阵预计算**（含 `computeTTKWithDP` / `buildAllMatrix` / `makeAttackId` / `makeDefenseId` / `makeScenarioHash` / `deleteMatrixEntriesByPrefix` / 配装面板状态持久化） |
 
 #### `src/stores/`（1 个）
 
 | 文件 | 职责 |
 |---|---|
-| `stores.js` | 三个 store 合并（dataStore / paramsStore / appStore） |
+| `stores.js` | 四个 store 合并（dataStore / paramsStore / appStore / equipStore） |
 
 #### `src/utils/`（1 个）
 
@@ -270,7 +276,7 @@ df-ttk/
 | 文件 | 职责 |
 |---|---|
 | `App.vue` | 主容器：布局 + 图表 + 表格 + 弹窗 + 全局计算逻辑 + 滚动按钮 |
-| `main.js` | 应用入口：初始化 DataManager / RecEngine，挂载 App |
+| `main.js` | 应用入口：初始化 DataManager / RecEngine / __recDebug，挂载 App |
 
 ---
 
@@ -289,8 +295,8 @@ df-ttk/
 ```
 
 > ⚠️ 边界使用 `<` 而非 `<=`，确保分段不重叠。
-> 实现：`CombatCore.js` 的 `DistanceDecayCalculator.calculate(distance, weapon)`
-> DP 里也有一份等价实现：`TTKDP.js` 的 `calcDecay(distance, ranges, decays)`
+> 实现：`SimulationEngine.js` 的 `DistanceDecayCalculator.calculate(distance, weapon)`
+> DP 里也有一份等价实现：`TTKMatrix.js` 的 `_dpCalcDecay(distance, ranges, decays)`
 
 ### 2.2 伤害计算公式
 
@@ -310,8 +316,8 @@ df-ttk/
 ```
 
 > 实现：
-> - 蒙特卡洛：`CombatCore.js` 的 `BaseDamageCalculator` / `ArmorDamageCalculator`
-> - DP：`TTKDP.js` 的 `calcDamage()`（等价但用「累积甲伤」表达）
+> - 蒙特卡洛：`SimulationEngine.js` 的 `StandardBulletStrategy` / `RIPBulletStrategy`
+> - DP：`TTKMatrix.js` 的 `_calcDamage()`
 
 ### 2.3 命中部位
 
@@ -334,8 +340,8 @@ df-ttk/
 - **连发内部射速**：连发内部使用 `burstInternalROF`，忽略 `rofStages`
 
 > ⚠️ **两套偏置实现存在细微差异**：
-> - `CombatCore.HitPartSelector.selectWithBias()`：上下邻居各 50%（头部只连胸、四肢只连腹，用边界钳制）
-> - `TTKDP.applyBurstBias()`：头/胸/腹/肢用硬编码 `adjMap`
+> - `SimulationEngine.HitPartSelector.selectWithBias()`：上下邻居各 50%
+> - `TTKMatrix._applyBurstBias()`：头/胸/腹/肢用硬编码 `adjMap`
 > 修改偏置逻辑时需**同时改两处**。
 
 ### 2.5 分段射速 `rofStages`
@@ -344,7 +350,7 @@ df-ttk/
 // 示例：前 3 个间隔射速 +100，之后 +0
 rofStages: [
   { untilShot: 3, rofAdd: 100 },
-  { rofAdd: 0 }  // untilShot 缺省 = "之后所有发"
+  { rofAdd: 0 }
 ]
 ```
 
@@ -364,7 +370,7 @@ rofStages: [
 | `burstInterval` | 连发间隔（秒） |
 | `rofStages` | 分段射速数组 |
 
-> 实现：`utils/weaponCalc.js` 的 `calculateCurrentValues(weapon, barrel, muzzleId, precision)`
+> 实现：`src/utils/weaponCalc.js` 的 `calculateCurrentValues(weapon, barrel, muzzleId, precision)`
 
 ### 2.7 初速公式
 
@@ -378,8 +384,8 @@ rofStages: [
 
 | 模式 | 引擎 | 耗时 | 精度 | 用途 |
 |---|---|---|---|---|
-| `'fast'`（默认） | `TTKDP.js` | < 10ms | < 0.01% | 主流程：批量计算 / 折线图 / 单枪更新 / 推荐矩阵 |
-| `'precise'` | `SimulationEngine.js` | ~700ms | ~1% | 验证 / 用户要求精确 |
+| `'fast'`（默认） | `TTKMatrix.computeTTKWithDP()` | < 10ms | < 0.01% | 主流程：批量计算 / 折线图 / 单枪更新 / 推荐矩阵 |
+| `'precise'` | `SimulationEngine` | ~700ms | ~1% | 验证 / 用户要求精确 |
 
 ### 2.9 矩阵版本号（`MATRIX_VERSION`）
 
@@ -393,7 +399,7 @@ rofStages: [
 - v4 → v5：修复攻击侧命中率用错假想敌的 bug
 - v5 → v6：修复防御侧缓存 ID 未含 distance / hitRate 的 bug
 
-### 2.10 图表布局（v3）
+### 2.10 图表布局
 
 PC 端两个图表默认**并排**（grid 1fr 1fr），更矮（16:9 / 260px）；点击「🔍 放大」按钮后：
 
@@ -402,62 +408,40 @@ PC 端两个图表默认**并排**（grid 1fr 1fr），更矮（16:9 / 260px）�
 - 高度恢复 2:1 / 420px
 - ECharts 容器尺寸变化后由 `App.vue` 调 `resize()`
 
-**关键实现**：
-
-- `.charts-area` 用动态 class `has-expanded` 切换 `grid-template-columns: 1fr`
-- **不能只靠 `v-show`**：grid 仍按 2 列排，剩下的图表只占一半宽
-- `toggleExpand` 里 `nextTick + setTimeout(300)` 两次调 `resize()`
-- `.chart-wrapper` 的 `transition` 只过渡 `box-shadow` / `border-color`，不过渡尺寸
-
 移动端：单列，隐藏放大按钮，高度统一 260px。
 
-### 2.11 假想敌创建（v3）
+### 2.11 假想敌创建
 
 **两个来源**：
 
 1. **有推荐结果** → 从推荐池挑（topN + rest，共 30 个）
-   - 去重 key：`weaponId + configId`
-   - 池用尽 → 刷新推荐池（随机临时假想敌 → 跑推荐 → 新 top30）→ 从新池挑（跳过去重）
-   - 保留真实 `carryCount`
 2. **无推荐结果** → 随机采样（100 次采样，取成本最高的前 30% 随机挑）
-   - `carryCount` 固定 120
-
-**入口**：
-
-- `addEnemy()`（➕ 添加假想敌）：调 `createEnemy`
-- `rerollEnemy(index)`（🎲 重掷）：临时排除自己，调 `createEnemy`
-- `addAsEnemy(rec)`（推荐卡片「➕ 添加为假想敌」）：直接 `buildEnemyFromRec`
 
 **假想敌上限**：`MAX_ENEMIES = 6`
 
 **卡片颜色**：6 种（红 / 橙 / 紫 / 蓝 / 绿 / 青），按 `data-index` 区分。
 
-### 2.12 其他物品（v5）
+### 2.12 综合评分（v6.3 引入开镜权重）
+
+```js
+假TTK = 1 × 加权平均TTK + aimWeight × 开镜时间
+
+// 默认 aimWeight = 0.4（40%）
+```
+
+**分档规则（v8 起）**：分位数法（每档约 25%）：
+- 前 25% → A
+- 25%~50% → B
+- 50%~75% → C
+- 后 25% → D
+
+**分档对齐**：全量评分后存全局 min/max，单武器重算时用同一对 min/max 线性分档。
+
+### 2.13 其他物品
 
 **性质**：不参与 TTK 计算、矩阵缓存、推荐，**仅展示**。
 
-**类别**（枚举）：
-
-| category | 说明 | 示例 |
-|---|---|---|
-| `背包` | 容量、负重 | GA野战背包 |
-| `胸挂` | 容量、格子布局 | DSA战术胸挂 |
-| `治疗` | 回血、止痛、手术 | 户外医疗箱 |
-| `维修` | 修复护甲/头盔/武器 | 精密护甲维修包 |
-| `其他` | 兜底 | 保险箱 |
-
-**字段**：
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `id` | string | 唯一 ID，格式 `other_${序号}` |
-| `name` | string | 名称 |
-| `category` | string | 类别（枚举） |
-| `price` | number | 价格（哈弗币，显示时 `/ 10000` 成 W） |
-| `description` | string | 说明 |
-| `enabled` | boolean | 是否启用（默认 true） |
-
-**ID 生成规则**：`other_${max(现有序号) + 1}`；如果现有 ID 都不是 `other_数字` 格式，用时间戳兜底。
+**类别**：`背包 / 胸挂 / 治疗 / 维修 / 其他`
 
 ---
 
@@ -506,7 +490,7 @@ weightedAvg = Σ(ttk × weight) / Σ(weight)
 
 ### 3.4 命中率映射
 
-`getHitRateFromMap()` 的规则：
+`DataManager.getHitRateFromMap()` 的规则：
 
 1. 排序后线性插值
 2. **10m 内强制 100% 命中率**
@@ -523,17 +507,9 @@ weightedAvg = Σ(ttk × weight) / Σ(weight)
 - `KD × 5`：KD 放大倍数
 - `其他消耗`：默认 30 发
 
-### 3.6 综合评分（假 TTK）
+### 3.6 DP 状态机（TTKMatrix 核心）
 
-```js
-假TTK = 1 × 加权平均TTK + aimWeight × 开镜时间
-
-// 默认 aimWeight = 0.4（40%）
-```
-
-### 3.7 DP 状态机（TTKDP 核心）
-
-`TTKDP.js` 用一个 `Map` 做记忆化，状态键：
+`TTKMatrix.computeTTKWithDP` 用一个 `Map` 做记忆化，状态键：
 
 ```js
 stateKey = `${health}|${headHits}|${bodyHits}|${limbHits}|${burstPos}|${lastPart}`
@@ -554,30 +530,35 @@ main.js
   ├── createApp(App).mount('#app')
   └── getRecEngine(dm)                        # 创建 RecEngine
       └── window.__recEngine
+  └── window.__recDebug                       # 推荐 debug 工具
 
 App.vue onMounted
   ├── dataStore.loadData()
-  │     └── DataManager.loadFromJSON('./data.json')  → { data, params }
+  │     └── DataManager.loadFromJSON('./data.json')  → { data, params, equipState }
   │           ├── fetch + validateData
-  │           ├── ⭐ 提取 params（normalizeData 之前）
+  │           ├── 提取 params（normalizeData 之前）
+  │           ├── 提取 equipState
   │           ├── normalizeData（规范化 ranges/bullets/configs/armors/otherItems）
   │           └── originalData = 深拷贝（用于重置）
-  ├── ⭐ params 非空 → paramsStore.updateAll(params)
+  ├── params 非空 → paramsStore.updateAll(params)
+  ├── equipState 非空 → equipStore.loadFromImported(equipState)
   ├── 收集 caliberOptions
-  └── setTimeout(handleCalculate, 500)
+  ├── setTimeout(handleCalculate, 500)
+  └── setTimeout(recomputeScores, 800)
 ```
 
-### 4.2 TTK 计算链路（全局，v3：先折线图 → 再提取柱状图）
+### 4.2 TTK 计算链路（全局）
 
 ```
 用户点击「📊 计算 TTK」
   → ParamsPanel emit('calculate')
   → App.vue handleCalculate()
+    ├── clearDirtyWeaponCaches()      ← 清理脏武器缓存（v8）
     ├── appStore.setGlobalCalculating(true)
     ├── getEnabledConfigs()
     │
     ├── ① handleDistanceChart()
-    │     ├── buildArmedWeapons()
+    │     ├── buildArmedWeapons()（来自 FastTTK）
     │     ├── buildDistanceStats()
     │     │     └── 对每个武器：关键点 + 插值 → 101 点 times / shots / weightedAvg
     │     ├── 写 scores（从 weightedAvg 提取）
@@ -590,39 +571,40 @@ App.vue onMounted
     └── finally: setGlobalCalculating(false)
 ```
 
-### 4.3 折线图链路
+### 4.3 综合评分链路
 
 ```
-handleDistanceChart()（内部函数）
-  ├── getEnabledConfigs()
-  ├── buildArmedWeapons()
-  ├── buildDistanceStats(armed, attachments)
-  │     └── 对每个武器：
-  │           ├── getKeyDistances(weapon, config)
-  │           ├── 逐关键点调 computeSingleTTK
-  │           ├── interpolateKeyPoints → 101 点
-  │           ├── weightedAvg
-  │           └── appStore.updateCalcProgress(idx + 1)
-  ├── 提取 { ttk, aim } 作为 scores
-  ├── appStore.setScores(scores)
-  └── 返回 stats
+App.vue watch(equipStore.state.scoreEquips) → debounce → recomputeScores()
+  ├── EquipScoreEngine.computeScores()
+  │     ├── buildArmedWeapons()（来自 FastTTK）
+  │     ├── 对每个配置 × 每套装备：
+  │     │     ├── 关键点 → computeSingleTTK（先查缓存，未命中走 DP）
+  │     │     └── interpolateKeyPoints + computeDistanceWeightedAvg
+  │     ├── 加 aimWeight × aimSpeed
+  │     ├── 多套装备等权平均
+  │     └── _applyGrades（分位数法）
+  ├── appStore.setWeaponScores(scores)
+  └── EquipScoreEngine.extractGlobalRange(scores) → appStore.setWeaponScoresGlobalRange()
 ```
 
-### 4.4 单次模拟链路（弹窗）
+### 4.4 单枪评分更新链路
 
 ```
-DamageDetailModal
-  → runSimulation(seed)
-    ├── setSeed(seed)
-    ├── calculateCurrentValues()
-    ├── SimulationEngine.getRealBulletKey()
-    ├── BulletStrategyFactory.getStrategy(bulletKey, bulletData)
-    └── SimulationEngine.simulateOneTTKWithDetail()
+WeaponTable emit('update-ttk', { weaponId })
+  → App.vue onUpdateWeaponTTK()
+    ├── if (dataStore.isWeaponModified(weaponId))
+    │     └── deleteMatrixEntriesByPrefix(`atk_${weaponId}_`)（清缓存，强制重算）
+    ├── recomputeSingleWeaponScores(weaponId)
+    │     ├── 空装备 → 清空该武器评分
+    │     ├── EquipScoreEngine.computeScoresForWeapon({ globalRange })
+    │     │     ├── 内部传 skipGrades: true 拿原始 rawScores
+    │     │     └── 有 globalRange → _applyGradesWithGlobalRange
+    │     │         无 globalRange → _applyGrades
+    │     └── 合并到 appStore.weaponScores
+    └── dataStore.clearWeaponModified(weaponId)
 ```
 
-> ⚠️ 此路径**不走 `FastTTK`**，直接调 `SimulationEngine`。
-
-### 4.5 推荐链路（RecEngine + TTKMatrix）
+### 4.5 推荐链路（RecEngine + FastTTK.computeTTKMatrix）
 
 ```
 RecPanel.runRecommend()
@@ -638,18 +620,17 @@ RecPanel.runRecommend()
         ├── _buildAttackSide()
         ├── _buildDefenseSide()
         ├── _prepareEnemies()
-        ├── computeTTKMatrix()
+        ├── FastTTK.computeTTKMatrix()
         │     └── TTKMatrix.buildAllMatrix()
         └── _buildRecommendationsFromMatrix()
 ```
 
-### 4.6 假想敌创建链路（v3）
+### 4.6 假想敌创建链路
 
 ```
 createEnemy(index, excludeIndex = -1)  ← 添加 / 重掷共用
   ├── recommendations.value 存在：
   │     ├── usedKeys = 当前假想敌的 (weaponId + configId) 集合
-  │     │              （排除 excludeIndex 指向的那个）
   │     ├── pickFromRecommendations(recs, { excludeKeys: usedKeys })
   │     │     ├── 返回正常 enemy → 用它
   │     │     └── 返回 { __exhausted: true } → refreshRecommendations()
@@ -662,97 +643,29 @@ createEnemy(index, excludeIndex = -1)  ← 添加 / 重掷共用
         → randomEnemy(budget.value * 10000)（回退）
 ```
 
-> ⭐ **v4 修复**：`rerollEnemy` 不再清空 `enemies`（避免触发空状态 v-if），改为原地 `splice` 替换。
-
-### 4.7 其他物品链路（v5）
-
-```
-OtherItemsTable.vue（展示 + 编辑）
-  ├── props.data = dataStore.state.otherItems
-  ├── 编辑：dm.updateOtherItem(id, updates) → refreshOtherItems() → emit('update')
-  ├── 新增：unshift 临时行 → 填写 → confirmAdd → getNextOtherItemId → addOtherItem
-  ├── 删除：dm.removeOtherItem(id) → refreshOtherItems()
-  └── 启用/禁用：dm.updateOtherItem(id, { enabled }) → refreshOtherItems()
-
-data.json（持久化）
-  └── otherItems: [{ id, name, category, price, description, enabled }, ...]
-```
-
-**不参与**：
-
-- TTK 计算（不调 `computeTTK`）
-- 矩阵缓存（不写 IndexedDB）
-- 推荐（不进 `RecEngine`）
-
-### 4.8 数据修改链路
+### 4.7 数据修改链路
 
 ```
 用户编辑单元格
-  → 组件事件（如 onNameChange）
+  → 组件事件
     → dataStore.updateBullet / updateWeapon / updatePriceConfig / updateOtherItem
       → DataManager.updateXXX
         ├── Object.assign（写入 this.data）
         └── markWeaponModified（追踪修改，仅武器相关）
     → dataStore.refreshBullets / refreshWeapons / refreshPrices / refreshOtherItems
-      → dataState.xxx = [...dm.getXxx()]  # 新数组引用触发响应式
     → emit('update') 通知父组件
 ```
 
-### 4.9 参数导出/导入链路（v3）
-
-**导出**：
-
-```
-ParamsPanel 「📤 导出数据」
-  → App.vue exportData()
-    → showConfirm
-    → dataStore.exportData({ params: { ...paramsStore.state } })
-      → dm.exportToFile(null, extra)
-        → dm.exportToJSON(extra)
-          → output = { ...serialized, params }   // ⭐ 含参数
-```
-
-**导入**：
-
-```
-ParamsPanel 「📥 导入数据」
-  → App.vue importData()
-    → showConfirm
-    → FileReader
-    → dataStore.importData(jsonStr)  → { data, params }
-    → dataStore.refreshWeapons() / ... / refreshOtherItems()
-    → if (params) paramsStore.updateAll(params)   // ⭐ 恢复参数
-```
-
-**启动时自动应用**：
-
-```
-App.vue onMounted
-  → const { params } = await dataStore.loadData()
-  → if (params) paramsStore.updateAll(params)
-```
-
-### 4.10 缓存失效链路
+### 4.8 缓存失效链路
 
 **主流程（无缓存）**：DP 每次现算，不缓存。
 
 **推荐侧（TTKMatrix + IndexedDB）**：
-```
-场景参数变化（hitRateMap / hitProb / triggerDelayEnable / healthValue）
-  → scenarioHash 变化
-    → makeAttackId / makeDefenseId 变化
-      → IndexedDB 查不到 → 重算 → 写入新 key
-
-攻防/敌人配置变化
-  → id 里的 weaponId / configId / bulletId / armor / helmet / distance 变化
-    → IndexedDB 查不到 → 重算
-
-重置数据
-  → App.vue resetData() 里调 clearMatrix()
-    → IndexedDB 清空
-```
-
-> ⚠️ **防御侧 ID 含 distance + hitRate**（v6 修复），改距离会正确失效。
+- 场景参数变化 → `scenarioHash` 变化 → IDB 查不到 → 重算
+- 攻防/敌人配置变化 → id 里的字段变化 → 重算
+- 重置数据 → `clearMatrix()` 清空
+- 改武器属性 → `DataManager.markWeaponModified()` 标记 → `App.vue` 计算前清该武器缓存
+- 改 configId → `DataManager.updateConfigId()` 主动清该配置的缓存
 
 ---
 
@@ -763,28 +676,26 @@ App.vue onMounted
 ```json
 {
   "version": "1.0",
-  "updatedAt": "2026-09-19",
+  "updatedAt": "2026-09-26",
   "meta": { ... },
-  "params": { ... },       // ⭐ 可选：页面顶部参数快照
+  "params": { ... },
+  "equipState": { ... },
   "weapons": [...],
   "bullets": [...],
   "prices": [...],
   "armors": [...],
-  "otherItems": [...]      // ⭐ v5：其他物品
+  "otherItems": [...],
+  "weaponScores": { ... }
 }
 ```
 
 > ⚠️ **不再有 `ttkCache` 顶层字段**。旧版导出的 JSON 里可能残留，导入时 `normalizeData` 会删除它。
 
-### 5.2 `params`（v3 新增，可选）
+### 5.2 `params`（可选）
 
 ```json
 "params": {
   "bulletLevel": 4,
-  "armorLevel": 4,
-  "armorValue": 110,
-  "helmetLevel": 4,
-  "helmetValue": 48,
   "healthValue": 100,
   "distance": 30,
   "hitRateMap": [
@@ -802,12 +713,33 @@ App.vue onMounted
 ```
 
 **语义**：
-
 - **可选**：文件里没有 `params` → 启动时用 `paramsStore` 的硬编码默认值
-- **部分覆盖**：`paramsStore.updateAll(params)` 是 `Object.assign`，只覆盖 `params` 里出现的字段
+- **部分覆盖**：`paramsStore.updateAll(params)` 是 `Object.assign`
 - **导出时包含**：点「📤 导出数据」会写入当前 `paramsStore.state`
 
-### 5.3 武器对象
+### 5.3 `equipState`（可选）
+
+```json
+"equipState": {
+  "mode": "score",
+  "calcEquip": {
+    "armorId": "armor_4_...",
+    "helmetId": "helmet_4_...",
+    "armorLevel": 4,
+    "armorValue": 110,
+    "helmetLevel": 4,
+    "helmetValue": 48
+  },
+  "scoreEquips": [ ... ]
+}
+```
+
+**语义**：
+- `mode`：`'calc'` | `'score'`
+- `calcEquip`：计算装备（单套，用于 TTK 折线图/柱状图/哈弗币）
+- `scoreEquips`：评分参考（多套，用于综合评分）
+
+### 5.4 武器对象
 
 ```json
 {
@@ -846,7 +778,7 @@ App.vue onMounted
 | `fireMode` | 开火模式 |
 | `burstCount` / `burstInternalROF` / `burstInterval` | 连发字段 |
 
-### 5.4 子弹对象
+### 5.5 子弹对象
 
 ```json
 {
@@ -870,7 +802,7 @@ App.vue onMounted
 
 **ID 规范**：`${caliber}#${序号}`，序号口径内递增，**一旦分配不随 level/name 变化**。禁止修改 `caliber` / `id`。
 
-### 5.5 价格配置
+### 5.6 价格配置
 
 ```json
 {
@@ -896,7 +828,7 @@ App.vue onMounted
 }
 ```
 
-### 5.6 护甲/头盔对象
+### 5.7 护甲/头盔对象
 
 ```json
 {
@@ -911,7 +843,7 @@ App.vue onMounted
 }
 ```
 
-### 5.7 其他物品对象（v5）
+### 5.8 其他物品对象
 
 ```json
 {
@@ -924,29 +856,9 @@ App.vue onMounted
 }
 ```
 
-**字段**：
+### 5.9 IndexedDB 结构
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `id` | string | 唯一 ID，格式 `other_${序号}` |
-| `name` | string | 名称 |
-| `category` | string | 类别：`背包` / `胸挂` / `治疗` / `维修` / `其他` |
-| `price` | number | 价格（哈弗币，显示时 `/ 10000` 成 W） |
-| `description` | string | 说明 |
-| `enabled` | boolean | 是否启用（默认 true） |
-
-**规范化规则**（`normalizeData`）：
-
-- `id` 缺失 → 自动生成 `other_${时间戳}_${索引}`
-- `name` 缺失 → `''`
-- `category` 非字符串或空 → `'其他'`
-- `price` 字符串 → 转数字；负数或非数字 → `0`
-- `description` 缺失 → `''`
-- `enabled` 缺失 → `true`
-
-### 5.8 IndexedDB 结构
-
-**数据库**：`df-ttk`（`TTKIndexedDB.js`）
+**数据库**：`df-ttk`（`TTKMatrix.js`）
 **版本**：`2`
 **ObjectStore**：
 
@@ -966,14 +878,14 @@ App.vue onMounted
 }
 ```
 
-**ID 格式**（v6）：
+**ID 格式**：
 
 | 类型 | 格式 |
 |---|---|
 | `atk_*` | `atk_{weaponId}_{configId}_{bulletId}_a{armorLv}v{armorVal}_h{helmetLv}v{helmetVal}_d{distance}_{scenarioHash}` |
 | `def_*` | `def_{enemyWeaponId}_{enemyConfigId}_{enemyBulletId}_a{ourArmorLv}v{ourArmorVal}_h{ourHelmetLv}v{ourHelmetVal}_d{distance}_hr{hitRate}_{scenarioHash}` |
 
-> ⚠️ **防御侧 ID 含 `d{distance}` 和 `hr{hitRate}`**（v6 新增）。
+> ⚠️ **防御侧 ID 含 `d{distance}` 和 `hr{hitRate}`**。
 
 **`rec-panel-state` 记录结构**：
 
@@ -995,10 +907,10 @@ hitRateMap（排序后 "d1:r1:d2:r2..."）
 + triggerDelayEnable（"1"/"0"）
 + healthValue
 + `v${MATRIX_VERSION}`
-→ simpleHash() → 36 进制短码
+→ _simpleHash() → 36 进制短码
 ```
 
-**批量写入**：`BATCH_SIZE = 200`。
+**批量写入**：`BATCH_SIZE = 200`，事务分片 `BATCH_TX_SIZE = 50`。
 
 **`MATRIX_VERSION = 6`**。
 
@@ -1010,170 +922,252 @@ hitRateMap（排序后 "d1:r1:d2:r2..."）
 
 单例：`getDataManager()`。
 
-> ⚠️ **v3 签名变更**：
-> - `loadFromJSON` 返回 `{ data, params }`
-> - `exportToJSON` / `exportToFile` 支持 `extra` 参数
-> - `importFromJSON` / `importFromFile` 返回 `{ data, params }`
->
-> ⚠️ **v5 新增**：`otherItems` 相关 CRUD
-
 #### 数据加载
 
 | 方法 | 说明 |
 |---|---|
-| `loadFromJSON(url)` | **返回 `{ data, params }`**；`params` 来自 `data.json` 顶层 `params` 字段 |
+| `loadFromJSON(url)` | **返回 `{ data, params, equipState }`** |
 | `validateData(data)` | 校验格式 |
-| `normalizeData(data)` | 规范化（**丢弃 `params` 等未知字段**） |
+| `normalizeData(data)` | 规范化 |
 
 #### 数据获取 - 武器
 
 | 方法 | 说明 |
 |---|---|
-| `getWeapons()` | 全部武器 |
-| `getWeaponById(id)` | 按 ID 查武器 |
+| `getWeapons()` / `getWeaponById(id)` | 武器列表 / 按 ID 查 |
 
 #### 数据获取 - 子弹
 
 | 方法 | 说明 |
 |---|---|
 | `getBullets()` | 全部子弹 |
-| `getEnabledBullets()` | 启用的子弹 |
 | `getBulletById(id)` | 按 ID 查 |
-| `getBulletByCaliberAndLevel(caliber, level, includeDisabled=false)` | 按口径+等级查 |
-| `getBulletsByCaliber(caliber, includeDisabled=false)` | 按口径查 |
+| `getBulletByCaliberAndLevel(caliber, level, includeDisabled)` | 按口径+等级查 |
+| `getBulletsByCaliber(caliber, includeDisabled)` | 按口径查 |
 | `getNextBulletId(caliber)` | 生成下一个子弹 ID |
 | `getBulletDisplay(bullet)` | 显示字符串 |
-| `getDefaultBullet(caliber, level)` | 默认子弹 |
-| `getBulletRows()` | 子弹行 |
-| `findBulletIdByDisplay(bulletDisplay)` | 从显示字符串反查 ID |
 
 #### 数据获取 - 护甲/头盔
 
 | 方法 | 说明 |
 |---|---|
-| `getArmors()` | 全部护甲/头盔 |
-| `getArmorsByType(type, includeDisabled=false)` | 按类型查 |
-| `getEnabledArmors()` | 启用的护甲/头盔 |
+| `getArmors()` | 全部 |
+| `getArmorsByType(type, includeDisabled)` | 按类型查 |
 | `getArmorById(id)` | 按 ID 查 |
 
-#### 数据获取 - 其他物品（v5）
+#### 数据获取 - 其他物品
 
 | 方法 | 说明 |
 |---|---|
-| `getOtherItems(includeDisabled=false)` | 获取所有（默认过滤 `enabled === false`） |
-| `getOtherItemsByCategory(category, includeDisabled=false)` | 按类别获取 |
-| `getOtherItemById(id)` | 按 ID 查 |
-| `getNextOtherItemId()` | 生成下一个 ID（`other_${序号}`） |
-| `getOtherItemCategories()` | 返回预定义类别 `['背包', '胸挂', '治疗', '维修', '其他']` |
-
-#### 数据更新 - 其他物品（v5）
-
-| 方法 | 说明 |
-|---|---|
-| `addOtherItem(itemData)` | 新增 |
-| `updateOtherItem(id, updates)` | 更新（禁止改 id） |
-| `removeOtherItem(id)` | 删除 |
-| `setOtherItemsEnabled(enabled, category=null)` | 批量启用/禁用 |
+| `getOtherItems(includeDisabled)` | 全部 |
+| `getOtherItemsByCategory(category, includeDisabled)` | 按类别 |
+| `getOtherItemById(id)` | 按 ID |
+| `getNextOtherItemId()` | 生成下一个 ID |
+| `getOtherItemCategories()` | 预定义类别 |
 
 #### 数据获取 - 枪口
 
 | 方法 | 说明 |
 |---|---|
-| `getMuzzles()` | 全部枪口 |
-| `getMuzzleById(id)` | 按 ID 查 |
-| `getMuzzleBonuses(muzzleId)` | 枪口加成 |
-| `getMuzzleNames()` | 枪口名列表 |
+| `getMuzzles()` / `getMuzzleById(id)` / `getMuzzleBonuses(muzzleId)` | 枪口 |
 
 #### 数据获取 - 价格
 
 | 方法 | 说明 |
 |---|---|
-| `getPrices()` | 全部价格配置 |
-| `getPriceByWeaponId(weaponId)` | 按武器 ID 查 |
-| `getPriceRowsForWeapon(weaponId)` | 解析配置 |
+| `getPrices()` / `getPriceByWeaponId(weaponId)` | 价格配置 |
+| `getPriceRowsForWeapon(weaponId)` | 解析配置（含反查 barrelId） |
 | `getPriceRows()` | 全部解析后的配置行 |
-| `getHitRateForDistance(...)` | 命中率（单武器） |
-| `getHitRateFromMap(hitRateMap, distance, fallback)` | 命中率（通用） |
+| `getHitRateForDistance(...)` / `getHitRateFromMap(...)` | 命中率 |
 | `getNextConfigId(weaponId)` | 生成下一个配置 ID |
 
-#### 数据更新（武器 / 子弹 / 护甲 / 价格）
+#### 数据更新
 
-同旧版。
+| 方法 | 说明 |
+|---|---|
+| `updateWeapon` / `updateWeaponBarrel` / `addWeaponBarrel` / `removeWeaponBarrel` | 武器 |
+| `addBullet` / `updateBullet` / `removeBullet` / `setDefaultBullet` / `setBulletsEnabled` | 子弹 |
+| `addArmor` / `updateArmor` / `removeArmor` / `setArmorsEnabledByType` | 护甲 |
+| `addOtherItem` / `updateOtherItem` / `removeOtherItem` / `setOtherItemsEnabled` | 其他物品 |
+| `updatePriceConfig` / `addPriceConfig` / `removePriceConfig` | 价格 |
+| **`updateConfigId(weaponId, oldConfigId, newConfigId)`** | **async**，成功后清旧 key 缓存 |
 
 #### 修改追踪
 
-同旧版。
+| 方法 | 说明 |
+|---|---|
+| `markWeaponModified(id)` / `isWeaponModified(id)` | 标记 / 查询 |
+| `getModifiedWeaponIds()` / `hasModifiedWeapons()` | 获取脏武器列表 |
+| `clearWeaponModified(id)` / `clearAllModified()` | 清除标记 |
 
-#### 导出 / 导入 / 重置（v3 / v5 签名）
+#### 导出 / 导入 / 重置
 
 | 方法 | 说明 |
 |---|---|
-| `exportToJSON(extra = {})` | **`extra.params` 会被写入导出顶层 `params` 字段**；**包含 `otherItems`** |
-| `exportToFile(filename = null, extra = {})` | 同上 |
-| `importFromJSON(jsonStr)` | **返回 `{ data, params }`**；老文件无 `params` → `null`；**导入 `otherItems`** |
-| `importFromFile(file)` | **返回 `{ data, params }`** |
-| `resetToOriginal()` | 重置为初始状态（**含 `otherItems`**） |
-| `hasUnsavedChanges()` | 是否有未保存修改 |
-| `getStats()` | 统计信息（**新增 `otherItemCount`**） |
+| `exportToJSON(extra)` / `exportToFile(filename, extra)` | 导出 |
+| `importFromJSON(jsonStr, options)` | 导入（支持 overwrite / merge） |
+| `importFromFile(file)` | 从文件导入 |
+| `clearImportMarks()` | 清除导入标记 |
+| `resetToOriginal()` | 重置为初始状态 |
+| `hasUnsavedChanges()` / `getStats()` | 工具方法 |
 
 ### 6.2 `FastTTK`（`src/core/FastTTK.js`）
 
-**统一计算入口**。同旧版，**无签名变化**。
-
-### 6.3 `TTKDP`（`src/core/TTKDP.js`）
-
-**无签名变化**。
-
-### 6.4 `TTKMatrix`（`src/core/TTKMatrix.js`）
-
-**v6 签名**：`getDefenseTTK` / `makeDefenseId` 含 `distance` + `hitRate`。
-
-### 6.5 `TTKIndexedDB`（`src/core/TTKIndexedDB.js`）
-
-**无签名变化**。
-
-### 6.6 `SimulationEngine`（`src/core/SimulationEngine.js`）
-
-**无签名变化**。
-
-### 6.7 `CombatCore`（`src/core/CombatCore.js`）
-
-**无签名变化**。
-
-### 6.8 `RecEngine`（`src/core/RecEngine.js`）
-
-**无签名变化**（v6 修复内部实现）。
-
-### 6.9 `stores`（`src/stores/stores.js`）
-
-**v3 签名**：
+**统一计算入口**：
 
 | 方法 | 说明 |
 |---|---|
-| `dataStore.loadData()` | **返回 `{ params }`** |
-| `dataStore.exportData(extra = {})` | **支持 `extra` 参数** |
-| `dataStore.importData(jsonStr)` | **返回 `{ data, params }`** |
+| `computeTTK({ mode })` | 统一入口（fast / precise） |
+| `computeTTKFast(options)` | 快速模式（DP） |
+| `computeTTKPrecise(options)` | 精算模式（蒙特卡洛） |
+| `computeTTKMatrix(options)` | 矩阵预计算 |
+| `queryAttackTTK(options)` / `queryDefenseTTK(options)` | 查询 |
+| `clearMatrix()` | 清空矩阵缓存 |
 
-**v5 新增**：
+**关键点 / 插值 / 武装**（原 `TTKCalculator.js`）：
 
 | 方法 | 说明 |
 |---|---|
-| `dataStore.refreshOtherItems()` | **刷新 `otherItems` state** |
-| `dataStore.getOtherItems(includeDisabled=false)` | 转发 |
-| `dataStore.getOtherItemsByCategory(category, includeDisabled=false)` | 转发 |
-| `dataStore.getOtherItemById(id)` | 转发 |
-| `dataStore.getNextOtherItemId()` | 转发 |
-| `dataStore.addOtherItem(itemData)` | 转发 |
-| `dataStore.updateOtherItem(id, updates)` | 转发 |
-| `dataStore.removeOtherItem(id)` | 转发 |
-| `dataStore.setOtherItemsEnabled(enabled, category=null)` | 转发 |
-| `dataStore.getOtherItemCategories()` | 转发 |
+| `computeSingleTTK(armedWeapon, attachment, params, dm)` | 单点 TTK |
+| `getKeyDistances(weapon, config, maxDistance)` | 关键点算法 |
+| `interpolateKeyPoints(keyPoints, fullDistances)` | 线性插值 |
+| `computeDistanceSeries(...)` | 关键点 + 插值完整序列 |
+| `buildArmedWeapons(configs, dm)` | 武装武器构建 |
+| `computeDistanceWeightedAvg(times, distances)` | 距离加权平均 |
 
-**`appStore.switchSubTab(sub)` 白名单**：`['bullet', 'armor', 'helmet', 'other']`
+### 6.3 `TTKMatrix`（`src/core/TTKMatrix.js`）
 
-### 6.10 `weaponCalc`（`src/utils/weaponCalc.js`）
+**DP 引擎**：
 
-**无签名变化**。
+| 方法 | 说明 |
+|---|---|
+| `computeTTKWithDP(options)` | DP 计算单次 TTK |
+
+**矩阵**：
+
+| 方法 | 说明 |
+|---|---|
+| `buildAllMatrix(options)` | 攻击侧 + 防御侧 |
+| `buildAttackMatrix(options)` / `buildDefenseMatrix(options)` | 单侧 |
+| `getAttackTTK(options)` / `getDefenseTTK(options)` | 查询 |
+| `makeAttackId(options)` / `makeDefenseId(options)` | 生成 ID |
+| `makeScenarioHash(scenario)` | 场景哈希 |
+| `getDebugEntry(id)` / `clearDebugMap()` | debug |
+
+**IndexedDB**：
+
+| 方法 | 说明 |
+|---|---|
+| `getMatrixEntry(id)` / `setMatrixEntry(id, data)` / `setMatrixEntries(entries)` | 读写 |
+| `deleteMatrixEntry(id)` / `deleteMatrixEntriesByIds(ids)` / `deleteMatrixEntriesByPrefix(prefix)` | 删除 |
+| `getAllMatrixIds()` / `getMatrixCount()` / `getMatrixStats()` | 统计 |
+| `clearMatrix()` | 清空 |
+| `saveRecPanelState(state)` / `loadRecPanelState()` / `clearRecPanelState()` | 配装面板状态 |
+| `requestPersistentStorage()` | 请求持久化权限 |
+
+### 6.4 `SimulationEngine`（`src/core/SimulationEngine.js`）
+
+**引擎**：
+
+| 方法 | 说明 |
+|---|---|
+| `setDataManager(dm)` / `getDataManager()` | 注入 DataManager |
+| `simulateOneTTK(weapon, params, strategy, bulletData)` | 单次模拟 |
+| `simulateOneTTKWithDetail(...)` | 记录模式（逐发明细） |
+| `calculateAvgStats(...)` / `calculateSinglePoint(...)` | 批量统计 |
+| `calculateWeaponsTTK(...)` | 多武器批量 |
+| `getRealBulletKey(...)` | 子弹反查 |
+
+**CombatCore**（原 `CombatCore.js`）：
+
+| 导出 | 说明 |
+|---|---|
+| `SIMULATION_CONFIG` | 模拟配置 |
+| `setSeed(seed)` / `seededRandom()` | 种子 RNG |
+| `DistanceDecayCalculator` | 距离衰减 |
+| `ArmorDamageCalculator` | 护甲减伤 |
+| `HitPartSelector` | 命中部位选择 |
+| `RIPBulletStrategy` / `StandardBulletStrategy` / `BulletStrategyFactory` | 子弹策略 |
+| `getDecay` | 向后兼容 |
+
+### 6.5 `EquipScoreEngine`（`src/core/EquipScoreEngine.js`）
+
+**引擎**：
+
+| 方法 | 说明 |
+|---|---|
+| `new EquipScoreEngine(dataManager)` | 构造（校验 dm） |
+| `computeScores({ ..., skipGrades })` | 全量评分 |
+| `computeScoresForWeapon({ ..., globalRange })` | 单武器评分 |
+| `static extractGlobalRange(scores)` | 从 scores 提取全局 min/max |
+| `getEquipScoreEngine(dm)` | 单例 |
+
+**评分缓存**（原 `EquipScoreCache.js`）：
+
+| 导出 | 说明 |
+|---|---|
+| `SCORE_CACHE_BATCH_SIZE` | 批量阈值 |
+| `makeScoreCacheId(options)` / `makeScoreScenarioHash(scenario)` | key |
+| `getScoreEntry(id)` / `setScoreEntries(entries)` | 读写 |
+| `makeScoreCacheMeta(options)` | meta |
+| `ScoreCacheScheduler` | 批量调度器 |
+
+### 6.6 `RecEngine`（`src/core/RecEngine.js`）
+
+单例：`getRecEngine(dataManager)`。
+
+| 方法 | 说明 |
+|---|---|
+| `recommend(input, options)` | 推荐主入口 |
+| `printResult(result)` | 打印 Top3 |
+
+### 6.7 `stores`（`src/stores/stores.js`）
+
+**`dataStore`**：
+
+| 方法 | 说明 |
+|---|---|
+| `loadData()` | **返回 `{ params, equipState }`** |
+| `exportData(extra)` / `importData(jsonStr, options)` | 导入导出 |
+| `refreshWeapons/Bullets/Prices/Armors/OtherItems` | 刷新 |
+| `updateConfigId(weaponId, oldId, newId)` | **async** |
+| `getModifiedWeaponIds()` / `hasModifiedWeapons()` / `clearAllModified()` | 脏武器 |
+
+**`paramsStore`**：
+
+| 方法 | 说明 |
+|---|---|
+| `state` | readonly |
+| `hitRate` | getter |
+| `update(key, value)` / `updateAll(newParams)` | 修改 |
+| `updateHitRateMap(raw)` / `reset()` | 工具 |
+
+**`appStore`**：
+
+| 方法 | 说明 |
+|---|---|
+| `setWeaponScores(scores)` / `getWeaponScore(id, configId)` | 评分 |
+| `setWeaponScoresGlobalRange(range)` / `getWeaponScoresGlobalRange()` | 全局范围 |
+| `clearWeaponScores()` | 清空评分 + 全局范围 |
+| `setTtkResults(results)` / `setHavocCosts(costs)` | 结果 |
+| `addUpdatingWeapon(id)` / `removeUpdatingWeapon(id)` / `isUpdatingWeapon(id)` | 更新状态 |
+| `showCalcProgress(title, total)` / `updateCalcProgress(cur, total)` / `hideCalcProgress()` | 进度条 |
+
+**`equipStore`**：
+
+| 方法 | 说明 |
+|---|---|
+| `setMode(mode)` | `'calc'` / `'score'` |
+| `setCalcEquip(equip)` / `clearCalcEquip()` | 计算装备 |
+| `setScoreEquips(list)` / `addScoreEquip(eq)` / `removeScoreEquip(...)` / `clearScoreEquips()` | 评分参考 |
+| `exportState()` / `loadFromImported(equipState)` | 导入导出 |
+| `resetToDefault()` | 重置 |
+
+### 6.8 `weaponCalc`（`src/utils/weaponCalc.js`）
+
+| 方法 | 说明 |
+|---|---|
+| `calculateCurrentValues(weapon, barrel, muzzleId, precision)` | 应用附件后的属性 |
 
 ---
 
@@ -1184,7 +1178,7 @@ hitRateMap（排序后 "d1:r1:d2:r2..."）
 ```
 App.vue
   └── AppLayout
-        ├── ParamsPanel（emits: calculate / export-data / import-data / reset-data）
+        ├── ParamsPanel（emits: calculate / export-data / import-data / reset-data / equip-changed）
         ├── charts-area
         │     ├── TTKChart（ref=barChartRef，含放大按钮）
         │     └── DistanceChart（ref=lineChartRef，含放大按钮）
@@ -1193,14 +1187,16 @@ App.vue
               ├── ItemsPanel
               │     ├── BulletTable
               │     ├── ArmorTable（armor / helmet）
-              │     └── OtherItemsTable（v5）
+              │     └── OtherItemsTable
               └── RecPanel
 
 弹窗：
   ├── BarrelEditor
   ├── WeaponBaseEditor
+  ├── EquipMatrixModal
   ├── DamageDetailModal
-  └── ConfirmDialog
+  ├── ConfirmDialog
+  └── ImportModeDialog
 
 其他：
   └── 滚动悬浮按钮（Teleport to body）
@@ -1210,25 +1206,21 @@ App.vue
 
 | 方法 | 说明 |
 |---|---|
-| `handleCalculate()` | v3：先 handleDistanceChart → 再提取柱状图数据 → computeHavocCosts |
-| `handleDistanceChart()` | 内部函数，返回 `stats` |
-| `buildArmedWeapons(configs)` | 构建"武装后"武器 |
-| `buildDistanceStats(armed, attachments)` | 折线图统计（101 点） |
-| `computeSingleTTK(weapon, attachment, params, dm)` | 单点 TTK 计算 |
-| `updateSingleWeaponTTK(weaponId, onProgress)` | 单枪更新 |
-| `onUpdateWeaponTTK({ weaponId })` | 单枪更新事件处理 |
-| `computeHavocCosts(enabledConfigs, dm, params)` | 哈弗币消耗 |
-| `exportData()` | v3：组装 `{ params: {...} }` |
-| `importData()` | v3：接收 `{ data, params }` |
-| `resetData()` | 重置数据 + 清空矩阵缓存 + 清空假想敌状态 |
-| `toggleExpand(which)` | v3：图表放大/还原 |
-| `handleScrollBtnClick()` | v4：滚动到顶部 / 返回 |
+| `handleCalculate()` | 全量计算（折线图 + 柱状图 + 哈弗币） |
+| `handleDistanceChart()` | 折线图数据生成 |
+| `computeHavocCosts(...)` | 哈弗币 |
+| `recomputeScores()` | 全量评分 |
+| `recomputeSingleWeaponScores(weaponId)` | 单枪评分 |
+| `onUpdateWeaponTTK({ weaponId })` | "更新评分"按钮处理 |
+| `clearDirtyWeaponCaches()` | 清理脏武器缓存（v8） |
+| `exportData()` / `importData()` / `resetData()` | 数据管理 |
+| `toggleExpand(which)` | 图表放大 |
 
 **provide**：`showConfirm(options)` / `showAlert(message, title)`。
 
 ### 7.3 `ParamsPanel.vue`
 
-**emits**：`calculate` / `export-data` / `import-data` / `reset-data`（**v3 删除 `distance-chart`**）。
+**emits**：`calculate` / `export-data` / `import-data` / `reset-data` / `equip-changed`。
 
 ### 7.4 `TTKChart.vue` / `DistanceChart.vue`
 
@@ -1241,41 +1233,13 @@ defineExpose({
 })
 ```
 
-### 7.5 `WeaponTable.vue`（v4 新增搜索/排序/筛选）
+### 7.5 `WeaponTable.vue`
 
 **props**：`data` / `muzzleOptions` / `getBarrelOptions` / `caliberOptions`
 
 **emits**：`update` / `edit-barrel` / `add-weapon` / `delete-weapon` / `show-damage-detail` / `update-ttk`
 
-**内部状态**：
-
-| 状态 | 说明 |
-|---|---|
-| `searchQuery` | 搜索词（包含匹配 + 忽略大小写） |
-| `filterCaliber` | 口径筛选（`'all'` 或具体口径） |
-| `sortKey` | 排序 key |
-
-**排序 key**：
-
-| key | 说明 |
-|---|---|
-| `default` | 原顺序 |
-| `aim_asc` / `aim_desc` | 开镜升/降 |
-| `price_asc` / `price_desc` | 价格升/降 |
-| `score_asc` / `score_desc` | 评分升/降 |
-| `havoc_asc` / `havoc_desc` | 哈弗币升/降 |
-| `ttk_asc` / `ttk_desc` | TTK 升/降 |
-
-**排序规则**：
-
-- 卡片级：用"最优配置"（min/max 取决于方向）
-- 配置级：卡片内配置也按同一 `sortKey` 排序
-- `null` 值排最后
-
-**按钮语义**：
-
-- 有筛选时，「全部启用/禁用/展开/收起」**只对筛选结果生效**
-- 文案动态变（`✅ 启用筛选`）
+**排序 key**：`default` / `aim_asc` / `aim_desc` / `price_asc` / `price_desc` / `score_asc` / `score_desc` / `havoc_asc` / `havoc_desc` / `ttk_asc` / `ttk_desc`
 
 ### 7.6 `ItemsPanel.vue`
 
@@ -1283,56 +1247,16 @@ defineExpose({
 
 **emits**：`update`
 
-**子 Tab**：子弹 / 护甲 / 头盔 / **其他物品（v5）**
+**子 Tab**：子弹 / 护甲 / 头盔 / **其他物品**
 
-### 7.7 `OtherItemsTable.vue`（v5 新增）
-
-**props**：`data`（`dataStore.state.otherItems`，包含禁用的）
-
-**emits**：`update`
-
-**列**：启用 / 名称 / 类别 / 价格 (W) / 说明 / 操作
-
-**类别配色**：
-
-| category | 颜色 |
-|---|---|
-| 背包 | 绿 |
-| 胸挂 | 蓝 |
-| 治疗 | 红 |
-| 维修 | 橙 |
-| 其他 | 灰 |
-
-**编辑**：失焦保存（`@blur` / `@change`）
-
-**新增**：临时行 → 填写 → 确认
-
-### 7.8 `RecPanel.vue`
+### 7.7 `RecPanel.vue`
 
 **常量**：
-
 - `MAX_ENEMIES = 6`
 - `DEFAULT_BUDGET_W = 100`
 - `DEFAULT_CARRY_COUNT = 120`
 
-**核心方法**：
-
-| 方法 | 说明 |
-|---|---|
-| `runRecommend()` | 推荐主入口 |
-| `createEnemy(index, excludeIndex=-1)` | 统一入口（async），优先从推荐池挑，池用尽刷新推荐池 |
-| `addEnemy()` | 添加假想敌（async） |
-| `rerollEnemy(index)` | 重掷假想敌（async，v4 不清空 enemies，原地替换） |
-| `addAsEnemy(rec)` | 从推荐结果直接添加 |
-| `pickFromRecommendations(recs, options)` | 从推荐池挑，支持 `excludeKeys` / `skipFilter` |
-| `buildEnemyFromRec(rec)` | 从推荐结果组装假想敌 |
-| `refreshRecommendations()` | 刷新推荐池 |
-
-**状态**：
-
-- `rerollingIndex`（v4）：重掷中的假想敌索引（用于按钮 loading + 卡片半透明）
-
-**假想敌卡片颜色**：6 种（红 / 橙 / 紫 / 蓝 / 绿 / 青）
+**核心方法**：`runRecommend` / `createEnemy` / `addEnemy` / `rerollEnemy` / `addAsEnemy` / `pickFromRecommendations` / `buildEnemyFromRec` / `refreshRecommendations`
 
 ---
 
@@ -1346,14 +1270,22 @@ defineExpose({
 
 **必须同时改两处**：
 
-1. `CombatCore.js` 的 `BaseDamageCalculator.calculate` 或 `ArmorDamageCalculator.calculate`
-2. `TTKDP.js` 的 `calcDamage`
+1. `SimulationEngine.js` 的 `StandardBulletStrategy.calculateHitDamageWithPart` 或 `RIPBulletStrategy.calculateHitDamageWithPart`
+2. `TTKMatrix.js` 的 `_calcDamage`
 
 然后递增 `MATRIX_VERSION`。
 
 ### 8.3 改连发偏置 / 分段射速语义
 
-同旧版。
+**必须同时改两处**：
+
+- `SimulationEngine.js` 的 `HitPartSelector.selectWithBias`
+- `TTKMatrix.js` 的 `_applyBurstBias`
+
+分段射速：
+
+- `SimulationEngine.js` 的 `_getIntervalAfterShot`
+- `TTKMatrix.js` 的 `_getShotIntervalMs`
 
 ### 8.4 改缓存 key
 
@@ -1369,12 +1301,6 @@ defineExpose({
 - `buildEnemyFromRec`（组装逻辑）
 - `refreshRecommendations`（池刷新）
 
-**改动要点**：
-
-- `usedKeys` 是**实时从 `enemies.value` 算**的，不要维护持久变量
-- 池用尽时**先刷新池**，再 `skipFilter: true` 挑
-- `rerollEnemy` 用 `excludeIndex` 参数排除自己，**不要清空 `enemies`**（会触发空状态闪烁）
-
 ### 8.6 改参数导出/导入
 
 涉及三个文件（**必须一起改**）：
@@ -1389,26 +1315,19 @@ defineExpose({
 
 ### 8.8 改假想敌上限
 
-改 `RecPanel.vue` 的 `MAX_ENEMIES` 常量。**同时改**：
+改 `RecPanel.vue` 的 `MAX_ENEMIES`。同时改：
 
 - 卡片颜色（`.enemy-card[data-index]`）需要补对应数量
 - 卡片宽度（`flex: 1 1 280px`）可能需要调小
 
-### 8.9 加一个新的「其他物品」类别（v5）
+### 8.9 加一个新的「其他物品」类别
 
-1. 改 `DataManager.js` 的：
-   - `normalizeData` 里的 `VALID_CATEGORIES`（如果加了校验）
-   - `getOtherItemCategories()` 返回值
-   - `CATEGORY_ORDER`（导出排序）
+1. 改 `DataManager.js` 的 `getOtherItemCategories()` 和 `CATEGORY_ORDER`
 2. 改 `OtherItemsTable.vue` 的 `categoryOptions`
 3. 改 `OtherItemsTable.vue` 的 `getCategoryClass`（配色）
 4. 改样式 `.category-select.cat-xxx`
 
-### 8.10 其他物品批量导入（v5）
-
-可以写一个 py 脚本改 `data.json` 的 `otherItems` 字段（参考 `add_other_items.py`）。
-
-### 8.11 调试
+### 8.10 调试
 
 - **DP 调试**：`window.__DEBUG_DP = true`（可选 `__DEBUG_DP_TARGET` / `__DEBUG_DP_ONCE`）
 - **矩阵缓存**：`const { getMatrixStats } = await import('@/core/TTKMatrix'); await getMatrixStats()`
@@ -1425,30 +1344,73 @@ defineExpose({
 ### 9.1 已知限制
 
 - **单线程**：DP 单点虽快，但 `handleCalculate` / `handleDistanceChart` / `computeHavocCosts` / `updateSingleWeaponTTK` 各有 101 次循环，配置多时仍会卡 UI
-- **IndexedDB 累积**：推荐侧矩阵缓存跨会话累积，长时间不清理会变大
-- **两套偏置/间隔实现**：`CombatCore.HitPartSelector.selectWithBias` 与 `TTKDP.applyBurstBias`；`SimulationEngine._getIntervalAfterShot` 与 `TTKDP.getShotIntervalMs`
-- **两份 scenarioHash 实现**：`RecEngine._makeScenarioHash` 与 `TTKMatrix.makeScenarioHash`
-- **`App.vue` 逻辑重复**：`computeHavocCosts` / `updateSingleWeaponTTK` / `buildDistanceStats` 里各有一份 TTK 分解 + 哈弗币公式的副本
-- **`assets/libs/` 里的 Chart.js**：疑似死资源（项目用 ECharts），未确认
+- **IndexedDB 累积**：推荐侧矩阵缓存跨会话累积，长时间不清理会变大（**无 TTL 机制**）
+- **两套偏置/间隔实现**：`SimulationEngine.HitPartSelector.selectWithBias` 与 `TTKMatrix._applyBurstBias`；`SimulationEngine._getIntervalAfterShot` 与 `TTKMatrix._getShotIntervalMs`
+- **`MATRIX_VERSION` 是"全清"开关**：改任何影响 TTK 的代码都要递增它，导致所有缓存失效
+- **`deleteMatrixEntriesByPrefix` 的前缀歧义**：`atk_41_1_` 会误匹配 `atk_41_10_`（可接受 trade-off）
 - **假想敌上限 6**：推荐矩阵条目翻倍，首次推荐会明显变慢（约 2 倍时间）
 - **`refreshRecommendations` 会替换 `recommendations.value`**：推荐面板（Top 3 + 表格）会一起刷新
-- **`otherItems` 的 `category` 是枚举**：`背包 / 胸挂 / 治疗 / 维修 / 其他`，加新类别要改多处（见 8.9）
+- **`otherItems` 的 `category` 是枚举**：加新类别要改多处
+- **`stores.js` 启动顺序警告**：`_getDefaultCalcEquip()` 在模块加载时执行，此时 DataManager 还没加载数据；不影响功能（`loadFromImported` 会覆盖）
 
 ### 9.2 待办
 
 - [ ] 加单元测试（当前无测试）
 - [ ] 抽公共函数：把 `App.vue` 里重复的 TTK 分解 / 哈弗币公式 / 加权平均抽到 `utils/`
-- [ ] 统一 `TTKDP` 与 `CombatCore` 的偏置/间隔语义
-- [ ] 统一 `RecEngine._makeScenarioHash` 与 `TTKMatrix.makeScenarioHash`
-- [ ] 确认 `assets/libs/` 的两个 Chart.js 文件是否可删
+- [ ] 统一 `TTKMatrix` 与 `SimulationEngine` 的偏置/间隔语义
+- [ ] 加缓存 TTL / 版本号过期机制
+- [ ] `MATRIX_VERSION` 分分支（每类计算独立版本号）
+- [ ] 加 UI 按钮"清空缓存"
 - [ ] 清理 `data.json` 的 `meta.note` 里重复的文案
-- [ ] 考虑把假想敌 6 个的推荐分批计算（先 3 个，用户点"继续"再算后 3 个）
-- [ ] 考虑把参数快照（`params`）纳入 `data.json` 的默认值
-- [ ] `otherItems` 的类别可以考虑做成"用户可自定义"（当前是固定枚举）
 
 ---
 
 ## 10. 版本历史
+
+### v1.4.0（文件合并 + 死代码清理）
+
+**文件合并**（`src/core/` 从 11 → 6）：
+
+| 合并前 | 合并后 |
+|---|---|
+| `TTKDP.js` + `TTKIndexedDB.js` + `TTKMatrix.js` | `TTKMatrix.js` |
+| `EquipScoreCache.js` + `EquipScoreEngine.js` | `EquipScoreEngine.js` |
+| `TTKCalculator.js` + `FastTTK.js` | `FastTTK.js` |
+| `CombatCore.js` + `SimulationEngine.js` | `SimulationEngine.js` |
+
+**死代码清理**（共减约 277 行）：
+
+| 文件 | 删除内容 |
+|---|---|
+| `SimulationEngine.js` | 8 个常量 + `resetSeed` + `BaseDamageCalculator` 类 + `verbose` 参数 |
+| `App.vue` | `computeTTK` import + `updateSingleWeaponTTK` 函数 |
+| `RecEngine.js` | `_makeScenarioHash` + `exportResult` |
+| `DataManager.js` | 5 个未使用方法 |
+| `TTKMatrix.js` | `getAllMatrixEntries` + `closeDB` |
+| `EquipScoreEngine.js` | `getScoreEntries` |
+| `FastTTK.js` | `queryMatrixStats` |
+
+**文件数**：`src/` 从 32 → 27。
+
+### v1.3.1（v8/v9 修复）
+
+**v8 修复（问题 1 / 2 / 3 / 4 / 7 / 8 / 9 / 10 / 11 / 12 / 15 / 16 / 18）**：
+- 改武器属性后缓存失效（脏武器跳缓存）
+- configId 变更后清 IndexedDB
+- 单武器重算的分档与全量一致（`_applyGradesWithGlobalRange`）
+- 单武器空结果反馈（`{ scores, empty, reason }`）
+- 单武器空装备时清空评分
+- 分档改为分位数法
+- `EquipScoreEngine` 加 dataManager 校验
+- 非法 weaponId 检查
+- meta 精简
+- Infinity → null
+- 批量事务分片
+
+**v9 修复**：
+- `computeScores` 新增 `skipGrades` 参数
+- `computeScoresForWeapon` 传 `skipGrades: true`（修掉"把已分档结果当 rawScores 用"的 bug）
+- `_applyGradesWithGlobalRange` 调用方加类型检查
 
 ### v1.3.0（其他物品）
 
@@ -1456,45 +1418,33 @@ defineExpose({
 - `data.json` 顶层新增 `otherItems` 数组
 - 字段：`id` / `name` / `category` / `price` / `description` / `enabled`
 - 类别枚举：**背包 / 胸挂 / 治疗 / 维修 / 其他**
-- 初始 5 条示例（每个类别一条）
 
 **DataManager**：
-- 新增 3.7 节：`getOtherItems` / `getOtherItemsByCategory` / `getOtherItemById` / `getNextOtherItemId` / `addOtherItem` / `updateOtherItem` / `removeOtherItem` / `setOtherItemsEnabled` / `getOtherItemCategories`
+- 新增 `getOtherItems` / `getOtherItemsByCategory` / `getOtherItemById` / `getNextOtherItemId` / `addOtherItem` / `updateOtherItem` / `removeOtherItem` / `setOtherItemsEnabled` / `getOtherItemCategories`
 - `normalizeData` 里新增 `otherItems` 规范化
 - 导出时按 `CATEGORY_ORDER` 排序
-- `getStats()` 新增 `otherItemCount`
 
 **stores**：
-- `dataStore.state.otherItems`
-- `refreshOtherItems()`
-- 转发 `DataManager` 的 CRUD 方法
+- `dataStore.state.otherItems` + `refreshOtherItems()`
 - `appStore.switchSubTab` 白名单新增 `'other'`
 
 **组件**：
-- **新增 `OtherItemsTable.vue`**（表格 + 卡片，支持编辑/新增/删除/启用禁用）
+- **新增 `OtherItemsTable.vue`**
 - `ItemsPanel.vue` 新增第 4 个子 tab「🧰 其他物品」
-
-**辅助脚本**：
-- `add_other_items.py`（往 `data.json` 追加 `otherItems`）
-
-**文件数变化**：34 → **35**
 
 ### v1.2.0（体验优化 + 假想敌质量对齐）
 
 **布局优化**：
-- 图表默认**并排**（grid 1fr 1fr），更矮（16:9 / 260px）
+- 图表默认**并排**（grid 1fr 1fr）
 - 新增**放大按钮**（PC only）
 - 移动端：单列，隐藏放大按钮
 
 **计算流程合并**：
 - 「计算 TTK」和「生成折线图」两个按钮**合并**为一个
-- 新流程：先生成折线图（101 点）→ 从折线图数据提取柱状图数据
 
 **参数导出/导入**：
-- `DataManager.loadFromJSON` 返回 `{ data, params }`
+- `loadFromJSON` 返回 `{ data, params, equipState }`
 - `exportToJSON` / `exportToFile` 支持 `extra.params`
-- `importFromJSON` / `importFromFile` 返回 `{ data, params }`
-- 启动时自动应用 `data.json` 里的 `params`
 
 **假想敌质量对齐**：
 - `createEnemy` 统一入口：优先从推荐池挑
@@ -1508,19 +1458,20 @@ defineExpose({
 - `makeDefenseId` 加入 `distance` + `hitRate`
 - `MATRIX_VERSION` 5 → 6
 
-**文件数变化**：不变（34 个）
-
 ### v1.1.0（计算架构迁移）
 
-同旧版。
+- `TtkCacheManager` / `KeyPointsComputer` / `ttkCache` 架构被删除
+- 引入 `FastTTK` + `TTKDP` + `TTKMatrix` + `TTKIndexedDB`
 
 ### v1.0.0（合并重构后）
 
-同旧版。
+- `dataStore` / `paramsStore` / `appStore` 三合一为 `stores.js`
+- `utils/` 从 5 个文件合并为 `weaponCalc.js`
+- `components/` 从 17 个文件精简约 13 个
 
 ### v0.x（重构前）
 
-同旧版。
+- 早期版本，文件结构较散
 
 ---
 
@@ -1528,49 +1479,49 @@ defineExpose({
 
 ### 11.1 文件数预算
 
-| 目录 | v0.x | v1.0.0 | v1.1.0 | v1.2.0 | v1.3.0 |
-|---|---|---|---|---|---|
-| `src/components/` | 17 | 13 | 13 | 13 | 14 |
-| `src/core/` | 8 | 6 | 8 | 8 | 8 |
-| `src/stores/` | 3 | 1 | 1 | 1 | 1 |
-| `src/utils/` | 5 | 1 | 1 | 1 | 1 |
-| `src/styles/` | 1 | 1 | 1 | 1 | 1 |
-| `src/` 根 | 2 | 2 | 2 | 2 | 2 |
-| `public/` | 1 | 1 | 1 | 1 | 1 |
-| 根目录 | 7 | 7 | 7 | 7 | 7 |
-| **合计** | **44** | **32** | **34** | **34** | **35** |
+| 目录 | v0.x | v1.0.0 | v1.1.0 | v1.2.0 | v1.3.0 | v1.4.0 |
+|---|---|---|---|---|---|---|
+| `src/components/` | 17 | 13 | 13 | 13 | 14 | 16 |
+| `src/core/` | 8 | 6 | 8 | 8 | 8 | **6** |
+| `src/stores/` | 3 | 1 | 1 | 1 | 1 | 1 |
+| `src/utils/` | 5 | 1 | 1 | 1 | 1 | 1 |
+| `src/styles/` | 1 | 1 | 1 | 1 | 1 | 1 |
+| `src/` 根 | 2 | 2 | 2 | 2 | 2 | 2 |
+| `public/` | 1 | 1 | 1 | 1 | 1 | 1 |
+| 根目录 | 7 | 7 | 7 | 7 | 7 | 7 |
+| **合计** | **44** | **32** | **34** | **34** | **35** | **35** |
 
-### 11.2 v1.3.0 关键决策记录
+> **`src/` 内文件数**（不含 `public/` 和根目录）：v1.4.0 是 **27 个**。
 
-**为什么叫「其他物品」而不是「消耗品」？**
+### 11.2 v1.4.0 关键决策记录
 
-- 范围更广：能覆盖背包 / 胸挂 / 治疗 / 维修等
-- "消耗品"有歧义（手雷是技能不是物品）
+**为什么把 `TTKDP.js` / `TTKIndexedDB.js` 合并到 `TTKMatrix.js`？**
 
-**为什么 `category` 是固定枚举？**
+- 三者是"一个完整的缓存系统"：
+  - DP 引擎算单条 TTK
+  - IDB 存储 TTK
+  - 矩阵枚举所有组合、写缓存、读缓存
+- 分成三个文件时，改一处要跳三个地方；合并后逻辑内聚
 
-- 避免用户输入不一致（"治疗" / "医疗" / "回血"）
-- 固定 5 个：背包 / 胸挂 / 治疗 / 维修 / 其他
+**为什么把 `EquipScoreCache.js` 合并到 `EquipScoreEngine.js`？**
 
-**为什么 `otherItems` 不参与 TTK 计算？**
+- `EquipScoreCache` 只被 `EquipScoreEngine` 使用
+- 语义上是"评分引擎的内部缓存实现"
 
-- 它们的属性（容量、修复量）和 TTK 无关
-- 不做矩阵缓存 / 推荐，避免无意义的计算
+**为什么把 `TTKCalculator.js` 合并到 `FastTTK.js`？**
 
-**为什么 ID 用 `other_${序号}`？**
+- `TTKCalculator` 提供的"关键点 / 插值 / 武装武器"是 `FastTTK` 的"计算工具集"
+- 两者语义一致
 
-- 和子弹 `caliber#序号` 风格类似
-- 人类可读，方便手改 `data.json`
+**为什么把 `CombatCore.js` 合并到 `SimulationEngine.js`？**
 
-**为什么 `enabled` 字段保留？**
+- `CombatCore` 的所有导出（常量 / RNG / 计算器 / 策略）只服务"模拟"
+- 合并后 `SimulationEngine` 自包含所有模拟相关逻辑
 
-- 和子弹/护甲一致
-- 用户可能想"暂时隐藏"某些物品（版本删了、不关心）
+**为什么删 `queryMatrixStats` / `getScoreEntries` / `getAllMatrixEntries` / `closeDB` / `getBulletRows` 等？**
 
-**为什么 `rerollEnemy` 要原地 `splice` 而不是清空？**
-
-- 清空会触发 `v-if="enemies.length === 0"`，导致画面闪烁
-- 原地替换无闪烁
+- 这些是历史遗留 API，全文搜索无引用
+- 删掉零风险，减少代码体积
 
 ### 11.3 调试脚本
 
@@ -1578,9 +1529,11 @@ defineExpose({
 |---|---|
 | `tree.py` | 生成目录树 |
 | `collect_files.py` | 收集文件内容（用于 AI 上下文） |
-| `verify_merge.py` | 检查旧 import 残留 |
-| `migrate_structure.py` | 目录结构调整（已执行） |
-| `add_other_items.py` | 往 `data.json` 追加 `otherItems`（v1.3.0） |
+| `tools/merge-refactor.mjs` | TTK 引用合并（TTKDP / TTKIndexedDB → TTKMatrix） |
+| `tools/merge-equip-score-cache.mjs` | EquipScoreCache 引用合并 |
+| `tools/merge-ttk-calculator.mjs` | TTKCalculator 引用合并 |
+| `tools/merge-combat-core.mjs` | CombatCore 引用合并 |
+| `tools/remove-dead-code.mjs` | 死代码清理 |
 
 ### 11.4 授权
 
@@ -1594,36 +1547,54 @@ defineExpose({
 
 ---
 
-**文档版本**：1.3.0
-**最后更新**：2026-09-19
-**对应代码版本**：v1.3.0（其他物品）
-````
+**文档版本**：1.4.0
+**最后更新**：2026-09-26
+**对应代码版本**：v1.4.0（文件合并 + 死代码清理）
+```
+
+---
 
 ## 本次 README 更新的重点
 
 | 章节 | 更新内容 |
 |---|---|
-| **0.1 定位** | 补充"其他物品管理" |
-| **0.3 数据流** | 新增「其他物品链路」 |
-| **0.4 文件数** | 34 → **35**，`src/components/` 13 → 14 |
-| **0.6 数据规模** | 补充 `otherItems` |
-| **1.1 目录树** | 新增 `OtherItemsTable.vue` + `add_other_items.py` |
-| **1.2 文件职责** | `OtherItemsTable.vue` 行 + `ItemsPanel.vue` 描述更新 |
-| **2.12 其他物品** | **新增**（类别、字段、ID 规则） |
-| **4.7 其他物品链路** | **新增** |
-| **5.1 顶层** | 补充 `otherItems` |
-| **5.7 其他物品对象** | **新增** |
-| **6.1 DataManager** | 新增 `otherItems` 相关 API |
-| **6.9 stores** | 新增 `otherItems` 转发 + `switchSubTab` 白名单 |
-| **7.6 ItemsPanel** | 补充第 4 个子 tab |
-| **7.7 OtherItemsTable** | **新增** |
-| **8.9 / 8.10** | 新增「加新类别」/「批量导入」任务 |
-| **9.1 已知限制** | 补充 `otherItems` 的 category 是枚举 |
-| **9.2 待办** | 补充 category 用户自定义 |
-| **10 版本历史** | **新增 v1.3.0** |
-| **11.2 决策记录** | **新增**（6 条关键决策） |
+| **0.1 定位** | 不变 |
+| **0.3 数据流** | 更新所有模块引用（`TTKMatrix` 承载三层职责、`SimulationEngine` 承载两层、`EquipScoreEngine` 承载两层、`FastTTK` 承载两层） |
+| **0.4 文件数** | `src/` 32 → **27**，`src/core/` 11 → **6** |
+| **0.6 数据规模** | 更新为实际数值 |
+| **1.1 目录树** | 移除 5 个已删除文件；新增 `tools/` 目录（爬虫） |
+| **1.2 文件职责** | `src/core/` 全部重写（6 个文件） |
+| **2.x 核心概念** | 更新 `TTKMatrix` / `SimulationEngine` 的引用 |
+| **3.6 DP 状态机** | 引用改为 `TTKMatrix.computeTTKWithDP` |
+| **4.x 数据流** | 更新所有模块引用 |
+| **5.x 数据结构** | 不变（data.json 结构没动） |
+| **6.x API 速查** | 完全重写（每个模块合并后的新 API） |
+| **7.x 组件 API** | 补上 `EquipMatrixModal` / `ImportModeDialog` |
+| **8.x 常见任务** | 更新"改伤害公式"的两处位置 |
+| **9.1 已知限制** | 更新（去掉已修复项，加上新增的"stores.js 启动警告"） |
+| **9.2 待办** | 更新（去掉"抽公共函数"部分已完成项，加上"加缓存 TTL"等） |
+| **10 版本历史** | 新增 **v1.4.0** 段 |
+| **11.2 决策记录** | 新增 v1.4.0 的"为什么合并"说明 |
+| **11.3 调试脚本** | 新增 5 个 `.mjs` 合并脚本 |
 
-**文档版本**：1.3.0
-**最后更新**：2026-09-19
+---
 
-有其他需要调整的地方随时说。
+## 使用建议
+
+1. **把上面的完整 README 内容复制，覆盖仓库里的 `README.md`**（或新建 `README.md` 覆盖）
+2. **跑一遍 VSCode 的 Markdown 预览**，确认格式正确
+3. **提交 git**
+
+#### `tools/`（不计配额）
+
+价格数据采集工具（Python + Playwright）。
+
+详见 [`tools/README.md`](./tools/README.md)。
+
+| 文件 | 职责 |
+|---|---|
+| `config.py` | 常量配置 |
+| `extract_tasks.py` | 阶段1：提取任务 |
+| `scrape_prices.py` | 阶段2：抓取价格 |
+| `merge_prices.py` | 阶段3：合并结果 |
+| `requirements.txt` | Python 依赖 |

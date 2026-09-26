@@ -1,67 +1,968 @@
 // src/core/TTKMatrix.js
 //
-// TTK 矩阵预计算 + IndexedDB 持久化
+// TTK 矩阵 + DP 引擎 + IndexedDB 封装（合并文件）
 //
-// 职责：
-// - 枚举攻击侧（武器配置 × 子弹等级）× 敌人 → AttackMatrix
-// - 枚举防御侧（护甲 × 头盔）× 敌人 → DefenseMatrix
-// - 调 computeTTKWithDP 算每条 TTK
-// - 写 IndexedDB 持久化（增量计算）
+// ⭐ 本文件合并自：
+//   - TTKDP.js（DP 引擎，computeTTKWithDP）
+//   - TTKIndexedDB.js（IndexedDB 封装）
+//   - TTKMatrix.js（矩阵预计算 + 场景哈希 + ID 生成）
 //
-// 关键：
-// - 每条 TTK 用 DP 算（< 10ms），不用蒙特卡洛
-// - 改攻击侧/防御侧/敌人时，只算差异部分（利用 IndexedDB 缓存）
+// ⭐ 为什么合并：
+//   三者是"一个完整的缓存系统"：
+//     - DP 引擎算单条 TTK
+//     - IDB 存储 TTK
+//     - 矩阵枚举所有组合、写缓存、读缓存
+//   分成三个文件时，改一处要跳三个地方。
+//   合并后一个文件搞定，逻辑内聚。
 //
-// ⭐ 版本号（MATRIX_VERSION）：
-//   参与 scenarioHash 计算。改伤害公式 / DP 时间公式 / 缓存 key 结构时递增，
-//   让 IndexedDB 里的旧缓存自动失效。
+// ⭐ v2 改动（死代码清理）：
+//   - 删除 getAllMatrixEntries（无引用）
+//   - 删除 closeDB（无引用）
 //
-//   v1 → v2：修复 DP 连发间隔重复计算 bug（新连发首多算了 50ms 连发内间隔）
+// ⭐ 对外 API（保持与原文件一致）：
+//
+//   —— DP ——
+//   computeTTKWithDP({ weapon, bulletData, defender, scenario, distance })
+//
+//   —— 矩阵 ——
+//   buildAllMatrix({ attacks, defenses, enemies, scenario, dataManager, onProgress, signal })
+//   buildAttackMatrix(...)
+//   buildDefenseMatrix(...)
+//   getAttackTTK({ weaponId, configId, bulletId, enemy, scenarioHash })
+//   getDefenseTTK({ enemyWeaponId, ..., distance, hitRate, scenarioHash })
+//   makeAttackId({ weaponId, configId, bulletId, enemy, scenarioHash })
+//   makeDefenseId({ ... })
+//   makeScenarioHash(scenario)
+//   getDebugEntry(id) / clearDebugMap()
+//
+//   —— IndexedDB ——
+//   getMatrixEntry / setMatrixEntry / setMatrixEntries
+//   deleteMatrixEntry / deleteMatrixEntriesByIds / deleteMatrixEntriesByPrefix
+//   getAllMatrixIds / getMatrixCount / getMatrixStats
+//   clearMatrix
+//   saveRecPanelState / loadRecPanelState / clearRecPanelState
+//   requestPersistentStorage
+//
+// ⭐ MATRIX_VERSION：递增会让所有缓存失效
+//   v1 → v2：修复 DP 连发间隔重复计算 bug
 //   v2 → v3：修复 DP 分段射速边界 bug
 //   v3 → v4：修复 RecEngine 未按名字反查 barrelId 的 bug
-//             （旧缓存里勇士等武器的 rangeMult 未应用，TTK 偏高）
 //   v4 → v5：修复攻击侧命中率用错假想敌的 bug
-//             （攻击侧应使用「我方配置的 hitRateMap」，不是「敌人的 hitRate」）
 //   v5 → v6：修复防御侧缓存 ID 未含 distance / hitRate 的 bug
-//             （改假想敌距离后，防御侧命中旧缓存，TTK 用错距离）
-//
-// ⭐ 命中率：
-//   - 攻击侧：用「我方攻击配置的 hitRateMap」按距离插值（v5 修复）
-//   - 防御侧：用「敌人的 hitRate」（敌人自己的命中率）
 //
 // ⭐ debug 收集（不持久化）：
-//   - 每次「新算」一条 TTK，把输入 / 输出存到模块级 _debugMap
-//   - 命中缓存的不收集（无 debug 数据）
-//   - 供 __recDebug() 在控制台查询
-//   - 用 clearDebugMap() 清空
+//   每次「新算」一条 TTK，把输入/输出存到 _debugMap
+//   命中缓存的不收集（无 debug 数据）
+//   供 __recDebug() 在控制台查询
 
-import { computeTTKWithDP } from './TTKDP.js'
-import { calculateCurrentValues } from '../utils/weaponCalc.js'
-import {
-  getMatrixEntry,
-  setMatrixEntries,
-  getMatrixStats as idbGetMatrixStats,
-  clearMatrix as idbClearMatrix,
-} from './TTKIndexedDB.js'
+import { openDB } from 'idb'
 
 // ============================================================
-// 常量
+// ============ 第一部分：DP 引擎（原 TTKDP.js）===============
+// ============================================================
+//
+// ⭐ 调试开关（通过 window 变量控制）：
+//   window.__DEBUG_DP = true              打开调试
+//   window.__DEBUG_DP_TARGET = 'MK4'      只输出武器名包含 MK4 的日志
+//   window.__DEBUG_DP_ONCE = true         每个武器只输出一次（推荐）
+//
+// 默认：无日志
+//
+// ⭐ 连发间隔语义（v2 修复）：
+//   新连发首（burstPos === 0 且 shotIndex > 0）的间隔 = burstInterval
+//   —— 连发间隔【取代】连发内间隔，不是叠加
+//
+// ⭐ 分段射速语义（v3 修复）：
+//   rofStages: [{ untilShot: N, rofAdd: X }, { rofAdd: 0 }]
+//   表示"前 N 个射击间隔射速 +X，之后 +0"。
+//   判断条件：shotIndex <= untilShot
+
+const PART_HEAD = 0
+const PART_CHEST = 1
+const PART_STOMACH = 2
+const PART_LIMBS = 3
+
+const MAX_STATES = 3_000_000
+
+// ⭐ 已输出的武器集合（用于 __DEBUG_DP_ONCE）
+const _debugPrinted = new Set()
+
+/**
+ * 用 DP 引擎计算单次 TTK（快速模式）
+ *
+ * @param {Object} options
+ * @param {Object} options.weapon      - 应用附件后的武器
+ * @param {Object} options.bulletData  - 子弹对象
+ * @param {Object} options.defender    - { armorLevel, armorValue, helmetLevel, helmetValue }
+ * @param {Object} options.scenario    - { hitRate, hitProb, triggerDelayEnable, healthValue }
+ * @param {number} options.distance    - 距离
+ * @returns {Object} { ttk, shots, hits, debug? }
+ */
+export function computeTTKWithDP({
+  weapon,
+  bulletData,
+  defender,
+  scenario,
+  distance,
+}) {
+  const current = weapon._current || weapon
+  const flesh = current.flesh
+  const armor = current.armor
+  const mult = current.mult
+  const ranges = current.ranges
+  const decays = current.decays
+  const rof = current.rof
+  const velocity = current.velocity
+  const triggerDelay = weapon.triggerDelay || 0
+  const fireMode = current.fireMode || null
+  const burstCount = current.burstCount || null
+  const burstInternalROF = current.burstInternalROF || null
+  const burstInterval = current.burstInterval || null
+  const rofStages = current.rofStages || null
+
+  const partMult = bulletData.partMult || { head: 1, chest: 1, stomach: 1, limbs: 1 }
+  const armorData = bulletData.armorData || {}
+
+  const armorLevel = defender.armorLevel ?? 4
+  const armorValue = defender.armorValue ?? 0
+  const helmetLevel = defender.helmetLevel ?? 4
+  const helmetValue = defender.helmetValue ?? 0
+
+  const armorLevelData = armorData[String(armorLevel)] || { pen: 0, armorMult: 1 }
+  const helmetLevelData = armorData[String(helmetLevel)] || { pen: 0, armorMult: 1 }
+
+  const healthValue = scenario.healthValue ?? 100
+  const hitRate = scenario.hitRate ?? 0.85
+  const hitProb = scenario.hitProb || { head: 0.1, chest: 0.3, stomach: 0.3, limbs: 0.3 }
+  const triggerEnabled = scenario.triggerDelayEnable !== false
+
+  const decay = _dpCalcDecay(distance, ranges, decays)
+
+  const pureDamage = {
+    head: flesh * (partMult.head ?? 1) * (mult.head ?? 1) * decay,
+    chest: flesh * (partMult.chest ?? 1) * (mult.chest ?? 1) * decay,
+    stomach: flesh * (partMult.stomach ?? 1) * (mult.stomach ?? 1) * decay,
+    limbs: flesh * (partMult.limbs ?? 1) * (mult.limbs ?? 1) * decay,
+  }
+
+  const armorDamage = {
+    head: armor * (helmetLevelData.armorMult ?? 1),
+    chest: armor * (armorLevelData.armorMult ?? 1),
+    stomach: armor * (armorLevelData.armorMult ?? 1),
+    limbs: 0,
+  }
+
+  const pen = {
+    head: helmetLevelData.pen ?? 0,
+    chest: armorLevelData.pen ?? 0,
+    stomach: armorLevelData.pen ?? 0,
+    limbs: 1,
+  }
+
+  // ---------- 调试判断 ----------
+  const debugEnabled = (typeof window !== 'undefined') && window.__DEBUG_DP === true
+  const debugTarget = (typeof window !== 'undefined') ? window.__DEBUG_DP_TARGET : null
+  const debugOnce = (typeof window !== 'undefined') && window.__DEBUG_DP_ONCE === true
+  const weaponName = current._displayName || weapon.name || '(unknown)'
+
+  let shouldDebug = false
+  if (debugEnabled) {
+    if (!debugTarget || weaponName.includes(debugTarget)) {
+      if (debugOnce) {
+        const key = `${weaponName}`
+        if (!_debugPrinted.has(key)) {
+          _debugPrinted.add(key)
+          shouldDebug = true
+        }
+      } else {
+        shouldDebug = true
+      }
+    }
+  }
+
+  if (shouldDebug) {
+    console.log(`═══ [DP] ${weaponName} @ ${distance}m ═══`)
+    console.log(`  fireMode=${fireMode} burstCount=${burstCount} burstInternalROF=${burstInternalROF} burstInterval=${burstInterval}`)
+    console.log(`  rof=${rof} rofStages=${JSON.stringify(rofStages)}`)
+    console.log(`  flesh=${flesh} armor=${armor} mult=${JSON.stringify(mult)}`)
+    console.log(`  子弹=${bulletData.id}`)
+    console.log(`  护甲 Lv${armorLevel} 值${armorValue} | 头盔 Lv${helmetLevel} 值${helmetValue}`)
+    console.log(`  decay=${decay} 命中率=${hitRate}`)
+    console.log(`  pureDamage=${JSON.stringify(pureDamage)}`)
+    console.log(`  armorDamage=${JSON.stringify(armorDamage)}`)
+    console.log(`  pen=${JSON.stringify(pen)}`)
+  }
+
+  const dpResult = _runDP({
+    pureDamage,
+    armorDamage,
+    pen,
+    hitRate,
+    hitProb,
+    healthValue,
+    armorValue,
+    helmetValue,
+    fireMode,
+    burstCount,
+    burstInternalROF,
+    burstInterval,
+    rof,
+    rofStages,
+    velocity,
+    distance,
+    triggerDelay,
+    triggerEnabled,
+  })
+
+  const flightTime = (distance / velocity) * 1000
+  const triggerMs = triggerEnabled ? triggerDelay : 0
+  const ttk = flightTime + triggerMs + dpResult.expectedTimeMs
+
+  if (shouldDebug) {
+    console.log(`─── [DP] 结果 ───`)
+    console.log(`  期望射击数=${dpResult.expectedShots.toFixed(3)}`)
+    console.log(`  期望命中数=${dpResult.expectedHits.toFixed(3)}`)
+    console.log(`  射击时间=${dpResult.expectedTimeMs.toFixed(1)}ms`)
+    console.log(`  飞行时间=${flightTime.toFixed(2)}ms`)
+    console.log(`  扳机=${triggerMs}ms`)
+    console.log(`  总TTK=${ttk.toFixed(1)}ms`)
+    console.log(`  状态数=${dpResult.stateCount}`)
+    console.log(`══════════════════════════`)
+  }
+
+  return {
+    ttk,
+    shots: dpResult.expectedShots,
+    hits: dpResult.expectedHits,
+    debug: {
+      flightTime,
+      triggerMs,
+      shootingTime: dpResult.expectedTimeMs,
+      pureDamage,
+      armorDamage,
+      pen,
+      decay,
+      stateCount: dpResult.stateCount,
+    },
+  }
+}
+
+// ---------- DP 主循环 ----------
+
+function _runDP({
+  pureDamage,
+  armorDamage,
+  pen,
+  hitRate,
+  hitProb,
+  healthValue,
+  armorValue,
+  helmetValue,
+  fireMode,
+  burstCount,
+  burstInternalROF,
+  burstInterval,
+  rof,
+  rofStages,
+  velocity,
+  distance,
+  triggerDelay,
+  triggerEnabled,
+}) {
+  const isBurstMode = fireMode === 'burst' && burstCount && burstInternalROF
+
+  const dp = new Map()
+
+  const initialState = {
+    health: healthValue,
+    headHits: 0,
+    bodyHits: 0,
+    limbHits: 0,
+    burstPos: 0,
+    lastPart: -1,
+  }
+
+  let baseHead = hitProb.head ?? 0.1
+  let baseChest = hitProb.chest ?? 0.3
+  let baseStomach = hitProb.stomach ?? 0.3
+  let baseLimbs = hitProb.limbs ?? 0.3
+
+  const sumBase = baseHead + baseChest + baseStomach + baseLimbs
+  if (sumBase > 0) {
+    baseHead /= sumBase
+    baseChest /= sumBase
+    baseStomach /= sumBase
+    baseLimbs /= sumBase
+  }
+
+  const getDP = (state) => {
+    if (state.health <= 0) {
+      return { time: 0, shots: 0, hits: 0 }
+    }
+
+    const key = _stateKey(state)
+    if (dp.has(key)) return dp.get(key)
+
+    if (dp.size > MAX_STATES) {
+      throw new Error(`TTKDP: 状态数超过上限 ${MAX_STATES}`)
+    }
+
+    if (!isFinite(state.health)) {
+      throw new Error(`TTKDP: state.health 是 NaN (state=${JSON.stringify(state)})`)
+    }
+
+    const shotIndex = state.headHits + state.bodyHits + state.limbHits
+    const isFirstShot = (shotIndex === 0)
+
+    const intervalMs = _getShotIntervalMs({
+      shotIndex,
+      isBurstMode,
+      burstInternalROF,
+      rof,
+      rofStages,
+    })
+
+    let burstGapMs = 0
+    if (isBurstMode) {
+      if (state.burstPos === 0 && shotIndex > 0) {
+        burstGapMs = burstInterval * 1000
+      }
+    }
+
+    // ⭐ v2 核心修复：连发模式下，新连发首的间隔 = burstGapMs
+    const currentIntervalMs = (isBurstMode && burstGapMs > 0)
+      ? burstGapMs
+      : intervalMs
+
+    let headProb = baseHead
+    let chestProb = baseChest
+    let stomachProb = baseStomach
+    let limbsProb = baseLimbs
+
+    if (isBurstMode && state.burstPos > 0 && state.lastPart >= 0) {
+      const biased = _applyBurstBias(state.lastPart, 0.7)
+      headProb = biased.head
+      chestProb = biased.chest
+      stomachProb = biased.stomach
+      limbsProb = biased.limbs
+    }
+
+    const sumProb = headProb + chestProb + stomachProb + limbsProb
+    if (sumProb > 0) {
+      headProb /= sumProb
+      chestProb /= sumProb
+      stomachProb /= sumProb
+      limbsProb /= sumProb
+    }
+
+    const p = Math.max(0.0001, hitRate)
+
+    let expectedTime
+    if (isFirstShot) {
+      expectedTime = (1 - p) * currentIntervalMs / p
+    } else {
+      expectedTime = currentIntervalMs / p
+    }
+
+    let expectedShots = 1 / p
+    let expectedHits = 1
+
+    if (headProb > 0) {
+      const dmg = _calcDamage({
+        hitPart: PART_HEAD,
+        pureDamage: pureDamage.head,
+        pen: pen.head,
+        armorValue: helmetValue,
+        cumulativeArmorDamage: state.headHits * armorDamage.head,
+        armorDamage: armorDamage.head,
+      })
+      const next = {
+        ...state,
+        health: state.health - dmg,
+        headHits: state.headHits + 1,
+        burstPos: isBurstMode ? (state.burstPos + 1) % burstCount : 0,
+        lastPart: PART_HEAD,
+      }
+      const sub = getDP(next)
+      expectedTime += headProb * sub.time
+      expectedShots += headProb * sub.shots
+      expectedHits += headProb * sub.hits
+    }
+
+    if (chestProb > 0) {
+      const dmg = _calcDamage({
+        hitPart: PART_CHEST,
+        pureDamage: pureDamage.chest,
+        pen: pen.chest,
+        armorValue: armorValue,
+        cumulativeArmorDamage: state.bodyHits * armorDamage.chest,
+        armorDamage: armorDamage.chest,
+      })
+      const next = {
+        ...state,
+        health: state.health - dmg,
+        bodyHits: state.bodyHits + 1,
+        burstPos: isBurstMode ? (state.burstPos + 1) % burstCount : 0,
+        lastPart: PART_CHEST,
+      }
+      const sub = getDP(next)
+      expectedTime += chestProb * sub.time
+      expectedShots += chestProb * sub.shots
+      expectedHits += chestProb * sub.hits
+    }
+
+    if (stomachProb > 0) {
+      const dmg = _calcDamage({
+        hitPart: PART_STOMACH,
+        pureDamage: pureDamage.stomach,
+        pen: pen.stomach,
+        armorValue: armorValue,
+        cumulativeArmorDamage: state.bodyHits * armorDamage.stomach,
+        armorDamage: armorDamage.stomach,
+      })
+      const next = {
+        ...state,
+        health: state.health - dmg,
+        bodyHits: state.bodyHits + 1,
+        burstPos: isBurstMode ? (state.burstPos + 1) % burstCount : 0,
+        lastPart: PART_STOMACH,
+      }
+      const sub = getDP(next)
+      expectedTime += stomachProb * sub.time
+      expectedShots += stomachProb * sub.shots
+      expectedHits += stomachProb * sub.hits
+    }
+
+    if (limbsProb > 0) {
+      const dmg = _calcDamage({
+        hitPart: PART_LIMBS,
+        pureDamage: pureDamage.limbs,
+        pen: 1,
+        armorValue: 0,
+        cumulativeArmorDamage: 0,
+        armorDamage: 0,
+      })
+      const next = {
+        ...state,
+        health: state.health - dmg,
+        limbHits: state.limbHits + 1,
+        burstPos: isBurstMode ? (state.burstPos + 1) % burstCount : 0,
+        lastPart: PART_LIMBS,
+      }
+      const sub = getDP(next)
+      expectedTime += limbsProb * sub.time
+      expectedShots += limbsProb * sub.shots
+      expectedHits += limbsProb * sub.hits
+    }
+
+    const result = {
+      time: expectedTime,
+      shots: expectedShots,
+      hits: expectedHits,
+    }
+    dp.set(key, result)
+    return result
+  }
+
+  const final = getDP(initialState)
+
+  return {
+    expectedTimeMs: final.time,
+    expectedShots: final.shots,
+    expectedHits: final.hits,
+    stateCount: dp.size,
+  }
+}
+
+// ---------- DP 辅助函数 ----------
+
+function _stateKey(s) {
+  return `${s.health}|${s.headHits}|${s.bodyHits}|${s.limbHits}|${s.burstPos}|${s.lastPart}`
+}
+
+function _getShotIntervalMs({
+  shotIndex,
+  isBurstMode,
+  burstInternalROF,
+  rof,
+  rofStages,
+}) {
+  if (isBurstMode) {
+    return 60000 / burstInternalROF
+  }
+
+  if (!rofStages || !Array.isArray(rofStages) || rofStages.length === 0) {
+    return 60000 / rof
+  }
+
+  // ⭐ v3 修复：边界从 `<` 改为 `<=`
+  let rofAdd = 0
+  for (const stage of rofStages) {
+    if (stage.untilShot === undefined || stage.untilShot === null || shotIndex <= stage.untilShot) {
+      rofAdd = stage.rofAdd || 0
+      break
+    }
+  }
+
+  const effectiveRof = rof + rofAdd
+  if (!isFinite(effectiveRof) || effectiveRof <= 0) {
+    return 60000 / rof
+  }
+  return 60000 / effectiveRof
+}
+
+function _calcDamage({
+  hitPart,
+  pureDamage,
+  pen,
+  armorValue,
+  cumulativeArmorDamage,
+  armorDamage,
+}) {
+  if (hitPart === PART_LIMBS) {
+    return pureDamage
+  }
+
+  const remainingArmor = armorValue - cumulativeArmorDamage
+
+  if (remainingArmor <= 0) {
+    return pureDamage
+  }
+
+  if (armorDamage >= remainingArmor) {
+    const frac = remainingArmor / armorDamage
+    return frac * (pureDamage * pen) + (1 - frac) * pureDamage
+  }
+
+  return pureDamage * pen
+}
+
+function _applyBurstBias(lastPart, biasStrength = 0.7) {
+  const result = { head: 0, chest: 0, stomach: 0, limbs: 0 }
+  const partKeys = ['head', 'chest', 'stomach', 'limbs']
+
+  if (lastPart < 0 || lastPart >= partKeys.length) {
+    return { head: 0.25, chest: 0.25, stomach: 0.25, limbs: 0.25 }
+  }
+
+  const lastKey = partKeys[lastPart]
+  const bias = 1 - biasStrength
+
+  result[lastKey] += biasStrength
+
+  const adjMap = {
+    0: { 1: 1.0 },
+    1: { 0: 0.5, 2: 0.5 },
+    2: { 1: 0.5, 3: 0.5 },
+    3: { 2: 1.0 },
+  }
+
+  const adj = adjMap[lastPart] || {}
+  for (const [idx, prob] of Object.entries(adj)) {
+    result[partKeys[parseInt(idx, 10)]] += bias * prob
+  }
+
+  return result
+}
+
+function _dpCalcDecay(distance, ranges, decays) {
+  if (distance < ranges[0]) return decays[0]
+  if (distance < ranges[1]) return decays[1]
+  if (distance < ranges[2]) return decays[2]
+  if (distance < ranges[3]) return decays[3]
+  return decays[4]
+}
+
+// ============================================================
+// ============ 第二部分：IndexedDB 封装 =====================
+// ============================================================
+//
+// ⭐ 存储结构：
+//   数据库：df-ttk
+//   版本：2
+//   ObjectStore：
+//     1) ttk-matrix（keyPath: id）
+//     2) rec-panel-state（keyPath: id）
+
+const DB_NAME = 'df-ttk'
+const DB_VERSION = 2
+const STORE_NAME = 'ttk-matrix'
+const REC_PANEL_STORE_NAME = 'rec-panel-state'
+
+const REC_PANEL_STATE_VERSION = 1
+const REC_PANEL_STATE_ID = 'default'
+
+// 批量写入的事务分片大小（每片独立事务，单批失败不影响其他批）
+const BATCH_TX_SIZE = 50
+const DELETE_TX_SIZE = 50
+
+// ---------- 内部：数据库连接（惰性 + 单例） ----------
+
+let _dbPromise = null
+
+function _getDB() {
+  if (_dbPromise) return _dbPromise
+
+  _dbPromise = openDB(DB_NAME, DB_VERSION, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(REC_PANEL_STORE_NAME)) {
+        db.createObjectStore(REC_PANEL_STORE_NAME, { keyPath: 'id' })
+      }
+    },
+  })
+
+  return _dbPromise
+}
+
+// ---------- 读 ----------
+
+/**
+ * 读取单条矩阵记录
+ * @returns {Promise<Object|null>} { id, ttk, shots, hits, meta, cachedAt } 或 null
+ */
+export async function getMatrixEntry(id) {
+  try {
+    const db = await _getDB()
+    const entry = await db.get(STORE_NAME, id)
+    return entry || null
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.getMatrixEntry 失败:', e)
+    return null
+  }
+}
+
+/**
+ * 获取所有矩阵 ID
+ */
+export async function getAllMatrixIds() {
+  try {
+    const db = await _getDB()
+    return await db.getAllKeys(STORE_NAME)
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.getAllMatrixIds 失败:', e)
+    return []
+  }
+}
+
+/**
+ * 获取矩阵记录数
+ */
+export async function getMatrixCount() {
+  try {
+    const db = await _getDB()
+    return await db.count(STORE_NAME)
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.getMatrixCount 失败:', e)
+    return 0
+  }
+}
+
+/**
+ * 获取统计信息（记录数 + 估算大小）
+ * @returns {Promise<Object>} { count, sizeKB, sizeMB }
+ */
+export async function getMatrixStats() {
+  try {
+    const db = await _getDB()
+    const count = await db.count(STORE_NAME)
+
+    let sizeKB = 0
+    let sizeMB = 0
+    if (navigator.storage && navigator.storage.estimate) {
+      const estimate = await navigator.storage.estimate()
+      sizeKB = Math.round((estimate.usage || 0) / 1024)
+      sizeMB = Math.round((sizeKB / 1024) * 100) / 100
+    }
+
+    return { count, sizeKB, sizeMB }
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.getMatrixStats 失败:', e)
+    return { count: 0, sizeKB: 0, sizeMB: 0 }
+  }
+}
+
+// ---------- 写 ----------
+
+/**
+ * 写入单条矩阵记录（覆盖）
+ * @returns {Promise<boolean>}
+ */
+export async function setMatrixEntry(id, data) {
+  try {
+    const db = await _getDB()
+    const entry = {
+      id,
+      ttk: data.ttk ?? 0,
+      shots: data.shots ?? 0,
+      hits: data.hits ?? 0,
+      meta: data.meta ?? {},
+      cachedAt: Date.now(),
+    }
+    await db.put(STORE_NAME, entry)
+    return true
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.setMatrixEntry 失败:', e)
+    return false
+  }
+}
+
+/**
+ * ⭐ 批量写入矩阵（分片事务）
+ *
+ * 之前：一次性事务写 N 条，失败全回滚
+ * 现在：按 BATCH_TX_SIZE（50）分片，失败只影响单批
+ *
+ * @returns {Promise<number>} 成功写入数
+ */
+export async function setMatrixEntries(entries) {
+  if (!Array.isArray(entries) || entries.length === 0) return 0
+
+  try {
+    const db = await _getDB()
+    const now = Date.now()
+    let totalWritten = 0
+
+    for (let i = 0; i < entries.length; i += BATCH_TX_SIZE) {
+      const chunk = entries.slice(i, i + BATCH_TX_SIZE)
+
+      try {
+        const tx = db.transaction(STORE_NAME, 'readwrite')
+        const store = tx.objectStore(STORE_NAME)
+
+        let chunkCount = 0
+        for (const e of chunk) {
+          if (!e || !e.id) continue
+          store.put({
+            id: e.id,
+            ttk: e.ttk ?? 0,
+            shots: e.shots ?? 0,
+            hits: e.hits ?? 0,
+            meta: e.meta ?? {},
+            cachedAt: now,
+          })
+          chunkCount++
+        }
+
+        await tx.done
+        totalWritten += chunkCount
+      } catch (e) {
+        console.warn(`⚠️ TTKMatrix.setMatrixEntries 单批失败（${chunk.length} 条）:`, e)
+      }
+    }
+
+    return totalWritten
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.setMatrixEntries 失败:', e)
+    return 0
+  }
+}
+
+// ---------- 删 ----------
+
+/**
+ * 删除单条矩阵记录
+ */
+export async function deleteMatrixEntry(id) {
+  try {
+    const db = await _getDB()
+    await db.delete(STORE_NAME, id)
+    return true
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.deleteMatrixEntry 失败:', e)
+    return false
+  }
+}
+
+/**
+ * ⭐ 批量删除（分片事务）
+ *
+ * @param {Array<string>} ids
+ * @returns {Promise<number>} 成功删除数
+ */
+export async function deleteMatrixEntriesByIds(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return 0
+
+  try {
+    const db = await _getDB()
+    let totalDeleted = 0
+
+    for (let i = 0; i < ids.length; i += DELETE_TX_SIZE) {
+      const chunk = ids.slice(i, i + DELETE_TX_SIZE)
+
+      try {
+        const tx = db.transaction(STORE_NAME, 'readwrite')
+        const store = tx.objectStore(STORE_NAME)
+
+        let chunkCount = 0
+        for (const id of chunk) {
+          if (!id) continue
+          store.delete(id)
+          chunkCount++
+        }
+
+        await tx.done
+        totalDeleted += chunkCount
+      } catch (e) {
+        console.warn(`⚠️ TTKMatrix.deleteMatrixEntriesByIds 单批失败（${chunk.length} 条）:`, e)
+      }
+    }
+
+    return totalDeleted
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.deleteMatrixEntriesByIds 失败:', e)
+    return 0
+  }
+}
+
+/**
+ * ⭐ 按前缀批量删除
+ *
+ * 用途：清空某武器的所有缓存（缓存 key 都以 `atk_{weaponId}_` 开头）
+ *
+ * ⚠️ 已知限制：
+ *   如果两个 cid 存在"前缀关系"（如 1 和 10），
+ *   清一个会误伤另一个（因为它俩的 key 前几个字符相同）。
+ *   用户下次算评分时会自动重算（损失只是多算一次）。
+ *
+ * @param {string} prefix
+ * @returns {Promise<number>} 删除的数量
+ */
+export async function deleteMatrixEntriesByPrefix(prefix) {
+  if (!prefix) return 0
+
+  try {
+    const db = await _getDB()
+    const allKeys = await db.getAllKeys(STORE_NAME)
+
+    const matched = allKeys.filter(k => String(k).startsWith(prefix))
+    if (matched.length === 0) return 0
+
+    return await deleteMatrixEntriesByIds(matched)
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.deleteMatrixEntriesByPrefix 失败:', e)
+    return 0
+  }
+}
+
+/**
+ * 清空所有矩阵记录
+ */
+export async function clearMatrix() {
+  try {
+    const db = await _getDB()
+    await db.clear(STORE_NAME)
+    return true
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.clearMatrix 失败:', e)
+    return false
+  }
+}
+
+// ---------- 配装面板状态 ----------
+
+/**
+ * 保存配装面板状态
+ * @param {Object} state - { enemies: Array, budget: number }
+ */
+export async function saveRecPanelState(state) {
+  if (!state || typeof state !== 'object') {
+    console.warn('⚠️ saveRecPanelState: state 无效')
+    return false
+  }
+
+  try {
+    const db = await _getDB()
+    const entry = {
+      id: REC_PANEL_STATE_ID,
+      version: REC_PANEL_STATE_VERSION,
+      enemies: Array.isArray(state.enemies) ? state.enemies : [],
+      budget: typeof state.budget === 'number' ? state.budget : 100,
+      savedAt: Date.now(),
+    }
+    await db.put(REC_PANEL_STORE_NAME, entry)
+    return true
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.saveRecPanelState 失败:', e)
+    return false
+  }
+}
+
+/**
+ * 读取配装面板状态
+ * @returns {Promise<Object|null>} { enemies, budget, savedAt } 或 null
+ */
+export async function loadRecPanelState() {
+  try {
+    const db = await _getDB()
+    const entry = await db.get(REC_PANEL_STORE_NAME, REC_PANEL_STATE_ID)
+    if (!entry) return null
+
+    if (entry.version !== REC_PANEL_STATE_VERSION) {
+      console.warn(
+        `⚠️ rec-panel-state 版本不匹配（缓存 v${entry.version}，当前 v${REC_PANEL_STATE_VERSION}），已丢弃`
+      )
+      await clearRecPanelState()
+      return null
+    }
+
+    return {
+      enemies: Array.isArray(entry.enemies) ? entry.enemies : [],
+      budget: typeof entry.budget === 'number' ? entry.budget : 100,
+      savedAt: entry.savedAt || 0,
+    }
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.loadRecPanelState 失败:', e)
+    return null
+  }
+}
+
+/**
+ * 清空配装面板状态
+ */
+export async function clearRecPanelState() {
+  try {
+    const db = await _getDB()
+    await db.delete(REC_PANEL_STORE_NAME, REC_PANEL_STATE_ID)
+    return true
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.clearRecPanelState 失败:', e)
+    return false
+  }
+}
+
+// ---------- 通用 ----------
+
+/**
+ * 请求持久化存储权限（可选）
+ */
+export async function requestPersistentStorage() {
+  try {
+    if (navigator.storage && navigator.storage.persist) {
+      const granted = await navigator.storage.persisted()
+      if (granted) return true
+      return await navigator.storage.persist()
+    }
+    return false
+  } catch (e) {
+    console.warn('⚠️ TTKMatrix.requestPersistentStorage 失败:', e)
+    return false
+  }
+}
+
+// ============================================================
+// ============ 第三部分：矩阵预计算 =========================
 // ============================================================
 
-// 每个场景哈希的当前版本（改公式时递增，让旧缓存失效）
-// v1 → v2：修复 DP 连发间隔重复计算 bug
-// v2 → v3：修复 DP 分段射速边界 bug
-// v3 → v4：修复 RecEngine 未按名字反查 barrelId 的 bug
-// v4 → v5：修复攻击侧命中率用错假想敌的 bug
-// v5 → v6：修复防御侧缓存 ID 未含 distance / hitRate 的 bug
+// ⭐ 版本号：改伤害公式 / DP 时间公式 / 缓存 key 结构时递增
 const MATRIX_VERSION = 6
 
 // 批量写入大小（每 N 条写一次 IndexedDB）
 const BATCH_SIZE = 200
 
-// ============================================================
-// ⭐ 模块级 debug Map（不持久化）
-// ============================================================
+// ---------- debug Map（不持久化） ----------
 
 const _debugMap = new Map()
 
@@ -79,34 +980,21 @@ export function clearDebugMap() {
   _debugMap.clear()
 }
 
-// ============================================================
-// ⭐ 内部工具：计算某条攻击侧在指定距离的命中率
-// ============================================================
+// ---------- 命中率工具 ----------
 
 /**
  * 攻击侧命中率
  *
  * 优先用「我方攻击配置的 hitRateMap」按距离插值；
  * 没有 hitRateMap 时回退到「敌人的 hitRate」或「scenario.hitRate」。
- *
- * ⚠️ v5 修复：
- *   旧代码直接用 enemy.hitRate（假想敌的命中率），
- *   导致攻击侧 TTK 偏乐观（命中率偏高）。
- *
- * @param {Object} attack
- * @param {Object} enemy
- * @param {Object} scenario
- * @param {DataManager} dataManager
- * @returns {number} 命中率 [0, 1]
  */
-function getAttackHitRate(attack, enemy, scenario, dataManager) {
+function _getAttackHitRate(attack, enemy, scenario, dataManager) {
   const map = attack._attachment?.hitRateMap
 
   if (Array.isArray(map) && map.length > 0 && dataManager?.getHitRateFromMap) {
     return dataManager.getHitRateFromMap(map, enemy.distance, 0.85)
   }
 
-  // 回退
   return enemy.hitRate ?? scenario.hitRate ?? 0.85
 }
 
@@ -114,21 +1002,13 @@ function getAttackHitRate(attack, enemy, scenario, dataManager) {
  * 防御侧命中率
  *
  * 防御侧是「敌人打我方」，命中率用「敌人自己的命中率」。
- *
- * ⚠️ 必须与 RecEngine._buildRecommendationsFromMatrix 里查询时的算法完全一致，
- *    否则写入和读取的 ID 不一样，查不到缓存。
- *
- * @param {Object} enemy
- * @param {Object} scenario
- * @returns {number} 命中率 [0, 1]
+ * 必须与 RecEngine._buildRecommendationsFromMatrix 里查询时的算法完全一致。
  */
-function getDefenseHitRate(enemy, scenario) {
+function _getDefenseHitRate(enemy, scenario) {
   return enemy.hitRate ?? scenario.hitRate ?? 0.85
 }
 
-// ============================================================
-// 对外 API：完整矩阵
-// ============================================================
+// ---------- 完整矩阵 ----------
 
 /**
  * 构建完整矩阵（攻击侧 + 防御侧）
@@ -202,8 +1082,6 @@ export async function buildAllMatrix({
 
 /**
  * 构建攻击侧矩阵
- *
- * ⭐ v5 修复：命中率用「我方配置的 hitRateMap」按距离插值
  */
 export async function buildAttackMatrix({
   attacks,
@@ -248,7 +1126,7 @@ export async function buildAttackMatrix({
       }
 
       // ---------- ⭐ 计算命中率（我方配置的 hitRateMap） ----------
-      const hitRate = getAttackHitRate(attack, enemy, scenario, dataManager)
+      const hitRate = _getAttackHitRate(attack, enemy, scenario, dataManager)
 
       // ---------- 未命中：算 ----------
       try {
@@ -311,7 +1189,7 @@ export async function buildAttackMatrix({
               helmetLevel: enemy.helmetLevel,
               helmetValue: enemy.helmetValue,
             },
-            hitRate,                     // ⭐ 实际传入 DP 的值
+            hitRate,
             hitProb: scenario.hitProb,
             triggerDelayEnable: scenario.triggerDelayEnable,
             healthValue: scenario.healthValue,
@@ -357,13 +1235,6 @@ export async function buildAttackMatrix({
 
 /**
  * 构建防御侧矩阵
- *
- * ⭐ 防御侧命中率 = enemy.hitRate（敌人自己的命中率）
- *   —— 不需要改，因为防御侧本来就是「敌人打我方」，用敌人命中率是对的。
- *
- * ⭐ v6 修复：makeDefenseId 加入 distance 和 hitRate
- *   - 先把 hitRate 算出来，再生成 ID
- *   - 保证「距离变 → ID 变 → 缓存失效 → 重算」
  */
 export async function buildDefenseMatrix({
   defenses,
@@ -396,8 +1267,8 @@ export async function buildDefenseMatrix({
         continue
       }
 
-      // ---------- ⭐ v6：先算 hitRate（原位置在 makeDefenseId 之后） ----------
-      const hitRate = getDefenseHitRate(enemy, scenario)
+      // ---------- ⭐ v6：先算 hitRate ----------
+      const hitRate = _getDefenseHitRate(enemy, scenario)
 
       // ---------- ⭐ v6：生成 ID（含 distance + hitRate） ----------
       const id = makeDefenseId({
@@ -408,8 +1279,8 @@ export async function buildDefenseMatrix({
         ourArmorValue: defense.armor.value,
         ourHelmetLevel: defense.helmet.level,
         ourHelmetValue: defense.helmet.value,
-        distance: enemy.distance,   // ⭐ 新增
-        hitRate,                    // ⭐ 新增
+        distance: enemy.distance,
+        hitRate,
         scenarioHash,
       })
 
@@ -528,10 +1399,11 @@ export async function buildDefenseMatrix({
   return { total, computed, fromCache, errors }
 }
 
-// ============================================================
-// 查询 API（用于组合阶段）
-// ============================================================
+// ---------- 查询 API ----------
 
+/**
+ * 查询攻击侧 TTK
+ */
 export async function getAttackTTK({
   weaponId,
   configId,
@@ -545,8 +1417,6 @@ export async function getAttackTTK({
 
 /**
  * 查询防御侧 TTK
- *
- * ⭐ v6：调用方必须传 distance 和 hitRate（与 buildDefenseMatrix 一致）
  */
 export async function getDefenseTTK({
   enemyWeaponId,
@@ -556,8 +1426,8 @@ export async function getDefenseTTK({
   ourArmorValue,
   ourHelmetLevel,
   ourHelmetValue,
-  distance,        // ⭐ v6 新增
-  hitRate,         // ⭐ v6 新增
+  distance,
+  hitRate,
   scenarioHash,
 }) {
   const id = makeDefenseId({
@@ -568,29 +1438,24 @@ export async function getDefenseTTK({
     ourArmorValue,
     ourHelmetLevel,
     ourHelmetValue,
-    distance,      // ⭐ v6 新增
-    hitRate,       // ⭐ v6 新增
+    distance,
+    hitRate,
     scenarioHash,
   })
   return await getMatrixEntry(id)
 }
 
-// ============================================================
-// 缓存管理
-// ============================================================
-
-export async function getMatrixStats() {
-  return await idbGetMatrixStats()
-}
+// ---------- 缓存管理（转发 IDB） ----------
 
 export async function clearMatrixCache() {
-  return await idbClearMatrix()
+  return await clearMatrix()
 }
 
-// ============================================================
-// ⭐ ID 生成（导出，供 RecEngine 查询 debug 用）
-// ============================================================
+// ---------- ID 生成 ----------
 
+/**
+ * 生成攻击侧缓存 ID
+ */
 export function makeAttackId({ weaponId, configId, bulletId, enemy, scenarioHash }) {
   const cid = (configId || '#1').replace('#', '')
   const armorKey = `a${enemy.armorLevel ?? 4}v${enemy.armorValue ?? 0}`
@@ -601,20 +1466,6 @@ export function makeAttackId({ weaponId, configId, bulletId, enemy, scenarioHash
 
 /**
  * 生成防御侧缓存 ID
- *
- * ⭐ v6 修复：加入 distance 和 hitRate
- *   - 防御侧命中率来自 enemy.hitRate（由 enemy.distance 插值得到），
- *     但 distance 和 hitRate 原本都不在 ID 里，导致改距离后命中旧缓存。
- *   - distance 影响 decay（武器射程衰减）
- *   - hitRate  影响期望射击数
- *   二者都必须进 ID，否则改距离后 TTK 会算错。
- *
- *   ⚠️ 为什么 distance 和 hitRate 都要加？
- *     - 两个不同距离可能插值出同一个 hitRate（如 30m 和 100m 都是 1.0）
- *       → 只加 hitRate 会漏（decay 不同，TTK 不同）
- *     - 两个不同距离也可能 decay 相同（射程内）但 hitRate 不同
- *       → 只加 distance 会漏（hitRate 不同，TTK 不同）
- *     所以两个都加最稳。
  */
 export function makeDefenseId({
   enemyWeaponId,
@@ -624,22 +1475,23 @@ export function makeDefenseId({
   ourArmorValue,
   ourHelmetLevel,
   ourHelmetValue,
-  distance,        // ⭐ v6 新增
-  hitRate,         // ⭐ v6 新增
+  distance,
+  hitRate,
   scenarioHash,
 }) {
   const cid = (enemyConfigId || '#1').replace('#', '')
   const armorKey = `a${ourArmorLevel ?? 4}v${ourArmorValue ?? 0}`
   const helmetKey = `h${ourHelmetLevel ?? 4}v${ourHelmetValue ?? 0}`
-  const distKey = `d${Math.round(distance ?? 30)}`                          // ⭐ v6 新增
-  const hrKey = `hr${(hitRate ?? 0.85).toFixed(4)}`                         // ⭐ v6 新增
+  const distKey = `d${Math.round(distance ?? 30)}`
+  const hrKey = `hr${(hitRate ?? 0.85).toFixed(4)}`
   return `def_${enemyWeaponId}_${cid}_${enemyBulletId}_${armorKey}_${helmetKey}_${distKey}_${hrKey}_${scenarioHash}`
 }
 
-// ============================================================
-// 内部：场景哈希
-// ============================================================
+// ---------- 场景哈希 ----------
 
+/**
+ * 生成场景哈希
+ */
 export function makeScenarioHash(scenario) {
   const parts = []
 
@@ -657,10 +1509,10 @@ export function makeScenarioHash(scenario) {
   parts.push(String(scenario.healthValue ?? 100))
   parts.push(`v${MATRIX_VERSION}`)
 
-  return simpleHash(parts.join('|'))
+  return _simpleHash(parts.join('|'))
 }
 
-function simpleHash(str) {
+function _simpleHash(str) {
   let h = 0
   for (let i = 0; i < str.length; i++) {
     h = ((h << 5) - h) + str.charCodeAt(i)

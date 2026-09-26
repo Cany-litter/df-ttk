@@ -1501,7 +1501,7 @@ const clearWeaponDerivedData = async (weaponId) => {
   // ---------- 3. ⭐ v8：清 IndexedDB ----------
   let idbDeleted = 0
   try {
-    const { deleteMatrixEntriesByPrefix } = await import('@/core/TTKIndexedDB')
+    const { deleteMatrixEntriesByPrefix } = await import('@/core/TTKMatrix')
     idbDeleted = await deleteMatrixEntriesByPrefix(`atk_${weaponId}_`)
   } catch (e) {
     console.warn('⚠️ 清理 IndexedDB 缓存失败:', e)

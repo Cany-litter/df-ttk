@@ -425,7 +425,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { dataStore, paramsStore, equipStore } from '@/stores/stores'
 import { SimulationEngine } from '@/core/SimulationEngine'
-import { BulletStrategyFactory, setSeed } from '@/core/CombatCore'
+import { BulletStrategyFactory, setSeed } from '@/core/SimulationEngine'
 import { calculateCurrentValues } from '@/utils/weaponCalc'
 
 const props = defineProps({

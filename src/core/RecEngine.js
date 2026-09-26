@@ -8,9 +8,13 @@
 // 3. 准备敌人（含 _enemyArmed）
 // 4. 调 computeTTKMatrix 预计算矩阵（增量，走 IndexedDB）
 // 5. 从 IndexedDB 读回，组合 + 排序 + 去重
-// 6. 记录日志 + 导出
+// 6. 记录日志 + 打印结果
 //
-// 关键变化（相比旧版）：
+// ⭐ v2 改动（死代码清理）：
+//   - 删除 _makeScenarioHash 方法（纯转发，无调用）
+//   - 删除 exportResult 方法（无调用）
+//
+// ⭐ 关键变化（相比旧版）：
 // - 不再用 computeKeyPoints（已删除）
 // - 不再用 ttkCache（已删除）
 // - 改用 TTKMatrix + IndexedDB
@@ -830,15 +834,7 @@ export class RecEngine {
   }
 
   // ============================================================
-  // 6. 场景哈希（转发到 TTKMatrix）
-  // ============================================================
-
-  _makeScenarioHash(scenario) {
-    return makeScenarioHash(scenario)
-  }
-
-  // ============================================================
-  // 7. 工具：日志
+  // 6. 工具：日志
   // ============================================================
 
   _createLog(input, options) {
@@ -861,35 +857,8 @@ export class RecEngine {
   }
 
   // ============================================================
-  // 8. 导出推荐结果
+  // 7. 打印推荐结果
   // ============================================================
-
-  exportResult(result, input = null, options = {}) {
-    const data = {
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      input: input || result.log?.input || null,
-      recommendations: result.recommendations,
-      log: result.log,
-    }
-
-    const json = JSON.stringify(data, null, 2)
-    const blob = new Blob([json], { type: 'application/json;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '_')
-    const filename = options.filename || `rec_result_${timestamp}.json`
-
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-
-    console.log(`✅ 推荐结果已导出: ${filename} (${(json.length / 1024).toFixed(1)} KB)`)
-  }
 
   printResult(result) {
     const { recommendations, log } = result

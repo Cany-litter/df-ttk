@@ -2101,6 +2101,95 @@
       "allowedBullet": "5.8x42mm"
     },
     {
+      "id": 14,
+      "name": "M14",
+      "type": "精确射手步枪",
+      "ranges": [
+        40,
+        70,
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        0.8,
+        0.7,
+        0.7,
+        0.7
+      ],
+      "velocity": 575,
+      "flesh": 39,
+      "armor": 41,
+      "rof": 727,
+      "triggerDelay": 0,
+      "barrels": [
+        {
+          "name": "漫游标准枪管",
+          "rangeMult": 1.18,
+          "damageBonus": 0,
+          "armorDamageBonus": 0,
+          "rofMult": 1
+        },
+        {
+          "name": "洞察超长枪管",
+          "rangeMult": 1.3,
+          "damageBonus": 0,
+          "armorDamageBonus": 0,
+          "rofMult": 1
+        }
+      ],
+      "mult": {
+        "head": 1.9,
+        "chest": 1,
+        "stomach": 0.9,
+        "limbs": 0.4
+      },
+      "allowedBullet": "7.62x51mm"
+    },
+    {
+      "id": 49,
+      "name": "M700",
+      "type": "精确射手步枪",
+      "allowedBullet": "7.62x51mm",
+      "ranges": [
+        "Infinity",
+        "Infinity",
+        "Infinity",
+        "Infinity"
+      ],
+      "decays": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "velocity": 650,
+      "flesh": 61,
+      "armor": 58,
+      "rof": 420,
+      "triggerDelay": 0,
+      "barrels": [
+        {
+          "name": "一体消音枪管",
+          "rangeMult": 1,
+          "rangeAdd": 0,
+          "velocityAdd": 0,
+          "rofMult": 1.177,
+          "damageBonus": 0,
+          "armorDamageBonus": 0,
+          "triggerDelayDelta": 0,
+          "fireMode": "auto"
+        }
+      ],
+      "mult": {
+        "head": 2.5,
+        "chest": 1,
+        "stomach": 0.5,
+        "limbs": 0.25
+      }
+    },
+    {
       "id": 50,
       "name": "Marlin杠杆步枪",
       "type": "精确射手步枪",
@@ -2189,95 +2278,6 @@
         "stomach": 0.9,
         "limbs": 0.45
       }
-    },
-    {
-      "id": 49,
-      "name": "M700",
-      "type": "精确射手步枪",
-      "allowedBullet": "7.62x51mm",
-      "ranges": [
-        "Infinity",
-        "Infinity",
-        "Infinity",
-        "Infinity"
-      ],
-      "decays": [
-        1,
-        1,
-        1,
-        1,
-        1
-      ],
-      "velocity": 650,
-      "flesh": 61,
-      "armor": 58,
-      "rof": 420,
-      "triggerDelay": 0,
-      "barrels": [
-        {
-          "name": "一体消音枪管",
-          "rangeMult": 1,
-          "rangeAdd": 0,
-          "velocityAdd": 0,
-          "rofMult": 1.177,
-          "damageBonus": 0,
-          "armorDamageBonus": 0,
-          "triggerDelayDelta": 0,
-          "fireMode": "auto"
-        }
-      ],
-      "mult": {
-        "head": 2.5,
-        "chest": 1,
-        "stomach": 0.5,
-        "limbs": 0.25
-      }
-    },
-    {
-      "id": 14,
-      "name": "M14",
-      "type": "精确射手步枪",
-      "ranges": [
-        40,
-        70,
-        "Infinity",
-        "Infinity"
-      ],
-      "decays": [
-        1,
-        0.8,
-        0.7,
-        0.7,
-        0.7
-      ],
-      "velocity": 575,
-      "flesh": 39,
-      "armor": 41,
-      "rof": 727,
-      "triggerDelay": 0,
-      "barrels": [
-        {
-          "name": "漫游标准枪管",
-          "rangeMult": 1.18,
-          "damageBonus": 0,
-          "armorDamageBonus": 0,
-          "rofMult": 1
-        },
-        {
-          "name": "洞察超长枪管",
-          "rangeMult": 1.3,
-          "damageBonus": 0,
-          "armorDamageBonus": 0,
-          "rofMult": 1
-        }
-      ],
-      "mult": {
-        "head": 1.9,
-        "chest": 1,
-        "stomach": 0.9,
-        "limbs": 0.4
-      },
-      "allowedBullet": "7.62x51mm"
     },
     {
       "id": 48,
@@ -2449,30 +2449,12 @@
       "pen": 1,
       "price": 587,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -2492,30 +2474,12 @@
       "pen": 1,
       "price": 2317,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -2535,30 +2499,12 @@
       "pen": 1,
       "price": 5718,
       "armorData": {
-        "1": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1.1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1.1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 1.1,
-          "pen": 0
-        }
+        "1": { "armorMult": 1.1, "pen": 1 },
+        "2": { "armorMult": 1.1, "pen": 1 },
+        "3": { "armorMult": 1.1, "pen": 1 },
+        "4": { "armorMult": 1.1, "pen": 0.75 },
+        "5": { "armorMult": 1.1, "pen": 0.5 },
+        "6": { "armorMult": 1.1, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -2578,30 +2524,12 @@
       "pen": 0.75,
       "price": 162,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -2621,30 +2549,12 @@
       "pen": 1,
       "price": 419,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -2664,30 +2574,12 @@
       "pen": 0,
       "price": 248,
       "armorData": {
-        "1": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "2": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.15,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.15,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.15,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.4, "pen": 0 },
+        "2": { "armorMult": 0.3, "pen": 0 },
+        "3": { "armorMult": 0.2, "pen": 0 },
+        "4": { "armorMult": 0.15, "pen": 0 },
+        "5": { "armorMult": 0.15, "pen": 0 },
+        "6": { "armorMult": 0.15, "pen": 0 }
       },
       "partMult": {
         "head": 0.4,
@@ -2707,30 +2599,12 @@
       "pen": 1,
       "price": 590,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -2750,30 +2624,12 @@
       "pen": 0.5,
       "price": 43,
       "armorData": {
-        "1": {
-          "armorMult": 0.6,
-          "pen": 0.5
-        },
-        "2": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.6, "pen": 0.5 },
+        "2": { "armorMult": 0.6, "pen": 0 },
+        "3": { "armorMult": 0.4, "pen": 0 },
+        "4": { "armorMult": 0.3, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -2793,30 +2649,12 @@
       "pen": 0.75,
       "price": 116,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -2836,30 +2674,12 @@
       "pen": 1,
       "price": 596,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -2879,30 +2699,12 @@
       "pen": 0,
       "price": 935,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 0 },
+        "2": { "armorMult": 0.9, "pen": 0 },
+        "3": { "armorMult": 0.9, "pen": 0 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1.35,
@@ -2922,30 +2724,12 @@
       "pen": 1,
       "price": 2555,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -2965,30 +2749,12 @@
       "pen": 1,
       "price": 5652,
       "armorData": {
-        "1": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1.1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1.1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 1.1,
-          "pen": 0
-        }
+        "1": { "armorMult": 1.1, "pen": 1 },
+        "2": { "armorMult": 1.1, "pen": 1 },
+        "3": { "armorMult": 1.1, "pen": 1 },
+        "4": { "armorMult": 1.1, "pen": 0.75 },
+        "5": { "armorMult": 1.1, "pen": 0.5 },
+        "6": { "armorMult": 1.1, "pen": 0 }
       },
       "partMult": {
         "head": 0.85,
@@ -3008,30 +2774,12 @@
       "pen": 0.75,
       "price": 164,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -3051,30 +2799,12 @@
       "pen": 1,
       "price": 584,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -3094,30 +2824,12 @@
       "pen": 1,
       "price": 1145,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -3137,30 +2849,12 @@
       "pen": 0.5,
       "price": 23,
       "armorData": {
-        "1": {
-          "armorMult": 0.6,
-          "pen": 0.5
-        },
-        "2": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.6, "pen": 0.5 },
+        "2": { "armorMult": 0.6, "pen": 0 },
+        "3": { "armorMult": 0.4, "pen": 0 },
+        "4": { "armorMult": 0.3, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 1.05,
@@ -3180,30 +2874,12 @@
       "pen": 0,
       "price": 133,
       "armorData": {
-        "1": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "2": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.4, "pen": 0 },
+        "2": { "armorMult": 0.3, "pen": 0 },
+        "3": { "armorMult": 0.2, "pen": 0 },
+        "4": { "armorMult": 0.2, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 5.5,
@@ -3223,30 +2899,12 @@
       "pen": 0.75,
       "price": 65,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 4.8,
@@ -3266,30 +2924,12 @@
       "pen": 1,
       "price": 519,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -3309,30 +2949,12 @@
       "pen": 0,
       "price": 378,
       "armorData": {
-        "1": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "2": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.15,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.15,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.15,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.4, "pen": 0 },
+        "2": { "armorMult": 0.3, "pen": 0 },
+        "3": { "armorMult": 0.2, "pen": 0 },
+        "4": { "armorMult": 0.15, "pen": 0 },
+        "5": { "armorMult": 0.15, "pen": 0 },
+        "6": { "armorMult": 0.15, "pen": 0 }
       },
       "partMult": {
         "head": 1.3,
@@ -3352,30 +2974,12 @@
       "pen": 1,
       "price": 433,
       "armorData": {
-        "1": {
-          "armorMult": 0.75,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.75,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.75,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.75,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.43,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.35,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.75, "pen": 1 },
+        "2": { "armorMult": 0.75, "pen": 0.75 },
+        "3": { "armorMult": 0.75, "pen": 0.5 },
+        "4": { "armorMult": 0.75, "pen": 0 },
+        "5": { "armorMult": 0.43, "pen": 0 },
+        "6": { "armorMult": 0.35, "pen": 0 }
       },
       "partMult": {
         "head": 0.85,
@@ -3395,30 +2999,12 @@
       "pen": 1,
       "price": 551,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 4.8,
@@ -3438,30 +3024,12 @@
       "pen": 0,
       "price": 1760,
       "armorData": {
-        "1": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "2": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.6, "pen": 0 },
+        "2": { "armorMult": 0.6, "pen": 0 },
+        "3": { "armorMult": 0.6, "pen": 0 },
+        "4": { "armorMult": 0.6, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -3481,30 +3049,12 @@
       "pen": 1,
       "price": 440,
       "armorData": {
-        "1": {
-          "armorMult": 0.75,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.75,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.75,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.75,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.43,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.35,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.75, "pen": 1 },
+        "2": { "armorMult": 0.75, "pen": 0.75 },
+        "3": { "armorMult": 0.75, "pen": 0.5 },
+        "4": { "armorMult": 0.75, "pen": 0 },
+        "5": { "armorMult": 0.43, "pen": 0 },
+        "6": { "armorMult": 0.35, "pen": 0 }
       },
       "partMult": {
         "head": 0.85,
@@ -3524,30 +3074,12 @@
       "pen": 1,
       "price": 589,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -3567,30 +3099,12 @@
       "pen": 1,
       "price": 2707,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -3610,30 +3124,12 @@
       "pen": 1,
       "price": 3067,
       "armorData": {
-        "1": {
-          "armorMult": 0.1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 0.1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 0.1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 0.1,
-          "pen": 0.4
-        },
-        "6": {
-          "armorMult": 0.1,
-          "pen": 0.3
-        }
+        "1": { "armorMult": 0.1, "pen": 1 },
+        "2": { "armorMult": 0.1, "pen": 1 },
+        "3": { "armorMult": 0.1, "pen": 0.75 },
+        "4": { "armorMult": 0.1, "pen": 0.5 },
+        "5": { "armorMult": 0.1, "pen": 0.4 },
+        "6": { "armorMult": 0.1, "pen": 0.3 }
       },
       "partMult": {
         "head": 1.32,
@@ -3653,30 +3149,12 @@
       "pen": 1,
       "price": 5683,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 1 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1, "pen": 0.5 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -3696,30 +3174,12 @@
       "pen": 1,
       "price": 207,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -3739,30 +3199,12 @@
       "pen": 1,
       "price": 1170,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -3782,30 +3224,12 @@
       "pen": 1,
       "price": 2253,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -3825,30 +3249,12 @@
       "pen": 1,
       "price": 822,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1.25,
@@ -3868,30 +3274,12 @@
       "pen": 1,
       "price": 4162,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 1 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1, "pen": 0.5 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -3911,30 +3299,12 @@
       "pen": 1,
       "price": 3821,
       "armorData": {
-        "1": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1.1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1.1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 1.1,
-          "pen": 0
-        }
+        "1": { "armorMult": 1.1, "pen": 1 },
+        "2": { "armorMult": 1.1, "pen": 1 },
+        "3": { "armorMult": 1.1, "pen": 1 },
+        "4": { "armorMult": 1.1, "pen": 0.75 },
+        "5": { "armorMult": 1.1, "pen": 0.5 },
+        "6": { "armorMult": 1.1, "pen": 0 }
       },
       "partMult": {
         "head": 1.25,
@@ -3954,30 +3324,12 @@
       "pen": 0,
       "price": 764,
       "armorData": {
-        "1": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "2": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.4, "pen": 0 },
+        "2": { "armorMult": 0.3, "pen": 0 },
+        "3": { "armorMult": 0.2, "pen": 0 },
+        "4": { "armorMult": 0.2, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 1.5,
@@ -3997,30 +3349,12 @@
       "pen": 1,
       "price": 1213,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4040,30 +3374,12 @@
       "pen": 1,
       "price": 3275,
       "armorData": {
-        "1": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1.1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1.1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 1.1,
-          "pen": 0
-        }
+        "1": { "armorMult": 1.1, "pen": 1 },
+        "2": { "armorMult": 1.1, "pen": 1 },
+        "3": { "armorMult": 1.1, "pen": 1 },
+        "4": { "armorMult": 1.1, "pen": 0.75 },
+        "5": { "armorMult": 1.1, "pen": 0.5 },
+        "6": { "armorMult": 1.1, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4083,30 +3399,12 @@
       "pen": 0.5,
       "price": 40,
       "armorData": {
-        "1": {
-          "armorMult": 0.6,
-          "pen": 0.5
-        },
-        "2": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.6, "pen": 0.5 },
+        "2": { "armorMult": 0.6, "pen": 0 },
+        "3": { "armorMult": 0.4, "pen": 0 },
+        "4": { "armorMult": 0.3, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -4126,30 +3424,12 @@
       "pen": 0.75,
       "price": 100,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -4169,30 +3449,12 @@
       "pen": 1,
       "price": 384,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4212,30 +3474,12 @@
       "pen": 1,
       "price": 1891,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4255,30 +3499,12 @@
       "pen": 1,
       "price": 5189,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 1 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1, "pen": 0.5 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4298,30 +3524,12 @@
       "pen": 0.5,
       "price": 35,
       "armorData": {
-        "1": {
-          "armorMult": 0.6,
-          "pen": 0.5
-        },
-        "2": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.6, "pen": 0.5 },
+        "2": { "armorMult": 0.6, "pen": 0 },
+        "3": { "armorMult": 0.4, "pen": 0 },
+        "4": { "armorMult": 0.3, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -4341,30 +3549,12 @@
       "pen": 0.75,
       "price": 79,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -4384,30 +3574,12 @@
       "pen": 1,
       "price": 526,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4427,30 +3599,12 @@
       "pen": 1,
       "price": 1941,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4470,30 +3624,12 @@
       "pen": 1,
       "price": 5317,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 1 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1, "pen": 0.5 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4513,30 +3649,12 @@
       "pen": 0.5,
       "price": 38,
       "armorData": {
-        "1": {
-          "armorMult": 0.6,
-          "pen": 0.5
-        },
-        "2": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.6, "pen": 0.5 },
+        "2": { "armorMult": 0.6, "pen": 0 },
+        "3": { "armorMult": 0.4, "pen": 0 },
+        "4": { "armorMult": 0.3, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -4556,30 +3674,12 @@
       "pen": 0.75,
       "price": 97,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -4599,30 +3699,12 @@
       "pen": 1,
       "price": 540,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4642,30 +3724,12 @@
       "pen": 0,
       "price": 547,
       "armorData": {
-        "1": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "2": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.4, "pen": 0 },
+        "2": { "armorMult": 0.3, "pen": 0 },
+        "3": { "armorMult": 0.2, "pen": 0 },
+        "4": { "armorMult": 0.2, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 1.4,
@@ -4685,30 +3749,12 @@
       "pen": 1,
       "price": 2343,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4728,30 +3774,12 @@
       "pen": 1,
       "price": 5417,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 1 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1, "pen": 0.5 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4771,30 +3799,12 @@
       "pen": 0.75,
       "price": 99,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -4814,30 +3824,12 @@
       "pen": 1,
       "price": 568,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4857,30 +3849,12 @@
       "pen": 1,
       "price": 2723,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4900,30 +3874,12 @@
       "pen": 1,
       "price": 5845,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 1 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1, "pen": 0.5 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4943,30 +3899,12 @@
       "pen": 1,
       "price": 2744,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -4986,30 +3924,12 @@
       "pen": 1,
       "price": 5454,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 1 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1, "pen": 0.5 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5029,30 +3949,12 @@
       "pen": 0.5,
       "price": 43,
       "armorData": {
-        "1": {
-          "armorMult": 0.6,
-          "pen": 0.5
-        },
-        "2": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.6, "pen": 0.5 },
+        "2": { "armorMult": 0.6, "pen": 0 },
+        "3": { "armorMult": 0.4, "pen": 0 },
+        "4": { "armorMult": 0.3, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -5072,30 +3974,12 @@
       "pen": 0.75,
       "price": 111,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -5115,30 +3999,12 @@
       "pen": 1,
       "price": 506,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 0.75 },
+        "3": { "armorMult": 1, "pen": 0.5 },
+        "4": { "armorMult": 1, "pen": 0 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5158,30 +4024,12 @@
       "pen": 1,
       "price": 1821,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5201,30 +4049,12 @@
       "pen": 1,
       "price": 5646,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 1 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1, "pen": 0.5 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5244,30 +4074,12 @@
       "pen": 0.75,
       "price": 114,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -5287,30 +4099,12 @@
       "pen": 1,
       "price": 628,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 0.75 },
+        "3": { "armorMult": 1, "pen": 0.5 },
+        "4": { "armorMult": 1, "pen": 0 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5330,30 +4124,12 @@
       "pen": 1,
       "price": 1418,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5373,30 +4149,12 @@
       "pen": 1,
       "price": 6067,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 1 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1, "pen": 0.5 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5416,30 +4174,12 @@
       "pen": 1,
       "price": 602,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 0.75 },
+        "3": { "armorMult": 1, "pen": 0.5 },
+        "4": { "armorMult": 1, "pen": 0 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5459,30 +4199,12 @@
       "pen": 1,
       "price": 2410,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5502,30 +4224,12 @@
       "pen": 1,
       "price": 5854,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 1 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1, "pen": 0.5 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5545,30 +4249,12 @@
       "pen": 0.5,
       "price": 32,
       "armorData": {
-        "1": {
-          "armorMult": 0.6,
-          "pen": 0.5
-        },
-        "2": {
-          "armorMult": 0.6,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.6, "pen": 0.5 },
+        "2": { "armorMult": 0.6, "pen": 0 },
+        "3": { "armorMult": 0.4, "pen": 0 },
+        "4": { "armorMult": 0.3, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -5588,30 +4274,12 @@
       "pen": 0.75,
       "price": 85,
       "armorData": {
-        "1": {
-          "armorMult": 0.7,
-          "pen": 0.75
-        },
-        "2": {
-          "armorMult": 0.7,
-          "pen": 0.5
-        },
-        "3": {
-          "armorMult": 0.7,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.3,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.7, "pen": 0.75 },
+        "2": { "armorMult": 0.7, "pen": 0.5 },
+        "3": { "armorMult": 0.7, "pen": 0 },
+        "4": { "armorMult": 0.5, "pen": 0 },
+        "5": { "armorMult": 0.4, "pen": 0 },
+        "6": { "armorMult": 0.3, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -5631,30 +4299,12 @@
       "pen": 1,
       "price": 501,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5674,30 +4324,12 @@
       "pen": 0,
       "price": 698,
       "armorData": {
-        "1": {
-          "armorMult": 0.4,
-          "pen": 0
-        },
-        "2": {
-          "armorMult": 0.3,
-          "pen": 0
-        },
-        "3": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "4": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.2,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.2,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.4, "pen": 0 },
+        "2": { "armorMult": 0.3, "pen": 0 },
+        "3": { "armorMult": 0.2, "pen": 0 },
+        "4": { "armorMult": 0.2, "pen": 0 },
+        "5": { "armorMult": 0.2, "pen": 0 },
+        "6": { "armorMult": 0.2, "pen": 0 }
       },
       "partMult": {
         "head": 1.4,
@@ -5717,30 +4349,12 @@
       "pen": 1,
       "price": 1816,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5760,30 +4374,12 @@
       "pen": 1,
       "price": 344,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.5
-        },
-        "4": {
-          "armorMult": 0.9,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.75 },
+        "3": { "armorMult": 0.9, "pen": 0.5 },
+        "4": { "armorMult": 0.9, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1.1,
@@ -5803,30 +4399,12 @@
       "pen": 1,
       "price": 2481,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.5
-        },
-        "5": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0.5 },
+        "5": { "armorMult": 1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5846,30 +4424,12 @@
       "pen": 1,
       "price": 4939,
       "armorData": {
-        "1": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1.1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1.1,
-          "pen": 0.5
-        },
-        "6": {
-          "armorMult": 1.1,
-          "pen": 0
-        }
+        "1": { "armorMult": 1.1, "pen": 1 },
+        "2": { "armorMult": 1.1, "pen": 1 },
+        "3": { "armorMult": 1.1, "pen": 1 },
+        "4": { "armorMult": 1.1, "pen": 0.75 },
+        "5": { "armorMult": 1.1, "pen": 0.5 },
+        "6": { "armorMult": 1.1, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5889,30 +4449,12 @@
       "pen": 1,
       "price": 799,
       "armorData": {
-        "1": {
-          "armorMult": 0.9,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 0.9,
-          "pen": 0.9
-        },
-        "3": {
-          "armorMult": 0.9,
-          "pen": 0.75
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0
-        },
-        "5": {
-          "armorMult": 0.5,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.4,
-          "pen": 0
-        }
+        "1": { "armorMult": 0.9, "pen": 1 },
+        "2": { "armorMult": 0.9, "pen": 0.9 },
+        "3": { "armorMult": 0.9, "pen": 0.75 },
+        "4": { "armorMult": 1, "pen": 0 },
+        "5": { "armorMult": 0.5, "pen": 0 },
+        "6": { "armorMult": 0.4, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5932,30 +4474,12 @@
       "pen": 1,
       "price": 1994,
       "armorData": {
-        "1": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1,
-          "pen": 0.9
-        },
-        "4": {
-          "armorMult": 1,
-          "pen": 0.75
-        },
-        "5": {
-          "armorMult": 1.1,
-          "pen": 0
-        },
-        "6": {
-          "armorMult": 0.6,
-          "pen": 0
-        }
+        "1": { "armorMult": 1, "pen": 1 },
+        "2": { "armorMult": 1, "pen": 1 },
+        "3": { "armorMult": 1, "pen": 0.9 },
+        "4": { "armorMult": 1, "pen": 0.75 },
+        "5": { "armorMult": 1.1, "pen": 0 },
+        "6": { "armorMult": 0.6, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -5975,30 +4499,12 @@
       "pen": 1,
       "price": 6664,
       "armorData": {
-        "1": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "2": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "3": {
-          "armorMult": 1.1,
-          "pen": 1
-        },
-        "4": {
-          "armorMult": 1.1,
-          "pen": 0.9
-        },
-        "5": {
-          "armorMult": 1.1,
-          "pen": 0.75
-        },
-        "6": {
-          "armorMult": 1.1,
-          "pen": 0
-        }
+        "1": { "armorMult": 1.1, "pen": 1 },
+        "2": { "armorMult": 1.1, "pen": 1 },
+        "3": { "armorMult": 1.1, "pen": 1 },
+        "4": { "armorMult": 1.1, "pen": 0.9 },
+        "5": { "armorMult": 1.1, "pen": 0.75 },
+        "6": { "armorMult": 1.1, "pen": 0 }
       },
       "partMult": {
         "head": 1,
@@ -6490,7 +4996,7 @@
             0.5
           ],
           "enabled": true,
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 396
         }
       ]
@@ -6807,7 +5313,7 @@
           ],
           "enabled": true,
           "bullet": "",
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 338
         }
       ]
@@ -6835,7 +5341,7 @@
           "enabled": true,
           "muzzleId": 3,
           "bullet": "",
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 342
         }
       ]
@@ -6891,7 +5397,7 @@
           "enabled": true,
           "muzzleId": 3,
           "bullet": "",
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 343
         }
       ]
@@ -6918,7 +5424,7 @@
           ],
           "enabled": true,
           "muzzleId": 3,
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 418
         }
       ]
@@ -7001,7 +5507,7 @@
           ],
           "enabled": true,
           "muzzleId": 3,
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 340
         }
       ]
@@ -7057,7 +5563,7 @@
           ],
           "enabled": true,
           "bullet": "",
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 308,
           "muzzleId": 3
         }
@@ -7113,7 +5619,7 @@
             0.5
           ],
           "enabled": true,
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 425,
           "muzzleId": 0
         }
@@ -7175,6 +5681,61 @@
       ]
     },
     {
+      "weaponId": 14,
+      "weaponName": "M14",
+      "configs": [
+        {
+          "id": "#1",
+          "barrel": "洞察超长枪管",
+          "muzzle": "无",
+          "buildCode": "M14射手步枪-烽火地带-6L7HJR005506E7BV9G8G5",
+          "price": 890000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.8,
+            0.45
+          ],
+          "enabled": true,
+          "precision": 0.09,
+          "aimSpeed": 437
+        }
+      ]
+    },
+    {
+      "weaponId": 49,
+      "weaponName": "M700",
+      "configs": [
+        {
+          "id": "#1",
+          "barrelId": -1,
+          "barrel": "一体消音枪管",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "buildCode": "M700狙击步枪-烽火地带-6L8MOO005506E7BV9G8G5",
+          "price": 450000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.95,
+            0.8
+          ],
+          "bullet": "",
+          "enabled": true,
+          "precision": 0.09,
+          "aimSpeed": 374
+        }
+      ]
+    },
+    {
       "weaponId": 50,
       "weaponName": "Marlin杠杆步枪",
       "configs": [
@@ -7204,61 +5765,6 @@
       ]
     },
     {
-      "weaponId": 49,
-      "weaponName": "M700",
-      "configs": [
-        {
-          "id": "#1",
-          "barrelId": -1,
-          "barrel": "一体消音枪管",
-          "muzzleId": 0,
-          "muzzle": "无",
-          "buildCode": "M700狙击步枪-烽火地带-6L8MOO005506E7BV9G8G5",
-          "price": 450000,
-          "distance": [
-            30,
-            50,
-            100
-          ],
-          "hitRate": [
-            1,
-            0.95,
-            0.8
-          ],
-          "bullet": "",
-          "enabled": true,
-          "precision": 0,
-          "aimSpeed": 374
-        }
-      ]
-    },
-    {
-      "weaponId": 14,
-      "weaponName": "M14",
-      "configs": [
-        {
-          "id": "#1",
-          "barrel": "洞察超长枪管",
-          "muzzle": "无",
-          "buildCode": "M14射手步枪-烽火地带-6L7HJR005506E7BV9G8G5",
-          "price": 890000,
-          "distance": [
-            30,
-            50,
-            100
-          ],
-          "hitRate": [
-            1,
-            0.8,
-            0.45
-          ],
-          "enabled": true,
-          "precision": 0,
-          "aimSpeed": 437
-        }
-      ]
-    },
-    {
       "weaponId": 48,
       "weaponName": "SVCH",
       "configs": [
@@ -7282,7 +5788,7 @@
           ],
           "bullet": "",
           "enabled": true,
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 383
         }
       ]
@@ -7337,7 +5843,7 @@
             0.25
           ],
           "enabled": true,
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 397
         }
       ]
@@ -8170,6 +6676,486 @@
     },
     "scoreEquips": [
       {
+        "armorId": "armor_4_1789274589259",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "重型突击背心",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 5,
+        "armorValue": 125,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589259",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "重型突击背心",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 5,
+        "armorValue": 125,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589259",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "重型突击背心",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 5,
+        "armorValue": 125,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589261",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "Hvk-2防弹衣",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 5,
+        "armorValue": 115,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589261",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "Hvk-2防弹衣",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 5,
+        "armorValue": 115,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589261",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "Hvk-2防弹衣",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 5,
+        "armorValue": 115,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589260",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "FS复合防弹衣",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 5,
+        "armorValue": 105,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589260",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "FS复合防弹衣",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 5,
+        "armorValue": 105,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589260",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "FS复合防弹衣",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 5,
+        "armorValue": 105,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589262",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "精英防弹背心",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 5,
+        "armorValue": 95,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589262",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "精英防弹背心",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 5,
+        "armorValue": 95,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589262",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "精英防弹背心",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 5,
+        "armorValue": 95,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589259",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "重型突击背心",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 5,
+        "armorValue": 125,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589259",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "重型突击背心",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 5,
+        "armorValue": 125,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589259",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "重型突击背心",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 5,
+        "armorValue": 125,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589261",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "Hvk-2防弹衣",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 5,
+        "armorValue": 115,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589261",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "Hvk-2防弹衣",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 5,
+        "armorValue": 115,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589261",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "Hvk-2防弹衣",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 5,
+        "armorValue": 115,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589260",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "FS复合防弹衣",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 5,
+        "armorValue": 105,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589260",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "FS复合防弹衣",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 5,
+        "armorValue": 105,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589260",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "FS复合防弹衣",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 5,
+        "armorValue": 105,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589262",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "精英防弹背心",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 5,
+        "armorValue": 95,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589262",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "精英防弹背心",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 5,
+        "armorValue": 95,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589262",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "精英防弹背心",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 5,
+        "armorValue": 95,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589259",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "重型突击背心",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 5,
+        "armorValue": 125,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589259",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "重型突击背心",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 5,
+        "armorValue": 125,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589261",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "Hvk-2防弹衣",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 5,
+        "armorValue": 115,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589261",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "Hvk-2防弹衣",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 5,
+        "armorValue": 115,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589260",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "FS复合防弹衣",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 5,
+        "armorValue": 105,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589260",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "FS复合防弹衣",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 5,
+        "armorValue": 105,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589262",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "精英防弹背心",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 5,
+        "armorValue": 95,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589262",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "精英防弹背心",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 5,
+        "armorValue": 95,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589259",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "重型突击背心",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 5,
+        "armorValue": 125,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589261",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "Hvk-2防弹衣",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 5,
+        "armorValue": 115,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589260",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "FS复合防弹衣",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 5,
+        "armorValue": 105,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589262",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "精英防弹背心",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 5,
+        "armorValue": 95,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589263",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "MK-2战术背心",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 4,
+        "armorValue": 110,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589263",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "MK-2战术背心",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 4,
+        "armorValue": 110,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589263",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "MK-2战术背心",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 4,
+        "armorValue": 110,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589264",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "DT-AVS防弹衣",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 4,
+        "armorValue": 100,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589264",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "DT-AVS防弹衣",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 4,
+        "armorValue": 100,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589264",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "DT-AVS防弹衣",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 4,
+        "armorValue": 100,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589265",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "突击手防弹背心",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 4,
+        "armorValue": 90,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589265",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "突击手防弹背心",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 4,
+        "armorValue": 90,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589265",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "突击手防弹背心",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 4,
+        "armorValue": 90,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589266",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "HMP特勤防弹衣",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 4,
+        "armorValue": 80,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589266",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "HMP特勤防弹衣",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 4,
+        "armorValue": 80,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589266",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "HMP特勤防弹衣",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 4,
+        "armorValue": 80,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
         "armorId": "armor_4_1789274589263",
         "helmetId": "helmet_4_1789274589288",
         "armorName": "MK-2战术背心",
@@ -8178,12 +7164,602 @@
         "armorValue": 110,
         "helmetLevel": 4,
         "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589263",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "MK-2战术背心",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 4,
+        "armorValue": 110,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589263",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "MK-2战术背心",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 4,
+        "armorValue": 110,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589264",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "DT-AVS防弹衣",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 4,
+        "armorValue": 100,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589264",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "DT-AVS防弹衣",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 4,
+        "armorValue": 100,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589264",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "DT-AVS防弹衣",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 4,
+        "armorValue": 100,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589265",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "突击手防弹背心",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 4,
+        "armorValue": 90,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589265",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "突击手防弹背心",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 4,
+        "armorValue": 90,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589265",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "突击手防弹背心",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 4,
+        "armorValue": 90,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589266",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "HMP特勤防弹衣",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 4,
+        "armorValue": 80,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589266",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "HMP特勤防弹衣",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 4,
+        "armorValue": 80,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589266",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "HMP特勤防弹衣",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 4,
+        "armorValue": 80,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589263",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "MK-2战术背心",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 4,
+        "armorValue": 110,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589263",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "MK-2战术背心",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 4,
+        "armorValue": 110,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589264",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "DT-AVS防弹衣",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 4,
+        "armorValue": 100,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589264",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "DT-AVS防弹衣",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 4,
+        "armorValue": 100,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589265",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "突击手防弹背心",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 4,
+        "armorValue": 90,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589265",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "突击手防弹背心",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 4,
+        "armorValue": 90,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589266",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "HMP特勤防弹衣",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 4,
+        "armorValue": 80,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589266",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "HMP特勤防弹衣",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 4,
+        "armorValue": 80,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589263",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "MK-2战术背心",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 4,
+        "armorValue": 110,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589264",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "DT-AVS防弹衣",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 4,
+        "armorValue": 100,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589265",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "突击手防弹背心",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 4,
+        "armorValue": 90,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589266",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "HMP特勤防弹衣",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 4,
+        "armorValue": 80,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589268",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "射手战术背心",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 3,
+        "armorValue": 85,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589268",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "射手战术背心",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 3,
+        "armorValue": 85,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589268",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "射手战术背心",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 3,
+        "armorValue": 85,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589269",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "TG-H防弹衣",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 3,
+        "armorValue": 75,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589269",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "TG-H防弹衣",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 3,
+        "armorValue": 75,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589269",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "TG-H防弹衣",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 3,
+        "armorValue": 75,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589270",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "Hvk快拆防弹衣",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 3,
+        "armorValue": 60,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589270",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "Hvk快拆防弹衣",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 3,
+        "armorValue": 60,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589270",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "Hvk快拆防弹衣",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 3,
+        "armorValue": 60,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589271",
+        "helmetId": "helmet_4_1789274589285",
+        "armorName": "制式防弹背心",
+        "helmetName": "GN重型头盔",
+        "armorLevel": 3,
+        "armorValue": 50,
+        "helmetLevel": 5,
+        "helmetValue": 50
+      },
+      {
+        "armorId": "armor_4_1789274589271",
+        "helmetId": "helmet_4_1789274589282",
+        "armorName": "制式防弹背心",
+        "helmetName": "H09防暴头盔",
+        "armorLevel": 3,
+        "armorValue": 50,
+        "helmetLevel": 5,
+        "helmetValue": 45
+      },
+      {
+        "armorId": "armor_4_1789274589271",
+        "helmetId": "helmet_4_1789274589283",
+        "armorName": "制式防弹背心",
+        "helmetName": "DICH-1战术头盔",
+        "armorLevel": 3,
+        "armorValue": 50,
+        "helmetLevel": 5,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589268",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "射手战术背心",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 3,
+        "armorValue": 85,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589268",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "射手战术背心",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 3,
+        "armorValue": 85,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589268",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "射手战术背心",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 3,
+        "armorValue": 85,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589269",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "TG-H防弹衣",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 3,
+        "armorValue": 75,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589269",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "TG-H防弹衣",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 3,
+        "armorValue": 75,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589269",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "TG-H防弹衣",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 3,
+        "armorValue": 75,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589270",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "Hvk快拆防弹衣",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 3,
+        "armorValue": 60,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589270",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "Hvk快拆防弹衣",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 3,
+        "armorValue": 60,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589270",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "Hvk快拆防弹衣",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 3,
+        "armorValue": 60,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589271",
+        "helmetId": "helmet_4_1789274589288",
+        "armorName": "制式防弹背心",
+        "helmetName": "GT1战术头盔",
+        "armorLevel": 3,
+        "armorValue": 50,
+        "helmetLevel": 4,
+        "helmetValue": 48
+      },
+      {
+        "armorId": "armor_4_1789274589271",
+        "helmetId": "helmet_4_1789274589286",
+        "armorName": "制式防弹背心",
+        "helmetName": "DICH训练头盔",
+        "armorLevel": 3,
+        "armorValue": 50,
+        "helmetLevel": 4,
+        "helmetValue": 35
+      },
+      {
+        "armorId": "armor_4_1789274589271",
+        "helmetId": "helmet_4_1789274589289",
+        "armorName": "制式防弹背心",
+        "helmetName": "MHS战术头盔",
+        "armorLevel": 3,
+        "armorValue": 50,
+        "helmetLevel": 4,
+        "helmetValue": 30
+      },
+      {
+        "armorId": "armor_4_1789274589268",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "射手战术背心",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 3,
+        "armorValue": 85,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589268",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "射手战术背心",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 3,
+        "armorValue": 85,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589269",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "TG-H防弹衣",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 3,
+        "armorValue": 75,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589269",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "TG-H防弹衣",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 3,
+        "armorValue": 75,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589270",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "Hvk快拆防弹衣",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 3,
+        "armorValue": 60,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589270",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "Hvk快拆防弹衣",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 3,
+        "armorValue": 60,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589271",
+        "helmetId": "helmet_4_1789274589292",
+        "armorName": "制式防弹背心",
+        "helmetName": "DAS防弹头盔",
+        "armorLevel": 3,
+        "armorValue": 50,
+        "helmetLevel": 3,
+        "helmetValue": 40
+      },
+      {
+        "armorId": "armor_4_1789274589271",
+        "helmetId": "helmet_3_1789274589291",
+        "armorName": "制式防弹背心",
+        "helmetName": "MC201防弹头盔",
+        "armorLevel": 3,
+        "armorValue": 50,
+        "helmetLevel": 3,
+        "helmetValue": 34
+      },
+      {
+        "armorId": "armor_4_1789274589268",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "射手战术背心",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 3,
+        "armorValue": 85,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589269",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "TG-H防弹衣",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 3,
+        "armorValue": 75,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589270",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "Hvk快拆防弹衣",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 3,
+        "armorValue": 60,
+        "helmetLevel": 1,
+        "helmetValue": 12
+      },
+      {
+        "armorId": "armor_4_1789274589271",
+        "helmetId": "helmet_3_1789274589296",
+        "armorName": "制式防弹背心",
+        "helmetName": "户外棒球帽",
+        "armorLevel": 3,
+        "armorValue": 50,
+        "helmetLevel": 1,
+        "helmetValue": 12
       }
     ]
   },
   "weaponScores": {
     "20_#1": {
-      "score": 565.283763056369,
+      "score": 587.4430748327983,
       "grade": "A",
       "meta": {
         "weaponId": 20,
@@ -8193,7 +7769,7 @@
         "barrelId": 1,
         "muzzle": "冲锋枪回声消音器",
         "muzzleId": 3,
-        "precision": 0,
+        "precision": 0.09,
         "bulletId": "",
         "bulletName": "",
         "bulletLevel": null,
@@ -8205,8 +7781,54 @@
         "enabled": true
       }
     },
+    "49_#1": {
+      "score": 619.0665734592511,
+      "grade": "A",
+      "meta": {
+        "weaponId": 49,
+        "weaponName": "M700",
+        "configId": "#1",
+        "barrel": "一体消音枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M700狙击步枪-烽火地带-6L8MOO005506E7BV9G8G5",
+        "aimSpeed": 374,
+        "price": 450000,
+        "havocCost": 416177.50590699754,
+        "enabled": true
+      }
+    },
+    "48_#1": {
+      "score": 645.1965983015189,
+      "grade": "A",
+      "meta": {
+        "weaponId": 48,
+        "weaponName": "SVCH",
+        "configId": "#1",
+        "barrel": "碳钎长枪管+镀铬爆发枪机",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SVCH精确射手步枪-烽火地带-6L8M6Q005506E7BV9G8G5",
+        "aimSpeed": 383,
+        "price": 510000,
+        "havocCost": 471680.6112315604,
+        "enabled": true
+      }
+    },
     "12_#1": {
-      "score": 641.238085174309,
+      "score": 661.2500428356813,
       "grade": "A",
       "meta": {
         "weaponId": 12,
@@ -8228,8 +7850,31 @@
         "enabled": true
       }
     },
+    "40_#1": {
+      "score": 669.2333369749887,
+      "grade": "A",
+      "meta": {
+        "weaponId": 40,
+        "weaponName": "Vector",
+        "configId": "#1",
+        "barrel": "长剑超长枪管组合",
+        "barrelId": 1,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "Vector冲锋枪-烽火地带-6LA9LRG05506E7BV9G8G5",
+        "aimSpeed": 308,
+        "price": 490000,
+        "havocCost": 625893.3712891098,
+        "enabled": true
+      }
+    },
     "5_#1": {
-      "score": 666.710500813756,
+      "score": 672.2229027793621,
       "grade": "A",
       "meta": {
         "weaponId": 5,
@@ -8246,13 +7891,82 @@
         "bulletPrice": 0,
         "buildCode": "AS Val突击步枪-烽火地带-6LB5Q7805506E7BV9G8G5",
         "aimSpeed": 314,
-        "price": 420000,
-        "havocCost": 616822.812115495,
+        "price": 460000,
+        "havocCost": 524907.2875003514,
+        "enabled": true
+      }
+    },
+    "13_#1": {
+      "score": 673.0923477655687,
+      "grade": "A",
+      "meta": {
+        "weaponId": 13,
+        "weaponName": "KC17",
+        "configId": "#1",
+        "barrel": "长剑枪管",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "KC17突击步枪-烽火地带-6LA50VO05506E7BV9G8G5",
+        "aimSpeed": 368,
+        "price": 380000,
+        "havocCost": 434769.1995920243,
+        "enabled": true
+      }
+    },
+    "6_#1": {
+      "score": 674.7548683650676,
+      "grade": "A",
+      "meta": {
+        "weaponId": 6,
+        "weaponName": "ASh-12",
+        "configId": "#1",
+        "barrel": "战斧重型枪管",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "ASh-12战斗步枪-烽火地带-6L9V56G05506E7BV9G8G5",
+        "aimSpeed": 348,
+        "price": 470000,
+        "havocCost": 534402.133754842,
+        "enabled": true
+      }
+    },
+    "21_#1": {
+      "score": 676.8682421815341,
+      "grade": "A",
+      "meta": {
+        "weaponId": 21,
+        "weaponName": "MK47",
+        "configId": "#1",
+        "barrel": "鏖战枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "MK47突击步枪-烽火地带-6LA7T7005506E7BV9G8G5",
+        "aimSpeed": 348,
+        "price": 750000,
+        "havocCost": 662352.5676928406,
         "enabled": true
       }
     },
     "11_#1": {
-      "score": 687.876538966152,
+      "score": 703.5445628034884,
       "grade": "A",
       "meta": {
         "weaponId": 11,
@@ -8269,19 +7983,19 @@
         "bulletPrice": 0,
         "buildCode": "K416突击步枪-烽火地带-6L9TPL005506E7BV9G8G5",
         "aimSpeed": 308,
-        "price": 320000,
-        "havocCost": 414748.8880191827,
+        "price": 310000,
+        "havocCost": 408048.8880191827,
         "enabled": true
       }
     },
-    "4_#1": {
-      "score": 694.3408304889062,
+    "18_#1": {
+      "score": 711.7397930329653,
       "grade": "A",
       "meta": {
-        "weaponId": 4,
-        "weaponName": "AR57",
+        "weaponId": 18,
+        "weaponName": "M7",
         "configId": "#1",
-        "barrel": "AR57激流超长枪管",
+        "barrel": "堤风超长枪管组合",
         "barrelId": 1,
         "muzzle": "无",
         "muzzleId": 0,
@@ -8290,16 +8004,16 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "AR57突击步枪-烽火地带-6LDOTE805506E7BV9G8G5",
-        "aimSpeed": 368,
-        "price": 380000,
-        "havocCost": 481745.1665342763,
+        "buildCode": "M7战斗步枪-烽火地带-6LA53FC05506E7BV9G8G5",
+        "aimSpeed": 396,
+        "price": 970000,
+        "havocCost": 901107.6700335977,
         "enabled": true
       }
     },
     "1_#1": {
-      "score": 698.680561989205,
-      "grade": "B",
+      "score": 713.8855920664054,
+      "grade": "A",
       "meta": {
         "weaponId": 1,
         "weaponName": "AK12",
@@ -8315,13 +8029,36 @@
         "bulletPrice": 0,
         "buildCode": "AK-12突击步枪-烽火地带-6L9UMHG05506E7BV9G8G5",
         "aimSpeed": 327,
-        "price": 230000,
-        "havocCost": 345437.3642215233,
+        "price": 200000,
+        "havocCost": 325337.3642215233,
+        "enabled": true
+      }
+    },
+    "4_#1": {
+      "score": 715.0376607728881,
+      "grade": "B",
+      "meta": {
+        "weaponId": 4,
+        "weaponName": "AR57",
+        "configId": "#1",
+        "barrel": "AR57激流超长枪管",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "AR57突击步枪-烽火地带-6LDOTE805506E7BV9G8G5",
+        "aimSpeed": 368,
+        "price": 430000,
+        "havocCost": 528645.1665342762,
         "enabled": true
       }
     },
     "17_#1": {
-      "score": 705.8178240890924,
+      "score": 726.3358446121332,
       "grade": "B",
       "meta": {
         "weaponId": 17,
@@ -8338,14 +8075,14 @@
         "bulletPrice": 0,
         "buildCode": "M4A1突击步枪-烽火地带-6LA4E4005506E7BV9G8G5",
         "aimSpeed": 308,
-        "price": 220000,
-        "havocCost": 348859.231184195,
+        "price": 210000,
+        "havocCost": 342159.231184195,
         "enabled": true
       }
     },
     "47_#1": {
-      "score": 707.0476569244424,
-      "grade": "A",
+      "score": 731.9652436886619,
+      "grade": "B",
       "meta": {
         "weaponId": 47,
         "weaponName": "MDR",
@@ -8362,12 +8099,12 @@
         "buildCode": "MDR突击步枪-烽火地带-6LDOVSG05506E7BV9G8G5",
         "aimSpeed": 369,
         "price": 500000,
-        "havocCost": 369240.33462282387,
+        "havocCost": 466736.1893025782,
         "enabled": true
       }
     },
     "35_#1": {
-      "score": 707.193775023748,
+      "score": 733.9623021591442,
       "grade": "B",
       "meta": {
         "weaponId": 35,
@@ -8384,14 +8121,37 @@
         "bulletPrice": 0,
         "buildCode": "SCAR-H战斗步枪-烽火地带-6LA889O05506E7BV9G8G5",
         "aimSpeed": 361,
-        "price": 300000,
-        "havocCost": 334364.21234539425,
+        "price": 260000,
+        "havocCost": 307564.21234539425,
+        "enabled": true
+      }
+    },
+    "23_#1": {
+      "score": 739.6356039318154,
+      "grade": "A",
+      "meta": {
+        "weaponId": 23,
+        "weaponName": "MP7",
+        "configId": "#1",
+        "barrel": "蜂刺长枪管组合",
+        "barrelId": 1,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "MP7冲锋枪-烽火地带-6LA9CUO05506E7BV9G8G5",
+        "aimSpeed": 343,
+        "price": 550000,
+        "havocCost": 495590.5617722895,
         "enabled": true
       }
     },
     "7_#1": {
-      "score": 721.7605859987186,
-      "grade": "A",
+      "score": 745.1779943474384,
+      "grade": "B",
       "meta": {
         "weaponId": 7,
         "weaponName": "AUG",
@@ -8412,9 +8172,78 @@
         "enabled": true
       }
     },
+    "38_#1": {
+      "score": 749.9556709102782,
+      "grade": "A",
+      "meta": {
+        "weaponId": 38,
+        "weaponName": "SR-3M",
+        "configId": "#1",
+        "barrel": "SR-3M铸钢战术枪管",
+        "barrelId": 0,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SR-3M紧凑突击步枪-烽火地带-6L7H3RC05506E7BV9G8G5",
+        "aimSpeed": 340,
+        "price": 400000,
+        "havocCost": 510413.6908185645,
+        "enabled": true
+      }
+    },
+    "14_#1": {
+      "score": 750.4780546107512,
+      "grade": "A",
+      "meta": {
+        "weaponId": 14,
+        "weaponName": "M14",
+        "configId": "#1",
+        "barrel": "洞察超长枪管",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M14射手步枪-烽火地带-6L7HJR005506E7BV9G8G5",
+        "aimSpeed": 437,
+        "price": 890000,
+        "havocCost": 740530.5804260989,
+        "enabled": true
+      }
+    },
+    "28_#1": {
+      "score": 761.2279252032679,
+      "grade": "B",
+      "meta": {
+        "weaponId": 28,
+        "weaponName": "QJB201",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "QJB201轻机枪-烽火地带-6L7HDU805506E7BV9G8G5",
+        "aimSpeed": 359,
+        "price": 360000,
+        "havocCost": 506166.0121691006,
+        "enabled": true
+      }
+    },
     "41_#1": {
-      "score": 738.1083627184926,
-      "grade": "C",
+      "score": 762.5503604184254,
+      "grade": "B",
       "meta": {
         "weaponId": 41,
         "weaponName": "腾龙",
@@ -8430,37 +8259,14 @@
         "bulletPrice": 0,
         "buildCode": "腾龙突击步枪-烽火地带-6L9UNPS05506E7BV9G8G5",
         "aimSpeed": 361,
-        "price": 280000,
-        "havocCost": 461957.5083530493,
-        "enabled": true
-      }
-    },
-    "19_#1": {
-      "score": 738.8373896150416,
-      "grade": "A",
-      "meta": {
-        "weaponId": 19,
-        "weaponName": "MCX-LT",
-        "configId": "#1",
-        "barrel": "MCX LT焰魂枪管-隔热网",
-        "barrelId": 0,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "MCX LT突击步枪-烽火地带-6LA59HG05506E7BV9G8G5",
-        "aimSpeed": 365,
-        "price": 280000,
-        "havocCost": 423561.728374421,
+        "price": 240000,
+        "havocCost": 435157.5083530493,
         "enabled": true
       }
     },
     "27_#1": {
-      "score": 748.5558237697597,
-      "grade": "C",
+      "score": 764.2785627536462,
+      "grade": "B",
       "meta": {
         "weaponId": 27,
         "weaponName": "QBZ95-1",
@@ -8476,13 +8282,82 @@
         "bulletPrice": 0,
         "buildCode": "QBZ95-1突击步枪-烽火地带-6LA797S05506E7BV9G8G5",
         "aimSpeed": 326,
-        "price": 180000,
-        "havocCost": 389616.6113945717,
+        "price": 170000,
+        "havocCost": 382916.6113945717,
+        "enabled": true
+      }
+    },
+    "16_#1": {
+      "score": 766.0975775154554,
+      "grade": "A",
+      "meta": {
+        "weaponId": 16,
+        "weaponName": "M250",
+        "configId": "#1",
+        "barrel": "钛金长枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M250通用机枪-烽火地带-6L7H9OK05506E7BV9G8G5",
+        "aimSpeed": 425,
+        "price": 740000,
+        "havocCost": 738825.6322047147,
+        "enabled": true
+      }
+    },
+    "36_#1": {
+      "score": 772.5948192413193,
+      "grade": "C",
+      "meta": {
+        "weaponId": 36,
+        "weaponName": "SG552",
+        "configId": "#1",
+        "barrel": "猎犬枪管",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SG552突击步枪-烽火地带-6LDOSI005506E7BV9G8G5",
+        "aimSpeed": 327,
+        "price": 110000,
+        "havocCost": 281623.55955969385,
+        "enabled": true
+      }
+    },
+    "19_#1": {
+      "score": 773.1770765243593,
+      "grade": "C",
+      "meta": {
+        "weaponId": 19,
+        "weaponName": "MCX-LT",
+        "configId": "#1",
+        "barrel": "MCX LT焰魂枪管-隔热网",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "MCX LT突击步枪-烽火地带-6LA59HG05506E7BV9G8G5",
+        "aimSpeed": 365,
+        "price": 300000,
+        "havocCost": 436961.728374421,
         "enabled": true
       }
     },
     "2_#1": {
-      "score": 752.6962928213252,
+      "score": 774.1811328620495,
       "grade": "C",
       "meta": {
         "weaponId": 2,
@@ -8499,13 +8374,36 @@
         "bulletPrice": 0,
         "buildCode": "AKM突击步枪-烽火地带-6LDJTI005506E7BV9G8G5",
         "aimSpeed": 322,
-        "price": 300000,
-        "havocCost": 377488.7133308621,
+        "price": 260000,
+        "havocCost": 350688.7133308621,
+        "enabled": true
+      }
+    },
+    "26_#1": {
+      "score": 776.5841777990007,
+      "grade": "C",
+      "meta": {
+        "weaponId": 26,
+        "weaponName": "PTR-32",
+        "configId": "#1",
+        "barrel": "G3加强长枪管组合",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "PTR-32突击步枪-烽火地带-6LA6UCS05506E7BV9G8G5",
+        "aimSpeed": 321,
+        "price": 190000,
+        "havocCost": 310687.0958002206,
         "enabled": true
       }
     },
     "46_#1": {
-      "score": 756.9473842474001,
+      "score": 777.3502433984112,
       "grade": "C",
       "meta": {
         "weaponId": 46,
@@ -8527,14 +8425,83 @@
         "enabled": true
       }
     },
-    "36_#1": {
-      "score": 759.3864803869294,
-      "grade": "A",
+    "31_#1": {
+      "score": 782.1693897463173,
+      "grade": "C",
       "meta": {
-        "weaponId": 36,
-        "weaponName": "SG552",
+        "weaponId": 31,
+        "weaponName": "QCQ171",
         "configId": "#1",
-        "barrel": "猎犬枪管",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "QCQ171冲锋枪-烽火地带-6LA9FM405506E7BV9G8G5",
+        "aimSpeed": 343,
+        "price": 450000,
+        "havocCost": 486541.0573819702,
+        "enabled": true
+      }
+    },
+    "25_#1": {
+      "score": 782.5964468066325,
+      "grade": "C",
+      "meta": {
+        "weaponId": 25,
+        "weaponName": "PKM",
+        "configId": "#1",
+        "barrel": "地平线重枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "PKM通用机枪-烽火地带-6LAE4I005506E7BV9G8G5",
+        "aimSpeed": 430,
+        "price": 260000,
+        "havocCost": 412616.61789740925,
+        "enabled": true
+      }
+    },
+    "52_#1": {
+      "score": 791.1991453303665,
+      "grade": "C",
+      "meta": {
+        "weaponId": 52,
+        "weaponName": "93r",
+        "configId": "#1",
+        "barrel": "HVK鼬鼠冲锋枪套件",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "93R-烽火地带-6LCIS9405506E7BV9G8G5",
+        "aimSpeed": 243,
+        "price": 90000,
+        "havocCost": 240091.26959421503,
+        "enabled": true
+      }
+    },
+    "34_#1": {
+      "score": 799.0003214622147,
+      "grade": "C",
+      "meta": {
+        "weaponId": 34,
+        "weaponName": "RM277",
+        "configId": "#1",
+        "barrel": "RM277重型一体枪管",
         "barrelId": 1,
         "muzzle": "无",
         "muzzleId": 0,
@@ -8543,15 +8510,84 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "SG552突击步枪-烽火地带-6LDOSI005506E7BV9G8G5",
-        "aimSpeed": 327,
-        "price": 140000,
-        "havocCost": 301723.55955969385,
+        "buildCode": "RM277突击步枪-烽火地带-6LA86TC05506E7BV9G8G5",
+        "aimSpeed": 386,
+        "price": 270000,
+        "havocCost": 433209.5901172751,
+        "enabled": true
+      }
+    },
+    "15_#1": {
+      "score": 809.9574197320107,
+      "grade": "C",
+      "meta": {
+        "weaponId": 15,
+        "weaponName": "M249",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M249轻机枪-烽火地带-6LBB2VO05506E7BV9G8G5",
+        "aimSpeed": 338,
+        "price": 100000,
+        "havocCost": 272656.9021532431,
+        "enabled": true
+      }
+    },
+    "9_#1": {
+      "score": 816.0303503880896,
+      "grade": "C",
+      "meta": {
+        "weaponId": 9,
+        "weaponName": "G3",
+        "configId": "#1",
+        "barrel": "G3飓风短枪管组合",
+        "barrelId": 3,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "G3战斗步枪-烽火地带-6LDO7T805506E7BV9G8G5",
+        "aimSpeed": 383,
+        "price": 210000,
+        "havocCost": 274222.1122051191,
+        "enabled": true
+      }
+    },
+    "24_#1": {
+      "score": 816.5600214621967,
+      "grade": "A",
+      "meta": {
+        "weaponId": 24,
+        "weaponName": "P90",
+        "configId": "#1",
+        "barrel": "重攻长枪管",
+        "barrelId": 0,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "P90冲锋枪-烽火地带-6LA9DT405506E7BV9G8G5",
+        "aimSpeed": 418,
+        "price": 360000,
+        "havocCost": 514323.95418999565,
         "enabled": true
       }
     },
     "51_#1": {
-      "score": 787.9241763607732,
+      "score": 821.1677433699008,
       "grade": "D",
       "meta": {
         "weaponId": 51,
@@ -8568,59 +8604,13 @@
         "bulletPrice": 0,
         "buildCode": "M16A4突击步枪-烽火地带-6LBBG3405506E7BV9G8G5",
         "aimSpeed": 359,
-        "price": 90000,
-        "havocCost": 242487.6099761152,
-        "enabled": true
-      }
-    },
-    "9_#1": {
-      "score": 791.1215705913439,
-      "grade": "A",
-      "meta": {
-        "weaponId": 9,
-        "weaponName": "G3",
-        "configId": "#1",
-        "barrel": "G3飓风短枪管组合",
-        "barrelId": 3,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "G3战斗步枪-烽火地带-6LDO7T805506E7BV9G8G5",
-        "aimSpeed": 383,
-        "price": 220000,
-        "havocCost": 260822.1122051191,
-        "enabled": true
-      }
-    },
-    "15_#1": {
-      "score": 793.8770078572298,
-      "grade": "A",
-      "meta": {
-        "weaponId": 15,
-        "weaponName": "M249",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "M249轻机枪-烽火地带-6LBB2VO05506E7BV9G8G5",
-        "aimSpeed": 338,
-        "price": 130000,
-        "havocCost": 304167.946262545,
+        "price": 100000,
+        "havocCost": 249187.6099761152,
         "enabled": true
       }
     },
     "37_#1": {
-      "score": 831.451480197049,
+      "score": 856.0847468486104,
       "grade": "D",
       "meta": {
         "weaponId": 37,
@@ -8637,14 +8627,37 @@
         "bulletPrice": 0,
         "buildCode": "SMG-45冲锋枪-烽火地带-6LBB73S05506E7BV9G8G5",
         "aimSpeed": 265,
-        "price": 120000,
-        "havocCost": 323323.1514447337,
+        "price": 110000,
+        "havocCost": 316623.1514447337,
+        "enabled": true
+      }
+    },
+    "44_#1": {
+      "score": 944.1683931098853,
+      "grade": "B",
+      "meta": {
+        "weaponId": 44,
+        "weaponName": "勇士",
+        "configId": "#1",
+        "barrel": "勇士海狸枪管",
+        "barrelId": 0,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "勇士冲锋枪-烽火地带-6LA99F405506E7BV9G8G5",
+        "aimSpeed": 338,
+        "price": 140000,
+        "havocCost": 290073.333935391,
         "enabled": true
       }
     },
     "22_#1": {
-      "score": 961.896473844447,
-      "grade": "A",
+      "score": 982.163963444651,
+      "grade": "D",
       "meta": {
         "weaponId": 22,
         "weaponName": "MP5",
@@ -8660,36 +8673,13 @@
         "bulletPrice": 0,
         "buildCode": "MP5冲锋枪-烽火地带-6LDP26005506E7BV9G8G5",
         "aimSpeed": 317,
-        "price": 130000,
-        "havocCost": 301637.8755856367,
-        "enabled": true
-      }
-    },
-    "3_#1": {
-      "score": 1040.2034677753309,
-      "grade": "A",
-      "meta": {
-        "weaponId": 3,
-        "weaponName": "AKS-74U",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "AKS-74U突击步枪-烽火地带-6LBAUDO05506E7BV9G8G5",
-        "aimSpeed": 289,
-        "price": 20000,
-        "havocCost": 261142.94155505276,
+        "price": 160000,
+        "havocCost": 318665.0356112071,
         "enabled": true
       }
     },
     "3_#2": {
-      "score": 1599.0445807599742,
+      "score": 1022.0428273768962,
       "grade": "D",
       "meta": {
         "weaponId": 3,
@@ -8708,6 +8698,144 @@
         "aimSpeed": 335,
         "price": 110000,
         "havocCost": 264986.54237998795,
+        "enabled": true
+      }
+    },
+    "50_#1": {
+      "score": 1056.0251142961295,
+      "grade": "D",
+      "meta": {
+        "weaponId": 50,
+        "weaponName": "Marlin杠杆步枪",
+        "configId": "#1",
+        "barrel": "猎鹿人枪管-蜂鸟杠杆",
+        "barrelId": 2,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "杠杆式步枪-烽火地带-6LAE61405506E7BV9G8G5",
+        "aimSpeed": 386,
+        "price": 230000,
+        "havocCost": 249186.78874570935,
+        "enabled": true
+      }
+    },
+    "45_#1": {
+      "score": 1127.6961012788418,
+      "grade": "D",
+      "meta": {
+        "weaponId": 45,
+        "weaponName": "野牛",
+        "configId": "#1",
+        "barrel": "野牛刀锋超长枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "野牛冲锋枪-烽火地带-6LBAVR005506E7BV9G8G5",
+        "aimSpeed": 289,
+        "price": 20000,
+        "havocCost": 269310.520473493,
+        "enabled": true
+      }
+    },
+    "10_#1": {
+      "score": 1468.9070504442095,
+      "grade": "D",
+      "meta": {
+        "weaponId": 10,
+        "weaponName": "G18",
+        "configId": "#1",
+        "barrel": "冲击长枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "G18-CFG1",
+        "aimSpeed": 397,
+        "price": 130000,
+        "havocCost": 374120.79014323436,
+        "enabled": true
+      }
+    },
+    "8_#1": {
+      "score": 1540.20495952167,
+      "grade": "D",
+      "meta": {
+        "weaponId": 8,
+        "weaponName": "CAR-15",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "CAR-15突击步枪-烽火地带-6LB8QVO05506E7BV9G8G5",
+        "aimSpeed": 314,
+        "price": 20000,
+        "havocCost": 282085.9769479637,
+        "enabled": true
+      }
+    },
+    "39_#1": {
+      "score": 1608.6660825286378,
+      "grade": "D",
+      "meta": {
+        "weaponId": 39,
+        "weaponName": "UZI",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "UZI冲锋枪-烽火地带-6LBB1OC05506E7BV9G8G5",
+        "aimSpeed": 250,
+        "price": 20000,
+        "havocCost": 261398.10689490495,
+        "enabled": true
+      }
+    },
+    "3_#1": {
+      "score": 1619.8965479518572,
+      "grade": "D",
+      "meta": {
+        "weaponId": 3,
+        "weaponName": "AKS-74U",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "AKS-74U突击步枪-烽火地带-6LBAUDO05506E7BV9G8G5",
+        "aimSpeed": 289,
+        "price": 20000,
+        "havocCost": 261142.94155505276,
         "enabled": true
       }
     }

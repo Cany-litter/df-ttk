@@ -370,7 +370,6 @@
 import { ref, computed, onMounted, onBeforeUnmount, provide, nextTick, watch } from 'vue'
 import { dataStore, paramsStore, appStore, equipStore } from '@/stores/stores'
 import { SimulationEngine } from '@/core/SimulationEngine'
-import { computeTTK } from '@/core/FastTTK'
 
 import {
   computeSingleTTK,
@@ -379,7 +378,7 @@ import {
   computeDistanceSeries,
   buildArmedWeapons,
   computeDistanceWeightedAvg,
-} from '@/core/TTKCalculator'
+} from '@/core/FastTTK'
 
 import { getEquipScoreEngine, EquipScoreEngine } from '@/core/EquipScoreEngine'
 
@@ -707,7 +706,7 @@ const clearDirtyWeaponCaches = async () => {
 
   let totalDeleted = 0
   try {
-    const { deleteMatrixEntriesByPrefix } = await import('@/core/TTKIndexedDB')
+    const { deleteMatrixEntriesByPrefix } = await import('@/core/TTKMatrix')
     for (const wid of dirtyIds) {
       try {
         const deleted = await deleteMatrixEntriesByPrefix(`atk_${wid}_`)
@@ -1015,76 +1014,6 @@ watch(
   { deep: true }
 )
 
-// ============================================================
-// 单枪 TTK 更新（备用函数）
-//
-// ⭐ v7.4：保留此函数作为"完整单枪更新"的备用实现。
-//   目前不再被"更新评分"按钮主动调用（那个只用 recomputeSingleWeaponScores）。
-//   未来如果需要"更新单枪折线图/柱状图/哈弗币"，可以复用。
-// ============================================================
-
-const updateSingleWeaponTTK = async (weaponId, onProgress) => {
-  const dm = dataStore.getDataManager()
-  const params = paramsStore.state
-
-  const weapon = dataStore.getWeaponById(weaponId)
-  if (!weapon) {
-    console.warn(`⚠️ updateSingleWeaponTTK: 未找到武器 ${weaponId}`)
-    return { success: false, newDistanceStats: [] }
-  }
-
-  const allConfigRows = dataStore.getPriceRowsForWeapon(weaponId)
-  if (allConfigRows.length === 0) {
-    console.warn(`⚠️ updateSingleWeaponTTK: 武器 ${weaponId} 无配置`)
-    return { success: false, newDistanceStats: [] }
-  }
-
-  const { armed, attachments } = buildArmedWeapons(allConfigRows, dm)
-
-  const newDistanceStats = []
-  const totalConfigs = armed.length
-
-  for (let idx = 0; idx < armed.length; idx++) {
-    const weaponArmed = armed[idx]
-    const attachment = attachments[idx] || {}
-    const configId = attachment.configId || '#1'
-
-    const price = dm.getPriceByWeaponId(weaponId)
-    const config = price?.configs.find(c => c.id === configId)
-
-    if (config) {
-      const { times, shots, anySuccess } = await computeDistanceSeries(
-        weaponArmed,
-        attachment,
-        config,
-        params,
-        dm,
-        distances.value
-      )
-
-      if (anySuccess && config.enabled !== false) {
-        const weightedAvg = computeDistanceWeightedAvg(times, distances.value)
-
-        newDistanceStats.push({
-          weapon: weaponArmed,
-          times,
-          shots,
-          displayName: weaponArmed._displayName || weaponArmed.name,
-          weightedAvg
-        })
-      }
-    }
-
-    if (typeof onProgress === 'function') {
-      onProgress(idx + 1, totalConfigs)
-    }
-
-    await new Promise(resolve => setTimeout(resolve, 0))
-  }
-
-  return { success: true, newDistanceStats }
-}
-
 /**
  * ⭐ v7.4 / v8：更新单把武器的评分
  *
@@ -1120,7 +1049,7 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
     // ⭐ v8：问题 1 - 重算前清理该武器的 IndexedDB 缓存
     if (dataStore.isWeaponModified(weaponId)) {
       try {
-        const { deleteMatrixEntriesByPrefix } = await import('@/core/TTKIndexedDB')
+        const { deleteMatrixEntriesByPrefix } = await import('@/core/TTKMatrix')
         const deleted = await deleteMatrixEntriesByPrefix(`atk_${weaponId}_`)
         if (deleted > 0) {
           console.log(`🧹 已清空武器 ${weaponId} 的 ${deleted} 条缓存（强制重算）`)
@@ -1467,7 +1396,7 @@ const resetData = async () => {
     await clearMatrix()
     console.log('🗑️ 已清空 TTK 矩阵缓存')
 
-    const { clearRecPanelState } = await import('@/core/TTKIndexedDB')
+    const { clearRecPanelState } = await import('@/core/TTKMatrix')
     await clearRecPanelState()
     console.log('🗑️ 已清空配装面板状态（假想敌 + 预算）')
 

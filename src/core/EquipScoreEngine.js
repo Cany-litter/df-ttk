@@ -1,11 +1,28 @@
 // src/core/EquipScoreEngine.js
 //
-// 综合评分引擎
+// 综合评分引擎（含评分缓存）
 //
-// 职责：
+// ⭐ v10 改动（合并优化）：
+//   - EquipScoreCache.js 已被合并进本文件
+//   - makeScoreCacheId / makeScoreScenarioHash / getScoreEntry
+//     / setScoreEntries / makeScoreCacheMeta / ScoreCacheScheduler
+//     / SCORE_CACHE_BATCH_SIZE 现在都在本文件里
+//   - 对外 API 完全不变（getEquipScoreEngine / EquipScoreEngine 等）
+//
+// ⭐ v11 改动（死代码清理）：
+//   - 删除 getScoreEntries（无引用）
+//
+// ⭐ v12 改动（修复 import 路径）：
+//   - TTKCalculator.js 已被合并进 FastTTK.js
+//   - computeSingleTTK / getKeyDistances / interpolateKeyPoints
+//     / buildArmedWeapons / computeDistanceWeightedAvg
+//     现在从 './FastTTK.js' 导入
+//
+// ⭐ 职责：
 // - 对每个武器配置 × 每套装备，算"综合评分"（含开镜权重）
 // - 多套装备等权平均 → 最终评分
 // - 所有配置排序 → 分档 A/B/C/D
+// - 提供单条 TTK 的读写缓存（原 EquipScoreCache 的职责）
 //
 // ⭐ 评分算法（两层加权）：
 //
@@ -28,45 +45,22 @@
 //     50%~75% → C
 //     后 25% → D
 //
-//   ⭐ 为什么用分位数而不是线性 t？
-//     - 线性 t 在配置数少时分布不均（比如 3 个配置）
-//     - 分位数保证每档数量接近 25%（更符合"相对优劣"直觉）
-//
-// ⭐ v9 改动（修复 v8 的分档 bug）：
+// ⭐ v9 已有：
 //   - computeScores 新增 skipGrades 参数
-//     · skipGrades = false（默认）：返回 { key: { score, grade } }（已分档）
-//     · skipGrades = true：返回 { key: number }（未分档的原始评分）
-//   - computeScoresForWeapon 调用 computeScores 时传 skipGrades: true
-//     · 拿到 rawScores（{ key: number }）
-//     · 有 globalRange → 用 _applyGradesWithGlobalRange 分档
-//     · 无 globalRange → 用 _applyGrades 做"当前武器相对分档"
-//
-//   ⚠️ v8 的 bug：
-//     computeScoresForWeapon 把 computeScores 的返回值（已分档的 { key: {score, grade} }）
-//     当作 rawScores 传给 _applyGradesWithGlobalRange，
-//     导致 _applyGradesWithGlobalRange 里 `s` 是对象，isFinite(s) 为 false，
-//     全部归 D 档，且 result[k].score 是对象，最终 WeaponTable 渲染时崩溃。
+//   - computeScoresForWeapon 传 skipGrades: true，拿原始 { key: number }
 //
 // ⭐ v8 已有：
-//   - 问题 3 / 15：新增 _applyGradesWithGlobalRange，单武器分档与全量对齐
+//   - 问题 3 / 15：新增 _applyGradesWithGlobalRange
 //   - 问题 4：computeScoresForWeapon 返回结构变化（带 empty / reason）
 //   - 问题 7：constructor 加 dataManager 校验
 //   - 问题 9：分档改为分位数法
 //   - 问题 10：非法 weaponId 检查
-//   - 问题 11：meta 用 v2 精简版
-//
-// ⭐ v6.1 已有：
-//   - totalSteps 精确计算（进度条）
-// ⭐ v6.2 已有：
-//   - onProgress 前检查 signal.cancelled
-// ⭐ v6.3 已有：
-//   - 单套评分加上 aimWeight × aimSpeed
+//   - 问题 11：meta 用精简版
 //
 // ⭐ 依赖：
-// - TTKCalculator：computeSingleTTK / getKeyDistances / interpolateKeyPoints
-//                 / buildArmedWeapons / computeDistanceWeightedAvg
-// - EquipScoreCache：makeScoreCacheId / makeScoreScenarioHash
-//                   / getScoreEntry / ScoreCacheScheduler / makeScoreCacheMeta
+// - FastTTK：computeSingleTTK / getKeyDistances / interpolateKeyPoints
+//            / buildArmedWeapons / computeDistanceWeightedAvg
+// - TTKMatrix：makeAttackId / makeScenarioHash / getMatrixEntry / setMatrixEntries
 
 import {
   computeSingleTTK,
@@ -74,15 +68,14 @@ import {
   interpolateKeyPoints,
   buildArmedWeapons,
   computeDistanceWeightedAvg,
-} from './TTKCalculator.js'
+} from './FastTTK.js'
 
 import {
-  makeScoreCacheId,
-  makeScoreScenarioHash,
-  getScoreEntry,
-  ScoreCacheScheduler,
-  makeScoreCacheMeta,
-} from './EquipScoreCache.js'
+  getMatrixEntry,
+  setMatrixEntries,
+  makeAttackId,
+  makeScenarioHash,
+} from './TTKMatrix.js'
 
 // ============================================================
 // 常量
@@ -100,8 +93,240 @@ const GRADE_QUANTILES = [0.25, 0.50, 0.75]
 /** 让出主线程的节奏（每算 N 个关键点 await 一次） */
 const YIELD_EVERY_N_POINTS = 50
 
+/** 批量写入阈值（攒够这么多条就 flush 一次） */
+export const SCORE_CACHE_BATCH_SIZE = 200
+
 // ============================================================
-// 评分引擎
+// ============ 评分缓存（原 EquipScoreCache.js）==============
+// ============================================================
+//
+// ⭐ 为什么复用攻击侧 key？
+//   评分要算的"单条 TTK" = 我方武器打某套装备的 TTK，
+//   这与推荐引擎的"攻击侧 TTK"（我方武器 → 敌人）语义完全一致。
+//   敌人在这里被抽象为"一套装备"（armorLevel/Value + helmetLevel/Value + distance）。
+//   复用 key 后：
+//     1. 与推荐引擎共享同一个 IndexedDB，不重复占空间
+//     2. 用户跑过推荐后再看评分，大量缓存直接命中
+//     3. 评分与推荐用完全一样的缓存失效规则（scenarioHash / MATRIX_VERSION）
+//
+// ⭐ 缓存 key 结构（复用 makeAttackId）：
+//   atk_{weaponId}_{configId}_{bulletId}_a{armorLv}v{armorVal}_h{helmetLv}v{helmetVal}_d{distance}_{scenarioHash}
+
+/**
+ * 生成评分缓存的单条 key
+ *
+ * ⭐ 复用 makeAttackId：把"一套装备"当作"一个敌人"
+ */
+export function makeScoreCacheId({
+  weaponId,
+  configId,
+  bulletId,
+  equip,
+  distance,
+  scenarioHash,
+}) {
+  const fakeEnemy = {
+    name: '__score__',   // name 不进 key，给个占位
+    armorLevel: equip.armorLevel,
+    armorValue: equip.armorValue,
+    helmetLevel: equip.helmetLevel,
+    helmetValue: equip.helmetValue,
+    distance,
+  }
+
+  return makeAttackId({
+    weaponId,
+    configId,
+    bulletId,
+    enemy: fakeEnemy,
+    scenarioHash,
+  })
+}
+
+/**
+ * 生成场景哈希（转发 TTKMatrix.makeScenarioHash）
+ */
+export function makeScoreScenarioHash(scenario) {
+  return makeScenarioHash(scenario)
+}
+
+/**
+ * 读取单条评分缓存
+ *
+ * @returns {Promise<Object|null>} { id, ttk, shots, hits, meta, cachedAt } 或 null
+ */
+export async function getScoreEntry(id) {
+  return await getMatrixEntry(id)
+}
+
+/**
+ * 批量写入评分缓存
+ *
+ * ⭐ 转发 TTKMatrix.setMatrixEntries（内部已分片事务）
+ */
+export async function setScoreEntries(entries) {
+  if (!Array.isArray(entries) || entries.length === 0) return 0
+  return await setMatrixEntries(entries)
+}
+
+/**
+ * ⭐ v2：组装单条缓存记录的 meta 字段（精简版）
+ *
+ * 精简原则：
+ *   - 只保留"参与 key 计算"或"排查必须"的字段
+ *   - 删掉所有名字字段（weaponName / bulletName / bulletLevel）
+ *
+ * 保留字段：
+ *   - type / weaponId / configId / bulletId
+ *   - armorLevel / armorValue / helmetLevel / helmetValue
+ *   - distance / scenarioHash
+ *
+ * 相比旧版：每条 meta 从 ~200 字节降到 ~80 字节（省 60%）
+ */
+export function makeScoreCacheMeta({
+  weaponMeta,
+  bulletMeta,
+  equip,
+  distance,
+  scenarioHash,
+}) {
+  return {
+    type: 'score',
+    weaponId: weaponMeta.weaponId,
+    configId: weaponMeta.configId,
+    bulletId: bulletMeta.bulletId,
+    armorLevel: equip.armorLevel,
+    armorValue: equip.armorValue,
+    helmetLevel: equip.helmetLevel,
+    helmetValue: equip.helmetValue,
+    distance,
+    scenarioHash,
+  }
+}
+
+/**
+ * 批量写入调度器
+ *
+ * ⭐ 用途：
+ *   评分引擎在循环里调用 add()，攒够 BATCH_SIZE 条自动 flush，
+ *   循环结束后调用 flush() 把剩余写入。
+ *   避免在循环里手动判断"攒够没"。
+ *
+ * ⭐ 用法：
+ *   const scheduler = new ScoreCacheScheduler()
+ *   ...
+ *   scheduler.add({ id, ttk, shots, hits, meta })
+ *   ...
+ *   await scheduler.flush()
+ *
+ * ⭐ v2 新增：
+ *   - 记录 totalFlushed / totalFailed / totalAdded
+ *   - getStats() 返回统计信息
+ *   - flush 失败时不抛异常，只记录
+ *
+ * ⭐ 注意：
+ *   - add() 不 await，是同步的（只 push 到内部数组）
+ *   - flush() 是 async，真正写 IndexedDB
+ *   - 同一个 scheduler 实例不要并发 flush（内部没有锁）
+ */
+export class ScoreCacheScheduler {
+  constructor(batchSize = SCORE_CACHE_BATCH_SIZE) {
+    this.batchSize = batchSize
+    this.buffer = []
+
+    // ⭐ v2：统计
+    this.totalAdded = 0      // 累计加入的条数
+    this.totalFlushed = 0    // 累计成功写入的条数
+    this.totalFailed = 0     // 累计写入失败的条数
+    this.flushCount = 0      // flush 调用次数
+  }
+
+  /**
+   * 添加一条记录（同步）
+   *
+   * @param {Object} entry - { id, ttk, shots, hits, meta }
+   * @returns {Promise<boolean>} 是否触发了 flush
+   */
+  add(entry) {
+    if (!entry || !entry.id) return Promise.resolve(false)
+
+    this.buffer.push(entry)
+    this.totalAdded++
+
+    if (this.buffer.length >= this.batchSize) {
+      return this.flush().then(() => true)
+    }
+    return Promise.resolve(false)
+  }
+
+  /**
+   * 立即写入当前缓冲区（async）
+   *
+   * ⭐ v2：失败时记录到 totalFailed，不抛异常
+   *
+   * @returns {Promise<number>} 本次成功写入条数
+   */
+  async flush() {
+    if (this.buffer.length === 0) return 0
+
+    const batch = this.buffer
+    this.buffer = []
+    this.flushCount++
+
+    try {
+      const written = await setScoreEntries(batch)
+      const failed = batch.length - written
+
+      this.totalFlushed += written
+      this.totalFailed += failed
+
+      if (failed > 0) {
+        console.warn(
+          `⚠️ ScoreCacheScheduler.flush: 本批 ${batch.length} 条，成功 ${written}，失败 ${failed}`
+        )
+      }
+
+      return written
+    } catch (e) {
+      // 整体失败：全部计入失败
+      this.totalFailed += batch.length
+      console.warn(`⚠️ ScoreCacheScheduler.flush 异常: ${e}`)
+      return 0
+    }
+  }
+
+  /**
+   * 当前缓冲区条数（用于进度显示）
+   */
+  get pendingCount() {
+    return this.buffer.length
+  }
+
+  /**
+   * 累计已写入条数
+   */
+  get flushedCount() {
+    return this.totalFlushed
+  }
+
+  /**
+   * ⭐ v2：获取完整统计
+   *
+   * @returns {Object} { added, flushed, failed, pending, flushCount }
+   */
+  getStats() {
+    return {
+      added: this.totalAdded,
+      flushed: this.totalFlushed,
+      failed: this.totalFailed,
+      pending: this.buffer.length,
+      flushCount: this.flushCount,
+    }
+  }
+}
+
+// ============================================================
+// ============ 评分引擎 =====================================
 // ============================================================
 
 export class EquipScoreEngine {
@@ -116,7 +341,7 @@ export class EquipScoreEngine {
   /**
    * 计算综合评分（全量：所有 configs × equips）
    *
-   * ⭐ v9：新增 skipGrades 参数
+   * ⭐ v9：skipGrades 参数
    *
    * @param {Object} options
    * @param {Array} options.configs - 启用的配置
@@ -344,23 +569,11 @@ export class EquipScoreEngine {
    * ⭐ v9 改动：
    *   - 调用 computeScores 时传 skipGrades: true，拿到原始 { key: number }
    *   - 无 globalRange 时正确退回"当前武器相对分档"（用 _applyGrades）
-   *   - 修掉了 v8 里"把已分档结果当 rawScores 用"的 bug
    *
    * ⭐ v8 已有：
    *   - 问题 4：返回结构变化：{ scores, empty, reason }
    *   - 问题 3 / 15：接受 globalRange，用全局 min/max 分档
    *   - 问题 10：非法 weaponId 检查
-   *
-   * @param {Object} options
-   * @param {number|string} options.weaponId
-   * @param {Array} options.configs
-   * @param {Array} options.equips
-   * @param {Object} options.baseParams
-   * @param {Array<number>} options.distances
-   * @param {Object} [options.globalRange] - { min, max } 全局分档范围
-   * @param {Function} [options.onProgress]
-   * @param {Object} [options.signal]
-   * @returns {Promise<Object>} { scores: {...}, empty?: boolean, reason?: string }
    */
   async computeScoresForWeapon({
     weaponId,
@@ -610,8 +823,7 @@ export class EquipScoreEngine {
    *   t < 0.75 → C
    *   else     → D
    *
-   * ⚠️ v9 注意：调用方必须传 { key: number }（未分档的 rawScores），
-   *   不能传 { key: { score, grade } }。
+   * ⚠️ v9 注意：调用方必须传 { key: number }（未分档的 rawScores）。
    *
    * @param {Object} rawScores - { key: number }
    * @param {number} globalMin
@@ -629,7 +841,6 @@ export class EquipScoreEngine {
       const s = rawScores[k]
 
       // ⭐ v9：s 现在一定是 number（因为调用方传的是 skipGrades: true 的结果）
-      //   但保留防御性检查，避免将来误用
       if (typeof s !== 'number' || !isFinite(s) || s <= 0) {
         result[k] = { score: s, grade: 'D' }
         continue

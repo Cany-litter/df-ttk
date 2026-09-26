@@ -63,11 +63,12 @@
  *
  * ⭐ v8 改动（全问题修复）：
  * - 问题 1：改武器属性时标记"脏武器"，配合 App.vue 的"跳缓存"方案
- *   新增 getModifiedWeaponIds()（已有）
- *   导出工具方法 hasModifiedWeapons() / clearAllModified()（已有）
  * - 问题 2 / 12：updateConfigId 成功后调用 _invalidateConfigCache
- *   主动清 IndexedDB 里 `atk_{weaponId}_{oldConfigId}_*` 的缓存
  * - 问题 16：_buildWeaponScoresForExport 里 Infinity → null
+ *
+ * ⭐ v9 改动（死代码清理）：
+ * - 删除 getEnabledBullets / getDefaultBullet / getBulletRows
+ * - 删除 getEnabledArmors / getMuzzleNames
  *
  * ⭐ 已删除的旧 API：
  * - setCacheManager / getCacheManager
@@ -534,10 +535,6 @@ export class DataManager {
     return this.data.bullets || [];
   }
 
-  getEnabledBullets() {
-    return (this.data.bullets || []).filter(b => b.enabled !== false);
-  }
-
   getBulletById(id) {
     return this.data.bullets.find(b => b.id === id) || null;
   }
@@ -594,31 +591,6 @@ export class DataManager {
     return parts.join(' ')
   }
 
-  getDefaultBullet(caliber, level) {
-    const candidates = this.data.bullets.filter(b =>
-      b.caliber === caliber && String(b.level) === String(level)
-    );
-    if (candidates.length === 0) return null;
-
-    const defaultBullet = candidates.find(b => b.isDefault === true);
-    return defaultBullet || candidates[0];
-  }
-
-  getBulletRows() {
-    return this.data.bullets.map(bullet => ({
-      caliber: bullet.caliber || '-',
-      level: bullet.level || '-',
-      name: bullet.name || '',
-      partMult: bullet.partMult || { head: 1, chest: 1, stomach: 1, limbs: 1 },
-      isDefault: bullet.isDefault === true,
-      enabled: bullet.enabled !== false,
-      armorMult: bullet.armorMult || 1.0,
-      pen: bullet.pen || 0,
-      price: bullet.price || 0,
-      _bulletId: bullet.id || ''
-    }));
-  }
-
   // ============================================================
   // 3.5. 数据获取 - 护甲 / 头盔
   // ============================================================
@@ -633,10 +605,6 @@ export class DataManager {
       armors = armors.filter(a => a.enabled !== false);
     }
     return armors;
-  }
-
-  getEnabledArmors() {
-    return (this.data.armors || []).filter(a => a.enabled !== false);
   }
 
   getArmorById(id) {
@@ -843,10 +811,6 @@ export class DataManager {
       rangeMult: muzzle.mult || 0,
       velocityMult: 1.0 + (muzzle.mult || 0)
     };
-  }
-
-  getMuzzleNames() {
-    return this.muzzles.map(m => m.name);
   }
 
   // ============================================================
@@ -1545,8 +1509,8 @@ export class DataManager {
   /**
    * ⭐ v8：清 IndexedDB 缓存（按前缀）
    *
-   * 内部调用 TTKIndexedDB.deleteMatrixEntriesByPrefix
-   * 用**动态 import** 避免"DataManager → TTKIndexedDB → DataManager"循环依赖
+   * 内部调用 TTKMatrix.deleteMatrixEntriesByPrefix
+   * 用**动态 import** 避免"DataManager → TTKMatrix → DataManager"循环依赖
    *
    * @param {string} prefix
    * @returns {Promise<number>} 删除的数量
@@ -1555,7 +1519,7 @@ export class DataManager {
     if (!prefix) return 0
 
     try {
-      const mod = await import('./TTKIndexedDB.js')
+      const mod = await import('./TTKMatrix.js')
       if (mod && typeof mod.deleteMatrixEntriesByPrefix === 'function') {
         const count = await mod.deleteMatrixEntriesByPrefix(prefix)
         // 同时回调（如果 App.vue 注入了）
@@ -1903,14 +1867,6 @@ export class DataManager {
 
   /**
    * ⭐ 导出为 JSON 字符串
-   *
-   * ⭐ v7.1：清理废弃字段
-   * ⭐ v7.2：新增综合评分导出
-   * ⭐ v7.3：剔除运行时字段（_isNewRow / _isImported）
-   * ⭐ v8：问题 16 - Infinity → null
-   *
-   * @param {Object} [extra]
-   * @returns {string}
    */
   exportToJSON(extra = {}) {
     try {

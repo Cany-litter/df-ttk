@@ -605,7 +605,7 @@ import { dataStore, paramsStore } from '@/stores/stores'
 import {
   saveRecPanelState,
   loadRecPanelState,
-} from '@/core/TTKIndexedDB'
+} from '@/core/TTKMatrix'
 
 // ⭐ 注入通用弹窗
 const showAlert = inject('showAlert', null)
