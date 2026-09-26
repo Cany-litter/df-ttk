@@ -423,7 +423,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { dataStore, paramsStore } from '@/stores/stores'
+import { dataStore, paramsStore, equipStore } from '@/stores/stores'
 import { SimulationEngine } from '@/core/SimulationEngine'
 import { BulletStrategyFactory, setSeed } from '@/core/CombatCore'
 import { calculateCurrentValues } from '@/utils/weaponCalc'
@@ -470,7 +470,11 @@ const weaponName = computed(() => {
   return w?.name || '未知武器'
 })
 
-const armorLevel = computed(() => paramsStore.state.armorLevel || 4)
+// ⭐ v7：从 equipStore.calcEquip 读护甲头盔等级
+const armorLevel = computed(() => {
+  const eq = equipStore.state.calcEquip
+  return eq?.armorLevel ?? 4
+})
 
 const totalDamage = computed(() => {
   if (!simResult.value) return 0
@@ -536,6 +540,30 @@ const intervalToRof = (intervalSec) => {
   return 60 / intervalSec
 }
 
+// ============================================================
+// ⭐ v7：获取当前"计算装备"（含兜底）
+//
+// 从 equipStore.calcEquip 读护甲头盔，没选时用默认值兜底
+// ============================================================
+const getCalcEquip = () => {
+  const eq = equipStore.state.calcEquip
+  if (eq) {
+    return {
+      armorLevel: eq.armorLevel,
+      armorValue: eq.armorValue,
+      helmetLevel: eq.helmetLevel,
+      helmetValue: eq.helmetValue,
+    }
+  }
+  // 兜底：4甲110 + 4头48
+  return {
+    armorLevel: 4,
+    armorValue: 110,
+    helmetLevel: 4,
+    helmetValue: 48,
+  }
+}
+
 // ---------- 核心：跑一次记录模式模拟 ----------
 const runSimulation = (seed) => {
   simResult.value = null
@@ -574,6 +602,10 @@ const runSimulation = (seed) => {
   }
 
   const params = paramsStore.state
+
+  // ⭐ v7：把 equipStore.calcEquip 的 4 个字段合并进 simParams
+  const calcEquip = getCalcEquip()
+
   const bulletKey = SimulationEngine.getRealBulletKey(
     bulletIdFromRow,
     armedWeapon,
@@ -602,12 +634,16 @@ const runSimulation = (seed) => {
 
   const simParams = {
     ...params,
+    // ⭐ v7：覆盖护甲头盔
+    armorLevel: calcEquip.armorLevel,
+    armorValue: calcEquip.armorValue,
+    helmetLevel: calcEquip.helmetLevel,
+    helmetValue: calcEquip.helmetValue,
     distance: props.distance,
     hitRate
   }
 
   setSeed(seed)
-  // ⭐ 传入 bulletData，优先用 name 匹配策略
   const strategy = BulletStrategyFactory.getStrategy(bulletKey, bulletData)
   const result = SimulationEngine.simulateOneTTKWithDetail(
     armedWeapon,
@@ -659,9 +695,22 @@ watch(
     if (props.visible) runSimulation(INITIAL_SEED)
   }
 )
+
+// ⭐ v7：calcEquip 变化时，弹窗打开状态下也重跑
+watch(
+  () => equipStore.state.calcEquip,
+  () => {
+    if (props.visible) runSimulation(INITIAL_SEED)
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>
+/* ============================================================
+   样式部分与之前完全相同，未改动
+   ============================================================ */
+
 .modal-overlay {
   position: fixed;
   top: 0; left: 0;
@@ -691,7 +740,6 @@ watch(
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* 头部 */
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -723,14 +771,12 @@ watch(
 }
 .modal-close:hover { color: #333; }
 
-/* 内容 */
 .modal-body {
   flex: 1;
   overflow-y: auto;
   padding: 16px 20px;
 }
 
-/* 顶部工具条 */
 .sim-toolbar {
   display: flex;
   justify-content: space-between;
@@ -767,7 +813,6 @@ watch(
 .reroll-btn:active { transform: scale(0.96); }
 .reroll-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* TTK 分解 */
 .ttk-breakdown {
   display: flex;
   flex-wrap: wrap;
@@ -816,9 +861,6 @@ watch(
   margin-left: 2px;
 }
 
-/* ============================================================
-   桌面：9 列明细表
-   ============================================================ */
 .step-table {
   width: 100%;
   border-collapse: collapse;
@@ -850,7 +892,6 @@ watch(
   color: #6a6a8e;
 }
 
-/* 连发间隔分隔行 */
 .step-table tbody tr.burst-gap-row {
   background: #f0f4ff;
 }
@@ -875,7 +916,6 @@ watch(
   font-weight: 600;
 }
 
-/* 部位徽章 */
 .hit-part-badge {
   display: inline-block;
   padding: 1px 8px;
@@ -889,7 +929,6 @@ watch(
 .part-stomach { background: #ff9800; }
 .part-limbs { background: #9e9e9e; }
 
-/* 展开 toggle */
 .expand-toggle {
   cursor: pointer;
   color: #4a6cf7;
@@ -899,7 +938,6 @@ watch(
 }
 .expand-toggle:hover { text-decoration: underline; }
 
-/* 展开详情 */
 .detail-row-wrap td.detail-cell {
   padding: 0;
   border: none;
@@ -941,16 +979,12 @@ watch(
   margin: 6px 0;
 }
 
-/* ============================================================
-   移动端：每发一个紧凑块（两行制）
-   ============================================================ */
 .step-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-/* 连发间隔分隔条 */
 .burst-gap-divider {
   text-align: center;
   padding: 3px 8px;
@@ -964,7 +998,6 @@ watch(
   letter-spacing: 0.3px;
 }
 
-/* 单发块 */
 .step-item {
   padding: 6px 10px;
   border-radius: 6px;
@@ -982,7 +1015,6 @@ watch(
   color: #999;
 }
 
-/* 第一行：核心信息 */
 .step-line-1 {
   display: flex;
   align-items: center;
@@ -1026,7 +1058,6 @@ watch(
   flex-shrink: 0;
 }
 
-/* 第二行：次要信息 */
 .step-line-2 {
   display: flex;
   align-items: center;
@@ -1056,7 +1087,6 @@ watch(
   text-decoration: underline;
 }
 
-/* 移动端展开详情 */
 .mobile-detail {
   margin: 4px 0 4px 0;
   padding: 10px 12px;
@@ -1068,9 +1098,6 @@ watch(
   min-width: 110px;
 }
 
-/* ============================================================
-   页脚
-   ============================================================ */
 .modal-footer {
   padding: 12px 20px;
   border-top: 1px solid #e8e8e8;
@@ -1089,9 +1116,6 @@ watch(
 }
 .btn-secondary:hover { background: #d5d5d5; }
 
-/* ============================================================
-   ⭐ 移动端适配
-   ============================================================ */
 @media (max-width: 768px) {
   .modal-content {
     width: 98vw;
@@ -1117,7 +1141,6 @@ watch(
     padding: 12px 14px;
   }
 
-  /* ⭐ TTK 分解：压缩 */
   .ttk-breakdown {
     gap: 6px;
     padding: 8px 10px;
@@ -1144,7 +1167,6 @@ watch(
     font-size: 8px;
   }
 
-  /* 摘要行 */
   .sim-toolbar {
     margin-bottom: 10px;
     gap: 8px;
@@ -1159,7 +1181,6 @@ watch(
     font-size: 12px;
   }
 
-  /* 移动端详情：更紧凑 */
   .mobile-detail .detail-label {
     min-width: 100px;
     font-size: 10px;

@@ -20,6 +20,6 @@ def print_tree(dir_path, prefix="", excludes={".git", "node_modules", "__pycache
 
 if __name__ == "__main__":
     root = "."
-    excludes = {".git", "node_modules", "__pycache__", ".vscode", "dist", "build", "coverage", ".next", ".nuxt", "out", "log", "temp"}
+    excludes = {".git", "node_modules", "__pycache__", ".vscode", "dist", "build", "coverage", ".next", ".nuxt", "out", "log", "temp", "_browser_profile"}
     print(os.path.basename(os.path.abspath(root)) + "/")
     print_tree(root, "", excludes)

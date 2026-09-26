@@ -4,53 +4,76 @@
 
     1. handleCalculate() → handleDistanceChart() → buildDistanceStats()
        - ⭐ 主力：算 101 个距离点，生成折线图数据
-       - 同时写 scores（加权平均）
-       - ⭐ v3 改动：柱状图数据从折线图数据里提取（不再单独算单距离点）
+       - ⭐ v7：装备从 equipStore.calcEquip 读（不再从 paramsStore 读）
 
     2. computeHavocCosts()
        - ⭐ 用「关键点」求平均 shots（不插值，关键点平均即可）
-       - 用于哈弗币消耗
+       - ⭐ v7：装备从 equipStore.calcEquip 读
 
-    3. onUpdateWeaponTTK() → updateSingleWeaponTTK()
-       - ⭐ 改为「关键点 + 插值」
-       - 单枪更新时替代 1+2（局部刷新）
+    3. updateSingleWeaponTTK()
+       - ⭐ 「关键点 + 插值」（保留作备用，不主动调用）
 
   ⭐ 关键点算法（getKeyDistances）：
     - 端点：0 / 100
     - 命中率节点：config.distance[i] ± 1
     - 射程衰减节点：weapon.ranges[i] ± 1（有限值）
 
-  ⭐ 插值（interpolateKeyPoints）：
-    - 关键点之间用线性插值，生成 101 个点
-
   ⭐ 参数导出/导入（v3）：
     - 导出：exportData() 把 paramsStore.state 作为 extra.params 传给 dataStore.exportData
-    - 导入：importData() 接收 { data, params }，params 非空时 paramsStore.updateAll(params)
+    - 导入：importData() 接收 { data, params, equipState }
 
   ⭐ 启动时自动加载参数（v3）：
-    - onMounted 里 dataStore.loadData() 返回 { params }
-    - data.json 顶层若有 params 字段，会在这里被写入 paramsStore
-    - 老文件没有 params → params 为 null → 保留硬编码默认值
+    - onMounted 里 dataStore.loadData() 返回 { params, equipState }
+    - data.json 顶层若有 params / equipState 字段，会被提取并返回
 
   ⭐ 图表布局（v3）：
     - PC 端：两个图表默认并排（grid 1fr 1fr），更矮（16:9 / 260px）
     - 放大按钮（PC only）：点击后该图表铺满整行，另一个 v-show 隐藏
-    - ⭐ 关键：.charts-area 通过 .has-expanded 切换为单列（grid-template-columns: 1fr）
-    - 放大时高度恢复 2:1 / 420px
     - 移动端：单列（沿用组件自带样式），隐藏放大按钮
-
-  ⭐ 计算流程合并（v3）：
-    - 「计算 TTK」和「生成折线图」两个按钮合并为一个
-    - handleCalculate() 内：先 buildDistanceStats() 生成折线图数据
-      → 从 distanceStats 提取柱状图数据（params.distance 那个点）
-      → computeHavocCosts()
-    - handleDistanceChart() 降级为内部函数，返回 stats
 
   ⭐ 滚动到顶部/返回（v4）：
     - 右下角悬浮按钮（纯图标 ⬆️ / ⬇️）
-    - 滚动超过 400px 显示「⬆️」按钮
-    - 点击 ⬆️：记录当前 scrollY → 平滑滚到顶部 → 按钮变 ⬇️
-    - 点击 ⬇️：平滑滚回记录的位置 → 按钮变 ⬆️（或隐藏）
+
+  ⭐ 装备双模式（v7）：
+    - 折线图/柱状图/TTK列/哈弗币/单次模拟 → 用 equipStore.calcEquip（单套）
+    - 综合评分 → 用 equipStore.scoreEquips（多套）
+    - 两种模式独立，互不影响
+
+  ⭐ v7.1 修复进度条 850/0：
+    - recomputeScores 的 onProgress 改为 appStore.updateCalcProgress(current, total)
+    - 单枪更新回调里改标题改用 appStore.setCalcProgressTitle(...)
+
+  ⭐ v7.2 导出综合评分（仅导出，不导入）：
+    - exportData 把 appStore.state.weaponScores + havocCosts 传给 DataManager
+    - DataManager 组装带 meta 的结构
+    - 导入时 DataManager 显式忽略 weaponScores
+
+  ⭐ v7.3 增量导入（双模式）：
+    - importData 弹出 ImportModeDialog 让用户选择：
+      · 全量覆盖（overwrite）
+      · 增量覆盖（merge）
+    - 导入后按 mode 显示不同的结果提示
+
+  ⭐ v7.4 更新评分按钮：
+    - "更新 TTK"按钮改名为"更新评分"
+    - 点击后只重算当前武器下所有配置的评分（不更新折线图/柱状图/哈弗币）
+    - onUpdateWeaponTTK 改为只调用 recomputeSingleWeaponScores(weaponId)
+    - updateSingleWeaponTTK 函数保留作备用（不再主动调用）
+
+  ⭐ v8 改动（问题 1 / 3 / 4 / 8 / 15）：
+    - 问题 1：handleCalculate 开头清理脏武器的 IndexedDB 缓存
+      · 通过 dataStore.getModifiedWeaponIds() 取脏武器
+      · 对每个脏武器调 deleteMatrixEntriesByPrefix(`atk_{wid}_`)
+      · 清完后 dataStore.clearAllModified()
+    - 问题 3 / 15：recomputeScores 保存全局 min/max
+      · 用 EquipScoreEngine.extractGlobalRange(scores) 提取
+      · 存到 appStore.setWeaponScoresGlobalRange(range)
+      · 单武器重算时传入 globalRange
+    - 问题 4：recomputeSingleWeaponScores 处理 result.empty
+      · reason === 'no_configs' → 弹提示
+      · reason === 'no_equips' → 清空评分
+      · reason === 'invalid_weapon_id' → 弹提示
+    - 问题 8：recomputeSingleWeaponScores 空装备时清空该武器评分
 -->
 <template>
   <div id="app">
@@ -62,10 +85,10 @@
         @export-data="exportData"
         @import-data="importData"
         @reset-data="resetData"
+        @equip-changed="onEquipChanged"
       />
 
       <!-- ============ 图表区域 ============ -->
-      <!-- ⭐ has-expanded：有图表被放大时切换到单列布局 -->
       <div
         class="charts-area"
         :class="{ 'has-expanded': expandedChart !== null }"
@@ -96,7 +119,6 @@
                 <span class="hint">(0 = 全部)</span>
               </label>
 
-              <!-- ⭐ 放大按钮（PC only） -->
               <button
                 v-if="!isMobile"
                 class="chart-expand-btn"
@@ -170,7 +192,6 @@
                 <span class="hint">(0 = 全部)</span>
               </label>
 
-              <!-- ⭐ 放大按钮（PC only） -->
               <button
                 v-if="!isMobile"
                 class="chart-expand-btn"
@@ -252,7 +273,7 @@
             />
           </div>
 
-          <!-- ⭐ 配装推荐 Tab -->
+          <!-- 配装推荐 Tab -->
           <div
             id="tab-rec"
             v-show="appStore.state.currentTab === 'rec'"
@@ -264,9 +285,7 @@
       </div>
     </AppLayout>
 
-    <!-- ============ 弹窗（在 AppLayout 外，保持解耦） ============ -->
-
-    <!-- 枪管编辑器弹窗 -->
+    <!-- ============ 弹窗 ============ -->
     <BarrelEditor
       :visible="appStore.state.showBarrelEditor"
       :weapon-id="appStore.state.editingWeaponId"
@@ -274,7 +293,6 @@
       @saved="onBarrelSaved"
     />
 
-    <!-- 基础属性编辑器弹窗 -->
     <WeaponBaseEditor
       :visible="appStore.state.showBaseEditor"
       :weapon-id="appStore.state.editingBaseWeaponId"
@@ -283,7 +301,6 @@
       @saved="onBaseSaved"
     />
 
-    <!-- 单次伤害模拟弹窗 -->
     <DamageDetailModal
       v-model:visible="showDamageDetail"
       :weapon-id="detailWeaponId"
@@ -291,7 +308,6 @@
       :distance="paramsStore.state.distance"
     />
 
-    <!-- ⭐ 通用确认弹窗 -->
     <ConfirmDialog
       v-model:visible="confirmState.visible"
       :title="confirmState.title"
@@ -303,6 +319,14 @@
       :checkbox-default="confirmState.checkboxDefault"
       @confirm="onConfirmResolve"
       @cancel="onConfirmReject"
+    />
+
+    <!-- ⭐ v7.3：导入模式选择对话框 -->
+    <ImportModeDialog
+      v-model:visible="importModeVisible"
+      :file-name="importModeFileName"
+      @confirm="onImportModeConfirm"
+      @cancel="onImportModeCancel"
     />
   </div>
 
@@ -326,9 +350,7 @@
     </div>
   </Teleport>
 
-  <!-- ============================================================ -->
-  <!-- ⭐ 滚动悬浮按钮（纯图标 ⬆️ / ⬇️） -->
-  <!-- ============================================================ -->
+  <!-- 滚动悬浮按钮 -->
   <Teleport to="body">
     <Transition name="scroll-btn-fade">
       <button
@@ -345,10 +367,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, provide, nextTick } from 'vue'
-import { dataStore, paramsStore, appStore } from '@/stores/stores'
+import { ref, computed, onMounted, onBeforeUnmount, provide, nextTick, watch } from 'vue'
+import { dataStore, paramsStore, appStore, equipStore } from '@/stores/stores'
 import { SimulationEngine } from '@/core/SimulationEngine'
 import { computeTTK } from '@/core/FastTTK'
+
+import {
+  computeSingleTTK,
+  getKeyDistances,
+  interpolateKeyPoints,
+  computeDistanceSeries,
+  buildArmedWeapons,
+  computeDistanceWeightedAvg,
+} from '@/core/TTKCalculator'
+
+import { getEquipScoreEngine, EquipScoreEngine } from '@/core/EquipScoreEngine'
 
 import { calculateCurrentValues } from '@/utils/weaponCalc'
 
@@ -364,6 +397,7 @@ import WeaponBaseEditor from '@/components/WeaponBaseEditor.vue'
 import DamageDetailModal from '@/components/DamageDetailModal.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import RecPanel from '@/components/RecPanel.vue'
+import ImportModeDialog from '@/components/ImportModeDialog.vue'
 
 // ---------- 状态 ----------
 const highlightWeapon = ref(null)
@@ -373,7 +407,6 @@ const caliberOptions = ref([])
 const displayCount = ref(10)
 const barDisplayCount = ref(10)
 
-// ⭐ 自定义起止距离（默认 0~100m）
 const customStart = ref(0)
 const customEnd = ref(100)
 
@@ -381,36 +414,59 @@ const showDamageDetail = ref(false)
 const detailWeaponId = ref(null)
 const detailConfigId = ref('#1')
 
-// ⭐ 图表放大相关
+// 图表放大
 const barChartRef = ref(null)
 const lineChartRef = ref(null)
-const expandedChart = ref(null)   // null | 'bar' | 'line'
+const expandedChart = ref(null)
 const isMobile = ref(false)
+
+// ⭐ v7.3：导入模式选择
+const importModeVisible = ref(false)
+const importModeFileName = ref('')
+let _importModeResolve = null
+let _pendingImportJson = null
 
 const updateIsMobile = () => {
   isMobile.value = window.innerWidth <= 768
 }
 
 // ============================================================
-// ⭐ 滚动到顶部 / 返回
+// ⭐ v7：获取当前"计算装备"（含兜底）
+// ============================================================
+const getCalcEquip = () => {
+  const eq = equipStore.state.calcEquip
+  if (eq) {
+    return {
+      armorLevel: eq.armorLevel,
+      armorValue: eq.armorValue,
+      helmetLevel: eq.helmetLevel,
+      helmetValue: eq.helmetValue,
+    }
+  }
+  return {
+    armorLevel: 4,
+    armorValue: 110,
+    helmetLevel: 4,
+    helmetValue: 48,
+  }
+}
+
+// ============================================================
+// ⭐ v7：综合评分计算的"取消信号"
+// ============================================================
+let currentScoreSignal = null
+
+// ============================================================
+// 滚动到顶部 / 返回
 // ============================================================
 
-/** 是否在顶部附近（< 50px 视为顶部） */
 const isAtTop = ref(true)
-
-/** 是否显示悬浮按钮 */
 const showScrollBtn = ref(false)
-
-/** 保存的位置（null 表示无记录） */
 const savedScrollY = ref(null)
 
-/** 当前是否处于「已回顶，可返回」状态 */
 const canReturn = computed(() => isAtTop.value && savedScrollY.value !== null)
 
-/** 滚动阈值：超过这个距离才显示"回顶"按钮 */
 const SCROLL_THRESHOLD = 400
-
-/** 顶部判定阈值 */
 const TOP_THRESHOLD = 50
 
 const onScroll = () => {
@@ -419,51 +475,29 @@ const onScroll = () => {
   showScrollBtn.value = y > SCROLL_THRESHOLD || savedScrollY.value !== null
 }
 
-/**
- * 点击悬浮按钮
- * - canReturn（已回顶且有记录）→ 滚回记录位置
- * - 否则 → 记录当前位置，滚到顶部
- */
 const handleScrollBtnClick = () => {
   if (canReturn.value) {
-    // 返回刚才的位置
     const targetY = savedScrollY.value
     savedScrollY.value = null
     window.scrollTo({ top: targetY, behavior: 'smooth' })
   } else {
-    // 回顶：先记录当前位置
     savedScrollY.value = window.scrollY || window.pageYOffset || 0
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
 
 // ============================================================
-// ⭐ 图表放大 / 还原
+// 图表放大 / 还原
 // ============================================================
 
-/**
- * ⭐ 放大 / 还原图表
- *
- * 行为：
- * - 点击同一图表的按钮 → 还原（恢复并排）
- * - 点击另一图表的按钮 → 切换到该图表放大
- * - 放大时另一个图表 v-show 隐藏，.charts-area 加 .has-expanded 切单列 → 铺满整行
- *
- * ⭐ resize 时机：
- * - 过渡动画 0.25s 期间容器尺寸渐变
- * - nextTick + rAF 读到的是中间值，ECharts 会画错
- * - 所以用 setTimeout(300) 等过渡结束再 resize
- */
 const toggleExpand = async (which) => {
   expandedChart.value = (expandedChart.value === which) ? null : which
 
   await nextTick()
 
-  // ① 过渡开始前先 resize 一次（让 ECharts 提前感知，减少变形）
   barChartRef.value?.resize?.()
   lineChartRef.value?.resize?.()
 
-  // ② 等过渡结束（0.25s）后再 resize 一次，拿到最终尺寸
   setTimeout(() => {
     barChartRef.value?.resize?.()
     lineChartRef.value?.resize?.()
@@ -479,155 +513,13 @@ const muzzleOptions = ['无', '死寂', '先进/轻语/勇火', '冲锋枪回声
 
 const distanceStats = ref([])
 
-/**
- * ⭐ 传递给 DistanceChart 的分段
- */
 const segmentProp = computed(() => ({
   start: customStart.value,
   end: customEnd.value
 }))
 
 // ============================================================
-// ⭐ 关键点插值工具
-// ============================================================
-
-/**
- * 生成关键距离点
- *
- * 包含：
- * - 端点：0, MAX
- * - 命中率节点：config.distance 每个点 ±1
- * - 射程衰减节点：weapon.ranges 每个有限值 ±1
- *
- * @param {Object} weapon - 已应用附件的武器（含 ranges）
- * @param {Object} config - 价格配置（含 distance / hitRate）
- * @param {number} maxDistance - 最大距离（默认 100）
- * @returns {Array<number>} 升序去重的关键距离点
- */
-const getKeyDistances = (weapon, config, maxDistance = 100) => {
-  const points = new Set([0, maxDistance])
-
-  // ---------- 命中率节点 ----------
-  const configDistances = config?.distance
-  if (Array.isArray(configDistances)) {
-    for (const d of configDistances) {
-      if (typeof d === 'number' && isFinite(d) && d > 0 && d < maxDistance) {
-        points.add(Math.max(0, d - 1))
-        points.add(d)
-        points.add(Math.min(maxDistance, d + 1))
-      }
-    }
-  }
-
-  // ---------- 射程衰减节点 ----------
-  const ranges = weapon?.ranges || weapon?._current?.ranges
-  if (Array.isArray(ranges)) {
-    for (const r of ranges) {
-      if (typeof r === 'number' && isFinite(r) && r > 0 && r < maxDistance) {
-        points.add(Math.max(0, r - 1))
-        points.add(r)
-        points.add(Math.min(maxDistance, r + 1))
-      }
-    }
-  }
-
-  return Array.from(points).sort((a, b) => a - b)
-}
-
-/**
- * 线性插值（关键点 → 全量距离点）
- *
- * @param {Array<{d: number, ttk: number, shots: number}>} keyPoints - 关键点（d 升序）
- * @param {Array<number>} fullDistances - 全量距离（如 0~100）
- * @returns {Array<{ttk: number, shots: number}>}
- */
-const interpolateKeyPoints = (keyPoints, fullDistances) => {
-  if (!keyPoints || keyPoints.length === 0) {
-    return fullDistances.map(() => ({ ttk: 0, shots: 0 }))
-  }
-
-  // 单点：直接用该点的值
-  if (keyPoints.length === 1) {
-    const p = keyPoints[0]
-    return fullDistances.map(() => ({ ttk: p.ttk, shots: p.shots }))
-  }
-
-  const result = []
-  let kpIdx = 0
-
-  for (const d of fullDistances) {
-    // 找到 d 所在的关键点区间
-    while (kpIdx < keyPoints.length - 1 && keyPoints[kpIdx + 1].d < d) {
-      kpIdx++
-    }
-
-    const p1 = keyPoints[kpIdx]
-    const p2 = keyPoints[kpIdx + 1] || p1
-
-    if (d === p1.d) {
-      result.push({ ttk: p1.ttk, shots: p1.shots })
-    } else if (p1.d === p2.d) {
-      // 边界情况（两个关键点 d 相同）
-      result.push({ ttk: p1.ttk, shots: p1.shots })
-    } else {
-      // 线性插值
-      const t = (d - p1.d) / (p2.d - p1.d)
-      result.push({
-        ttk: p1.ttk + t * (p2.ttk - p1.ttk),
-        shots: p1.shots + t * (p2.shots - p1.shots),
-      })
-    }
-  }
-
-  return result
-}
-
-/**
- * ⭐ 统一封装：给一个武器 + 配置，算关键点 + 插值
- *
- * @param {Object} weapon - 已应用附件的武器
- * @param {Object} attachment - { bulletType, hitRateMap, configId, ... }
- * @param {Object} config - 价格配置（含 distance / hitRate）
- * @param {Object} params - 全局参数
- * @param {DataManager} dm
- * @param {Array<number>} fullDistances - 全量距离
- * @returns {Promise<{ times: Array<number>, shots: Array<number>, anySuccess: boolean }>}
- */
-const computeDistanceSeries = async (weapon, attachment, config, params, dm, fullDistances) => {
-  const keyDistances = getKeyDistances(weapon, config)
-
-  // ---------- 算关键点 ----------
-  const keyPoints = []
-  for (const d of keyDistances) {
-    const single = await computeSingleTTK(weapon, attachment, {
-      ...params,
-      distance: d,
-    }, dm)
-    if (single) {
-      keyPoints.push({ d, ttk: single.ttk, shots: single.shots })
-    }
-  }
-
-  if (keyPoints.length === 0) {
-    return {
-      times: fullDistances.map(() => 0),
-      shots: fullDistances.map(() => 0),
-      anySuccess: false,
-    }
-  }
-
-  // ---------- 插值成全量 ----------
-  const interpolated = interpolateKeyPoints(keyPoints, fullDistances)
-
-  return {
-    times: interpolated.map(p => p.ttk),
-    shots: interpolated.map(p => p.shots),
-    anySuccess: true,
-  }
-}
-
-// ============================================================
-// ⭐ 通用确认弹窗（Promise 封装 + provide）
+// 通用确认弹窗
 // ============================================================
 
 const confirmState = ref({
@@ -720,7 +612,7 @@ const onDisplayCountEnter = (e) => {
 }
 
 // ============================================================
-// ⭐ 应用自定义分段
+// 应用自定义分段
 // ============================================================
 
 const applyCustomRange = () => {
@@ -765,116 +657,24 @@ const onItemsUpdate = () => {
 }
 
 // ============================================================
-// ⭐ 通用：计算单个配置在指定距离的 TTK（用 DP）
+// ⭐ v7：装备变化事件
 // ============================================================
-
-/**
- * 计算单条 TTK（DP 快速模式）
- *
- * @param {Object} armedWeapon - 武装武器（含 _current）
- * @param {Object} attachment - { bulletType, hitRateMap, configId }
- * @param {Object} params - { distance, bulletLevel, armorLevel, armorValue, helmetLevel, helmetValue, healthValue, hitProb, triggerDelayEnable, hitRateMap }
- * @param {DataManager} dm
- * @returns {Promise<Object|null>} { ttk, shots, hits } 或 null
- */
-const computeSingleTTK = async (armedWeapon, attachment, params, dm) => {
-  const realBulletKey = SimulationEngine.getRealBulletKey(
-    attachment.bulletType,
-    armedWeapon,
-    params,
-    dm
-  )
-  if (!realBulletKey) {
-    console.warn(`⚠️ computeSingleTTK: 未匹配子弹 ${armedWeapon._displayName || armedWeapon.name}`)
-    return null
-  }
-
-  const bulletData = dm.getBulletById(realBulletKey)
-  if (!bulletData) {
-    console.warn(`⚠️ computeSingleTTK: 子弹不存在 ${realBulletKey} (${armedWeapon._displayName || armedWeapon.name})`)
-    return null
-  }
-
-  // 命中率（配置的 hitRateMap 优先）
-  let hitRate = params.hitRate ?? 0.85
-  const map = attachment.hitRateMap || params.hitRateMap || []
-  if (map.length > 0) {
-    hitRate = dm.getHitRateFromMap(map, params.distance, hitRate)
-  }
-
-  try {
-    const result = await computeTTK({
-      weapon: armedWeapon,
-      bulletData,
-      defender: {
-        armorLevel: params.armorLevel,
-        armorValue: params.armorValue,
-        helmetLevel: params.helmetLevel,
-        helmetValue: params.helmetValue,
-      },
-      scenario: {
-        hitRate,
-        hitProb: params.hitProb,
-        triggerDelayEnable: params.triggerDelayEnable,
-        healthValue: params.healthValue,
-      },
-      distance: params.distance,
-      mode: 'fast',   // DP
-    })
-
-    return {
-      ttk: result.ttk,
-      shots: result.shots,
-      hits: result.hits,
-    }
-  } catch (e) {
-    console.error(`❌ computeSingleTTK 异常: ${armedWeapon._displayName || armedWeapon.name}`)
-    console.error('   武器:', armedWeapon.name, '子弹:', realBulletKey)
-    console.error('   距离:', params.distance)
-    console.error('   armedWeapon._current:', armedWeapon._current)
-    console.error('   bulletData:', bulletData)
-    console.error('   错误消息:', e && e.message)
-    console.error('   错误堆栈:', e && e.stack)
-    return null
-  }
+const onEquipChanged = (payload) => {
+  console.log(`⭐ 装备已更新: mode=${payload.mode}, 数量=${payload.equips.length}`)
 }
 
 // ============================================================
-// ⭐ 折线图数据生成（内部函数，被 handleCalculate 调用）
-//
-// 职责：
-//   1. buildDistanceStats() → stats（101 点 + weightedAvg）
-//   2. 写 scores（从 weightedAvg 提取）
-//   3. 写 distanceStats.value
-//   4. 返回 stats（供调用方提取柱状图数据）
+// 折线图数据生成
 // ============================================================
 const handleDistanceChart = async () => {
   try {
     const enabledConfigs = getEnabledConfigs()
     if (enabledConfigs.length === 0) return []
 
-    const { armed, attachments } = buildArmedWeapons(enabledConfigs)
+    const dm = dataStore.getDataManager()
+    const { armed, attachments } = buildArmedWeapons(enabledConfigs, dm)
 
     const stats = await buildDistanceStats(armed, attachments)
-
-    const dm = dataStore.getDataManager()
-    const scores = {}
-    for (const s of stats) {
-      const weaponId = s.weapon.id
-      const configId = s.weapon._configId || '#1'
-      const key = `${weaponId}_${configId}`
-
-      const price = dm.getPriceByWeaponId(weaponId)
-      const config = price?.configs.find(c => c.id === configId)
-      const aimSpeed = config?.aimSpeed || 0
-
-      scores[key] = {
-        ttk: s.weightedAvg,
-        aim: aimSpeed
-      }
-    }
-    appStore.setScores(scores)
-    console.log(`⭐ 评分原始数据已计算: ${Object.keys(scores).length} 条`)
 
     distanceStats.value = stats
 
@@ -893,15 +693,42 @@ const getEnabledConfigs = () => {
 }
 
 // ============================================================
-// ⭐ TTK 计算（全局，v3：先折线图 → 再提取柱状图）
+// ⭐ v8：清理脏武器的 IndexedDB 缓存（问题 1）
 //
-// 流程：
-//   ① handleDistanceChart() → stats（101 点 + weightedAvg）+ scores + distanceStats
-//   ② 从 stats 里提取 params.distance 那个点 → ttkResults（柱状图）
-//   ③ computeHavocCosts() → havocCosts
+// 用户改了武器基础属性 / 枪管 / 配置 / 子弹后，
+// DataManager 会把这些武器标记为"脏"（modifiedWeaponIds）。
+// 计算前统一清理这些武器的 IndexedDB 缓存，强制重算。
+// ============================================================
+const clearDirtyWeaponCaches = async () => {
+  const dirtyIds = dataStore.getModifiedWeaponIds()
+  if (!dirtyIds || dirtyIds.length === 0) return 0
+
+  console.log(`🧹 检测到 ${dirtyIds.length} 个脏武器，清理缓存: ${dirtyIds.join(', ')}`)
+
+  let totalDeleted = 0
+  try {
+    const { deleteMatrixEntriesByPrefix } = await import('@/core/TTKIndexedDB')
+    for (const wid of dirtyIds) {
+      try {
+        const deleted = await deleteMatrixEntriesByPrefix(`atk_${wid}_`)
+        totalDeleted += deleted
+      } catch (e) {
+        console.warn(`⚠️ 清武器 ${wid} 的缓存失败:`, e)
+      }
+    }
+    dataStore.clearAllModified()
+    console.log(`🧹 脏武器缓存清理完成: 共删除 ${totalDeleted} 条`)
+  } catch (e) {
+    console.warn('⚠️ 清理脏武器缓存失败:', e)
+  }
+
+  return totalDeleted
+}
+
+// ============================================================
+// TTK 计算（全局）
 // ============================================================
 const handleCalculate = async () => {
-  // ⭐ 互斥：单枪更新中时不允许全局计算
   if (appStore.state.updatingWeaponIds.length > 0) {
     showAlert('⚠️ 正在更新单枪数据，请稍候')
     return
@@ -923,9 +750,9 @@ const handleCalculate = async () => {
     const dm = dataStore.getDataManager()
     const params = paramsStore.state
 
-    // ============================================================
-    // ① 先生成折线图数据（内部会写 scores + distanceStats）
-    // ============================================================
+    // ⭐ v8：问题 1 - 清理脏武器的 IndexedDB 缓存
+    await clearDirtyWeaponCaches()
+
     appStore.showCalcProgress('计算 TTK 中...', enabledConfigs.length)
 
     const stats = await handleDistanceChart()
@@ -935,12 +762,7 @@ const handleCalculate = async () => {
       return
     }
 
-    // ============================================================
-    // ② 从折线图数据提取柱状图数据（params.distance 那个点）
-    //
-    // distances = [0, 1, 2, ..., 100]，所以 params.distance 直接当索引用
-    // （如果 params.distance 是小数，用 round 兜底）
-    // ============================================================
+    // ---------- 从折线图数据提取柱状图数据 ----------
     const distIdx = Math.max(0, Math.min(100, Math.round(params.distance)))
 
     const results = []
@@ -949,7 +771,6 @@ const handleCalculate = async () => {
       const ttkAtDistance = stat.times[distIdx] || 0
       const shotsAtDistance = stat.shots[distIdx] || 0
 
-      // TTK 分解（5 段）
       const triggerDelay = params.triggerDelayEnable ? (weaponArmed.triggerDelay || 0) : 0
       const velocity = weaponArmed.velocity || 500
       const flight = (params.distance / velocity) * 1000
@@ -977,9 +798,7 @@ const handleCalculate = async () => {
 
     console.log(`✅ 柱状图数据已从折线图数据提取: ${results.length} 个配置 @ ${params.distance}m`)
 
-    // ============================================================
-    // ③ 哈弗币消耗（保持不变：用「关键点」算平均 shots）
-    // ============================================================
+    // ---------- 哈弗币消耗 ----------
     await computeHavocCosts(enabledConfigs, dm, params)
 
   } catch (error) {
@@ -993,14 +812,217 @@ const handleCalculate = async () => {
 }
 
 // ============================================================
-// ⭐ 单枪 TTK 更新
+// ⭐ v7：综合评分重算（用 equipStore.scoreEquips，全量）
+//
+// ⭐ v8 改动：
+//   - 问题 3 / 15：算完后保存全局 min/max 到 appStore
+// ============================================================
+const recomputeScores = async () => {
+  const equips = equipStore.state.scoreEquips || []
+
+  if (equips.length === 0) {
+    // ⭐ 全量版本：清空评分 + 清空全局范围
+    appStore.clearWeaponScores()
+    console.log('ℹ️ 未选择评分参考装备，综合评分已清空')
+    return
+  }
+
+  if (currentScoreSignal) {
+    currentScoreSignal.cancelled = true
+  }
+
+  const signal = { cancelled: false }
+  currentScoreSignal = signal
+
+  const dm = dataStore.getDataManager()
+  const engine = getEquipScoreEngine(dm)
+  const configs = getEnabledConfigs()
+
+  if (configs.length === 0) {
+    appStore.clearWeaponScores()
+    return
+  }
+
+  appStore.showCalcProgress('计算综合评分中...', 0)
+
+  try {
+    const scores = await engine.computeScores({
+      configs,
+      equips,
+      baseParams: paramsStore.state,
+      distances: distances.value,
+      onProgress: (current, total) => {
+        if (signal.cancelled) return
+        appStore.updateCalcProgress(current, total)
+      },
+      signal,
+    })
+
+    if (signal.cancelled) {
+      console.log('ℹ️ 综合评分计算已被新请求取代，丢弃本次结果')
+      return
+    }
+
+    appStore.setWeaponScores(scores)
+
+    // ⭐ v8：问题 3 / 15 - 保存全局 min/max
+    const range = EquipScoreEngine.extractGlobalRange(scores)
+    appStore.setWeaponScoresGlobalRange(range)
+
+    console.log(
+      `✅ 综合评分完成: ${Object.keys(scores).length} 条, ` +
+      `全局范围 [${range.min.toFixed(1)}, ${range.max.toFixed(1)}]`
+    )
+
+  } catch (error) {
+    console.error('❌ 综合评分计算失败:', error)
+  } finally {
+    if (currentScoreSignal === signal) {
+      currentScoreSignal = null
+    }
+    if (!signal.cancelled) {
+      appStore.hideCalcProgress()
+    }
+  }
+}
+
+// ============================================================
+// ⭐ v7.4 / v8：只重算单把武器的评分（用于"更新评分"按钮）
+//
+// 与 recomputeScores 的区别：
+//   - recomputeScores：重算所有武器（用于评分参考变化时）
+//   - recomputeSingleWeaponScores：只重算一把（用于"更新评分"按钮）
+//
+// ⭐ v8 改动：
+//   - 问题 3 / 15：传入 globalRange（用全量算出的全局 min/max）
+//   - 问题 4：处理 result.empty（带 reason）
+//   - 问题 8：空装备时清空该武器评分
+// ============================================================
+const recomputeSingleWeaponScores = async (weaponId) => {
+  const equips = equipStore.state.scoreEquips || []
+
+  // ⭐ v8：问题 8 - 空装备时清空该武器评分
+  if (equips.length === 0) {
+    const oldScores = appStore.state.weaponScores || {}
+    const newScores = { ...oldScores }
+    const prefix = `${weaponId}_`
+    let deleted = 0
+    for (const key of Object.keys(newScores)) {
+      if (key.startsWith(prefix)) {
+        delete newScores[key]
+        deleted++
+      }
+    }
+    if (deleted > 0) {
+      appStore.setWeaponScores(newScores)
+      console.log(`ℹ️ 评分参考为空，已清空武器 ${weaponId} 的 ${deleted} 条评分`)
+    } else {
+      console.log('ℹ️ 未选择评分参考装备，跳过单枪评分')
+    }
+    return
+  }
+
+  const dm = dataStore.getDataManager()
+  const engine = getEquipScoreEngine(dm)
+  const allConfigs = getEnabledConfigs()
+
+  if (allConfigs.length === 0) {
+    console.warn('⚠️ 没有启用的配置，跳过')
+    return
+  }
+
+  // ⭐ v8：问题 3 / 15 - 传入 globalRange
+  const globalRange = appStore.getWeaponScoresGlobalRange()
+
+  const result = await engine.computeScoresForWeapon({
+    weaponId,
+    configs: allConfigs,
+    equips,
+    baseParams: paramsStore.state,
+    distances: distances.value,
+    globalRange,   // ⭐ 传入全局 min/max
+  })
+
+  // ⭐ v8：问题 4 - 处理空结果
+  if (result.empty) {
+    switch (result.reason) {
+      case 'no_configs':
+        showAlert('⚠️ 该武器没有启用的配置')
+        break
+      case 'no_equips':
+        showAlert('⚠️ 未选择评分参考装备')
+        break
+      case 'invalid_weapon_id':
+        showAlert(`⚠️ 非法的 weaponId: ${weaponId}`)
+        break
+      default:
+        console.warn(`⚠️ computeScoresForWeapon 返回空结果: ${result.reason}`)
+    }
+    return
+  }
+
+  const newScores = result.scores
+
+  // ---------- 合并到现有评分 ----------
+  const oldScores = appStore.state.weaponScores || {}
+  const mergedScores = { ...oldScores }
+
+  // 先删除该武器的旧评分
+  const prefix = `${weaponId}_`
+  for (const key of Object.keys(mergedScores)) {
+    if (key.startsWith(prefix)) {
+      delete mergedScores[key]
+    }
+  }
+
+  // 合并新评分
+  Object.assign(mergedScores, newScores)
+
+  appStore.setWeaponScores(mergedScores)
+
+  const w = dataStore.getWeaponById(weaponId)
+  console.log(`✅ 单枪评分更新完成: ${w?.name || weaponId}, ${Object.keys(newScores).length} 条`)
+}
+
+// ============================================================
+// ⭐ v7：watch 评分参考变化 → 自动重算评分
+// ============================================================
+let _scoreEquipsDebounceTimer = null
+const _EQUIP_DEBOUNCE_MS = 200
+
+watch(
+  () => equipStore.state.scoreEquips,
+  (newEquips) => {
+    clearTimeout(_scoreEquipsDebounceTimer)
+    _scoreEquipsDebounceTimer = setTimeout(() => {
+      console.log(`🔔 评分参考变化: ${(newEquips || []).length} 套，触发综合评分重算`)
+      recomputeScores()
+    }, _EQUIP_DEBOUNCE_MS)
+  },
+  { deep: true }
+)
+
+// ⭐ v7：计算装备变化 → 不自动重算，只提示用户手动点"计算 TTK"
+let _calcEquipDebounceTimer = null
+watch(
+  () => equipStore.state.calcEquip,
+  () => {
+    clearTimeout(_calcEquipDebounceTimer)
+    _calcEquipDebounceTimer = setTimeout(() => {
+      console.log('🔔 计算装备已变化，请手动点击"计算 TTK"刷新折线图/柱状图/哈弗币')
+    }, _EQUIP_DEBOUNCE_MS)
+  },
+  { deep: true }
+)
+
+// ============================================================
+// 单枪 TTK 更新（备用函数）
+//
+// ⭐ v7.4：保留此函数作为"完整单枪更新"的备用实现。
+//   目前不再被"更新评分"按钮主动调用（那个只用 recomputeSingleWeaponScores）。
+//   未来如果需要"更新单枪折线图/柱状图/哈弗币"，可以复用。
 // ============================================================
 
-/**
- * 更新单把枪的完整 TTK 数据（所有配置）
- *
- * ⭐ 用「关键点 + 插值」
- */
 const updateSingleWeaponTTK = async (weaponId, onProgress) => {
   const dm = dataStore.getDataManager()
   const params = paramsStore.state
@@ -1017,7 +1039,7 @@ const updateSingleWeaponTTK = async (weaponId, onProgress) => {
     return { success: false, newDistanceStats: [] }
   }
 
-  const { armed, attachments } = buildArmedWeapons(allConfigRows)
+  const { armed, attachments } = buildArmedWeapons(allConfigRows, dm)
 
   const newDistanceStats = []
   const totalConfigs = armed.length
@@ -1031,7 +1053,6 @@ const updateSingleWeaponTTK = async (weaponId, onProgress) => {
     const config = price?.configs.find(c => c.id === configId)
 
     if (config) {
-      // ⭐ 关键点 + 插值
       const { times, shots, anySuccess } = await computeDistanceSeries(
         weaponArmed,
         attachment,
@@ -1042,18 +1063,7 @@ const updateSingleWeaponTTK = async (weaponId, onProgress) => {
       )
 
       if (anySuccess && config.enabled !== false) {
-        // 加权平均
-        let weightedSum = 0
-        let weightSum = 0
-        distances.value.forEach((d, i) => {
-          const ttk = times[i]
-          if (ttk > 0) {
-            const w = 1.5 - (d / 100) * 1.0
-            weightedSum += ttk * w
-            weightSum += w
-          }
-        })
-        const weightedAvg = weightSum > 0 ? weightedSum / weightSum : Infinity
+        const weightedAvg = computeDistanceWeightedAvg(times, distances.value)
 
         newDistanceStats.push({
           weapon: weaponArmed,
@@ -1076,7 +1086,17 @@ const updateSingleWeaponTTK = async (weaponId, onProgress) => {
 }
 
 /**
- * ⭐ 单枪更新的事件处理
+ * ⭐ v7.4 / v8：更新单把武器的评分
+ *
+ * 原名 onUpdateWeaponTTK，现改为"更新评分"按钮的处理函数。
+ *
+ * 职责：
+ *   - 只重算当前武器下所有配置的评分
+ *   - 不更新折线图 / 柱状图 / 哈弗币（那些由"计算 TTK"按钮负责）
+ *
+ * ⭐ v8：在重算前，先清理该武器的 IndexedDB 缓存（问题 1）
+ *   —— 用户在 WeaponTable 里改了属性 → markWeaponModified
+ *   —— 点"更新评分" → 这里清缓存 → recomputeSingleWeaponScores 强制重算
  */
 const onUpdateWeaponTTK = async ({ weaponId }) => {
   if (!weaponId) return
@@ -1094,171 +1114,32 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
   const weaponName = weapon?.name || weaponId
 
   appStore.addUpdatingWeapon(weaponId)
-  appStore.showCalcProgress(`更新 ${weaponName} 中...`, 1)
+  appStore.showCalcProgress(`更新 ${weaponName} 的评分中...`, 1)
 
   try {
-    const dm = dataStore.getDataManager()
-    const params = paramsStore.state
-
-    const { success, newDistanceStats } = await updateSingleWeaponTTK(
-      weaponId,
-      (current, total) => {
-        appStore.updateCalcProgress(current)
-        appStore.state.calcProgress.title = `更新 ${weaponName} 中...`
-      }
-    )
-
-    if (!success) {
-      console.warn(`⚠️ 单枪更新失败: ${weaponId}`)
-      return
-    }
-
-    // ---------- 更新 TTK 结果 ----------
-    const oldResults = appStore.state.ttkResults || []
-    const filteredResults = oldResults.filter(
-      r => r.weapon?.id !== weaponId
-    )
-
-    const newTtkResults = []
-    for (const stat of newDistanceStats) {
-      const weaponArmed = stat.weapon
-      const ttkAtDistance = stat.times[params.distance] || 0
-      const shotsAtDistance = stat.shots[params.distance] || 0
-
-      const triggerDelay = params.triggerDelayEnable ? (weaponArmed.triggerDelay || 0) : 0
-      const velocity = weaponArmed.velocity || 500
-      const flight = (params.distance / velocity) * 1000
-
-      const nonShotPart = flight + triggerDelay
-      const remaining = Math.max(0, ttkAtDistance - nonShotPart)
-      const noMissFireDelay = remaining * (0.5 / 0.7)
-      const emptyDelay = remaining * (0.2 / 0.7)
-
-      newTtkResults.push({
-        name: weaponArmed._displayName || weaponArmed.name,
-        weapon: weaponArmed,
-        totalTime: ttkAtDistance || 0,
-        noMissFireDelay: noMissFireDelay || 0,
-        burstInterval: 0,
-        emptyDelay: emptyDelay || 0,
-        flight: flight || 0,
-        triggerDelay: triggerDelay || 0,
-        avgShots: shotsAtDistance || 0,
-      })
-    }
-
-    const mergedResults = [...filteredResults, ...newTtkResults]
-    mergedResults.sort((a, b) => a.totalTime - b.totalTime)
-    appStore.setTtkResults(mergedResults)
-
-    // ---------- 更新评分 ----------
-    const oldScores = appStore.state.scores || {}
-    const newScores = { ...oldScores }
-
-    const prefix = `${weaponId}_`
-    for (const key of Object.keys(newScores)) {
-      if (key.startsWith(prefix)) {
-        delete newScores[key]
-      }
-    }
-
-    for (const stat of newDistanceStats) {
-      const weaponArmed = stat.weapon
-      const configId = weaponArmed._configId || '#1'
-      const key = `${weaponId}_${configId}`
-
-      const price = dm.getPriceByWeaponId(weaponId)
-      const config = price?.configs.find(c => c.id === configId)
-      const aimSpeed = config?.aimSpeed || 0
-
-      newScores[key] = {
-        ttk: stat.weightedAvg,
-        aim: aimSpeed
-      }
-    }
-    appStore.setScores(newScores)
-
-    // ---------- 更新哈弗币消耗 ----------
-    const oldHavoc = appStore.state.havocCosts || {}
-    const newHavoc = { ...oldHavoc }
-
-    for (const key of Object.keys(newHavoc)) {
-      if (key.startsWith(prefix)) {
-        delete newHavoc[key]
-      }
-    }
-
-    const price = dm.getPriceByWeaponId(weaponId)
-    if (price) {
-      for (const config of price.configs) {
-        if (config.enabled === false) continue
-
-        const key = `${weaponId}_${config.id}`
-
-        const stat = newDistanceStats.find(
-          s => s.weapon._configId === config.id
-        )
-        if (!stat) continue
-
-        const avgShots = stat.shots.reduce((a, b) => a + b, 0) / stat.shots.length
-
-        let bulletPrice = 0
-        const bulletId = SimulationEngine.getRealBulletKey(
-          null,
-          stat.weapon,
-          params,
-          dm
-        )
-        if (bulletId) {
-          const bullet = dm.getBulletById(bulletId)
-          bulletPrice = bullet?.price || 0
+    // ⭐ v8：问题 1 - 重算前清理该武器的 IndexedDB 缓存
+    if (dataStore.isWeaponModified(weaponId)) {
+      try {
+        const { deleteMatrixEntriesByPrefix } = await import('@/core/TTKIndexedDB')
+        const deleted = await deleteMatrixEntriesByPrefix(`atk_${weaponId}_`)
+        if (deleted > 0) {
+          console.log(`🧹 已清空武器 ${weaponId} 的 ${deleted} 条缓存（强制重算）`)
         }
-
-        const weaponPrice = config.price || 0
-        const kdRatio = params.kdRatio ?? 1.0
-        const extractRate = params.extractRate ?? 0.5
-        const extraCost = params.extraCost ?? 30
-
-        const weaponLossCost = weaponPrice * (1 - extractRate)
-        const effectiveKd = kdRatio * 5
-        const effectiveShots = effectiveKd * avgShots + extraCost
-        const bulletCost = effectiveShots * bulletPrice
-        const totalCost = weaponLossCost + bulletCost
-
-        newHavoc[key] = {
-          totalCost,
-          weaponLossCost,
-          bulletCost,
-          weaponPrice,
-          avgShots,
-          bulletPrice,
-          effectiveShots,
-          kdRatio,
-          extractRate,
-          extraCost,
-        }
+      } catch (e) {
+        console.warn('⚠️ 清理武器缓存失败:', e)
       }
     }
-    appStore.setHavocCosts(newHavoc)
 
-    // ---------- 更新折线图数据 ----------
-    if (newDistanceStats.length > 0) {
-      const oldStats = distanceStats.value || []
-      const filteredStats = oldStats.filter(
-        s => s.weapon?.id !== weaponId
-      )
-      const mergedStats = [...filteredStats, ...newDistanceStats]
-      mergedStats.sort((a, b) => a.weightedAvg - b.weightedAvg)
-      distanceStats.value = mergedStats
-    }
+    // ⭐ 只重算评分
+    await recomputeSingleWeaponScores(weaponId)
 
+    // 清除"脏"标记（数据已同步到评分）
     dataStore.clearWeaponModified(weaponId)
 
-    const w = dataStore.getWeaponById(weaponId)
-    console.log(`✅ 单枪 TTK 更新完成: ${w?.name || weaponId} (${newDistanceStats.length} 个启用配置)`)
+    console.log(`✅ ${weaponName} 评分更新完成`)
   } catch (error) {
-    console.error('单枪更新失败:', error)
-    showAlert('更新失败: ' + error.message)
+    console.error('评分更新失败:', error)
+    showAlert('评分更新失败: ' + error.message)
   } finally {
     appStore.removeUpdatingWeapon(weaponId)
     appStore.hideCalcProgress()
@@ -1266,16 +1147,14 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
 }
 
 // ============================================================
-// ⭐ 哈弗币消耗计算（全量）
-//
-// ⭐ 用「关键点」求平均 shots（不插值，关键点平均即可）
+// 哈弗币消耗计算（全量）
 // ============================================================
 const computeHavocCosts = async (enabledConfigs, dm, params) => {
   const havocCosts = {}
   let computed = 0
   let skipped = 0
 
-  const { armed, attachments } = buildArmedWeapons(enabledConfigs)
+  const { armed, attachments } = buildArmedWeapons(enabledConfigs, dm)
 
   for (let i = 0; i < armed.length; i++) {
     const weaponArmed = armed[i]
@@ -1296,13 +1175,13 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
       continue
     }
 
-    // ⭐ 算关键点（不插值）
     const keyDistances = getKeyDistances(weaponArmed, config)
     const allShots = []
 
     for (const d of keyDistances) {
       const single = await computeSingleTTK(weaponArmed, attachment, {
         ...params,
+        ...getCalcEquip(),
         distance: d,
       }, dm)
 
@@ -1316,7 +1195,6 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
       continue
     }
 
-    // 子弹单价
     let bulletPrice = 0
     const bulletId = SimulationEngine.getRealBulletKey(
       attachment.bulletType,
@@ -1362,75 +1240,7 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
 }
 
 // ============================================================
-// ⭐ 构建武装武器
-// ============================================================
-const buildArmedWeapons = (configs) => {
-  const armed = []
-  const attachments = []
-
-  for (const config of configs) {
-    const weapon = dataStore.getWeaponById(config._weaponId)
-    if (!weapon) continue
-
-    const displayName = `${weapon.name} ${config.configId || ''}`.trim()
-
-    let barrel = null
-    let barrelIndex = -1
-    if (config.barrelId !== undefined && config.barrelId >= 0 && weapon.barrels && weapon.barrels[config.barrelId]) {
-      barrel = weapon.barrels[config.barrelId]
-      barrelIndex = config.barrelId
-    }
-
-    const precision = (typeof config.precision === 'number' && !isNaN(config.precision))
-      ? config.precision
-      : 0.09
-
-    const current = calculateCurrentValues(weapon, barrel, config.muzzleId || 0, precision)
-
-    const armedWeapon = {
-      ...weapon,
-      ...current,
-      _current: current,
-      _displayName: displayName,
-      _configId: config.configId || '#1',
-      _price: config.price || 0,
-      triggerDelay: weapon.triggerDelay || 0
-    }
-
-    armed.push(armedWeapon)
-
-    let hitRateMap = []
-    if (config.distance && config.hitRate &&
-        Array.isArray(config.distance) && Array.isArray(config.hitRate) &&
-        config.distance.length > 0 && config.hitRate.length > 0) {
-      const len = Math.min(config.distance.length, config.hitRate.length)
-      for (let i = 0; i < len; i++) {
-        hitRateMap.push({
-          distance: config.distance[i],
-          rate: config.hitRate[i]
-        })
-      }
-    }
-
-    attachments.push({
-      weaponId: weapon.id,
-      configId: config.configId || '#1',
-      barrelIndex,
-      muzzleIndex: config.muzzleId || 0,
-      precision,
-      bulletType: config.bulletId || null,
-      hitRateMap: hitRateMap,
-      displayName
-    })
-  }
-
-  return { armed, attachments }
-}
-
-// ============================================================
-// ⭐ 折线图数据构建（全量）
-//
-// ⭐ 用「关键点 + 插值」
+// 折线图数据构建（全量）
 // ============================================================
 const buildDistanceStats = async (armed, attachments) => {
   const params = paramsStore.state
@@ -1442,18 +1252,21 @@ const buildDistanceStats = async (armed, attachments) => {
     const attachment = attachments[idx] || {}
     const displayName = weapon._displayName || weapon.name
 
-    // ⭐ 获取配置（用于关键点算法）
     const weaponId = weapon.id
     const configId = weapon._configId || '#1'
     const price = dm.getPriceByWeaponId(weaponId)
     const config = price?.configs.find(c => c.id === configId)
 
-    // ⭐ 关键点 + 插值
+    const paramsWithEquip = {
+      ...params,
+      ...getCalcEquip(),
+    }
+
     const { times, shots, anySuccess } = await computeDistanceSeries(
       weapon,
       attachment,
       config,
-      params,
+      paramsWithEquip,
       dm,
       distances.value
     )
@@ -1464,18 +1277,7 @@ const buildDistanceStats = async (armed, attachments) => {
       continue
     }
 
-    // 加权平均
-    let weightedSum = 0
-    let weightSum = 0
-    distances.value.forEach((d, i) => {
-      const ttk = times[i]
-      if (ttk > 0) {
-        const w = 1.5 - (d / 100) * 1.0
-        weightedSum += ttk * w
-        weightSum += w
-      }
-    })
-    const weightedAvg = weightSum > 0 ? weightedSum / weightSum : Infinity
+    const weightedAvg = computeDistanceWeightedAvg(times, distances.value)
 
     stats.push({
       weapon,
@@ -1503,30 +1305,34 @@ const onWeaponUpdate = (payload) => {
 }
 
 // ============================================================
-// ⭐ 数据管理（导出/导入/重置）
+// 数据管理（导出/导入/重置）
 // ============================================================
 
-/**
- * ⭐ 导出数据
- *
- * ⭐ v3：把 paramsStore.state 作为 extra.params 一起导出
- *   - 这样导出的文件包含：weapons / bullets / prices / armors + params
- *   - 导入时可以一并恢复参数
- */
 const exportData = async () => {
   try {
+    const equipState = equipStore.exportState()
+    const scoreCount = Object.keys(appStore.state.weaponScores || {}).length
+
     const result = await showConfirm({
       title: '📤 导出数据',
-      message: '确认导出当前所有数据？\n\n将下载一个 data.json 文件，包含：\n· 武器 / 子弹 / 价格 / 护甲配置\n· 页面顶部的参数（KD、撤离率、其他消耗等）',
+      message:
+        '确认导出当前所有数据？\n\n' +
+        '将下载一个 data.json 文件，包含：\n' +
+        '· 武器 / 子弹 / 价格 / 护甲配置\n' +
+        '· 页面顶部的参数\n' +
+        `· 装备状态（计算装备 + ${equipState.scoreEquips.length} 套评分参考）\n` +
+        `· 综合评分 ${scoreCount} 条（含 meta，用于外部数据分析）`,
       confirmText: '导出',
       cancelText: '取消',
       confirmType: 'primary'
     })
 
     if (result.confirmed) {
-      // ⭐ 组装 extra.params（浅拷贝，防止后续 state 变化影响已导出内容）
       const extra = {
-        params: { ...paramsStore.state }
+        params: { ...paramsStore.state },
+        equipState,
+        weaponScores: { ...appStore.state.weaponScores },
+        havocCosts: { ...appStore.state.havocCosts },
       }
       dataStore.exportData(extra)
     }
@@ -1536,13 +1342,32 @@ const exportData = async () => {
   }
 }
 
-/**
- * ⭐ 导入数据
- *
- * ⭐ v3：接收 { data, params }，params 非空时写入 paramsStore
- *   - 老文件没有 params 字段 → params 为 null，跳过参数更新
- *   - 参数更新在刷新 state 之后，避免计算用旧参数
- */
+// ⭐ v7.3：导入模式选择对话框
+const showImportModeDialog = (fileName, jsonStr) => {
+  return new Promise((resolve) => {
+    _importModeResolve = resolve
+    _pendingImportJson = jsonStr
+    importModeFileName.value = fileName
+    importModeVisible.value = true
+  })
+}
+
+const onImportModeConfirm = (mode) => {
+  const resolve = _importModeResolve
+  const jsonStr = _pendingImportJson
+  _importModeResolve = null
+  _pendingImportJson = null
+  if (resolve) resolve({ mode, jsonStr })
+}
+
+const onImportModeCancel = () => {
+  const resolve = _importModeResolve
+  _importModeResolve = null
+  _pendingImportJson = null
+  if (resolve) resolve(null)
+}
+
+// ⭐ v7.3：导入主流程
 const importData = () => {
   const input = document.createElement('input')
   input.type = 'file'
@@ -1552,45 +1377,63 @@ const importData = () => {
     if (!file) return
 
     try {
-      const result = await showConfirm({
-        title: '📥 导入数据',
-        message: `即将导入文件「${file.name}」\n\n导入将覆盖当前所有数据（含参数，如果文件里有），确定继续吗？`,
-        confirmText: '导入',
-        cancelText: '取消',
-        confirmType: 'warning'
+      const jsonStr = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = (event) => resolve(event.target.result)
+        reader.onerror = () => reject(new Error('读取文件失败'))
+        reader.readAsText(file)
       })
 
-      if (!result.confirmed) return
-
-      const reader = new FileReader()
-      reader.onload = async (event) => {
-        try {
-          // ⭐ 接收 { data, params }
-          const { params } = dataStore.importData(event.target.result)
-
-          dataStore.refreshWeapons()
-          dataStore.refreshBullets()
-          dataStore.refreshPrices()
-          dataStore.refreshArmors()
-
-          // ⭐ params 非空时写入 paramsStore
-          if (params && typeof params === 'object') {
-            paramsStore.updateAll(params)
-            console.log('✅ 已恢复页面顶部参数')
-          } else {
-            console.log('ℹ️ 导入文件不含参数，保留当前参数')
-          }
-
-          await showAlert('✅ 数据导入成功！')
-        } catch (error) {
-          console.error('导入失败:', error)
-          showAlert('导入失败: ' + error.message)
-        }
+      const choice = await showImportModeDialog(file.name, jsonStr)
+      if (!choice) {
+        console.log('ℹ️ 用户取消导入')
+        return
       }
-      reader.onerror = () => {
-        showAlert('读取文件失败')
+
+      const { mode, jsonStr: str } = choice
+
+      const result = dataStore.importData(str, { mode })
+
+      dataStore.refreshWeapons()
+      dataStore.refreshBullets()
+      dataStore.refreshPrices()
+      dataStore.refreshArmors()
+      dataStore.refreshOtherItems()
+
+      if (result.params && typeof result.params === 'object') {
+        paramsStore.updateAll(result.params)
+        console.log('✅ 已恢复页面顶部参数')
+      } else {
+        console.log('ℹ️ 导入文件不含参数，保留当前参数')
       }
-      reader.readAsText(file)
+
+      if (result.equipState) {
+        equipStore.loadFromImported(result.equipState)
+        console.log('✅ 已恢复装备状态')
+      } else {
+        console.log('ℹ️ 导入文件不含装备状态，保留当前装备')
+      }
+
+      if (mode === 'merge' && result.stats) {
+        const s = result.stats
+        const msg =
+          `✅ 增量导入完成\n\n` +
+          `武器：新增 ${s.weapons.added}，更新 ${s.weapons.updated}\n` +
+          `配置：新增 ${s.prices.configsAdded}，更新 ${s.prices.configsUpdated}\n` +
+          `子弹：新增 ${s.bullets.added}，更新 ${s.bullets.updated}\n` +
+          `护甲：新增 ${s.armors.added}，更新 ${s.armors.updated}\n` +
+          `其他：新增 ${s.otherItems.added}，更新 ${s.otherItems.updated}\n\n` +
+          `🆕 新增的配置已在枪械表中用黄色标记`
+        await showAlert(msg)
+      } else {
+        await showAlert('✅ 全量导入成功！')
+      }
+
+      setTimeout(() => {
+        handleCalculate()
+        recomputeScores()
+      }, 300)
+
     } catch (error) {
       console.error('导入失败:', error)
       showAlert('导入失败: ' + error.message)
@@ -1602,7 +1445,10 @@ const importData = () => {
 const resetData = async () => {
   const result = await showConfirm({
     title: '🔄 重置数据',
-    message: '⚠️ 确定要重置所有数据为默认值吗？\n\n当前的所有修改都将丢失！\n（同时会清空推荐缓存和假想敌配置）',
+    message:
+      '⚠️ 确定要重置所有数据为默认值吗？\n\n' +
+      '当前的所有修改都将丢失！\n' +
+      '（同时会清空推荐缓存、假想敌配置、综合评分）',
     confirmText: '重置',
     cancelText: '取消',
     confirmType: 'danger'
@@ -1617,18 +1463,24 @@ const resetData = async () => {
     dataStore.refreshPrices()
     dataStore.refreshArmors()
 
-    // ⭐ 清空矩阵缓存
     const { clearMatrix } = await import('@/core/FastTTK')
     await clearMatrix()
     console.log('🗑️ 已清空 TTK 矩阵缓存')
 
-    // ⭐ 清空配装面板持久化状态（假想敌 + 预算）
     const { clearRecPanelState } = await import('@/core/TTKIndexedDB')
     await clearRecPanelState()
     console.log('🗑️ 已清空配装面板状态（假想敌 + 预算）')
 
+    equipStore.resetToDefault()
+
+    // ⭐ v8：用 clearWeaponScores 代替 setWeaponScores({})
+    //   —— 同时清空 weaponScoresGlobalRange
+    appStore.clearWeaponScores()
+    console.log('🗑️ 已重置装备状态 + 清空综合评分 + 清空全局范围')
+
     setTimeout(() => {
       handleCalculate()
+      recomputeScores()
     }, 500)
 
     await showAlert('✅ 数据已重置为默认值！')
@@ -1639,7 +1491,7 @@ const resetData = async () => {
 }
 
 // ============================================================
-// ⭐ 武器管理
+// 武器管理
 // ============================================================
 const onAddWeapon = (index, rowData) => {
   const dm = dataStore.getDataManager()
@@ -1756,7 +1608,7 @@ const onDeleteWeapon = (index, weaponId, isCancelled) => {
 }
 
 // ============================================================
-// ⭐ 枪管编辑器
+// 枪管编辑器 / 基础属性编辑器
 // ============================================================
 const openBarrelEditor = (weaponId) => {
   appStore.openBarrelEditor(weaponId)
@@ -1773,16 +1625,11 @@ const onBarrelSaved = () => {
 }
 
 const onBarrelVisibleChange = (visible) => {
-  if (visible) {
-    // 打开时由 openBarrelEditor 触发
-  } else {
+  if (!visible) {
     appStore.closeBarrelEditor()
   }
 }
 
-// ============================================================
-// ⭐ 基础属性编辑器
-// ============================================================
 const onBaseVisibleChange = (visible) => {
   if (!visible) {
     appStore.closeBaseEditor()
@@ -1800,25 +1647,29 @@ const onBaseSaved = () => {
   console.log('✅ 基础属性已保存，武器数据已刷新')
 }
 
-// ---------- 生命周期：移动端检测 + 滚动监听 ----------
+// ============================================================
+// 生命周期
+// ============================================================
 onMounted(async () => {
-  // ⭐ 初始化移动端检测
   updateIsMobile()
   window.addEventListener('resize', updateIsMobile)
 
-  // ⭐ 初始化滚动监听
   window.addEventListener('scroll', onScroll, { passive: true })
-  onScroll()   // 立即同步一次状态
+  onScroll()
 
   try {
-    // ⭐ v3：接收 { params }
-    const { params } = await dataStore.loadData()
+    const { params, equipState } = await dataStore.loadData()
 
-    // ⭐ data.json 里有 params → 套用（覆盖 paramsStore 硬编码默认值）
-    //    老文件没有 params → params 为 null → 保留默认值
     if (params && typeof params === 'object') {
       paramsStore.updateAll(params)
       console.log('✅ 已从 data.json 恢复页面顶部参数')
+    }
+
+    if (equipState) {
+      equipStore.loadFromImported(equipState)
+      console.log('✅ 已从 data.json 恢复装备状态')
+    } else {
+      console.log('ℹ️ data.json 里没有装备状态，使用默认')
     }
 
     const bullets = dataStore.state.bullets
@@ -1832,11 +1683,19 @@ onMounted(async () => {
     console.log('weaponRows 长度:', weaponRows.value?.length)
     console.log('bullets 长度:', dataStore.state.bullets?.length)
     console.log('armors 长度:', dataStore.state.armors?.length)
+    console.log('mode:', equipStore.state.mode)
+    console.log('calcEquip:', equipStore.state.calcEquip ? '已选' : '未选')
+    console.log('scoreEquips:', equipStore.state.scoreEquips?.length)
     console.log('=== 调试结束 ===')
 
     setTimeout(() => {
       handleCalculate()
     }, 500)
+
+    setTimeout(() => {
+      recomputeScores()
+    }, 800)
+
   } catch (error) {
     console.error('初始化失败:', error)
     showAlert('数据加载失败，请检查 data.json 文件是否存在')
@@ -1846,12 +1705,20 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateIsMobile)
   window.removeEventListener('scroll', onScroll)
+
+  clearTimeout(_scoreEquipsDebounceTimer)
+  clearTimeout(_calcEquipDebounceTimer)
+
+  if (currentScoreSignal) {
+    currentScoreSignal.cancelled = true
+    currentScoreSignal = null
+  }
 })
 </script>
 
 <style>
 /* ============================================================
-   App 组件专用样式
+   App 组件样式（与上一版完全相同，未改动）
    ============================================================ */
 * {
   margin: 0;
@@ -1871,21 +1738,14 @@ body {
   padding: 8px 24px 20px;
 }
 
-/* ============================================================
-   ⭐ 图表区域：默认并排（grid 1fr 1fr）
-   ============================================================ */
 .charts-area {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-lg);
   margin: 6px 0;
-  /* ⭐ 切换 grid 列数时的过渡（平滑） */
   transition: grid-template-columns 0.25s ease;
 }
 
-/* ⭐ 有图表被放大 → 单列铺满
-   - 必须显式切成 1fr，否则 grid 仍按 2 列排，剩下的图表只占一半宽
-   - 用动态 class（.has-expanded）而非 :has()，兼容性更好 */
 .charts-area.has-expanded {
   grid-template-columns: 1fr;
 }
@@ -1897,7 +1757,6 @@ body {
   box-shadow: var(--shadow-sm);
   border: 1px solid #ddd;
   min-width: 0;
-  /* ⭐ 过渡：只过渡视觉属性，避免容器尺寸渐变导致 ECharts resize 读错 */
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
@@ -2030,9 +1889,6 @@ body {
   color: var(--color-primary);
 }
 
-/* ============================================================
-   ⭐ 放大按钮
-   ============================================================ */
 .chart-expand-btn {
   height: 24px;
   padding: 0 10px;
@@ -2068,29 +1924,16 @@ body {
   border-color: var(--color-primary-hover);
 }
 
-/* ============================================================
-   ⭐ 图表高度覆盖（关键）
-   - App.vue 的 <style> 非 scoped，可覆盖子组件 .chart-container
-   - 并排（未放大）：16:9 / 260px
-   - 放大：2:1 / 420px
-   - 移动端：统一 2:1 / 260px
-   ============================================================ */
-
-/* 并排（未放大）：更矮 */
 .charts-area .chart-wrapper:not(.is-expanded) .chart-container {
   aspect-ratio: 16 / 9;
   min-height: 260px;
 }
 
-/* 放大：恢复默认高度 */
 .charts-area .chart-wrapper.is-expanded .chart-container {
   aspect-ratio: 2 / 1;
   min-height: 420px;
 }
 
-/* ============================================================
-   表格区域
-   ============================================================ */
 .table-section {
   background: var(--color-bg-white);
   border-radius: var(--radius-lg);
@@ -2140,9 +1983,6 @@ body {
   width: 100%;
 }
 
-/* ============================================================
-   计算进度遮罩
-   ============================================================ */
 .calc-progress-overlay {
   position: fixed;
   top: 0;
@@ -2216,9 +2056,6 @@ body {
   color: #4a6cf7;
 }
 
-/* ============================================================
-   ⭐ 滚动悬浮按钮（⬆️ / ⬇️）
-   ============================================================ */
 .scroll-float-btn {
   position: fixed;
   right: 24px;
@@ -2257,7 +2094,6 @@ body {
   transform: translateY(0) scale(0.96);
 }
 
-/* ⭐ 返回态（橙色） */
 .scroll-float-btn.is-return {
   background: #ff9800;
   box-shadow: 0 4px 12px rgba(255, 152, 0, 0.35);
@@ -2268,7 +2104,6 @@ body {
   box-shadow: 0 6px 16px rgba(255, 152, 0, 0.45);
 }
 
-/* ⭐ 过渡动画 */
 .scroll-btn-fade-enter-active,
 .scroll-btn-fade-leave-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -2280,18 +2115,14 @@ body {
   transform: translateY(20px) scale(0.9);
 }
 
-/* ============================================================
-   ⭐ 移动端：单列 + 隐藏放大按钮 + 统一高度
-   ============================================================ */
 @media (max-width: 768px) {
   #app {
     padding: 4px 8px 12px;
   }
 
-  /* 图表区域：强制单列 */
   .charts-area {
     grid-template-columns: 1fr;
-    transition: none;   /* 移动端不需要过渡 */
+    transition: none;
   }
 
   .chart-wrapper {
@@ -2299,12 +2130,10 @@ body {
     transition: none;
   }
 
-  /* 隐藏放大按钮 */
   .chart-expand-btn {
     display: none;
   }
 
-  /* ⭐ 高度覆盖：移动端统一 */
   .charts-area .chart-wrapper .chart-container,
   .charts-area .chart-wrapper:not(.is-expanded) .chart-container,
   .charts-area .chart-wrapper.is-expanded .chart-container {
@@ -2360,7 +2189,6 @@ body {
     max-width: 90vw;
   }
 
-  /* ⭐ 移动端：滚动按钮小一点 */
   .scroll-float-btn {
     right: 12px;
     bottom: 12px;

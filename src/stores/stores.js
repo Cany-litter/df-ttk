@@ -1,33 +1,42 @@
 // src/stores/stores.js
 //
-// 统一状态管理（dataStore + paramsStore + appStore 合并）
+// 统一状态管理（dataStore + paramsStore + appStore + equipStore）
 //
-// ⭐ 三个 store 的可写性差异（不要统一）：
-//   - dataStore.state   → reactive（可写），因为 WeaponTable 等组件有 v-model 直接改字段
+// ⭐ 四个 store 的可写性差异（不要统一）：
+//   - dataStore.state   → reactive（可写）
 //   - paramsStore.state → readonly，只通过 update() / updateAll() 改
 //   - appStore.state    → readonly，只通过方法改
+//   - equipStore.state  → readonly，只通过方法改
 //
 // ⭐ dataStore 依赖 DataManager 单例，在模块顶层获取
 //
-// ⭐ 缓存说明：
-//   - 旧版 ttkCache 已废弃（改用 IndexedDB，见 TTKIndexedDB.js）
-//   - exportData 不再有 includeCache 参数（缓存与 data.json 解耦）
-//
 // ⭐ 参数导出/导入（v3）：
 //   - exportData(extra) 支持 extra 参数，把 params 一起导出
-//   - importData(jsonStr) 返回 { data, params }，params 由调用方（App.vue）写 paramsStore
-//   - DataManager 保持纯净，不直接依赖 paramsStore
-//
-// ⭐ 启动时自动加载参数（v3）：
-//   - loadData() 返回 { params }，透传 DataManager.loadFromJSON 的 params
-//   - data.json 顶层若有 params 字段，会被提取并返回
-//   - 调用方（App.vue）负责把 params 写入 paramsStore
-//   - 若 dm.isLoaded 已为 true（重复调用），返回 { params: null }
+//   - importData(jsonStr) 返回 { data, params, equipState }
 //
 // ⭐ 其他物品（v5）：
 //   - dataState.otherItems + refreshOtherItems()
-//   - loadData / importData / resetData 里同步刷新
-//   - 转发 DataManager 的 CRUD 方法
+//
+// ⭐ 装备双模式（v7）：
+//   - equipStore：mode + calcEquip（单套）+ scoreEquips（多套）
+//
+// ⭐ v7.1 修复进度条 850/0：
+//   - updateCalcProgress 支持接收 total
+//   - 新增 setCalcProgressTitle 方法
+//
+// ⭐ v7.3 增量导入：
+//   - importData(jsonStr, options) 支持 options.mode
+//   - 新增 clearImportMarks() 方法
+//
+// ⭐ v7.5 支持编辑配置 ID：
+//   - 新增 updateConfigId(weaponId, oldConfigId, newConfigId)
+//
+// ⭐ v8 改动（全问题修复）：
+//   - 问题 1：新增 hasModifiedWeapons / getModifiedWeaponIds（转发）
+//   - 问题 2 / 12：updateConfigId 改为 async（转发到 DataManager 的异步版本）
+//   - 问题 3 / 15：appStore 新增 weaponScoresGlobalRange 字段
+//     用于单武器重算时的"全局分档对齐"
+//   - 问题 8：无改动（App.vue 里处理）
 //
 // 本文件由原 dataStore.js / paramsStore.js / appStore.js 合并而来。
 
@@ -47,57 +56,46 @@ const dataState = reactive({
   weapons: [],
   bullets: [],
   prices: [],
-  armors: [],       // ⭐ 护甲/头盔数据
-  otherItems: [],   // ⭐ v5：其他物品（背包 / 胸挂 / 治疗 / 维修 / 其他）
+  armors: [],
+  otherItems: [],
   isLoaded: false,
   loadingError: null,
 
-  // ⭐ 修改追踪版本号
-  // 每次 markWeaponModified / clearWeaponModified 时 +1，
-  // 用于让组件感知"脏标记"变化（因为 modifiedWeaponIds 是 Set，非响应式）
   modifiedVersion: 0
 })
 
 export const dataStore = {
-  // ⭐ 对外暴露可写 state（配合 UI 层的 v-model）
   state: dataState,
 
   // ============================================================
   // 数据加载
-  //
-  // ⭐ v3：返回值改为 { params }
-  //   - params 来自 data.json 顶层 params 字段（可为 null）
-  //   - 调用方（App.vue）负责写入 paramsStore
-  //   - 若 dm.isLoaded 已为 true（重复调用），跳过 loadFromJSON，返回 { params: null }
   // ============================================================
   async loadData() {
     try {
       if (!dm.isLoaded) {
-        // ⭐ 接收 { data, params }
-        const { params } = await dm.loadFromJSON('./data.json')
+        const { params, equipState } = await dm.loadFromJSON('./data.json')
 
         dataState.weapons = [...dm.getWeapons()]
         dataState.bullets = [...dm.getBullets()]
         dataState.prices = [...dm.getPrices()]
         dataState.armors = [...dm.getArmors()]
-        dataState.otherItems = [...dm.getOtherItems(true)]   // ⭐ v5：包含禁用
+        dataState.otherItems = [...dm.getOtherItems(true)]
         dataState.isLoaded = true
         dataState.loadingError = null
 
         console.log(`✅ 数据加载完成: ${dataState.weapons.length} 把武器, ${dataState.bullets.length} 种子弹, ${dataState.prices.length} 条价格配置, ${dataState.armors.length} 条护甲数据, ${dataState.otherItems.length} 条其他物品`)
 
-        return { params }
+        return { params, equipState }
       } else {
-        // 已加载过：只刷新 state，不重复加载数据，也不返回 params（避免重复应用）
         dataState.weapons = [...dm.getWeapons()]
         dataState.bullets = [...dm.getBullets()]
         dataState.prices = [...dm.getPrices()]
         dataState.armors = [...dm.getArmors()]
-        dataState.otherItems = [...dm.getOtherItems(true)]   // ⭐ v5
+        dataState.otherItems = [...dm.getOtherItems(true)]
         dataState.isLoaded = true
         dataState.loadingError = null
 
-        return { params: null }
+        return { params: null, equipState: null }
       }
     } catch (error) {
       dataState.loadingError = error.message
@@ -107,7 +105,7 @@ export const dataStore = {
   },
 
   // ============================================================
-  // 刷新数据（⭐ 使用新数组引用触发响应式）
+  // 刷新数据
   // ============================================================
   refreshPrices() {
     dataState.prices = [...dm.getPrices()]
@@ -125,7 +123,6 @@ export const dataStore = {
     dataState.armors = [...dm.getArmors()]
   },
 
-  // ⭐ v5：刷新其他物品（包含禁用，让 UI 能显示）
   refreshOtherItems() {
     dataState.otherItems = [...dm.getOtherItems(true)]
   },
@@ -209,9 +206,7 @@ export const dataStore = {
     return dm.getPrices()
   },
 
-  // ============================================================
-  // ⭐ 护甲数据
-  // ============================================================
+  // ---------- 护甲数据 ----------
   getArmors() {
     return dm.getArmors()
   },
@@ -236,9 +231,7 @@ export const dataStore = {
     return dm.removeArmor(id)
   },
 
-  // ============================================================
-  // ⭐ v5：其他物品
-  // ============================================================
+  // ---------- 其他物品（v5） ----------
   getOtherItems(includeDisabled = false) {
     return dm.getOtherItems(includeDisabled)
   },
@@ -275,9 +268,7 @@ export const dataStore = {
     return dm.getOtherItemCategories()
   },
 
-  // ============================================================
-  // 价格配置管理
-  // ============================================================
+  // ---------- 价格配置 ----------
   addPriceConfig(weaponId, configData) {
     return dm.addPriceConfig(weaponId, configData)
   },
@@ -290,9 +281,29 @@ export const dataStore = {
     return dm.updatePriceConfig(weaponId, configId, updates)
   },
 
-  // ============================================================
-  // 子弹管理
-  // ============================================================
+  /**
+   * ⭐ v7.5 / v8：修改配置 ID（序号）
+   *
+   * ⭐ v8：改为 async（因为 DataManager 要清 IndexedDB 缓存）
+   *
+   * @param {number} weaponId
+   * @param {string} oldConfigId
+   * @param {string} newConfigId
+   * @returns {Promise<{ ok: boolean, error?: string, cacheDeleted?: number }>}
+   */
+  async updateConfigId(weaponId, oldConfigId, newConfigId) {
+    const result = await dm.updateConfigId(weaponId, oldConfigId, newConfigId)
+
+    if (result.ok) {
+      // 数据变了，刷新价格列表
+      dataState.prices = [...dm.getPrices()]
+      dataState.modifiedVersion++
+    }
+
+    return result
+  },
+
+  // ---------- 子弹 ----------
   addBullet(bulletData) {
     return dm.addBullet(bulletData)
   },
@@ -305,9 +316,7 @@ export const dataStore = {
     return dm.updateBullet(bulletId, updates)
   },
 
-  // ============================================================
-  // 枪管管理
-  // ============================================================
+  // ---------- 枪管 ----------
   addWeaponBarrel(weaponId, barrelData) {
     return dm.addWeaponBarrel(weaponId, barrelData)
   },
@@ -321,11 +330,8 @@ export const dataStore = {
   },
 
   // ============================================================
-  // 修改追踪
-  // ⭐ 每次 mark / clear 后 modifiedVersion 自增，
-  //    让依赖 state.modifiedVersion 的组件重新渲染
+  // 修改追踪（v8：新增便捷方法）
   // ============================================================
-
   markWeaponModified(weaponId) {
     dm.markWeaponModified(weaponId)
     dataState.modifiedVersion++
@@ -336,38 +342,50 @@ export const dataStore = {
     dataState.modifiedVersion++
   },
 
-  /**
-   * ⭐ 判断某把武器是否被修改（脏标记）
-   * @param {number|string} weaponId
-   * @returns {boolean}
-   */
   isWeaponModified(weaponId) {
-    void dataState.modifiedVersion   // 依赖收集，让组件能响应
+    void dataState.modifiedVersion
     const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId
     if (isNaN(id)) return false
     return dm.isWeaponModified(id)
   },
 
-  // ============================================================
-  // 数据导入导出
-  // ============================================================
+  /**
+   * ⭐ v8：问题 1 - 获取所有"脏武器"的 ID 列表
+   *
+   * 用途：评分引擎在算评分时，跳过这些武器的缓存（强制重算）
+   *
+   * @returns {Array<number>}
+   */
+  getModifiedWeaponIds() {
+    void dataState.modifiedVersion
+    return dm.getModifiedWeaponIds()
+  },
 
+  /**
+   * ⭐ v8：问题 1 - 是否有任何脏武器
+   *
+   * @returns {boolean}
+   */
+  hasModifiedWeapons() {
+    void dataState.modifiedVersion
+    return dm.hasModifiedWeapons()
+  },
+
+  /**
+   * ⭐ v8：清空所有"脏"标记
+   */
+  clearAllModified() {
+    dm.clearAllModified()
+    dataState.modifiedVersion++
+  },
+
+  // ---------- 数据导入导出 ----------
   getDataManager() {
     return dm
   },
 
   /**
-   * ⭐ 导出数据（不再有 includeCache 参数）
-   *
-   * 缓存存在 IndexedDB（见 TTKIndexedDB.js），
-   * 跟 data.json 完全解耦，导出时不涉及。
-   *
-   * ⭐ 参数导出（v3）：
-   *   - extra 参数可携带页面顶部的参数（params）
-   *   - 结构：{ params: { ... } }
-   *   - 调用方（App.vue）负责组装 extra.params
-   *
-   * @param {Object} [extra] - 额外数据（目前支持 { params }）
+   * ⭐ 导出数据
    */
   exportData(extra = {}) {
     dm.exportToFile(null, extra)
@@ -375,25 +393,29 @@ export const dataStore = {
 
   /**
    * ⭐ 导入数据
-   *
-   * ⭐ 参数导入（v3）：
-   *   - 返回值透传 DataManager.importFromJSON 的 { data, params }
-   *   - params 由调用方（App.vue）负责写入 paramsStore
-   *   - DataManager 保持纯净，不直接依赖 paramsStore
-   *
-   * @param {string} jsonStr
-   * @returns {{ data: Object, params: Object|null }}
    */
-  importData(jsonStr) {
-    const result = dm.importFromJSON(jsonStr)
+  importData(jsonStr, options = {}) {
+    const result = dm.importFromJSON(jsonStr, options)
 
     dataState.weapons = [...dm.getWeapons()]
     dataState.bullets = [...dm.getBullets()]
     dataState.prices = [...dm.getPrices()]
     dataState.armors = [...dm.getArmors()]
-    dataState.otherItems = [...dm.getOtherItems(true)]   // ⭐ v5
+    dataState.otherItems = [...dm.getOtherItems(true)]
 
     return result
+  },
+
+  /**
+   * ⭐ v7.3：清除所有导入标记
+   */
+  clearImportMarks() {
+    const count = dm.clearImportMarks()
+
+    dataState.weapons = [...dm.getWeapons()]
+    dataState.prices = [...dm.getPrices()]
+
+    return count
   },
 
   resetData() {
@@ -402,7 +424,7 @@ export const dataStore = {
     dataState.bullets = [...dm.getBullets()]
     dataState.prices = [...dm.getPrices()]
     dataState.armors = [...dm.getArmors()]
-    dataState.otherItems = [...dm.getOtherItems(true)]   // ⭐ v5
+    dataState.otherItems = [...dm.getOtherItems(true)]
   }
 }
 
@@ -412,10 +434,6 @@ export const dataStore = {
 
 const DEFAULT_PARAMS = {
   bulletLevel: 4,
-  armorLevel: 4,
-  armorValue: 110,
-  helmetLevel: 4,
-  helmetValue: 48,
   healthValue: 100,
   distance: 30,
   hitRateMap: [
@@ -434,7 +452,7 @@ const DEFAULT_PARAMS = {
   extractRate: 0.5,
   extraCost: 30,
 
-  // ⭐ 开镜时间权重（0.4 = 开镜时间按 40% 计入假 TTK）
+  // 开镜时间权重（0.4 = 开镜时间按 40% 计入评分）
   aimWeight: 0.4
 }
 
@@ -500,50 +518,316 @@ export const paramsStore = {
 }
 
 // ============================================================
-// 3. appStore
+// 3. equipStore（v7 双模式）
+// ============================================================
+
+function _makeEquip(armor, helmet) {
+  return {
+    armorId: armor.id,
+    helmetId: helmet.id,
+    armorName: armor.name,
+    helmetName: helmet.name,
+    armorLevel: armor.level,
+    armorValue: armor.value,
+    helmetLevel: helmet.level,
+    helmetValue: helmet.value,
+  }
+}
+
+function _getDefaultCalcEquip() {
+  const armors = dm.getArmorsByType('armor', true) || []
+  const helmets = dm.getArmorsByType('helmet', true) || []
+
+  const defaultArmor = armors.find(a => a.level === 4 && a.value === 110)
+  const defaultHelmet = helmets.find(h => h.level === 4 && h.value === 48)
+
+  if (!defaultArmor || !defaultHelmet) {
+    console.warn(
+      '⚠️ equipStore: 未找到默认装备（4甲110 + 4头48），calcEquip 初始化为 null'
+    )
+    return null
+  }
+
+  return _makeEquip(defaultArmor, defaultHelmet)
+}
+
+function _isValidEquip(eq) {
+  if (!eq || typeof eq !== 'object') return false
+  if (!eq.armorId || !eq.helmetId) return false
+  if (typeof eq.armorLevel !== 'number' || typeof eq.armorValue !== 'number') return false
+  if (typeof eq.helmetLevel !== 'number' || typeof eq.helmetValue !== 'number') return false
+  return true
+}
+
+function _normalizeEquip(eq) {
+  return {
+    armorId: eq.armorId,
+    helmetId: eq.helmetId,
+    armorName: eq.armorName || '',
+    helmetName: eq.helmetName || '',
+    armorLevel: eq.armorLevel,
+    armorValue: eq.armorValue,
+    helmetLevel: eq.helmetLevel,
+    helmetValue: eq.helmetValue,
+  }
+}
+
+function _makeEquipKey(armorId, helmetId) {
+  return `${armorId}|${helmetId}`
+}
+
+const _defaultCalcEquip = _getDefaultCalcEquip()
+
+const equipState = reactive({
+  mode: 'calc',
+
+  calcEquip: _defaultCalcEquip,
+
+  scoreEquips: _defaultCalcEquip ? [_defaultCalcEquip] : [],
+})
+
+export const equipStore = {
+  state: readonly(equipState),
+
+  // ============================================================
+  // 模式切换
+  // ============================================================
+
+  setMode(mode) {
+    if (mode !== 'calc' && mode !== 'score') {
+      console.warn(`⚠️ equipStore.setMode: 无效模式 ${mode}`)
+      return
+    }
+    equipState.mode = mode
+  },
+
+  // ============================================================
+  // 计算装备（单套）
+  // ============================================================
+
+  setCalcEquip(equip) {
+    if (equip === null) {
+      equipState.calcEquip = null
+      return
+    }
+    if (!_isValidEquip(equip)) {
+      console.warn('⚠️ equipStore.setCalcEquip: 非法项', equip)
+      return
+    }
+    equipState.calcEquip = _normalizeEquip(equip)
+  },
+
+  clearCalcEquip() {
+    equipState.calcEquip = null
+  },
+
+  // ============================================================
+  // 评分参考（多套）
+  // ============================================================
+
+  setScoreEquips(list) {
+    if (!Array.isArray(list)) {
+      console.warn('⚠️ equipStore.setScoreEquips: 参数不是数组')
+      return
+    }
+
+    const seen = new Set()
+    const result = []
+
+    for (const eq of list) {
+      if (!_isValidEquip(eq)) {
+        console.warn('⚠️ equipStore.setScoreEquips: 跳过非法项', eq)
+        continue
+      }
+      const key = _makeEquipKey(eq.armorId, eq.helmetId)
+      if (seen.has(key)) continue
+      seen.add(key)
+      result.push(_normalizeEquip(eq))
+    }
+
+    equipState.scoreEquips = result
+    console.log(`✅ equipStore: 评分参考已设置 ${result.length} 套`)
+  },
+
+  addScoreEquip(equip) {
+    if (!_isValidEquip(equip)) {
+      console.warn('⚠️ equipStore.addScoreEquip: 非法项', equip)
+      return false
+    }
+
+    const key = _makeEquipKey(equip.armorId, equip.helmetId)
+    const exists = equipState.scoreEquips.some(
+      e => _makeEquipKey(e.armorId, e.helmetId) === key
+    )
+    if (exists) return false
+
+    equipState.scoreEquips = [
+      ...equipState.scoreEquips,
+      _normalizeEquip(equip),
+    ]
+    return true
+  },
+
+  removeScoreEquip(armorId, helmetId) {
+    if (!armorId || !helmetId) return false
+    const key = _makeEquipKey(armorId, helmetId)
+    const before = equipState.scoreEquips.length
+    equipState.scoreEquips = equipState.scoreEquips.filter(
+      e => _makeEquipKey(e.armorId, e.helmetId) !== key
+    )
+    return equipState.scoreEquips.length < before
+  },
+
+  clearScoreEquips() {
+    equipState.scoreEquips = []
+  },
+
+  setEquipsByMode(list) {
+    if (equipState.mode === 'calc') {
+      const first = Array.isArray(list) && list.length > 0 ? list[0] : null
+      this.setCalcEquip(first)
+    } else {
+      this.setScoreEquips(list)
+    }
+  },
+
+  getCount() {
+    if (equipState.mode === 'calc') {
+      return equipState.calcEquip ? 1 : 0
+    }
+    return equipState.scoreEquips.length
+  },
+
+  getCalcEquip() {
+    return equipState.calcEquip
+  },
+
+  getScoreEquips() {
+    return equipState.scoreEquips
+  },
+
+  getDefaultCalcEquip() {
+    return _getDefaultCalcEquip()
+  },
+
+  resetToDefault() {
+    const def = _getDefaultCalcEquip()
+    equipState.mode = 'calc'
+    equipState.calcEquip = def
+    equipState.scoreEquips = def ? [def] : []
+    console.log('✅ equipStore: 已重置为默认')
+  },
+
+  exportState() {
+    return {
+      mode: equipState.mode,
+      calcEquip: equipState.calcEquip ? { ...equipState.calcEquip } : null,
+      scoreEquips: equipState.scoreEquips.map(e => ({ ...e })),
+    }
+  },
+
+  loadFromImported(equipStateRaw) {
+    if (!equipStateRaw) return 0
+
+    if (Array.isArray(equipStateRaw)) {
+      const result = this._validateAndNormalize(equipStateRaw)
+      equipState.mode = 'score'
+      equipState.calcEquip = result[0] || null
+      equipState.scoreEquips = result
+      console.log(`✅ equipStore: 从老格式恢复 ${result.length} 套（当成 scoreEquips）`)
+      return result.length
+    }
+
+    if (typeof equipStateRaw === 'object') {
+      const mode = (equipStateRaw.mode === 'score') ? 'score' : 'calc'
+
+      let calcEquip = null
+      if (equipStateRaw.calcEquip && _isValidEquip(equipStateRaw.calcEquip)) {
+        const validated = this._validateAndNormalize([equipStateRaw.calcEquip])
+        calcEquip = validated[0] || null
+      }
+
+      let scoreEquips = []
+      if (Array.isArray(equipStateRaw.scoreEquips)) {
+        scoreEquips = this._validateAndNormalize(equipStateRaw.scoreEquips)
+      }
+
+      equipState.mode = mode
+      equipState.calcEquip = calcEquip
+      equipState.scoreEquips = scoreEquips
+
+      console.log(`✅ equipStore: 从新格式恢复 mode=${mode}, calcEquip=${calcEquip ? '有' : '无'}, scoreEquips=${scoreEquips.length} 套`)
+      return scoreEquips.length
+    }
+
+    return 0
+  },
+
+  _validateAndNormalize(list) {
+    if (!Array.isArray(list)) return []
+
+    const armors = dm.getArmorsByType('armor', true) || []
+    const helmets = dm.getArmorsByType('helmet', true) || []
+    const armorIds = new Set(armors.map(a => a.id))
+    const helmetIds = new Set(helmets.map(h => h.id))
+
+    const seen = new Set()
+    const result = []
+
+    for (const eq of list) {
+      if (!_isValidEquip(eq)) continue
+      if (!armorIds.has(eq.armorId)) continue
+      if (!helmetIds.has(eq.helmetId)) continue
+
+      const key = _makeEquipKey(eq.armorId, eq.helmetId)
+      if (seen.has(key)) continue
+      seen.add(key)
+
+      const armor = armors.find(a => a.id === eq.armorId)
+      const helmet = helmets.find(h => h.id === eq.helmetId)
+
+      result.push(_makeEquip(armor, helmet))
+    }
+
+    return result
+  },
+}
+
+// ============================================================
+// 4. appStore
+//
+// ⭐ v8：新增 weaponScoresGlobalRange
+//   用于单武器重算时的"全局分档对齐"
 // ============================================================
 
 const appState = reactive({
-  // ⭐ 主 Tab：'weapon'（枪械数据） | 'items'（弹甲数据） | 'rec'（配装推荐）
   currentTab: 'weapon',
-
-  // ⭐ 子 Tab（仅用于 items）：'bullet' | 'armor' | 'helmet' | 'other'
   currentSubTab: 'bullet',
 
   ttkResults: [],
   havocCosts: {},
 
-  // ⭐ 评分原始数据
-  // 结构：{ "weaponId_configId": { ttk: 420.5, aim: 350 } }
-  // - ttk: 加权平均 TTK（ms）
-  // - aim: 开镜时间（ms）
-  //
-  // 综合评分（假 TTK）在组件层实时计算：
-  //   假TTK = 1 × ttk + aimWeight × aim
-  scores: {},
+  // ⭐ 综合评分（多套装备）
+  // 结构：{ "weaponId_configId": { score, grade } }
+  weaponScores: {},
+
+  // ⭐ v8：全局评分范围（用于单武器重算时分档对齐）
+  // 结构：{ min, max }（全量算评分后写入）
+  weaponScoresGlobalRange: { min: 0, max: 0 },
 
   isLoading: false,
-
-  // ⭐ 全局计算中状态（用于互斥判断）
-  // - true 时：单枪「更新 TTK」按钮禁用
   isGlobalCalculating: false,
-
-  // ⭐ 单枪更新中的武器 ID 列表（响应式，用于按钮 loading 状态）
-  // - 非空时：全局「计算 TTK」「生成折线图」按钮禁用
   updatingWeaponIds: [],
 
-  // 枪管编辑器
   showBarrelEditor: false,
   editingWeaponId: null,
 
-  // 基础属性编辑器
   showBaseEditor: false,
   editingBaseWeaponId: null,
 
   showAllWeapons: true,
   highlightWeapon: null,
 
-  // 计算进度状态
   calcProgress: {
     visible: false,
     percent: 0,
@@ -556,85 +840,70 @@ const appState = reactive({
 export const appStore = {
   state: readonly(appState),
 
-  // ============================================================
-  // 主 Tab 切换
-  // ⭐ 白名单：'weapon' | 'items' | 'rec'
-  // ============================================================
+  // ---------- Tab ----------
   switchTab(tab) {
     if (['weapon', 'items', 'rec'].includes(tab)) {
       appState.currentTab = tab
     }
   },
 
-  // ============================================================
-  // ⭐ 子 Tab 切换（弹甲数据内部）
-  // 白名单：'bullet' | 'armor' | 'helmet' | 'other'
-  // ============================================================
   switchSubTab(sub) {
     if (['bullet', 'armor', 'helmet', 'other'].includes(sub)) {
       appState.currentSubTab = sub
     }
   },
 
-  // ============================================================
-  // TTK 结果
-  // ============================================================
+  // ---------- 结果 ----------
   setTtkResults(results) {
     appState.ttkResults = results
   },
 
-  // ============================================================
-  // 哈弗币消耗
-  // ============================================================
   setHavocCosts(costs) {
     appState.havocCosts = costs
   },
 
-  // ============================================================
-  // ⭐ 评分原始数据（ttk + aim）
-  //
-  // 结构：{ "weaponId_configId": { ttk, aim } }
-  // 例：{ "41_#1": { ttk: 420.5, aim: 350 }, "1_#1": { ttk: 500.1, aim: 280 } }
-  //
-  // ⭐ 综合评分（假 TTK）由组件层通过 paramsStore.state.aimWeight 计算：
-  //   假TTK = 1 × ttk + aimWeight × aim
-  // ============================================================
-  setScores(scores) {
-    appState.scores = scores || {}
+  // ---------- 综合评分 ----------
+  setWeaponScores(scores) {
+    appState.weaponScores = scores || {}
   },
 
-  /**
-   * ⭐ 获取单个配置的评分原始数据
-   * @param {number|string} weaponId
-   * @param {string} configId
-   * @returns {{ ttk: number, aim: number } | null}
-   */
-  getScore(weaponId, configId) {
+  getWeaponScore(weaponId, configId) {
     const key = `${weaponId}_${configId}`
-    return appState.scores[key] || null
+    return appState.weaponScores[key] || null
   },
 
-  // ============================================================
-  // ⭐ 全局计算状态管理（用于互斥判断）
-  // ============================================================
+  /**
+   * ⭐ v8：设置全局评分范围
+   *
+   * @param {{ min: number, max: number }} range
+   */
+  setWeaponScoresGlobalRange(range) {
+    if (range && typeof range.min === 'number' && typeof range.max === 'number') {
+      appState.weaponScoresGlobalRange = { min: range.min, max: range.max }
+    }
+  },
 
   /**
-   * 设置全局计算中状态
-   * @param {boolean} calculating
+   * ⭐ v8：获取全局评分范围
    */
+  getWeaponScoresGlobalRange() {
+    return appState.weaponScoresGlobalRange
+  },
+
+  /**
+   * ⭐ v8：清空综合评分（连全局范围一起清）
+   */
+  clearWeaponScores() {
+    appState.weaponScores = {}
+    appState.weaponScoresGlobalRange = { min: 0, max: 0 }
+  },
+
+  // ---------- 全局计算状态 ----------
   setGlobalCalculating(calculating) {
     appState.isGlobalCalculating = !!calculating
   },
 
-  // ============================================================
-  // ⭐ 单枪更新状态管理
-  // 用于「🔄 更新 TTK」按钮的 loading 状态
-  // ============================================================
-
-  /**
-   * 标记某把武器正在更新中
-   * @param {number|string} weaponId
-   */
+  // ---------- 单枪更新状态 ----------
   addUpdatingWeapon(weaponId) {
     const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId
     if (isNaN(id)) return
@@ -643,10 +912,6 @@ export const appStore = {
     }
   },
 
-  /**
-   * 取消某把武器的更新中状态
-   * @param {number|string} weaponId
-   */
   removeUpdatingWeapon(weaponId) {
     const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId
     if (isNaN(id)) return
@@ -656,27 +921,18 @@ export const appStore = {
     }
   },
 
-  /**
-   * 判断某把武器是否正在更新中
-   * @param {number|string} weaponId
-   * @returns {boolean}
-   */
   isUpdatingWeapon(weaponId) {
     const id = typeof weaponId === 'string' ? parseInt(weaponId) : weaponId
     if (isNaN(id)) return false
     return appState.updatingWeaponIds.includes(id)
   },
 
-  // ============================================================
-  // 加载状态
-  // ============================================================
+  // ---------- 加载状态 ----------
   setLoading(loading) {
-    appState.isLoading = loading
+    appState.isLoading = !!loading
   },
 
-  // ============================================================
-  // 枪管编辑器
-  // ============================================================
+  // ---------- 编辑器 ----------
   openBarrelEditor(weaponId) {
     appState.editingWeaponId = weaponId
     appState.showBarrelEditor = true
@@ -687,9 +943,6 @@ export const appStore = {
     appState.editingWeaponId = null
   },
 
-  // ============================================================
-  // 基础属性编辑器
-  // ============================================================
   openBaseEditor(weaponId) {
     appState.editingBaseWeaponId = weaponId
     appState.showBaseEditor = true
@@ -700,9 +953,6 @@ export const appStore = {
     appState.editingBaseWeaponId = null
   },
 
-  // ============================================================
-  // 显示全部武器
-  // ============================================================
   toggleShowAllWeapons() {
     appState.showAllWeapons = !appState.showAllWeapons
   },
@@ -711,9 +961,6 @@ export const appStore = {
     appState.showAllWeapons = show
   },
 
-  // ============================================================
-  // 高亮武器
-  // ============================================================
   setHighlightWeapon(weaponName) {
     appState.highlightWeapon = weaponName
   },
@@ -723,37 +970,33 @@ export const appStore = {
   },
 
   // ============================================================
-  // 计算进度管理
+  // 进度
   // ============================================================
 
-  /**
-   * 显示计算进度遮罩
-   * @param {string} title - 进度标题，如 "计算 TTK 中..."
-   * @param {number} total - 总任务数
-   */
   showCalcProgress(title, total) {
     appState.calcProgress.visible = true
     appState.calcProgress.percent = 0
     appState.calcProgress.current = 0
-    appState.calcProgress.total = total
+    appState.calcProgress.total = (typeof total === 'number' && total > 0) ? total : 0
     appState.calcProgress.title = title || '计算中...'
   },
 
-  /**
-   * 更新计算进度
-   * @param {number} current - 当前已完成数
-   */
-  updateCalcProgress(current) {
+  updateCalcProgress(current, total) {
     appState.calcProgress.current = current
-    const total = appState.calcProgress.total
-    appState.calcProgress.percent = total > 0
-      ? Math.round((current / total) * 100)
-      : 0
+
+    if (typeof total === 'number' && total > 0) {
+      appState.calcProgress.total = total
+    }
+
+    const t = appState.calcProgress.total
+    const raw = t > 0 ? (current / t) * 100 : 0
+    appState.calcProgress.percent = Math.min(100, Math.round(raw))
   },
 
-  /**
-   * 隐藏计算进度遮罩
-   */
+  setCalcProgressTitle(title) {
+    appState.calcProgress.title = String(title || '计算中...')
+  },
+
   hideCalcProgress() {
     appState.calcProgress.visible = false
     appState.calcProgress.percent = 0
@@ -764,10 +1007,11 @@ export const appStore = {
 }
 
 // ============================================================
-// 默认导出（可选，方便整体 import）
+// 默认导出
 // ============================================================
 export default {
   dataStore,
   paramsStore,
-  appStore
+  appStore,
+  equipStore,
 }

@@ -7,7 +7,7 @@
  * 1. 从 data.json 加载原始数据
  * 2. 数据存储在 this.data 中
  * 3. 导出时序列化 this.data（排序后导出，不影响内存数据）
- * 4. 导入时替换 this.data
+ * 4. 导入时替换 this.data（或合并）
  * 5. 重置时恢复 this.originalData
  *
  * 修改追踪：
@@ -18,7 +18,7 @@
  * - weapons: 按类型 → 名称 排序
  * - bullets: 按口径 → 等级 → 默认 排序
  * - prices: 按类型 → 武器名称 → 配置序号 排序
- * - armors: 按 type → level 排序
+ * - armors: 按 type → level(desc) → value(desc) 排序
  * - otherItems: 按 category → 名称 排序
  *
  * ⭐ 子弹 ID 规范（v2）：
@@ -27,46 +27,47 @@
  * - 稳定：序号一旦分配，不随 level/name 变化
  * - 禁止修改 caliber / id
  *
- * ⭐ 子弹字段（v2）：
- * - partMult: { head, chest, stomach, limbs } 各部位肉伤比例
- * - isDefault: 同 caliber+level 唯一，用于全局等级匹配
- * - enabled: 是否启用（默认 true）
- * - 已废弃：base / stMult
- *
- * ⭐ 护甲/头盔字段（v2）：
- * - enabled: 是否启用（默认 true）
- *
- * ⭐ 配置字段（v3）：
- * - aimSpeed: 开镜时间（ms），默认 0，影响评分（不影响 TTK）
- * - enabled: 是否启用（默认 true）
- *
- * ⭐ 缓存（v2 → 已删除）：
- * - 旧版 ttkCache 已废弃，改用 IndexedDB（见 TTKIndexedDB.js）
- * - TTK 矩阵由 TTKMatrix.js 管理，不走 DataManager
- * - ⭐ 导出/导入不再包含"是否包含缓存"的选项（缓存已与 data.json 解耦）
- *
  * ⭐ 参数导出/导入（v3）：
- * - exportToJSON / exportToFile 支持 extra 参数，可把页面顶部的参数（params）一起导出
- * - importFromJSON 返回 { data, params }，params 由调用方（App.vue）负责写入 paramsStore
- * - DataManager 保持纯净，不直接依赖 paramsStore
- * - 老文件没有 params 字段 → params 为 null，调用方跳过更新
- *
- * ⭐ 启动时自动加载参数（v3）：
- * - loadFromJSON 返回 { data, params }（与 importFromJSON 对齐）
- * - data.json 顶层若有 params 字段，会被提取并返回
- * - 调用方（App.vue）负责把 params 写入 paramsStore
+ * - exportToJSON / exportToFile 支持 extra 参数
+ * - importFromJSON 返回 { data, params, equipState }
  *
  * ⭐ 精校与枪管一致性（v4）：
  * - 无枪管（barrelId === -1）时，精校（precision）必须为 0
- * - normalizeData 里自动修正历史数据（barrelId === -1 但 precision !== 0）
- * - 保证「UI 显示 0%」和「计算用 0」一致
  *
  * ⭐ 其他物品（v5）：
  * - data.json 顶层新增 otherItems 数组
- * - 字段：id / name / category / price / description / enabled
- * - category 枚举：背包 / 胸挂 / 治疗 / 维修 / 其他
- * - 不参与 TTK 计算，仅展示
- * - CRUD：getOtherItems / addOtherItem / updateOtherItem / removeOtherItem
+ *
+ * ⭐ 装备状态（v6 → v7）：
+ * - v6：extra.selectedEquips（数组）
+ * - v7：extra.equipState（对象 { mode, calcEquip, scoreEquips }）
+ *
+ * ⭐ v7.1 导出清理废弃字段：
+ * - 删除顶层 selectedEquips
+ * - 删除 params 里的 armorLevel / armorValue / helmetLevel / helmetValue
+ *
+ * ⭐ v7.2 导出综合评分（仅导出，不导入）：
+ * - exportToJSON / exportToFile 支持 extra.weaponScores + extra.havocCosts
+ * - 按 score 升序
+ * - 导入时不恢复评分
+ *
+ * ⭐ v7.3 增量导入（合并模式）：
+ * - importFromJSON(jsonStr, options) 支持 options.mode
+ *   - 'overwrite'（默认）：原有全量覆盖
+ *   - 'merge'：增量合并
+ * - 新增 clearImportMarks()：清除所有 `_isImported` 标记
+ * - 导出时自动剔除 `_isImported` 字段
+ *
+ * ⭐ v7.5 支持编辑配置 ID：
+ * - 新增 updateConfigId(weaponId, oldConfigId, newConfigId)
+ * - 约束：新 ID 必须是 "#数字" 格式，不能重复
+ *
+ * ⭐ v8 改动（全问题修复）：
+ * - 问题 1：改武器属性时标记"脏武器"，配合 App.vue 的"跳缓存"方案
+ *   新增 getModifiedWeaponIds()（已有）
+ *   导出工具方法 hasModifiedWeapons() / clearAllModified()（已有）
+ * - 问题 2 / 12：updateConfigId 成功后调用 _invalidateConfigCache
+ *   主动清 IndexedDB 里 `atk_{weaponId}_{oldConfigId}_*` 的缓存
+ * - 问题 16：_buildWeaponScoresForExport 里 Infinity → null
  *
  * ⭐ 已删除的旧 API：
  * - setCacheManager / getCacheManager
@@ -77,8 +78,7 @@
  */
 
 // ============================================================
-// 简化版性能监控（原 utils/performance.js 内联）
-// DataManager 只用到了 mark()，其他方法（report / getDuration 等）没被引用
+// 简化版性能监控
 // ============================================================
 const perf = {
   marks: {},
@@ -91,6 +91,16 @@ const perf = {
   }
 };
 
+// ============================================================
+// 参数中需要清理的废弃字段
+// ============================================================
+const DEPRECATED_PARAM_KEYS = [
+  'armorLevel',
+  'armorValue',
+  'helmetLevel',
+  'helmetValue',
+]
+
 export class DataManager {
   constructor() {
     this.data = {
@@ -98,7 +108,7 @@ export class DataManager {
       bullets: [],
       prices: [],
       armors: [],
-      otherItems: []    // ⭐ v5：其他物品（背包/胸挂/治疗/维修/其他）
+      otherItems: []    // ⭐ v5：其他物品
     };
     this.originalData = null;
     this.isLoaded = false;
@@ -114,6 +124,11 @@ export class DataManager {
 
     // 修改追踪
     this.modifiedWeaponIds = new Set();
+
+    // ⭐ v8：缓存失效回调（可选）
+    //   App.vue 可以注入一个函数，DataManager 在需要清缓存时调用
+    //   如果没注入，就只做标记，由调用方自行处理
+    this.onCacheInvalidate = null;
   }
 
   // ============================================================
@@ -123,14 +138,10 @@ export class DataManager {
   /**
    * ⭐ 从 URL 加载数据
    *
-   * ⭐ 返回值 { data, params }（与 importFromJSON 对齐）
-   *   - data:   规范化后的数据（weapons / bullets / prices / armors / otherItems）
-   *   - params: data.json 顶层 params 字段（页面顶部参数快照）
-   *             老文件没有 params → params 为 null
-   *   - 调用方（App.vue）负责把 params 写入 paramsStore
+   * ⭐ v7：返回值 { data, params, equipState }
    *
    * @param {string} url
-   * @returns {Promise<{ data: Object, params: Object|null }>}
+   * @returns {Promise<{ data: Object, params: Object|null, equipState: Object|null }>}
    */
   async loadFromJSON(url = './data.json') {
     perf.mark('dataLoadStart', '数据加载开始');
@@ -147,11 +158,19 @@ export class DataManager {
         throw new Error('数据格式无效，请检查 data.json 文件');
       }
 
-      // ⭐ 提取 params（必须在 normalizeData 之前，
-      //    因为 normalizeData 只保留已知字段，会丢弃 params）
+      // ⭐ 提取 params（在 normalizeData 之前）
       let params = null;
       if (rawData.params && typeof rawData.params === 'object') {
-        params = JSON.parse(JSON.stringify(rawData.params));
+        params = this._cleanParams(rawData.params);
+      }
+
+      // ⭐ v7：提取 equipState
+      let equipState = null;
+      if (rawData.equipState && typeof rawData.equipState === 'object') {
+        equipState = this._validateEquipState(rawData.equipState);
+      } else if (Array.isArray(rawData.selectedEquips)) {
+        equipState = this._validateEquipState({ scoreEquips: rawData.selectedEquips });
+        console.log('⚠️ 检测到老格式 selectedEquips，已兼容处理为 equipState');
       }
 
       this.data = this.normalizeData(rawData);
@@ -168,15 +187,29 @@ export class DataManager {
         `${this.data.prices.length} 条价格配置, ` +
         `${this.data.armors.length} 条护甲数据, ` +
         `${this.data.otherItems.length} 条其他物品` +
-        (params ? `, 含参数快照` : '')
+        (params ? `, 含参数快照` : '') +
+        (equipState ? `, 含装备状态` : '')
       );
 
-      return { data: this.data, params };
+      return { data: this.data, params, equipState };
 
     } catch (error) {
       console.error('❌ DataManager: 加载数据失败:', error);
       throw error;
     }
+  }
+
+  /**
+   * ⭐ 清理 params 里的废弃字段
+   */
+  _cleanParams(params) {
+    const cleaned = JSON.parse(JSON.stringify(params));
+    for (const key of DEPRECATED_PARAM_KEYS) {
+      if (cleaned[key] !== undefined) {
+        delete cleaned[key];
+      }
+    }
+    return cleaned;
   }
 
   validateData(data) {
@@ -197,28 +230,6 @@ export class DataManager {
 
   /**
    * 规范化数据
-   *
-   * ⭐ 统一处理：
-   * 1. 武器 ranges：'Infinity' / null → Infinity
-   * 2. 子弹 level：数字型字符串 → 数字
-   * 3. 子弹 name：缺失时补空字符串
-   * 4. 子弹 partMult：缺失时补默认 { head:1, chest:1, stomach:1, limbs:1 }
-   * 5. 子弹 isDefault：缺失时补 false
-   * 6. 子弹 enabled：缺失时补 true
-   * 7. 子弹 isDefault 唯一性校验
-   * 8. 配置 precision：缺失时补默认值 0.09
-   * 9. 配置 aimSpeed：缺失时补默认值 0
-   * 10. 配置 enabled：缺失时补 true
-   * 11. 护甲 armors：缺失时补空数组
-   * 12. 护甲 enabled：缺失时补 true
-   * 13. ⭐ v5：其他物品 otherItems：缺失时补空数组
-   * 14. ⭐ v5：其他物品 id / name / category / price / description / enabled 规范化
-   * 15. ⭐ 删除旧 ttkCache 字段（已废弃）
-   * 16. ⭐ 删除 config.cache（旧缓存已废弃）
-   * 17. ⭐ v4：无枪管（barrelId === -1）时，精校归零
-   *
-   * ⚠️ 注意：normalizeData 只保留已知字段（weapons / bullets / prices / armors / otherItems），
-   *    params 等未知字段会被丢弃。需要 params 的调用方请从 rawData 里取。
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
@@ -255,11 +266,9 @@ export class DataManager {
         if (typeof bullet.level === 'string' && /^\d+$/.test(bullet.level)) {
           bullet.level = parseInt(bullet.level, 10);
         }
-
         if (bullet.name === undefined || bullet.name === null) {
           bullet.name = '';
         }
-
         if (!bullet.partMult || typeof bullet.partMult !== 'object') {
           bullet.partMult = { head: 1, chest: 1, stomach: 1, limbs: 1 };
         } else {
@@ -271,59 +280,38 @@ export class DataManager {
             }
           }
         }
-
-        if (bullet.isDefault === undefined) {
-          bullet.isDefault = false;
-        }
-
-        if (bullet.enabled === undefined) {
-          bullet.enabled = true;
-        }
+        if (bullet.isDefault === undefined) bullet.isDefault = false;
+        if (bullet.enabled === undefined) bullet.enabled = true;
 
         if (bullet.default !== undefined) {
-          if (bullet.default === true) {
-            bullet.isDefault = true;
-          }
+          if (bullet.default === true) bullet.isDefault = true;
           delete bullet.default;
         }
-
-        if (bullet.base !== undefined) {
-          delete bullet.base;
-        }
-        if (bullet.stMult !== undefined) {
-          delete bullet.stMult;
-        }
+        if (bullet.base !== undefined) delete bullet.base;
+        if (bullet.stMult !== undefined) delete bullet.stMult;
       });
 
       this._enforceDefaultUniqueness(normalized.bullets);
     }
 
     // ---------- 3. 配置规范化 ----------
-    // precision + aimSpeed + enabled + ⭐ 删除旧缓存 + ⭐ 无枪管精校归零
     if (Array.isArray(normalized.prices)) {
       normalized.prices.forEach(price => {
         if (Array.isArray(price.configs)) {
           price.configs.forEach(config => {
-            // precision
             if (typeof config.precision !== 'number' || isNaN(config.precision)) {
               config.precision = 0.09;
             }
-            // aimSpeed
             if (typeof config.aimSpeed !== 'number' || isNaN(config.aimSpeed) || config.aimSpeed < 0) {
               config.aimSpeed = 0;
             }
-            // ⭐ enabled 默认 true
             if (config.enabled === undefined) {
               config.enabled = true;
             }
-            // ⭐ 删除旧缓存 config.cache（已废弃）
             if (config.cache !== undefined) {
               delete config.cache;
             }
 
-            // ⭐ v4：无枪管（barrelId === -1）时，精校必须归零
-            //    - barrelId 缺失视为 -1
-            //    - 无枪管时精校无意义，保证「UI 显示 0%」和「计算用 0」一致
             const barrelId = (config.barrelId !== undefined) ? config.barrelId : -1;
             if (barrelId === -1 && config.precision !== 0) {
               config.precision = 0;
@@ -338,9 +326,7 @@ export class DataManager {
       normalized.armors = [];
     } else {
       normalized.armors.forEach(armor => {
-        if (!armor.type) {
-          armor.type = 'armor';
-        }
+        if (!armor.type) armor.type = 'armor';
         if (typeof armor.level === 'string') {
           armor.level = parseInt(armor.level, 10) || 1;
         }
@@ -350,50 +336,34 @@ export class DataManager {
         if (typeof armor.price === 'string') {
           armor.price = parseFloat(armor.price) || 0;
         }
-        if (armor.enabled === undefined) {
-          armor.enabled = true;
-        }
+        if (armor.enabled === undefined) armor.enabled = true;
       });
     }
 
-    // ---------- 5. ⭐ v5：其他物品 otherItems 规范化 ----------
+    // ---------- 5. 其他物品 otherItems 规范化 ----------
     if (!Array.isArray(normalized.otherItems)) {
       normalized.otherItems = [];
     } else {
-      const VALID_CATEGORIES = ['背包', '胸挂', '治疗', '维修', '其他'];
-
       normalized.otherItems.forEach((item, idx) => {
-        // id：缺失时自动生成
-        if (!item.id) {
-          item.id = `other_${Date.now()}_${idx}`;
-        }
-        // name
-        if (item.name === undefined || item.name === null) {
-          item.name = '';
-        }
-        // category
+        if (!item.id) item.id = `other_${Date.now()}_${idx}`;
+        if (item.name === undefined || item.name === null) item.name = '';
         if (typeof item.category !== 'string' || item.category.trim() === '') {
           item.category = '其他';
         }
-        // price
         if (typeof item.price === 'string') {
           item.price = parseFloat(item.price) || 0;
         }
         if (typeof item.price !== 'number' || !isFinite(item.price) || item.price < 0) {
           item.price = 0;
         }
-        // description
         if (item.description === undefined || item.description === null) {
           item.description = '';
         }
-        // enabled
-        if (item.enabled === undefined) {
-          item.enabled = true;
-        }
+        if (item.enabled === undefined) item.enabled = true;
       });
     }
 
-    // ---------- 6. ⭐ 删除旧 ttkCache 字段（已废弃） ----------
+    // ---------- 6. 删除旧 ttkCache 字段 ----------
     if (normalized.ttkCache !== undefined) {
       delete normalized.ttkCache;
     }
@@ -401,9 +371,6 @@ export class DataManager {
     return normalized;
   }
 
-  /**
-   * 强制 isDefault 唯一性（同 caliber+level 只保留一个）
-   */
   _enforceDefaultUniqueness(bullets) {
     if (!Array.isArray(bullets)) return;
 
@@ -431,7 +398,6 @@ export class DataManager {
       });
 
       let firstDefault = group.find(b => b.isDefault === true);
-
       if (!firstDefault) {
         firstDefault = group[0];
         firstDefault.isDefault = true;
@@ -457,6 +423,97 @@ export class DataManager {
   }
 
   // ============================================================
+  // 1.5. 装备状态校验 / 排序
+  // ============================================================
+
+  _isValidEquip(eq) {
+    if (!eq || typeof eq !== 'object') return false;
+    if (!eq.armorId || !eq.helmetId) return false;
+    if (typeof eq.armorLevel !== 'number' || typeof eq.armorValue !== 'number') return false;
+    if (typeof eq.helmetLevel !== 'number' || typeof eq.helmetValue !== 'number') return false;
+    return true;
+  }
+
+  _normalizeEquip(eq) {
+    return {
+      armorId: eq.armorId,
+      helmetId: eq.helmetId,
+      armorName: eq.armorName || '',
+      helmetName: eq.helmetName || '',
+      armorLevel: eq.armorLevel,
+      armorValue: eq.armorValue,
+      helmetLevel: eq.helmetLevel,
+      helmetValue: eq.helmetValue,
+    };
+  }
+
+  _validateEquipState(equipState) {
+    if (Array.isArray(equipState)) {
+      return {
+        mode: 'score',
+        calcEquip: null,
+        scoreEquips: this._validateEquipList(equipState),
+      };
+    }
+
+    if (!equipState || typeof equipState !== 'object') {
+      return { mode: 'calc', calcEquip: null, scoreEquips: [] };
+    }
+
+    const mode = (equipState.mode === 'score') ? 'score' : 'calc';
+
+    let calcEquip = null;
+    if (this._isValidEquip(equipState.calcEquip)) {
+      calcEquip = this._normalizeEquip(equipState.calcEquip);
+    }
+
+    let scoreEquips = [];
+    if (Array.isArray(equipState.scoreEquips)) {
+      scoreEquips = this._validateEquipList(equipState.scoreEquips);
+    }
+
+    return { mode, calcEquip, scoreEquips };
+  }
+
+  _validateEquipList(list) {
+    if (!Array.isArray(list)) return [];
+
+    const seen = new Set();
+    const result = [];
+
+    for (const eq of list) {
+      if (!this._isValidEquip(eq)) continue;
+
+      const key = `${eq.armorId}|${eq.helmetId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      result.push(this._normalizeEquip(eq));
+    }
+
+    return result;
+  }
+
+  _sortEquipListForExport(equips) {
+    if (!Array.isArray(equips) || equips.length === 0) return;
+
+    equips.sort((a, b) => {
+      if (b.armorLevel !== a.armorLevel) return b.armorLevel - a.armorLevel;
+      if (b.helmetLevel !== a.helmetLevel) return b.helmetLevel - a.helmetLevel;
+      if (b.armorValue !== a.armorValue) return b.armorValue - a.armorValue;
+      return b.helmetValue - a.helmetValue;
+    });
+  }
+
+  _sortEquipStateForExport(equipState) {
+    if (!equipState || typeof equipState !== 'object') return;
+
+    if (Array.isArray(equipState.scoreEquips)) {
+      this._sortEquipListForExport(equipState.scoreEquips);
+    }
+  }
+
+  // ============================================================
   // 2. 数据获取 - 武器
   // ============================================================
 
@@ -477,11 +534,6 @@ export class DataManager {
     return this.data.bullets || [];
   }
 
-  /**
-   * 获取所有启用的子弹（enabled !== false）
-   *
-   * @returns {Array}
-   */
   getEnabledBullets() {
     return (this.data.bullets || []).filter(b => b.enabled !== false);
   }
@@ -490,16 +542,6 @@ export class DataManager {
     return this.data.bullets.find(b => b.id === id) || null;
   }
 
-  /**
-   * 按口径 + 等级查子弹
-   *
-   * ⭐ 默认只返回启用的子弹（enabled !== false）
-   *
-   * @param {string} caliber
-   * @param {number} level
-   * @param {boolean} [includeDisabled=false] - 是否包含禁用的
-   * @returns {Object|null}
-   */
   getBulletByCaliberAndLevel(caliber, level, includeDisabled = false) {
     let candidates = this.data.bullets.filter(b =>
       b.caliber === caliber && String(b.level) === String(level)
@@ -517,11 +559,6 @@ export class DataManager {
     return candidates[0];
   }
 
-  /**
-   * 按口径查子弹
-   *
-   * ⭐ 默认只返回启用的子弹
-   */
   getBulletsByCaliber(caliber, includeDisabled = false) {
     let bullets = this.data.bullets.filter(b => b.caliber === caliber);
     if (!includeDisabled) {
@@ -590,11 +627,6 @@ export class DataManager {
     return this.data.armors || [];
   }
 
-  /**
-   * 按类型获取护甲/头盔
-   *
-   * ⭐ 默认只返回启用的
-   */
   getArmorsByType(type, includeDisabled = false) {
     let armors = (this.data.armors || []).filter(a => a.type === type);
     if (!includeDisabled) {
@@ -603,9 +635,6 @@ export class DataManager {
     return armors;
   }
 
-  /**
-   * 获取所有启用的护甲/头盔
-   */
   getEnabledArmors() {
     return (this.data.armors || []).filter(a => a.enabled !== false);
   }
@@ -659,9 +688,6 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * ⭐ 批量启用/禁用护甲
-   */
   setArmorsEnabledByType(type, enabled) {
     let count = 0;
     for (const armor of this.data.armors) {
@@ -674,15 +700,9 @@ export class DataManager {
   }
 
   // ============================================================
-  // 3.7. ⭐ v5：数据获取 - 其他物品（背包 / 胸挂 / 治疗 / 维修 / 其他）
+  // 3.7. 数据获取 - 其他物品
   // ============================================================
 
-  /**
-   * 获取所有其他物品
-   *
-   * @param {boolean} [includeDisabled=false] - 是否包含禁用的
-   * @returns {Array}
-   */
   getOtherItems(includeDisabled = false) {
     let items = this.data.otherItems || [];
     if (!includeDisabled) {
@@ -691,13 +711,6 @@ export class DataManager {
     return items;
   }
 
-  /**
-   * 按类别获取其他物品
-   *
-   * @param {string} category - 背包 / 胸挂 / 治疗 / 维修 / 其他
-   * @param {boolean} [includeDisabled=false]
-   * @returns {Array}
-   */
   getOtherItemsByCategory(category, includeDisabled = false) {
     let items = (this.data.otherItems || []).filter(item => item.category === category);
     if (!includeDisabled) {
@@ -710,14 +723,6 @@ export class DataManager {
     return (this.data.otherItems || []).find(item => item.id === id) || null;
   }
 
-  /**
-   * 生成下一个其他物品 ID
-   *
-   * 格式：other_${序号}（序号递增，找现有 other_数字 的最大值 + 1）
-   * 如果现有 ID 都不是 other_数字 格式，用时间戳
-   *
-   * @returns {string}
-   */
   getNextOtherItemId() {
     const items = this.data.otherItems || [];
     let maxIndex = 0;
@@ -733,16 +738,9 @@ export class DataManager {
     return `other_${maxIndex + 1}`;
   }
 
-  /**
-   * 新增其他物品
-   *
-   * @param {Object} itemData - { id?, name, category, price?, description?, enabled? }
-   * @returns {boolean}
-   */
   addOtherItem(itemData) {
     if (!itemData) return false;
 
-    // id：缺失时自动生成
     if (!itemData.id) {
       itemData.id = this.getNextOtherItemId();
     }
@@ -771,13 +769,6 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * 更新其他物品
-   *
-   * @param {string} id
-   * @param {Object} updates
-   * @returns {boolean}
-   */
   updateOtherItem(id, updates) {
     const item = this.getOtherItemById(id);
     if (!item) {
@@ -785,13 +776,11 @@ export class DataManager {
       return false;
     }
 
-    // 禁止修改 id
     if (updates.id !== undefined && updates.id !== item.id) {
       console.warn(`⚠️ 禁止修改其他物品 ID`);
       delete updates.id;
     }
 
-    // price 校验
     if (updates.price !== undefined) {
       if (typeof updates.price === 'string') {
         updates.price = parseFloat(updates.price) || 0;
@@ -801,7 +790,6 @@ export class DataManager {
       }
     }
 
-    // category 兜底
     if (updates.category !== undefined && (typeof updates.category !== 'string' || updates.category.trim() === '')) {
       updates.category = '其他';
     }
@@ -810,12 +798,6 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * 删除其他物品
-   *
-   * @param {string} id
-   * @returns {boolean}
-   */
   removeOtherItem(id) {
     const idx = (this.data.otherItems || []).findIndex(item => item.id === id);
     if (idx === -1) return false;
@@ -823,9 +805,6 @@ export class DataManager {
     return true;
   }
 
-  /**
-   * ⭐ 批量启用/禁用其他物品
-   */
   setOtherItemsEnabled(enabled, category = null) {
     let count = 0;
     for (const item of this.data.otherItems) {
@@ -838,11 +817,6 @@ export class DataManager {
     return count;
   }
 
-  /**
-   * 获取所有类别（去重，保持预定义顺序）
-   *
-   * @returns {Array<string>}
-   */
   getOtherItemCategories() {
     return ['背包', '胸挂', '治疗', '维修', '其他'];
   }
@@ -907,7 +881,6 @@ export class DataManager {
     if (!weapon || !price) return [];
 
     return price.configs.map(config => {
-      // ---------- 解析枪管 ----------
       let barrelId = config.barrelId !== undefined ? config.barrelId : -1;
       let barrelName = '无';
 
@@ -927,7 +900,6 @@ export class DataManager {
         barrelName = '无';
       }
 
-      // ---------- 解析枪口 ----------
       let muzzleName = '无';
       const muzzleId = config.muzzleId !== undefined ? config.muzzleId : 0;
       const muzzle = this.getMuzzleById(muzzleId);
@@ -938,7 +910,6 @@ export class DataManager {
         muzzleName = config.muzzle;
       }
 
-      // ---------- 解析子弹 ----------
       let bulletDisplay = '-';
       let bulletId = config.bullet || '';
       if (bulletId) {
@@ -948,7 +919,6 @@ export class DataManager {
         }
       }
 
-      // ---------- 拼装命中率字符串 ----------
       let hitRateRaw = '';
       const distances = Array.isArray(config.distance) ? config.distance : [];
       const hitRates = Array.isArray(config.hitRate) ? config.hitRate : [];
@@ -961,17 +931,14 @@ export class DataManager {
         hitRateRaw = parts.join(',');
       }
 
-      // ---------- 精校 ----------
       let precision = (typeof config.precision === 'number' && !isNaN(config.precision))
         ? config.precision
         : 0.09;
 
-      // ⭐ v4：无枪管时，精校强制显示 0（与 normalizeData 一致）
       if (barrelId === -1) {
         precision = 0;
       }
 
-      // 开镜速度
       const aimSpeed = (typeof config.aimSpeed === 'number' && !isNaN(config.aimSpeed))
         ? config.aimSpeed
         : 0;
@@ -994,6 +961,7 @@ export class DataManager {
         bulletId: bulletId,
         enabled: config.enabled !== undefined ? config.enabled : true,
         _weaponId: weaponId,
+        _isImported: config._isImported === true,
         _rawConfig: config
       };
     });
@@ -1144,13 +1112,8 @@ export class DataManager {
 
   findBestBarrelIndex(weaponId) {
     const weapon = this.getWeaponById(weaponId);
-    if (!weapon) {
-      return -1;
-    }
-
-    if (!Array.isArray(weapon.barrels) || weapon.barrels.length === 0) {
-      return -1;
-    }
+    if (!weapon) return -1;
+    if (!Array.isArray(weapon.barrels) || weapon.barrels.length === 0) return -1;
 
     let bestIndex = -1;
     let bestScore = -Infinity;
@@ -1207,6 +1170,11 @@ export class DataManager {
 
   // ============================================================
   // 7. 数据更新 - 武器
+  //
+  // ⭐ v8：问题 1
+  //   所有"改武器属性"的方法都调用 markWeaponModified（已有）
+  //   调用方（App.vue）可以通过 modifiedWeaponIds 判断哪些武器"脏"
+  //   评分计算时跳过这些武器的缓存（强制重算）
   // ============================================================
 
   updateWeapon(weaponId, updates) {
@@ -1262,6 +1230,9 @@ export class DataManager {
 
   // ============================================================
   // 8. 数据更新 - 子弹
+  //
+  // ⭐ v8：问题 1
+  //   改子弹时，用 markWeaponsByBullet 标记"用到该子弹的所有武器"
   // ============================================================
 
   addBullet(bulletData) {
@@ -1321,7 +1292,7 @@ export class DataManager {
     if (!bullet) return false;
 
     if (updates.caliber !== undefined && updates.caliber !== bullet.caliber) {
-      console.warn(`⚠️ 禁止修改子弹口径（${bullet.caliber} → ${updates.caliber}）。如需更改，请删除后重建。`);
+      console.warn(`⚠️ 禁止修改子弹口径`);
       delete updates.caliber;
     }
 
@@ -1437,13 +1408,10 @@ export class DataManager {
       }
     }
 
-    console.log(`⭐ 设置默认子弹: ${bulletId} (${bullet.name} Lv.${level})，同组取消 ${changed} 个`);
+    console.log(`⭐ 设置默认子弹: ${bulletId}`);
     return true;
   }
 
-  /**
-   * ⭐ 批量启用/禁用子弹
-   */
   setBulletsEnabled(enabled, caliber = null) {
     let count = 0;
     for (const bullet of this.data.bullets) {
@@ -1486,7 +1454,6 @@ export class DataManager {
         updates.barrel = '无';
       }
 
-      // ⭐ v4：无枪管时，自动把精校归零（保证数据一致性）
       if (updates.barrelId === -1) {
         updates.precision = 0;
       }
@@ -1504,6 +1471,107 @@ export class DataManager {
     }
 
     return true;
+  }
+
+  /**
+   * ⭐ v7.5：修改配置的 ID（序号）
+   *
+   * ⭐ v8：问题 2 / 12
+   *   成功后主动清 IndexedDB 里 `atk_{weaponId}_{oldConfigId}_*` 的缓存。
+   *   （key 变了，旧缓存成孤儿，主动清掉更干净）
+   *
+   * @param {number} weaponId
+   * @param {string} oldConfigId
+   * @param {string} newConfigId
+   * @returns {Promise<{ ok: boolean, error?: string, cacheDeleted?: number }>}
+   */
+  async updateConfigId(weaponId, oldConfigId, newConfigId) {
+    // ---------- 1. 基础校验 ----------
+    const newId = String(newConfigId || '').trim()
+
+    if (!newId) {
+      return { ok: false, error: 'ID 不能为空' }
+    }
+
+    if (!/^#\d+$/.test(newId)) {
+      return { ok: false, error: 'ID 格式必须是 "#数字"（如 #1、#10）' }
+    }
+
+    if (newId === oldConfigId) {
+      return { ok: true }
+    }
+
+    // ---------- 2. 找价格条目 ----------
+    const price = this.getPriceByWeaponId(weaponId)
+    if (!price) {
+      return { ok: false, error: '未找到该武器的价格配置' }
+    }
+
+    const configs = price.configs || []
+
+    // ---------- 3. 找目标配置 ----------
+    const targetConfig = configs.find(c => c.id === oldConfigId)
+    if (!targetConfig) {
+      return { ok: false, error: `未找到配置 ${oldConfigId}` }
+    }
+
+    // ---------- 4. 检查重复 ----------
+    const duplicate = configs.find(c => c.id === newId && c !== targetConfig)
+    if (duplicate) {
+      return { ok: false, error: `ID ${newId} 已存在，不能重复` }
+    }
+
+    // ---------- 5. 修改 ----------
+    targetConfig.id = newId
+    this.markWeaponModified(weaponId)
+
+    console.log(`✅ 配置 ID 修改: ${weaponId} ${oldConfigId} → ${newId}`)
+
+    // ---------- 6. ⭐ v8：清 IndexedDB 缓存 ----------
+    let cacheDeleted = 0
+    try {
+      const prefix = `atk_${weaponId}_${String(oldConfigId).replace('#', '')}_`
+      cacheDeleted = await this._invalidateCacheByPrefix(prefix)
+      if (cacheDeleted > 0) {
+        console.log(`🧹 已清除该配置的缓存 ${cacheDeleted} 条（prefix=${prefix}）`)
+      }
+    } catch (e) {
+      console.warn('⚠️ 清缓存失败（不影响功能）:', e)
+    }
+
+    return { ok: true, cacheDeleted }
+  }
+
+  /**
+   * ⭐ v8：清 IndexedDB 缓存（按前缀）
+   *
+   * 内部调用 TTKIndexedDB.deleteMatrixEntriesByPrefix
+   * 用**动态 import** 避免"DataManager → TTKIndexedDB → DataManager"循环依赖
+   *
+   * @param {string} prefix
+   * @returns {Promise<number>} 删除的数量
+   */
+  async _invalidateCacheByPrefix(prefix) {
+    if (!prefix) return 0
+
+    try {
+      const mod = await import('./TTKIndexedDB.js')
+      if (mod && typeof mod.deleteMatrixEntriesByPrefix === 'function') {
+        const count = await mod.deleteMatrixEntriesByPrefix(prefix)
+        // 同时回调（如果 App.vue 注入了）
+        if (typeof this.onCacheInvalidate === 'function') {
+          try {
+            this.onCacheInvalidate({ type: 'prefix', prefix, count })
+          } catch (e) {
+            console.warn('⚠️ onCacheInvalidate 回调失败:', e)
+          }
+        }
+        return count
+      }
+    } catch (e) {
+      console.warn('⚠️ _invalidateCacheByPrefix 失败:', e)
+    }
+    return 0
   }
 
   addPriceConfig(weaponId, configData) {
@@ -1543,7 +1611,6 @@ export class DataManager {
       configData.precision = 0.09;
     }
 
-    // ⭐ v4：无枪管时，精校归零
     if (configData.barrelId === -1) {
       configData.precision = 0;
     }
@@ -1652,11 +1719,14 @@ export class DataManager {
 
   clearAllModified() {
     this.modifiedWeaponIds.clear();
-    console.log('📝 已清除所有修改标记');
+  }
+
+  hasModifiedWeapons() {
+    return this.modifiedWeaponIds.size > 0;
   }
 
   // ============================================================
-  // 11. 导出排序方法（仅导出时使用）
+  // 11. 导出排序方法
   // ============================================================
 
   static get TYPE_ORDER() {
@@ -1671,19 +1741,12 @@ export class DataManager {
 
   static getLevelWeight(level) {
     if (level === undefined || level === null) return 999;
-
-    if (typeof level === 'number' && level >= 1 && level <= 5) {
-      return level;
-    }
-    if (typeof level === 'string' && /^[1-5]$/.test(level)) {
-      return parseInt(level);
-    }
+    if (typeof level === 'number' && level >= 1 && level <= 5) return level;
+    if (typeof level === 'string' && /^[1-5]$/.test(level)) return parseInt(level);
 
     const specialLevels = ['AP', 'BT+P', 'CT', 'Double', 'M61', 'RIP', 'ST4', 'ST5', 'SUPER'];
     const index = specialLevels.indexOf(String(level));
-    if (index !== -1) {
-      return 100 + index;
-    }
+    if (index !== -1) return 100 + index;
 
     return 999;
   }
@@ -1748,13 +1811,14 @@ export class DataManager {
       const levelB = typeof b.level === 'number' ? b.level : parseInt(b.level) || 0;
       if (levelA !== levelB) return levelB - levelA;
 
+      const valueA = typeof a.value === 'number' ? a.value : parseFloat(a.value) || 0;
+      const valueB = typeof b.value === 'number' ? b.value : parseFloat(b.value) || 0;
+      if (valueA !== valueB) return valueB - valueA;
+
       return (a.name || '').localeCompare(b.name || '', 'zh-CN');
     });
   }
 
-  /**
-   * ⭐ v5：其他物品导出排序（按 category → name）
-   */
   _sortOtherItemsForExport(items) {
     if (!items || items.length === 0) return;
 
@@ -1840,33 +1904,50 @@ export class DataManager {
   /**
    * ⭐ 导出为 JSON 字符串
    *
-   * 注：不再有"是否包含缓存"的参数。
-   *     缓存存在 IndexedDB（见 TTKIndexedDB.js），
-   *     跟 data.json 完全解耦，导出时不涉及。
+   * ⭐ v7.1：清理废弃字段
+   * ⭐ v7.2：新增综合评分导出
+   * ⭐ v7.3：剔除运行时字段（_isNewRow / _isImported）
+   * ⭐ v8：问题 16 - Infinity → null
    *
-   * ⭐ 参数导出（v3）：
-   *   - extra 参数可携带页面顶部的参数（params）
-   *   - 结构：{ params: { ... } }
-   *   - extra 为空 / 无 params → 不写 params 字段（保持文件干净）
-   *
-   * ⭐ v5：导出包含 otherItems
-   *
-   * @param {Object} [extra] - 额外数据（目前支持 { params }）
-   * @param {Object} [extra.params] - 页面顶部参数快照
-   * @returns {string} JSON 字符串
+   * @param {Object} [extra]
+   * @returns {string}
    */
   exportToJSON(extra = {}) {
     try {
       const dataToExport = JSON.parse(JSON.stringify(this.data));
 
+      // ---------- 清理运行时字段 ----------
       if (Array.isArray(dataToExport.weapons)) {
-        dataToExport.weapons = dataToExport.weapons.filter(w => !w._isNewRow);
+        dataToExport.weapons = dataToExport.weapons
+          .filter(w => !w._isNewRow)
+          .map(w => {
+            if (w._isImported) {
+              const { _isImported, ...rest } = w
+              return rest
+            }
+            return w
+          })
       }
 
+      if (Array.isArray(dataToExport.prices)) {
+        for (const p of dataToExport.prices) {
+          if (Array.isArray(p.configs)) {
+            p.configs = p.configs.map(c => {
+              if (c._isImported) {
+                const { _isImported, ...rest } = c
+                return rest
+              }
+              return c
+            })
+          }
+        }
+      }
+
+      // ---------- 排序 ----------
       this._sortWeaponsForExport(dataToExport.weapons);
       this._sortBulletsForExport(dataToExport.bullets);
       this._sortArmorsForExport(dataToExport.armors);
-      this._sortOtherItemsForExport(dataToExport.otherItems);   // ⭐ v5
+      this._sortOtherItemsForExport(dataToExport.otherItems);
 
       const weaponsMap = new Map();
       if (Array.isArray(dataToExport.weapons)) {
@@ -1877,14 +1958,44 @@ export class DataManager {
 
       const serialized = this.serializeData(dataToExport);
 
-      // ⭐ 组装最终导出对象
       const output = {
         ...serialized,
       };
 
-      // ⭐ params：只有非空时才写入
+      // ---------- params ----------
       if (extra && extra.params && typeof extra.params === 'object') {
-        output.params = extra.params;
+        const cleanedParams = this._cleanParams(extra.params);
+        if (Object.keys(cleanedParams).length > 0) {
+          output.params = cleanedParams;
+        }
+      }
+
+      // ---------- equipState ----------
+      if (extra && extra.equipState && typeof extra.equipState === 'object') {
+        const equipState = this._validateEquipState(
+          JSON.parse(JSON.stringify(extra.equipState))
+        );
+        this._sortEquipStateForExport(equipState);
+
+        if (equipState.calcEquip || equipState.scoreEquips.length > 0) {
+          output.equipState = equipState;
+        }
+      }
+
+      // 显式确保不写 selectedEquips
+      if (output.selectedEquips !== undefined) {
+        delete output.selectedEquips;
+      }
+
+      // ---------- v7.2：综合评分数据 ----------
+      if (extra && extra.weaponScores && typeof extra.weaponScores === 'object') {
+        const scoreKeys = Object.keys(extra.weaponScores);
+        if (scoreKeys.length > 0) {
+          output.weaponScores = this._buildWeaponScoresForExport(
+            extra.weaponScores,
+            extra.havocCosts || {}
+          );
+        }
       }
 
       let json = JSON.stringify(output, null, 2);
@@ -1909,7 +2020,6 @@ export class DataManager {
   }
 
   _compressKeyPoints(json) {
-    // 兼容旧版：如果没有 keyPoints 字段，直接返回原 json
     if (!json.includes('"keyPoints"')) return json;
 
     return json.replace(
@@ -1925,13 +2035,94 @@ export class DataManager {
   }
 
   /**
+   * ⭐ v7.2：组装综合评分导出数据
+   *
+   * ⭐ v8：问题 16 - Infinity → null
+   */
+  _buildWeaponScoresForExport(weaponScores, havocCosts) {
+    const result = {}
+
+    const entries = Object.entries(weaponScores).map(([key, val]) => {
+      // ⭐ v8：Infinity / NaN 显式转 null
+      const rawScore = val?.score
+      const score = (typeof rawScore === 'number' && isFinite(rawScore)) ? rawScore : null
+      return { key, val, score }
+    })
+
+    entries.sort((a, b) => {
+      if (a.score === null && b.score === null) return 0
+      if (a.score === null) return 1
+      if (b.score === null) return -1
+      return a.score - b.score
+    })
+
+    for (const { key, val } of entries) {
+      const underscoreIdx = key.indexOf('_')
+      if (underscoreIdx === -1) continue
+
+      const weaponIdStr = key.slice(0, underscoreIdx)
+      const configId = key.slice(underscoreIdx + 1)
+      const weaponId = parseInt(weaponIdStr, 10)
+      if (!isFinite(weaponId)) continue
+
+      const weapon = this.getWeaponById(weaponId)
+      const priceRows = this.getPriceRowsForWeapon(weaponId) || []
+      const priceRow = priceRows.find(r => r.configId === configId)
+
+      if (!weapon || !priceRow) {
+        result[key] = {
+          score: val?.score ?? null,
+          grade: val?.grade ?? null,
+          meta: {
+            weaponId,
+            configId,
+            _missing: true,
+          }
+        }
+        continue
+      }
+
+      const bullet = priceRow.bulletId
+        ? this.getBulletById(priceRow.bulletId)
+        : null
+
+      const havoc = havocCosts[key] || null
+
+      // ⭐ v8：Infinity → null
+      const havocCost = (havoc && typeof havoc.totalCost === 'number' && isFinite(havoc.totalCost))
+        ? havoc.totalCost
+        : null
+
+      result[key] = {
+        score: (typeof val?.score === 'number' && isFinite(val.score)) ? val.score : null,
+        grade: val?.grade ?? null,
+        meta: {
+          weaponId: weapon.id,
+          weaponName: weapon.name,
+          configId: priceRow.configId,
+          barrel: priceRow.barrel || '无',
+          barrelId: priceRow.barrelId,
+          muzzle: priceRow.muzzle || '无',
+          muzzleId: priceRow.muzzleId,
+          precision: priceRow.precision,
+          bulletId: priceRow.bulletId || '',
+          bulletName: bullet?.name || '',
+          bulletLevel: bullet?.level ?? null,
+          bulletPrice: bullet?.price ?? 0,
+          buildCode: priceRow.buildCode || '',
+          aimSpeed: priceRow.aimSpeed ?? 0,
+          price: priceRow.price || 0,
+          havocCost,
+          enabled: priceRow.enabled !== false,
+        }
+      }
+    }
+
+    return result
+  }
+
+  /**
    * ⭐ 导出为文件
-   *
-   * ⭐ 参数导出（v3）：
-   *   - extra 参数可携带页面顶部的参数（params）
-   *
-   * @param {string} [filename=null] - 文件名，默认 ttk_data_YYYY-MM-DD.json
-   * @param {Object} [extra] - 额外数据（目前支持 { params }）
    */
   exportToFile(filename = null, extra = {}) {
     const jsonStr = this.exportToJSON(extra);
@@ -1950,26 +2141,22 @@ export class DataManager {
   }
 
   /**
-   * ⭐ 从 JSON 字符串导入
-   *
-   * ⭐ 参数导入（v3）：
-   *   - 返回值改为 { data, params }
-   *   - params 由调用方（App.vue）负责写入 paramsStore
-   *   - DataManager 保持纯净，不直接依赖 paramsStore
-   *   - 老文件没有 params 字段 → params 为 null
-   *
-   * ⭐ v5：导入包含 otherItems
-   *
-   * @param {string} jsonStr
-   * @returns {{ data: Object, params: Object|null }}
+   * ⭐ v7.3：从 JSON 字符串导入（支持双模式）
    */
-  importFromJSON(jsonStr) {
+  importFromJSON(jsonStr, options = {}) {
+    const mode = options.mode === 'merge' ? 'merge' : 'overwrite'
+
     try {
       const parsed = JSON.parse(jsonStr);
       if (!this.validateData(parsed)) {
         throw new Error('无效的数据格式');
       }
 
+      if (mode === 'merge') {
+        return this._importMerge(parsed);
+      }
+
+      // ---------- 全量覆盖 ----------
       const normalized = this.normalizeData(parsed);
       this.data = normalized;
       this.originalData = JSON.parse(JSON.stringify(normalized));
@@ -1977,21 +2164,36 @@ export class DataManager {
 
       this.clearAllModified();
 
-      // ⭐ 提取 params（如果有）
       let params = null;
       if (parsed.params && typeof parsed.params === 'object') {
-        params = JSON.parse(JSON.stringify(parsed.params));
+        params = this._cleanParams(parsed.params);
+      }
+
+      let equipState = null;
+      if (parsed.equipState && typeof parsed.equipState === 'object') {
+        equipState = this._validateEquipState(parsed.equipState);
+      } else if (Array.isArray(parsed.selectedEquips)) {
+        equipState = this._validateEquipState({ scoreEquips: parsed.selectedEquips });
+        console.log('⚠️ 检测到老格式 selectedEquips，已兼容处理为 equipState');
+      }
+
+      if (parsed.weaponScores && typeof parsed.weaponScores === 'object') {
+        console.log(
+          `ℹ️ 导入文件含 ${Object.keys(parsed.weaponScores).length} 条评分，` +
+          `已忽略（导入后会自动重算）`
+        );
       }
 
       console.log(
-        `✅ DataManager: 导入了 ${this.data.weapons.length} 把武器, ` +
+        `✅ DataManager: 全量导入了 ${this.data.weapons.length} 把武器, ` +
         `${this.data.bullets.length} 种子弹, ` +
         `${this.data.armors.length} 条护甲数据, ` +
         `${this.data.otherItems.length} 条其他物品` +
-        (params ? `, 含参数快照` : '')
+        (params ? `, 含参数快照` : '') +
+        (equipState ? `, 含装备状态` : '')
       );
 
-      return { data: this.data, params };
+      return { data: this.data, params, equipState, mode: 'overwrite' };
 
     } catch (error) {
       console.error('导入 JSON 失败:', error);
@@ -1999,14 +2201,162 @@ export class DataManager {
     }
   }
 
+  _importMerge(imported) {
+    const stats = {
+      weapons: { added: 0, updated: 0 },
+      bullets: { added: 0, updated: 0 },
+      prices: { added: 0, updated: 0, configsAdded: 0, configsUpdated: 0 },
+      armors: { added: 0, updated: 0 },
+      otherItems: { added: 0, updated: 0 },
+    }
+
+    const clone = (x) => JSON.parse(JSON.stringify(x))
+
+    // ---------- 1. 武器 ----------
+    const weaponMap = new Map(this.data.weapons.map(w => [w.id, w]))
+    for (const impW of imported.weapons || []) {
+      const imp = clone(impW)
+      if (weaponMap.has(imp.id)) {
+        Object.assign(weaponMap.get(imp.id), imp)
+        stats.weapons.updated++
+      } else {
+        this.data.weapons.push({ ...imp, _isImported: true })
+        stats.weapons.added++
+      }
+    }
+
+    // ---------- 2. 子弹 ----------
+    const bulletMap = new Map(this.data.bullets.map(b => [b.id, b]))
+    for (const impB of imported.bullets || []) {
+      const imp = clone(impB)
+      if (bulletMap.has(imp.id)) {
+        Object.assign(bulletMap.get(imp.id), imp)
+        stats.bullets.updated++
+      } else {
+        this.data.bullets.push(imp)
+        stats.bullets.added++
+      }
+    }
+
+    // ---------- 3. 价格配置 ----------
+    const priceMap = new Map(this.data.prices.map(p => [p.weaponId, p]))
+
+    for (const impPrice of imported.prices || []) {
+      const wid = impPrice.weaponId
+      let localPrice = priceMap.get(wid)
+
+      if (!localPrice) {
+        const newPrice = {
+          weaponId: wid,
+          weaponName: impPrice.weaponName || '',
+          configs: (impPrice.configs || []).map(c => ({
+            ...clone(c),
+            _isImported: true,
+          })),
+        }
+        this.data.prices.push(newPrice)
+        priceMap.set(wid, newPrice)
+        stats.prices.added++
+        stats.prices.configsAdded += newPrice.configs.length
+        continue
+      }
+
+      const localCfgMap = new Map((localPrice.configs || []).map(c => [c.id, c]))
+      for (const impCfg of impPrice.configs || []) {
+        const cfgId = impCfg.id
+        const imp = clone(impCfg)
+
+        if (localCfgMap.has(cfgId)) {
+          Object.assign(localCfgMap.get(cfgId), imp)
+          stats.prices.configsUpdated++
+        } else {
+          localPrice.configs.push({ ...imp, _isImported: true })
+          stats.prices.configsAdded++
+        }
+      }
+    }
+
+    // ---------- 4. 护甲 ----------
+    const armorMap = new Map(this.data.armors.map(a => [a.id, a]))
+    for (const impA of imported.armors || []) {
+      const imp = clone(impA)
+      if (armorMap.has(imp.id)) {
+        Object.assign(armorMap.get(imp.id), imp)
+        stats.armors.updated++
+      } else {
+        this.data.armors.push(imp)
+        stats.armors.added++
+      }
+    }
+
+    // ---------- 5. 其他物品 ----------
+    const otherMap = new Map(this.data.otherItems.map(i => [i.id, i]))
+    for (const impI of imported.otherItems || []) {
+      const imp = clone(impI)
+      if (otherMap.has(imp.id)) {
+        Object.assign(otherMap.get(imp.id), imp)
+        stats.otherItems.updated++
+      } else {
+        this.data.otherItems.push(imp)
+        stats.otherItems.added++
+      }
+    }
+
+    // ---------- 6. 更新 originalData ----------
+    this.originalData = JSON.parse(JSON.stringify(this.data))
+    this.isLoaded = true
+    this.clearAllModified()
+
+    // ---------- 7. 提取 params / equipState ----------
+    let params = null
+    if (imported.params && typeof imported.params === 'object') {
+      params = this._cleanParams(imported.params)
+    }
+
+    let equipState = null
+    if (imported.equipState && typeof imported.equipState === 'object') {
+      equipState = this._validateEquipState(imported.equipState)
+    } else if (Array.isArray(imported.selectedEquips)) {
+      equipState = this._validateEquipState({ scoreEquips: imported.selectedEquips })
+    }
+
+    console.log(
+      `✅ 增量导入完成: ` +
+      `武器 +${stats.weapons.added}/~${stats.weapons.updated}, ` +
+      `配置 +${stats.prices.configsAdded}/~${stats.prices.configsUpdated}, ` +
+      `子弹 +${stats.bullets.added}/~${stats.bullets.updated}, ` +
+      `护甲 +${stats.armors.added}/~${stats.armors.updated}`
+    )
+
+    return { data: this.data, params, equipState, stats, mode: 'merge' }
+  }
+
   /**
-   * ⭐ 从文件导入
-   *
-   * ⭐ 返回值改为 { data, params }
-   *
-   * @param {File} file
-   * @returns {Promise<{ data: Object, params: Object|null }>}
+   * ⭐ v7.3：清除所有导入标记
    */
+  clearImportMarks() {
+    let count = 0
+
+    for (const w of this.data.weapons || []) {
+      if (w._isImported) {
+        delete w._isImported
+        count++
+      }
+    }
+
+    for (const p of this.data.prices || []) {
+      for (const c of p.configs || []) {
+        if (c._isImported) {
+          delete c._isImported
+          count++
+        }
+      }
+    }
+
+    console.log(`🧹 已清除 ${count} 个导入标记`)
+    return count
+  }
+
   importFromFile(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -2063,7 +2413,7 @@ export class DataManager {
       bulletCount: this.data.bullets.length,
       priceCount: this.data.prices.length,
       armorCount: this.data.armors.length,
-      otherItemCount: this.data.otherItems.length,   // ⭐ v5
+      otherItemCount: this.data.otherItems.length,
       muzzleCount: this.muzzles.length,
       isLoaded: this.isLoaded,
       hasUnsavedChanges: this.hasUnsavedChanges(),
@@ -2071,9 +2421,6 @@ export class DataManager {
     };
   }
 
-  /**
-   * 从显示字符串反查子弹 ID
-   */
   findBulletIdByDisplay(bulletDisplay) {
     if (!bulletDisplay || bulletDisplay === '-' || bulletDisplay === '') return null;
 
