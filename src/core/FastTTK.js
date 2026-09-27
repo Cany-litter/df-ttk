@@ -15,6 +15,18 @@
 // ⭐ v4 改动（死代码清理）：
 //   - 删除 queryMatrixStats（无引用）
 //
+// ⭐ v5 改动（距离切片 + 绝对距离权重）：
+//   - getKeyDistances 新增 minDistance 参数（默认 0）
+//     → 支持「只算 50~100m」这种切片，关键点也从 minDistance 开始
+//   - computeDistanceWeightedAvg 改用「绝对距离权重」：
+//       w(d) = 1.5 - (d / 100) × 1.0
+//     ⚠️ 权重曲线是全局固定的（0m→1.5，100m→0.5），
+//        不随切片范围拉伸。切片只是「只取区间内的点，只累加这些点的权重」。
+//     这样：
+//       · 全量 0~100m  → 0m→1.5，100m→0.5（行为不变）
+//       · 切片 0~50m   → 0m→1.5，50m→1.0
+//       · 切片 50~100m → 50m→1.0，100m→0.5
+//
 // ⭐ 职责：
 // - 对外提供统一的 TTK 计算 API（computeTTK / computeTTKMatrix / 缓存管理）
 // - 提供"关键点 + 插值"的完整序列计算
@@ -49,6 +61,15 @@ import { calculateCurrentValues } from '../utils/weaponCalc.js'
 // ============================================================
 
 const DEFAULT_MODE = 'fast'
+
+/** ⭐ v5：权重曲线的参考满量程（100m → 权重 0.5） */
+const WEIGHT_FULL_RANGE = 100
+
+/** ⭐ v5：权重曲线 起点（0m → 1.5） */
+const WEIGHT_BASE = 1.5
+
+/** ⭐ v5：权重曲线 满量程衰减量（100m 时减 1.0 → 0.5） */
+const WEIGHT_DECAY = 1.0
 
 // ============================================================
 // ============ 统一计算入口 =================================
@@ -292,20 +313,39 @@ export async function computeSingleTTK(armedWeapon, attachment, params, dm) {
 /**
  * 生成关键距离点
  *
+ * ⭐ v5：新增 minDistance 参数（默认 0）
+ *   - 支持「只算 50~100m」这种切片
+ *   - 关键点集合从 [0, maxDistance] 改为 [minDistance, maxDistance]
+ *   - 命中率节点 / 射程衰减节点也只在 (minDistance, maxDistance) 之间才加
+ *
  * 包含：
- * - 端点：0, maxDistance
- * - 命中率节点：config.distance 每个点 ±1
- * - 射程衰减节点：weapon.ranges 每个有限值 ±1
+ * - 端点：minDistance, maxDistance
+ * - 命中率节点：config.distance 每个点 ±1（落在区间内才加）
+ * - 射程衰减节点：weapon.ranges 每个有限值 ±1（落在区间内才加）
+ *
+ * @param {Object} weapon - 武器（含 _current）
+ * @param {Object} config - 价格配置（含 distance）
+ * @param {number} [maxDistance=100] - 最远距离
+ * @param {number} [minDistance=0] - 最近距离
+ * @returns {Array<number>} 升序关键点
  */
-export function getKeyDistances(weapon, config, maxDistance = 100) {
-  const points = new Set([0, maxDistance])
+export function getKeyDistances(weapon, config, maxDistance = 100, minDistance = 0) {
+  // 防御：min 不能大于 max
+  if (minDistance > maxDistance) {
+    [minDistance, maxDistance] = [maxDistance, minDistance]
+  }
+
+  const points = new Set([minDistance, maxDistance])
 
   // ---------- 命中率节点 ----------
   const configDistances = config?.distance
   if (Array.isArray(configDistances)) {
     for (const d of configDistances) {
-      if (typeof d === 'number' && isFinite(d) && d > 0 && d < maxDistance) {
-        points.add(Math.max(0, d - 1))
+      if (
+        typeof d === 'number' && isFinite(d) &&
+        d > minDistance && d < maxDistance
+      ) {
+        points.add(Math.max(minDistance, d - 1))
         points.add(d)
         points.add(Math.min(maxDistance, d + 1))
       }
@@ -316,8 +356,11 @@ export function getKeyDistances(weapon, config, maxDistance = 100) {
   const ranges = weapon?.ranges || weapon?._current?.ranges
   if (Array.isArray(ranges)) {
     for (const r of ranges) {
-      if (typeof r === 'number' && isFinite(r) && r > 0 && r < maxDistance) {
-        points.add(Math.max(0, r - 1))
+      if (
+        typeof r === 'number' && isFinite(r) &&
+        r > minDistance && r < maxDistance
+      ) {
+        points.add(Math.max(minDistance, r - 1))
         points.add(r)
         points.add(Math.min(maxDistance, r + 1))
       }
@@ -515,31 +558,82 @@ export function buildArmedWeapons(configs, dm) {
 // ---------- 6. 距离加权平均 ----------
 
 /**
- * 距离加权平均 TTK
+ * ⭐ v5：绝对距离权重（曲线固定，不随切片拉伸）
  *
- * 权重：w(d) = 1.5 - (d / maxDistance) * 1.0
- *   0m  → 1.5
+ *   w(d) = 1.5 - (d / 100) × 1.0
+ *
+ *   0m   → 1.5
+ *   50m  → 1.0
  *   100m → 0.5
+ *   100m 以上 → 也按这个公式继续下降（会被 clamp 到 >= 0）
+ *
+ * @param {number} distance
+ * @returns {number} 权重
+ */
+export function getDistanceWeight(distance) {
+  const d = Number(distance) || 0
+  const w = WEIGHT_BASE - (d / WEIGHT_FULL_RANGE) * WEIGHT_DECAY
+  return Math.max(0, w)
+}
+
+/**
+ * ⭐ v5：距离加权平均 TTK
+ *
+ * 权重曲线固定（0m→1.5，100m→0.5），不随切片范围拉伸。
+ * 切片只影响「取哪些点、累加哪些权重」。
+ *
+ * 行为对照：
+ *   · 全量 0~100m  → 0m→1.5，100m→0.5（旧行为完全一致）
+ *   · 切片 0~50m   → 0m→1.5，50m→1.0
+ *   · 切片 50~100m → 50m→1.0，100m→0.5
  *
  * @param {Array<number>} times - 每个距离点的 TTK（长度 = distances.length）
  * @param {Array<number>} distances - 距离数组（如 [0, 1, 2, ..., 100]）
  * @returns {number} 加权平均 TTK（无有效数据时返回 Infinity）
  */
 export function computeDistanceWeightedAvg(times, distances) {
+  if (!distances || distances.length === 0) return Infinity
+
   let weightedSum = 0
   let weightSum = 0
-
-  const maxDist = distances[distances.length - 1] || 100
 
   for (let i = 0; i < distances.length; i++) {
     const ttk = times[i]
     if (ttk > 0 && isFinite(ttk)) {
       const d = distances[i]
-      const w = 1.5 - (d / maxDist) * 1.0
+      const w = getDistanceWeight(d)
       weightedSum += ttk * w
       weightSum += w
     }
   }
 
   return weightSum > 0 ? weightedSum / weightSum : Infinity
+}
+
+/**
+ * ⭐ v5：距离加权平均 shots（用于哈弗币消耗）
+ *
+ * 和 computeDistanceWeightedAvg 同款权重，只是作用于 shots 而非 ttk。
+ *
+ * @param {Array<number>} shotsArr
+ * @param {Array<number>} distances
+ * @returns {number} 加权平均 shots（无有效数据时返回 0）
+ */
+export function computeDistanceWeightedAvgShots(shotsArr, distances) {
+  if (!distances || distances.length === 0) return 0
+
+  let weightedSum = 0
+  let weightSum = 0
+
+  for (let i = 0; i < distances.length; i++) {
+    const s = shotsArr[i]
+    if (typeof s === 'number' && isFinite(s) && s > 0) {
+      const d = distances[i]
+      const w = getDistanceWeight(d)
+      weightedSum += s * w
+      weightSum += w
+    }
+  }
+
+  return weightSum > 0 ? weightedSum / weightSum : 0
 }

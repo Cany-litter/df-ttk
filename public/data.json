@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updatedAt": "2026-09-26",
+  "updatedAt": "2026-09-27",
   "meta": {
     "description": "Delta Force TTK 计算器 - 统一数据源",
     "note": "包含武器、子弹、价格三类数据，所有数据以 JSON 格式存储。enabled 字段控制该配置是否参与 TTK 计算。枪管新增字段：fireMode, burstCount, burstInternalROF, burstInterval；新增 armors 数组（护甲/头盔数据） 护甲/头盔数据已按截图更新（1白/2绿/3蓝/4紫/5金/6红）。 bullets 已按截图更新。 bullets 已按截图全量更新。 bullets 已按截图全量更新。 bullets 已添加 default 字段（每 caliber+level 唯一）。",
@@ -1312,7 +1312,7 @@
       "id": 46,
       "name": "汤姆逊",
       "type": "冲锋枪",
-      "allowedBullet": "4.6x30mm",
+      "allowedBullet": ".45 ACP",
       "ranges": [
         18,
         31,
@@ -4524,12 +4524,12 @@
         {
           "id": "#1",
           "barrelId": 0,
-          "barrel": "新式蛟龙战术长枪管",
+          "barrel": "新式蛟龙战术长枪管（标准）",
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0.09,
           "buildCode": "腾龙突击步枪-烽火地带-6L9UNPS05506E7BV9G8G5",
-          "price": 240000,
+          "price": 250000,
           "distance": [
             30,
             50,
@@ -4543,6 +4543,29 @@
           "bullet": "",
           "enabled": true,
           "aimSpeed": 361
+        },
+        {
+          "id": "#2",
+          "barrelId": 1,
+          "barrel": "新式蛟龙战术长枪管（高速导气）",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0.09,
+          "aimSpeed": 377,
+          "buildCode": "腾龙突击步枪-烽火地带-6LE447G05506E7BV9G8G5",
+          "price": 380000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.9,
+            0.6
+          ],
+          "bullet": "",
+          "enabled": true
         }
       ]
     },
@@ -4559,7 +4582,7 @@
           "precision": 0.09,
           "aimSpeed": 327,
           "buildCode": "AK-12突击步枪-烽火地带-6L9UMHG05506E7BV9G8G5",
-          "price": 200000,
+          "price": 210000,
           "distance": [
             30,
             50,
@@ -4587,7 +4610,7 @@
           "muzzle": "无",
           "precision": 0.09,
           "buildCode": "AKM突击步枪-烽火地带-6LDJTI005506E7BV9G8G5",
-          "price": 260000,
+          "price": 280000,
           "distance": [
             30,
             50,
@@ -4669,7 +4692,7 @@
           "precision": 0.09,
           "aimSpeed": 368,
           "buildCode": "AR57突击步枪-烽火地带-6LDOTE805506E7BV9G8G5",
-          "price": 430000,
+          "price": 440000,
           "distance": [
             30,
             50,
@@ -4755,7 +4778,7 @@
           "muzzle": "无",
           "precision": 0.09,
           "buildCode": "AUG突击步枪-烽火地带-6L9V87S05506E7BV9G8G5",
-          "price": 250000,
+          "price": 260000,
           "distance": [
             30,
             50,
@@ -4808,7 +4831,7 @@
         {
           "id": "#1",
           "barrelId": 3,
-          "barrel": "G3短枪管",
+          "barrel": "G3飓风短枪管组合",
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0.09,
@@ -4871,7 +4894,7 @@
           "muzzle": "无",
           "precision": 0.09,
           "buildCode": "K437突击步枪-烽火地带-6LA4TMO05506E7BV9G8G5",
-          "price": 500000,
+          "price": 520000,
           "distance": [
             30,
             50,
@@ -4901,7 +4924,7 @@
           "precision": 0.09,
           "aimSpeed": 368,
           "buildCode": "KC17突击步枪-烽火地带-6LA50VO05506E7BV9G8G5",
-          "price": 380000,
+          "price": 390000,
           "distance": [
             30,
             50,
@@ -4984,7 +5007,7 @@
           "barrel": "堤风超长枪管组合",
           "muzzle": "无",
           "buildCode": "M7战斗步枪-烽火地带-6LA53FC05506E7BV9G8G5",
-          "price": 970000,
+          "price": 980000,
           "distance": [
             30,
             50,
@@ -4997,7 +5020,9 @@
           ],
           "enabled": true,
           "precision": 0.09,
-          "aimSpeed": 396
+          "aimSpeed": 396,
+          "barrelId": 1,
+          "muzzleId": 0
         }
       ]
     },
@@ -5014,7 +5039,7 @@
           "precision": 0.09,
           "aimSpeed": 365,
           "buildCode": "MCX LT突击步枪-烽火地带-6LA59HG05506E7BV9G8G5",
-          "price": 300000,
+          "price": 310000,
           "distance": [
             30,
             50,
@@ -5188,7 +5213,7 @@
           "precision": 0.09,
           "aimSpeed": 361,
           "buildCode": "SCAR-H战斗步枪-烽火地带-6LA889O05506E7BV9G8G5",
-          "price": 260000,
+          "price": 270000,
           "distance": [
             30,
             50,
@@ -5227,6 +5252,29 @@
             1,
             0.9,
             0.55
+          ],
+          "bullet": "",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrelId": 0,
+          "barrel": "骑士重枪管",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0.09,
+          "aimSpeed": 332,
+          "buildCode": "SG552突击步枪-烽火地带-6LE20GG05506E7BV9G8G5",
+          "price": 170000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.9,
+            0.65
           ],
           "bullet": "",
           "enabled": true
@@ -5314,7 +5362,9 @@
           "enabled": true,
           "bullet": "",
           "precision": 0.09,
-          "aimSpeed": 338
+          "aimSpeed": 338,
+          "barrelId": 0,
+          "muzzleId": 3
         }
       ]
     },
@@ -5336,13 +5386,14 @@
           "hitRate": [
             1,
             0.95,
-            0.7
+            0.65
           ],
           "enabled": true,
           "muzzleId": 3,
           "bullet": "",
           "precision": 0.09,
-          "aimSpeed": 342
+          "aimSpeed": 342,
+          "barrelId": 1
         }
       ]
     },
@@ -5370,7 +5421,8 @@
           "bullet": "",
           "precision": 0.09,
           "aimSpeed": 317,
-          "barrelId": 3
+          "barrelId": 3,
+          "muzzleId": 3
         }
       ]
     },
@@ -5383,7 +5435,7 @@
           "barrel": "蜂刺长枪管组合",
           "muzzle": "冲锋枪回声消音器",
           "buildCode": "MP7冲锋枪-烽火地带-6LA9CUO05506E7BV9G8G5",
-          "price": 550000,
+          "price": 540000,
           "distance": [
             30,
             50,
@@ -5398,7 +5450,8 @@
           "muzzleId": 3,
           "bullet": "",
           "precision": 0.09,
-          "aimSpeed": 343
+          "aimSpeed": 343,
+          "barrelId": 1
         }
       ]
     },
@@ -5411,7 +5464,7 @@
           "barrel": "重攻长枪管",
           "muzzle": "冲锋枪回声消音器",
           "buildCode": "P90冲锋枪-烽火地带-6LA9DT405506E7BV9G8G5",
-          "price": 360000,
+          "price": 380000,
           "distance": [
             30,
             50,
@@ -5425,7 +5478,8 @@
           "enabled": true,
           "muzzleId": 3,
           "precision": 0.09,
-          "aimSpeed": 418
+          "aimSpeed": 418,
+          "barrelId": 0
         }
       ]
     },
@@ -5435,7 +5489,7 @@
       "configs": [
         {
           "id": "#1",
-          "barrel": "新式红缨战术长枪管",
+          "barrel": "新式红缨战术长枪管（标准）",
           "muzzle": "冲锋枪回声消音器",
           "buildCode": "QCQ171冲锋枪-烽火地带-6LA9FM405506E7BV9G8G5",
           "price": 450000,
@@ -5450,9 +5504,10 @@
             0.7
           ],
           "enabled": true,
-          "precision": 0,
+          "precision": 0.09,
           "aimSpeed": 343,
-          "muzzleId": 3
+          "muzzleId": 3,
+          "barrelId": 1
         }
       ]
     },
@@ -5469,7 +5524,7 @@
           "precision": 0.09,
           "aimSpeed": 265,
           "buildCode": "SMG-45冲锋枪-烽火地带-6LBB73S05506E7BV9G8G5",
-          "price": 110000,
+          "price": 120000,
           "distance": [
             30,
             50,
@@ -5508,7 +5563,8 @@
           "enabled": true,
           "muzzleId": 3,
           "precision": 0.09,
-          "aimSpeed": 340
+          "aimSpeed": 340,
+          "barrelId": 0
         }
       ]
     },
@@ -5550,7 +5606,7 @@
           "barrel": "长剑超长枪管组合",
           "muzzle": "冲锋枪回声消音器",
           "buildCode": "Vector冲锋枪-烽火地带-6LA9LRG05506E7BV9G8G5",
-          "price": 490000,
+          "price": 500000,
           "distance": [
             30,
             50,
@@ -5565,7 +5621,8 @@
           "bullet": "",
           "precision": 0.09,
           "aimSpeed": 308,
-          "muzzleId": 3
+          "muzzleId": 3,
+          "barrelId": 1
         }
       ]
     },
@@ -5582,7 +5639,7 @@
           "precision": 0,
           "aimSpeed": 338,
           "buildCode": "M249轻机枪-烽火地带-6LBB2VO05506E7BV9G8G5",
-          "price": 100000,
+          "price": 130000,
           "distance": [
             30,
             50,
@@ -5591,7 +5648,30 @@
           "hitRate": [
             1,
             0.85,
-            0.4
+            0.45
+          ],
+          "bullet": "",
+          "enabled": true
+        },
+        {
+          "id": "#2",
+          "barrelId": 0,
+          "barrel": "犀牛长枪管",
+          "muzzleId": 0,
+          "muzzle": "无",
+          "precision": 0.09,
+          "aimSpeed": 368,
+          "buildCode": "M249轻机枪-烽火地带-6LE1RP405506E7BV9G8G5",
+          "price": 170000,
+          "distance": [
+            30,
+            50,
+            100
+          ],
+          "hitRate": [
+            1,
+            0.85,
+            0.6
           ],
           "bullet": "",
           "enabled": true
@@ -5621,7 +5701,8 @@
           "enabled": true,
           "precision": 0.09,
           "aimSpeed": 425,
-          "muzzleId": 0
+          "muzzleId": 0,
+          "barrelId": 0
         }
       ]
     },
@@ -5660,10 +5741,10 @@
       "configs": [
         {
           "id": "#1",
-          "barrel": "新式重锤战术枪管",
+          "barrel": "新式重锤战术枪管（标准）",
           "muzzle": "无",
           "buildCode": "QJB201轻机枪-烽火地带-6L7HDU805506E7BV9G8G5",
-          "price": 360000,
+          "price": 390000,
           "distance": [
             30,
             50,
@@ -5675,8 +5756,10 @@
             0.7
           ],
           "enabled": true,
-          "precision": 0,
-          "aimSpeed": 359
+          "precision": 0.09,
+          "aimSpeed": 359,
+          "barrelId": 0,
+          "muzzleId": 0
         }
       ]
     },
@@ -5689,7 +5772,7 @@
           "barrel": "洞察超长枪管",
           "muzzle": "无",
           "buildCode": "M14射手步枪-烽火地带-6L7HJR005506E7BV9G8G5",
-          "price": 890000,
+          "price": 900000,
           "distance": [
             30,
             50,
@@ -5702,7 +5785,9 @@
           ],
           "enabled": true,
           "precision": 0.09,
-          "aimSpeed": 437
+          "aimSpeed": 437,
+          "barrelId": 1,
+          "muzzleId": 0
         }
       ]
     },
@@ -5712,7 +5797,7 @@
       "configs": [
         {
           "id": "#1",
-          "barrelId": -1,
+          "barrelId": 0,
           "barrel": "一体消音枪管",
           "muzzleId": 0,
           "muzzle": "无",
@@ -5770,12 +5855,12 @@
       "configs": [
         {
           "id": "#1",
-          "barrelId": -1,
+          "barrelId": 0,
           "barrel": "碳钎长枪管+镀铬爆发枪机",
           "muzzleId": 0,
           "muzzle": "无",
           "buildCode": "SVCH精确射手步枪-烽火地带-6L8M6Q005506E7BV9G8G5",
-          "price": 510000,
+          "price": 520000,
           "distance": [
             30,
             50,
@@ -5844,7 +5929,9 @@
           ],
           "enabled": true,
           "precision": 0.09,
-          "aimSpeed": 397
+          "aimSpeed": 397,
+          "barrelId": 0,
+          "muzzleId": 0
         }
       ]
     }
@@ -6663,7 +6750,7 @@
     "aimWeight": 0.4
   },
   "equipState": {
-    "mode": "score",
+    "mode": "calc",
     "calcEquip": {
       "armorId": "armor_4_1789274589263",
       "helmetId": "helmet_4_1789274589288",
@@ -7758,124 +7845,8 @@
     ]
   },
   "weaponScores": {
-    "20_#1": {
-      "score": 587.4430748327983,
-      "grade": "A",
-      "meta": {
-        "weaponId": 20,
-        "weaponName": "MK4",
-        "configId": "#1",
-        "barrel": "击剑手枪管",
-        "barrelId": 1,
-        "muzzle": "冲锋枪回声消音器",
-        "muzzleId": 3,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "MK4冲锋枪-烽火地带-6LDP1P805506E7BV9G8G5",
-        "aimSpeed": 342,
-        "price": 400000,
-        "havocCost": 375974.6196854741,
-        "enabled": true
-      }
-    },
-    "49_#1": {
-      "score": 619.0665734592511,
-      "grade": "A",
-      "meta": {
-        "weaponId": 49,
-        "weaponName": "M700",
-        "configId": "#1",
-        "barrel": "一体消音枪管",
-        "barrelId": 0,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "M700狙击步枪-烽火地带-6L8MOO005506E7BV9G8G5",
-        "aimSpeed": 374,
-        "price": 450000,
-        "havocCost": 416177.50590699754,
-        "enabled": true
-      }
-    },
-    "48_#1": {
-      "score": 645.1965983015189,
-      "grade": "A",
-      "meta": {
-        "weaponId": 48,
-        "weaponName": "SVCH",
-        "configId": "#1",
-        "barrel": "碳钎长枪管+镀铬爆发枪机",
-        "barrelId": 0,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "SVCH精确射手步枪-烽火地带-6L8M6Q005506E7BV9G8G5",
-        "aimSpeed": 383,
-        "price": 510000,
-        "havocCost": 471680.6112315604,
-        "enabled": true
-      }
-    },
-    "12_#1": {
-      "score": 661.2500428356813,
-      "grade": "A",
-      "meta": {
-        "weaponId": 12,
-        "weaponName": "K437",
-        "configId": "#1",
-        "barrel": "长矛手长枪管组合",
-        "barrelId": 1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "K437突击步枪-烽火地带-6LA4TMO05506E7BV9G8G5",
-        "aimSpeed": 375,
-        "price": 500000,
-        "havocCost": 561715.5959054001,
-        "enabled": true
-      }
-    },
-    "40_#1": {
-      "score": 669.2333369749887,
-      "grade": "A",
-      "meta": {
-        "weaponId": 40,
-        "weaponName": "Vector",
-        "configId": "#1",
-        "barrel": "长剑超长枪管组合",
-        "barrelId": 1,
-        "muzzle": "冲锋枪回声消音器",
-        "muzzleId": 3,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "Vector冲锋枪-烽火地带-6LA9LRG05506E7BV9G8G5",
-        "aimSpeed": 308,
-        "price": 490000,
-        "havocCost": 625893.3712891098,
-        "enabled": true
-      }
-    },
     "5_#1": {
-      "score": 672.2229027793621,
-      "grade": "A",
+      "score": 604.644069327145,
       "meta": {
         "weaponId": 5,
         "weaponName": "AS-Val",
@@ -7892,19 +7863,40 @@
         "buildCode": "AS Val突击步枪-烽火地带-6LB5Q7805506E7BV9G8G5",
         "aimSpeed": 314,
         "price": 460000,
-        "havocCost": 524907.2875003514,
+        "havocCost": 522459.5493428173,
         "enabled": true
       }
     },
-    "13_#1": {
-      "score": 673.0923477655687,
-      "grade": "A",
+    "20_#1": {
+      "score": 622.4689008018705,
       "meta": {
-        "weaponId": 13,
-        "weaponName": "KC17",
+        "weaponId": 20,
+        "weaponName": "MK4",
         "configId": "#1",
-        "barrel": "长剑枪管",
+        "barrel": "击剑手枪管",
         "barrelId": 1,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "MK4冲锋枪-烽火地带-6LDP1P805506E7BV9G8G5",
+        "aimSpeed": 342,
+        "price": 400000,
+        "havocCost": 374853.83657538454,
+        "enabled": true
+      }
+    },
+    "48_#1": {
+      "score": 630.7250708928722,
+      "meta": {
+        "weaponId": 48,
+        "weaponName": "SVCH",
+        "configId": "#1",
+        "barrel": "碳钎长枪管+镀铬爆发枪机",
+        "barrelId": 0,
         "muzzle": "无",
         "muzzleId": 0,
         "precision": 0.09,
@@ -7912,16 +7904,37 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "KC17突击步枪-烽火地带-6LA50VO05506E7BV9G8G5",
-        "aimSpeed": 368,
-        "price": 380000,
-        "havocCost": 434769.1995920243,
+        "buildCode": "SVCH精确射手步枪-烽火地带-6L8M6Q005506E7BV9G8G5",
+        "aimSpeed": 383,
+        "price": 520000,
+        "havocCost": 474582.7685165482,
+        "enabled": true
+      }
+    },
+    "49_#1": {
+      "score": 635.2127342789354,
+      "meta": {
+        "weaponId": 49,
+        "weaponName": "M700",
+        "configId": "#1",
+        "barrel": "一体消音枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M700狙击步枪-烽火地带-6L8MOO005506E7BV9G8G5",
+        "aimSpeed": 374,
+        "price": 450000,
+        "havocCost": 415668.79261869914,
         "enabled": true
       }
     },
     "6_#1": {
-      "score": 674.7548683650676,
-      "grade": "A",
+      "score": 660.4638766917966,
       "meta": {
         "weaponId": 6,
         "weaponName": "ASh-12",
@@ -7938,19 +7951,18 @@
         "buildCode": "ASh-12战斗步枪-烽火地带-6L9V56G05506E7BV9G8G5",
         "aimSpeed": 348,
         "price": 470000,
-        "havocCost": 534402.133754842,
+        "havocCost": 530803.6260130368,
         "enabled": true
       }
     },
-    "21_#1": {
-      "score": 676.8682421815341,
-      "grade": "A",
+    "12_#1": {
+      "score": 662.4101689680217,
       "meta": {
-        "weaponId": 21,
-        "weaponName": "MK47",
+        "weaponId": 12,
+        "weaponName": "K437",
         "configId": "#1",
-        "barrel": "鏖战枪管",
-        "barrelId": 0,
+        "barrel": "长矛手长枪管组合",
+        "barrelId": 1,
         "muzzle": "无",
         "muzzleId": 0,
         "precision": 0.09,
@@ -7958,44 +7970,42 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "MK47突击步枪-烽火地带-6LA7T7005506E7BV9G8G5",
-        "aimSpeed": 348,
-        "price": 750000,
-        "havocCost": 662352.5676928406,
+        "buildCode": "K437突击步枪-烽火地带-6LA4TMO05506E7BV9G8G5",
+        "aimSpeed": 375,
+        "price": 520000,
+        "havocCost": 568445.583449681,
         "enabled": true
       }
     },
-    "11_#1": {
-      "score": 703.5445628034884,
-      "grade": "A",
+    "40_#1": {
+      "score": 664.5970000877248,
       "meta": {
-        "weaponId": 11,
-        "weaponName": "K416",
+        "weaponId": 40,
+        "weaponName": "Vector",
         "configId": "#1",
-        "barrel": "A8长枪管组合",
-        "barrelId": 2,
-        "muzzle": "无",
-        "muzzleId": 0,
+        "barrel": "长剑超长枪管组合",
+        "barrelId": 1,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
         "precision": 0.09,
         "bulletId": "",
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "K416突击步枪-烽火地带-6L9TPL005506E7BV9G8G5",
+        "buildCode": "Vector冲锋枪-烽火地带-6LA9LRG05506E7BV9G8G5",
         "aimSpeed": 308,
-        "price": 310000,
-        "havocCost": 408048.8880191827,
+        "price": 500000,
+        "havocCost": 617821.9863065952,
         "enabled": true
       }
     },
-    "18_#1": {
-      "score": 711.7397930329653,
-      "grade": "A",
+    "13_#1": {
+      "score": 677.0784751980268,
       "meta": {
-        "weaponId": 18,
-        "weaponName": "M7",
+        "weaponId": 13,
+        "weaponName": "KC17",
         "configId": "#1",
-        "barrel": "堤风超长枪管组合",
+        "barrel": "长剑枪管",
         "barrelId": 1,
         "muzzle": "无",
         "muzzleId": 0,
@@ -8004,68 +8014,21 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "M7战斗步枪-烽火地带-6LA53FC05506E7BV9G8G5",
-        "aimSpeed": 396,
-        "price": 970000,
-        "havocCost": 901107.6700335977,
-        "enabled": true
-      }
-    },
-    "1_#1": {
-      "score": 713.8855920664054,
-      "grade": "A",
-      "meta": {
-        "weaponId": 1,
-        "weaponName": "AK12",
-        "configId": "#1",
-        "barrel": "精英脚架长枪管",
-        "barrelId": 0,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "AK-12突击步枪-烽火地带-6L9UMHG05506E7BV9G8G5",
-        "aimSpeed": 327,
-        "price": 200000,
-        "havocCost": 325337.3642215233,
-        "enabled": true
-      }
-    },
-    "4_#1": {
-      "score": 715.0376607728881,
-      "grade": "B",
-      "meta": {
-        "weaponId": 4,
-        "weaponName": "AR57",
-        "configId": "#1",
-        "barrel": "AR57激流超长枪管",
-        "barrelId": 1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "AR57突击步枪-烽火地带-6LDOTE805506E7BV9G8G5",
+        "buildCode": "KC17突击步枪-烽火地带-6LA50VO05506E7BV9G8G5",
         "aimSpeed": 368,
-        "price": 430000,
-        "havocCost": 528645.1665342762,
+        "price": 390000,
+        "havocCost": 438180.5228134318,
         "enabled": true
       }
     },
-    "17_#1": {
-      "score": 726.3358446121332,
-      "grade": "B",
+    "41_#2": {
+      "score": 685.7380674130152,
       "meta": {
-        "weaponId": 17,
-        "weaponName": "M4A1",
-        "configId": "#1",
-        "barrel": "AR碳纤维枪管组合",
-        "barrelId": 2,
+        "weaponId": 41,
+        "weaponName": "腾龙",
+        "configId": "#2",
+        "barrel": "新式蛟龙战术长枪管（高速导气）",
+        "barrelId": 1,
         "muzzle": "无",
         "muzzleId": 0,
         "precision": 0.09,
@@ -8073,16 +8036,15 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "M4A1突击步枪-烽火地带-6LA4E4005506E7BV9G8G5",
-        "aimSpeed": 308,
-        "price": 210000,
-        "havocCost": 342159.231184195,
+        "buildCode": "腾龙突击步枪-烽火地带-6LE447G05506E7BV9G8G5",
+        "aimSpeed": 377,
+        "price": 380000,
+        "havocCost": 511677.72462763754,
         "enabled": true
       }
     },
     "47_#1": {
-      "score": 731.9652436886619,
-      "grade": "B",
+      "score": 694.4445586803108,
       "meta": {
         "weaponId": 47,
         "weaponName": "MDR",
@@ -8099,312 +8061,12 @@
         "buildCode": "MDR突击步枪-烽火地带-6LDOVSG05506E7BV9G8G5",
         "aimSpeed": 369,
         "price": 500000,
-        "havocCost": 466736.1893025782,
-        "enabled": true
-      }
-    },
-    "35_#1": {
-      "score": 733.9623021591442,
-      "grade": "B",
-      "meta": {
-        "weaponId": 35,
-        "weaponName": "SCAR-H",
-        "configId": "#1",
-        "barrel": "海狸长枪管",
-        "barrelId": 1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "SCAR-H战斗步枪-烽火地带-6LA889O05506E7BV9G8G5",
-        "aimSpeed": 361,
-        "price": 260000,
-        "havocCost": 307564.21234539425,
-        "enabled": true
-      }
-    },
-    "23_#1": {
-      "score": 739.6356039318154,
-      "grade": "A",
-      "meta": {
-        "weaponId": 23,
-        "weaponName": "MP7",
-        "configId": "#1",
-        "barrel": "蜂刺长枪管组合",
-        "barrelId": 1,
-        "muzzle": "冲锋枪回声消音器",
-        "muzzleId": 3,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "MP7冲锋枪-烽火地带-6LA9CUO05506E7BV9G8G5",
-        "aimSpeed": 343,
-        "price": 550000,
-        "havocCost": 495590.5617722895,
-        "enabled": true
-      }
-    },
-    "7_#1": {
-      "score": 745.1779943474384,
-      "grade": "B",
-      "meta": {
-        "weaponId": 7,
-        "weaponName": "AUG",
-        "configId": "#1",
-        "barrel": "尖兵标准枪管",
-        "barrelId": 3,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "AUG突击步枪-烽火地带-6L9V87S05506E7BV9G8G5",
-        "aimSpeed": 395,
-        "price": 250000,
-        "havocCost": 352469.7187506528,
-        "enabled": true
-      }
-    },
-    "38_#1": {
-      "score": 749.9556709102782,
-      "grade": "A",
-      "meta": {
-        "weaponId": 38,
-        "weaponName": "SR-3M",
-        "configId": "#1",
-        "barrel": "SR-3M铸钢战术枪管",
-        "barrelId": 0,
-        "muzzle": "冲锋枪回声消音器",
-        "muzzleId": 3,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "SR-3M紧凑突击步枪-烽火地带-6L7H3RC05506E7BV9G8G5",
-        "aimSpeed": 340,
-        "price": 400000,
-        "havocCost": 510413.6908185645,
-        "enabled": true
-      }
-    },
-    "14_#1": {
-      "score": 750.4780546107512,
-      "grade": "A",
-      "meta": {
-        "weaponId": 14,
-        "weaponName": "M14",
-        "configId": "#1",
-        "barrel": "洞察超长枪管",
-        "barrelId": 1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "M14射手步枪-烽火地带-6L7HJR005506E7BV9G8G5",
-        "aimSpeed": 437,
-        "price": 890000,
-        "havocCost": 740530.5804260989,
-        "enabled": true
-      }
-    },
-    "28_#1": {
-      "score": 761.2279252032679,
-      "grade": "B",
-      "meta": {
-        "weaponId": 28,
-        "weaponName": "QJB201",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "QJB201轻机枪-烽火地带-6L7HDU805506E7BV9G8G5",
-        "aimSpeed": 359,
-        "price": 360000,
-        "havocCost": 506166.0121691006,
-        "enabled": true
-      }
-    },
-    "41_#1": {
-      "score": 762.5503604184254,
-      "grade": "B",
-      "meta": {
-        "weaponId": 41,
-        "weaponName": "腾龙",
-        "configId": "#1",
-        "barrel": "新式蛟龙战术长枪管（标准）",
-        "barrelId": 0,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "腾龙突击步枪-烽火地带-6L9UNPS05506E7BV9G8G5",
-        "aimSpeed": 361,
-        "price": 240000,
-        "havocCost": 435157.5083530493,
-        "enabled": true
-      }
-    },
-    "27_#1": {
-      "score": 764.2785627536462,
-      "grade": "B",
-      "meta": {
-        "weaponId": 27,
-        "weaponName": "QBZ95-1",
-        "configId": "#1",
-        "barrel": "长弓枪管组合",
-        "barrelId": 1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "QBZ95-1突击步枪-烽火地带-6LA797S05506E7BV9G8G5",
-        "aimSpeed": 326,
-        "price": 170000,
-        "havocCost": 382916.6113945717,
-        "enabled": true
-      }
-    },
-    "16_#1": {
-      "score": 766.0975775154554,
-      "grade": "A",
-      "meta": {
-        "weaponId": 16,
-        "weaponName": "M250",
-        "configId": "#1",
-        "barrel": "钛金长枪管",
-        "barrelId": 0,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "M250通用机枪-烽火地带-6L7H9OK05506E7BV9G8G5",
-        "aimSpeed": 425,
-        "price": 740000,
-        "havocCost": 738825.6322047147,
-        "enabled": true
-      }
-    },
-    "36_#1": {
-      "score": 772.5948192413193,
-      "grade": "C",
-      "meta": {
-        "weaponId": 36,
-        "weaponName": "SG552",
-        "configId": "#1",
-        "barrel": "猎犬枪管",
-        "barrelId": 1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "SG552突击步枪-烽火地带-6LDOSI005506E7BV9G8G5",
-        "aimSpeed": 327,
-        "price": 110000,
-        "havocCost": 281623.55955969385,
-        "enabled": true
-      }
-    },
-    "19_#1": {
-      "score": 773.1770765243593,
-      "grade": "C",
-      "meta": {
-        "weaponId": 19,
-        "weaponName": "MCX-LT",
-        "configId": "#1",
-        "barrel": "MCX LT焰魂枪管-隔热网",
-        "barrelId": 0,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "MCX LT突击步枪-烽火地带-6LA59HG05506E7BV9G8G5",
-        "aimSpeed": 365,
-        "price": 300000,
-        "havocCost": 436961.728374421,
-        "enabled": true
-      }
-    },
-    "2_#1": {
-      "score": 774.1811328620495,
-      "grade": "C",
-      "meta": {
-        "weaponId": 2,
-        "weaponName": "AKM",
-        "configId": "#1",
-        "barrel": "海狸长枪管组合",
-        "barrelId": 2,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "AKM突击步枪-烽火地带-6LDJTI005506E7BV9G8G5",
-        "aimSpeed": 322,
-        "price": 260000,
-        "havocCost": 350688.7133308621,
-        "enabled": true
-      }
-    },
-    "26_#1": {
-      "score": 776.5841777990007,
-      "grade": "C",
-      "meta": {
-        "weaponId": 26,
-        "weaponName": "PTR-32",
-        "configId": "#1",
-        "barrel": "G3加强长枪管组合",
-        "barrelId": 1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "PTR-32突击步枪-烽火地带-6LA6UCS05506E7BV9G8G5",
-        "aimSpeed": 321,
-        "price": 190000,
-        "havocCost": 310687.0958002206,
+        "havocCost": 463533.2263751625,
         "enabled": true
       }
     },
     "46_#1": {
-      "score": 777.3502433984112,
-      "grade": "C",
+      "score": 698.0727055204426,
       "meta": {
         "weaponId": 46,
         "weaponName": "汤姆逊",
@@ -8421,36 +8083,320 @@
         "buildCode": "汤姆逊冲锋枪-烽火地带-6LCIO8005506E7BV9G8G5",
         "aimSpeed": 321,
         "price": 170000,
-        "havocCost": 232782.5786551891,
+        "havocCost": 366315.06394143665,
         "enabled": true
       }
     },
-    "31_#1": {
-      "score": 782.1693897463173,
-      "grade": "C",
+    "11_#1": {
+      "score": 698.2134564377222,
       "meta": {
-        "weaponId": 31,
-        "weaponName": "QCQ171",
+        "weaponId": 11,
+        "weaponName": "K416",
         "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "冲锋枪回声消音器",
-        "muzzleId": 3,
-        "precision": 0,
+        "barrel": "A8长枪管组合",
+        "barrelId": 2,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
         "bulletId": "",
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "QCQ171冲锋枪-烽火地带-6LA9FM405506E7BV9G8G5",
+        "buildCode": "K416突击步枪-烽火地带-6L9TPL005506E7BV9G8G5",
+        "aimSpeed": 308,
+        "price": 310000,
+        "havocCost": 402373.07227994537,
+        "enabled": true
+      }
+    },
+    "18_#1": {
+      "score": 701.3883825366624,
+      "meta": {
+        "weaponId": 18,
+        "weaponName": "M7",
+        "configId": "#1",
+        "barrel": "堤风超长枪管组合",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M7战斗步枪-烽火地带-6LA53FC05506E7BV9G8G5",
+        "aimSpeed": 396,
+        "price": 980000,
+        "havocCost": 902855.0928396492,
+        "enabled": true
+      }
+    },
+    "21_#1": {
+      "score": 704.8671400885556,
+      "meta": {
+        "weaponId": 21,
+        "weaponName": "MK47",
+        "configId": "#1",
+        "barrel": "鏖战枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "MK47突击步枪-烽火地带-6LA7T7005506E7BV9G8G5",
+        "aimSpeed": 348,
+        "price": 750000,
+        "havocCost": 660744.1180698436,
+        "enabled": true
+      }
+    },
+    "1_#1": {
+      "score": 711.291335505407,
+      "meta": {
+        "weaponId": 1,
+        "weaponName": "AK12",
+        "configId": "#1",
+        "barrel": "精英脚架长枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "AK-12突击步枪-烽火地带-6L9UMHG05506E7BV9G8G5",
+        "aimSpeed": 327,
+        "price": 210000,
+        "havocCost": 325720.1943828694,
+        "enabled": true
+      }
+    },
+    "4_#1": {
+      "score": 718.5451899018951,
+      "meta": {
+        "weaponId": 4,
+        "weaponName": "AR57",
+        "configId": "#1",
+        "barrel": "AR57激流超长枪管",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "AR57突击步枪-烽火地带-6LDOTE805506E7BV9G8G5",
+        "aimSpeed": 368,
+        "price": 440000,
+        "havocCost": 530594.08135981,
+        "enabled": true
+      }
+    },
+    "14_#1": {
+      "score": 722.0607325118303,
+      "meta": {
+        "weaponId": 14,
+        "weaponName": "M14",
+        "configId": "#1",
+        "barrel": "洞察超长枪管",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M14射手步枪-烽火地带-6L7HJR005506E7BV9G8G5",
+        "aimSpeed": 437,
+        "price": 900000,
+        "havocCost": 740440.0568586063,
+        "enabled": true
+      }
+    },
+    "17_#1": {
+      "score": 723.9962762801476,
+      "meta": {
+        "weaponId": 17,
+        "weaponName": "M4A1",
+        "configId": "#1",
+        "barrel": "AR碳纤维枪管组合",
+        "barrelId": 2,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M4A1突击步枪-烽火地带-6LA4E4005506E7BV9G8G5",
+        "aimSpeed": 308,
+        "price": 210000,
+        "havocCost": 335921.5355696061,
+        "enabled": true
+      }
+    },
+    "35_#1": {
+      "score": 724.6911769691642,
+      "meta": {
+        "weaponId": 35,
+        "weaponName": "SCAR-H",
+        "configId": "#1",
+        "barrel": "海狸长枪管",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SCAR-H战斗步枪-烽火地带-6LA889O05506E7BV9G8G5",
+        "aimSpeed": 361,
+        "price": 270000,
+        "havocCost": 310099.81436288066,
+        "enabled": true
+      }
+    },
+    "28_#1": {
+      "score": 730.1313181427357,
+      "meta": {
+        "weaponId": 28,
+        "weaponName": "QJB201",
+        "configId": "#1",
+        "barrel": "新式重锤战术枪管（标准）",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "QJB201轻机枪-烽火地带-6L7HDU805506E7BV9G8G5",
+        "aimSpeed": 359,
+        "price": 390000,
+        "havocCost": 522093.26883885544,
+        "enabled": true
+      }
+    },
+    "2_#1": {
+      "score": 733.5507873124386,
+      "meta": {
+        "weaponId": 2,
+        "weaponName": "AKM",
+        "configId": "#1",
+        "barrel": "海狸长枪管组合",
+        "barrelId": 2,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "AKM突击步枪-烽火地带-6LDJTI005506E7BV9G8G5",
+        "aimSpeed": 322,
+        "price": 280000,
+        "havocCost": 356901.90253718704,
+        "enabled": true
+      }
+    },
+    "15_#2": {
+      "score": 740.7180535316984,
+      "meta": {
+        "weaponId": 15,
+        "weaponName": "M249",
+        "configId": "#2",
+        "barrel": "犀牛长枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M249轻机枪-烽火地带-6LE1RP405506E7BV9G8G5",
+        "aimSpeed": 368,
+        "price": 170000,
+        "havocCost": 309107.5572009852,
+        "enabled": true
+      }
+    },
+    "23_#1": {
+      "score": 741.8388840869842,
+      "meta": {
+        "weaponId": 23,
+        "weaponName": "MP7",
+        "configId": "#1",
+        "barrel": "蜂刺长枪管组合",
+        "barrelId": 1,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "MP7冲锋枪-烽火地带-6LA9CUO05506E7BV9G8G5",
         "aimSpeed": 343,
-        "price": 450000,
-        "havocCost": 486541.0573819702,
+        "price": 540000,
+        "havocCost": 485835.416104888,
+        "enabled": true
+      }
+    },
+    "36_#2": {
+      "score": 742.2590565882997,
+      "meta": {
+        "weaponId": 36,
+        "weaponName": "SG552",
+        "configId": "#2",
+        "barrel": "骑士重枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SG552突击步枪-烽火地带-6LE20GG05506E7BV9G8G5",
+        "aimSpeed": 332,
+        "price": 170000,
+        "havocCost": 317022.89196249313,
+        "enabled": true
+      }
+    },
+    "41_#1": {
+      "score": 744.1282847284075,
+      "meta": {
+        "weaponId": 41,
+        "weaponName": "腾龙",
+        "configId": "#1",
+        "barrel": "新式蛟龙战术长枪管（标准）",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "腾龙突击步枪-烽火地带-6L9UNPS05506E7BV9G8G5",
+        "aimSpeed": 361,
+        "price": 250000,
+        "havocCost": 433285.7413856038,
         "enabled": true
       }
     },
     "25_#1": {
-      "score": 782.5964468066325,
-      "grade": "C",
+      "score": 746.7082377517773,
       "meta": {
         "weaponId": 25,
         "weaponName": "PKM",
@@ -8467,18 +8413,39 @@
         "buildCode": "PKM通用机枪-烽火地带-6LAE4I005506E7BV9G8G5",
         "aimSpeed": 430,
         "price": 260000,
-        "havocCost": 412616.61789740925,
+        "havocCost": 400442.60696315515,
         "enabled": true
       }
     },
-    "52_#1": {
-      "score": 791.1991453303665,
-      "grade": "C",
+    "38_#1": {
+      "score": 751.2405231632913,
       "meta": {
-        "weaponId": 52,
-        "weaponName": "93r",
+        "weaponId": 38,
+        "weaponName": "SR-3M",
         "configId": "#1",
-        "barrel": "HVK鼬鼠冲锋枪套件",
+        "barrel": "SR-3M铸钢战术枪管",
+        "barrelId": 0,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SR-3M紧凑突击步枪-烽火地带-6L7H3RC05506E7BV9G8G5",
+        "aimSpeed": 340,
+        "price": 400000,
+        "havocCost": 505909.9857601457,
+        "enabled": true
+      }
+    },
+    "16_#1": {
+      "score": 751.3483032302273,
+      "meta": {
+        "weaponId": 16,
+        "weaponName": "M250",
+        "configId": "#1",
+        "barrel": "钛金长枪管",
         "barrelId": 0,
         "muzzle": "无",
         "muzzleId": 0,
@@ -8487,16 +8454,125 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "93R-烽火地带-6LCIS9405506E7BV9G8G5",
-        "aimSpeed": 243,
-        "price": 90000,
-        "havocCost": 240091.26959421503,
+        "buildCode": "M250通用机枪-烽火地带-6L7H9OK05506E7BV9G8G5",
+        "aimSpeed": 425,
+        "price": 740000,
+        "havocCost": 730756.4626193797,
+        "enabled": true
+      }
+    },
+    "31_#1": {
+      "score": 764.8398230072162,
+      "meta": {
+        "weaponId": 31,
+        "weaponName": "QCQ171",
+        "configId": "#1",
+        "barrel": "新式红缨战术长枪管（标准）",
+        "barrelId": 1,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "QCQ171冲锋枪-烽火地带-6LA9FM405506E7BV9G8G5",
+        "aimSpeed": 343,
+        "price": 450000,
+        "havocCost": 482940.68714457273,
+        "enabled": true
+      }
+    },
+    "26_#1": {
+      "score": 765.7461429333365,
+      "meta": {
+        "weaponId": 26,
+        "weaponName": "PTR-32",
+        "configId": "#1",
+        "barrel": "G3加强长枪管组合",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "PTR-32突击步枪-烽火地带-6LA6UCS05506E7BV9G8G5",
+        "aimSpeed": 321,
+        "price": 190000,
+        "havocCost": 303828.03284036287,
+        "enabled": true
+      }
+    },
+    "27_#1": {
+      "score": 765.84385072567,
+      "meta": {
+        "weaponId": 27,
+        "weaponName": "QBZ95-1",
+        "configId": "#1",
+        "barrel": "长弓枪管组合",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "QBZ95-1突击步枪-烽火地带-6LA797S05506E7BV9G8G5",
+        "aimSpeed": 326,
+        "price": 170000,
+        "havocCost": 377384.8193694375,
+        "enabled": true
+      }
+    },
+    "7_#1": {
+      "score": 767.4813676694404,
+      "meta": {
+        "weaponId": 7,
+        "weaponName": "AUG",
+        "configId": "#1",
+        "barrel": "尖兵标准枪管",
+        "barrelId": 3,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "AUG突击步枪-烽火地带-6L9V87S05506E7BV9G8G5",
+        "aimSpeed": 395,
+        "price": 260000,
+        "havocCost": 356059.9903696567,
+        "enabled": true
+      }
+    },
+    "36_#1": {
+      "score": 776.0178026892341,
+      "meta": {
+        "weaponId": 36,
+        "weaponName": "SG552",
+        "configId": "#1",
+        "barrel": "猎犬枪管",
+        "barrelId": 1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SG552突击步枪-烽火地带-6LDOSI005506E7BV9G8G5",
+        "aimSpeed": 327,
+        "price": 110000,
+        "havocCost": 276918.4291121323,
         "enabled": true
       }
     },
     "34_#1": {
-      "score": 799.0003214622147,
-      "grade": "C",
+      "score": 778.5753337867076,
       "meta": {
         "weaponId": 34,
         "weaponName": "RM277",
@@ -8513,13 +8589,100 @@
         "buildCode": "RM277突击步枪-烽火地带-6LA86TC05506E7BV9G8G5",
         "aimSpeed": 386,
         "price": 270000,
-        "havocCost": 433209.5901172751,
+        "havocCost": 427799.5686846073,
+        "enabled": true
+      }
+    },
+    "19_#1": {
+      "score": 792.3508525621585,
+      "meta": {
+        "weaponId": 19,
+        "weaponName": "MCX-LT",
+        "configId": "#1",
+        "barrel": "MCX LT焰魂枪管-隔热网",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "MCX LT突击步枪-烽火地带-6LA59HG05506E7BV9G8G5",
+        "aimSpeed": 365,
+        "price": 310000,
+        "havocCost": 437395.62193170085,
+        "enabled": true
+      }
+    },
+    "37_#1": {
+      "score": 796.2394508950698,
+      "meta": {
+        "weaponId": 37,
+        "weaponName": "SMG-45",
+        "configId": "#1",
+        "barrel": "长弩超长枪管",
+        "barrelId": 2,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SMG-45冲锋枪-烽火地带-6LBB73S05506E7BV9G8G5",
+        "aimSpeed": 265,
+        "price": 120000,
+        "havocCost": 319053.8362130847,
+        "enabled": true
+      }
+    },
+    "24_#1": {
+      "score": 797.1067770968805,
+      "meta": {
+        "weaponId": 24,
+        "weaponName": "P90",
+        "configId": "#1",
+        "barrel": "重攻长枪管",
+        "barrelId": 0,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "P90冲锋枪-烽火地带-6LA9DT405506E7BV9G8G5",
+        "aimSpeed": 418,
+        "price": 380000,
+        "havocCost": 514228.52166901017,
+        "enabled": true
+      }
+    },
+    "52_#1": {
+      "score": 811.8154626206937,
+      "meta": {
+        "weaponId": 52,
+        "weaponName": "93r",
+        "configId": "#1",
+        "barrel": "HVK鼬鼠冲锋枪套件",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "93R-烽火地带-6LCIS9405506E7BV9G8G5",
+        "aimSpeed": 243,
+        "price": 90000,
+        "havocCost": 236850.2662176522,
         "enabled": true
       }
     },
     "15_#1": {
-      "score": 809.9574197320107,
-      "grade": "C",
+      "score": 812.833694626984,
       "meta": {
         "weaponId": 15,
         "weaponName": "M249",
@@ -8535,14 +8698,13 @@
         "bulletPrice": 0,
         "buildCode": "M249轻机枪-烽火地带-6LBB2VO05506E7BV9G8G5",
         "aimSpeed": 338,
-        "price": 100000,
-        "havocCost": 272656.9021532431,
+        "price": 130000,
+        "havocCost": 263970.8464471043,
         "enabled": true
       }
     },
     "9_#1": {
-      "score": 816.0303503880896,
-      "grade": "C",
+      "score": 821.7862535021976,
       "meta": {
         "weaponId": 9,
         "weaponName": "G3",
@@ -8559,36 +8721,12 @@
         "buildCode": "G3战斗步枪-烽火地带-6LDO7T805506E7BV9G8G5",
         "aimSpeed": 383,
         "price": 210000,
-        "havocCost": 274222.1122051191,
-        "enabled": true
-      }
-    },
-    "24_#1": {
-      "score": 816.5600214621967,
-      "grade": "A",
-      "meta": {
-        "weaponId": 24,
-        "weaponName": "P90",
-        "configId": "#1",
-        "barrel": "重攻长枪管",
-        "barrelId": 0,
-        "muzzle": "冲锋枪回声消音器",
-        "muzzleId": 3,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "P90冲锋枪-烽火地带-6LA9DT405506E7BV9G8G5",
-        "aimSpeed": 418,
-        "price": 360000,
-        "havocCost": 514323.95418999565,
+        "havocCost": 271010.4991992216,
         "enabled": true
       }
     },
     "51_#1": {
-      "score": 821.1677433699008,
-      "grade": "D",
+      "score": 822.9675902668031,
       "meta": {
         "weaponId": 51,
         "weaponName": "M16A4",
@@ -8605,59 +8743,12 @@
         "buildCode": "M16A4突击步枪-烽火地带-6LBBG3405506E7BV9G8G5",
         "aimSpeed": 359,
         "price": 100000,
-        "havocCost": 249187.6099761152,
-        "enabled": true
-      }
-    },
-    "37_#1": {
-      "score": 856.0847468486104,
-      "grade": "D",
-      "meta": {
-        "weaponId": 37,
-        "weaponName": "SMG-45",
-        "configId": "#1",
-        "barrel": "长弩超长枪管",
-        "barrelId": 2,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "SMG-45冲锋枪-烽火地带-6LBB73S05506E7BV9G8G5",
-        "aimSpeed": 265,
-        "price": 110000,
-        "havocCost": 316623.1514447337,
-        "enabled": true
-      }
-    },
-    "44_#1": {
-      "score": 944.1683931098853,
-      "grade": "B",
-      "meta": {
-        "weaponId": 44,
-        "weaponName": "勇士",
-        "configId": "#1",
-        "barrel": "勇士海狸枪管",
-        "barrelId": 0,
-        "muzzle": "冲锋枪回声消音器",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "勇士冲锋枪-烽火地带-6LA99F405506E7BV9G8G5",
-        "aimSpeed": 338,
-        "price": 140000,
-        "havocCost": 290073.333935391,
+        "havocCost": 246150.01272157356,
         "enabled": true
       }
     },
     "22_#1": {
-      "score": 982.163963444651,
-      "grade": "D",
+      "score": 863.342391088126,
       "meta": {
         "weaponId": 22,
         "weaponName": "MP5",
@@ -8665,7 +8756,7 @@
         "barrel": "特勤一体消音枪管",
         "barrelId": 3,
         "muzzle": "冲锋枪回声消音器",
-        "muzzleId": 0,
+        "muzzleId": 3,
         "precision": 0.09,
         "bulletId": "",
         "bulletName": "",
@@ -8674,13 +8765,34 @@
         "buildCode": "MP5冲锋枪-烽火地带-6LDP26005506E7BV9G8G5",
         "aimSpeed": 317,
         "price": 160000,
-        "havocCost": 318665.0356112071,
+        "havocCost": 314757.81424056215,
+        "enabled": true
+      }
+    },
+    "44_#1": {
+      "score": 868.2557941765488,
+      "meta": {
+        "weaponId": 44,
+        "weaponName": "勇士",
+        "configId": "#1",
+        "barrel": "勇士海狸枪管",
+        "barrelId": 0,
+        "muzzle": "冲锋枪回声消音器",
+        "muzzleId": 3,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "勇士冲锋枪-烽火地带-6LA99F405506E7BV9G8G5",
+        "aimSpeed": 338,
+        "price": 140000,
+        "havocCost": 285965.4693770359,
         "enabled": true
       }
     },
     "3_#2": {
-      "score": 1022.0428273768962,
-      "grade": "D",
+      "score": 1020.9037363501025,
       "meta": {
         "weaponId": 3,
         "weaponName": "AKS-74U",
@@ -8697,13 +8809,12 @@
         "buildCode": "AKS-74U突击步枪-烽火地带-6LDORI805506E7BV9G8G5",
         "aimSpeed": 335,
         "price": 110000,
-        "havocCost": 264986.54237998795,
+        "havocCost": 260180.9819760804,
         "enabled": true
       }
     },
     "50_#1": {
-      "score": 1056.0251142961295,
-      "grade": "D",
+      "score": 1069.2536105191703,
       "meta": {
         "weaponId": 50,
         "weaponName": "Marlin杠杆步枪",
@@ -8720,36 +8831,12 @@
         "buildCode": "杠杆式步枪-烽火地带-6LAE61405506E7BV9G8G5",
         "aimSpeed": 386,
         "price": 230000,
-        "havocCost": 249186.78874570935,
-        "enabled": true
-      }
-    },
-    "45_#1": {
-      "score": 1127.6961012788418,
-      "grade": "D",
-      "meta": {
-        "weaponId": 45,
-        "weaponName": "野牛",
-        "configId": "#1",
-        "barrel": "野牛刀锋超长枪管",
-        "barrelId": 0,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "野牛冲锋枪-烽火地带-6LBAVR005506E7BV9G8G5",
-        "aimSpeed": 289,
-        "price": 20000,
-        "havocCost": 269310.520473493,
+        "havocCost": 248173.7179844064,
         "enabled": true
       }
     },
     "10_#1": {
-      "score": 1468.9070504442095,
-      "grade": "D",
+      "score": 1278.9477451398768,
       "meta": {
         "weaponId": 10,
         "weaponName": "G18",
@@ -8766,13 +8853,34 @@
         "buildCode": "G18-CFG1",
         "aimSpeed": 397,
         "price": 130000,
-        "havocCost": 374120.79014323436,
+        "havocCost": 356571.5432076126,
+        "enabled": true
+      }
+    },
+    "45_#1": {
+      "score": 1313.4889040186517,
+      "meta": {
+        "weaponId": 45,
+        "weaponName": "野牛",
+        "configId": "#1",
+        "barrel": "野牛刀锋超长枪管",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "野牛冲锋枪-烽火地带-6LBAVR005506E7BV9G8G5",
+        "aimSpeed": 289,
+        "price": 20000,
+        "havocCost": 252029.30363576353,
         "enabled": true
       }
     },
     "8_#1": {
-      "score": 1540.20495952167,
-      "grade": "D",
+      "score": 1313.50878698809,
       "meta": {
         "weaponId": 8,
         "weaponName": "CAR-15",
@@ -8789,13 +8897,12 @@
         "buildCode": "CAR-15突击步枪-烽火地带-6LB8QVO05506E7BV9G8G5",
         "aimSpeed": 314,
         "price": 20000,
-        "havocCost": 282085.9769479637,
+        "havocCost": 265933.05715796654,
         "enabled": true
       }
     },
     "39_#1": {
-      "score": 1608.6660825286378,
-      "grade": "D",
+      "score": 1361.3672967098264,
       "meta": {
         "weaponId": 39,
         "weaponName": "UZI",
@@ -8812,13 +8919,12 @@
         "buildCode": "UZI冲锋枪-烽火地带-6LBB1OC05506E7BV9G8G5",
         "aimSpeed": 250,
         "price": 20000,
-        "havocCost": 261398.10689490495,
+        "havocCost": 247737.6098845107,
         "enabled": true
       }
     },
     "3_#1": {
-      "score": 1619.8965479518572,
-      "grade": "D",
+      "score": 1365.7081091962186,
       "meta": {
         "weaponId": 3,
         "weaponName": "AKS-74U",
@@ -8835,7 +8941,7 @@
         "buildCode": "AKS-74U突击步枪-烽火地带-6LBAUDO05506E7BV9G8G5",
         "aimSpeed": 289,
         "price": 20000,
-        "havocCost": 261142.94155505276,
+        "havocCost": 246699.50684695345,
         "enabled": true
       }
     }

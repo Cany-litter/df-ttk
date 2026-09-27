@@ -23,10 +23,7 @@
             <input type="number" v-model.number="localParams.healthValue" @change="syncParams" class="param-input" />
           </div>
 
-          <div class="param-group">
-            <label>距离 (m)</label>
-            <input type="number" v-model.number="localParams.distance" @change="syncParams" class="param-input" />
-          </div>
+          <!-- ⭐ v14：删除「距离 (m)」输入框（已挪到柱状图标题栏） -->
 
           <div class="param-group economic">
             <label>KD</label>
@@ -236,11 +233,15 @@ const emit = defineEmits([
 //
 // ⭐ v7：删掉 armorLevel / armorValue / helmetLevel / helmetValue
 //   - 护甲头盔改由 equipStore.calcEquip 提供
+//
+// ⭐ v14：删掉 UI 上的「距离 (m)」输入框
+//   - distance 字段还在 localParams 里（保持同步），
+//     但 UI 已挪到柱状图标题栏
 // ============================================================
 const localParams = ref({
   bulletLevel: 4,
   healthValue: 100,
-  distance: 30,
+  distance: 30,           // ⭐ v14：字段保留，但 UI 不在这
   hitRateMap: [
     { distance: 30, rate: 1.0 },
     { distance: 50, rate: 0.9 },
@@ -303,9 +304,9 @@ const currentEquips = computed(() => {
 /** 装备数量（用于按钮显示） */
 const equipCount = computed(() => currentEquips.value.length)
 
-/** 可见标签（单套最多 1 个，多套最多 8 个） */
+/** 可见标签（单套最多 1 个，多套最多 6 个） */
 const MAX_VISIBLE_TAGS_CALC = 1
-const MAX_VISIBLE_TAGS_SCORE = 8
+const MAX_VISIBLE_TAGS_SCORE = 6
 
 const maxVisible = computed(() => {
   return currentMode.value === 'calc' ? MAX_VISIBLE_TAGS_CALC : MAX_VISIBLE_TAGS_SCORE
@@ -800,10 +801,10 @@ const onResetData = () => {
 
 .equip-tags {
   display: flex;
-  align-items: flex-start;
-  align-content: flex-start;
+  align-items: center;
   gap: 4px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
   padding: 2px 0;
   min-height: 26px;
   cursor: help;
@@ -830,6 +831,11 @@ const onResetData = () => {
   white-space: nowrap;
   height: 22px;
   user-select: none;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* +N 组（折叠标记） */
@@ -847,6 +853,7 @@ const onResetData = () => {
   white-space: nowrap;
   height: 22px;
   cursor: help;
+  flex-shrink: 0;
 }
 
 /* ============================================================
@@ -958,6 +965,7 @@ const onResetData = () => {
 
   .equip-tags {
     min-height: 0;
+    flex-wrap: wrap;
   }
 
   .equip-tag {

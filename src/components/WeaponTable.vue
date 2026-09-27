@@ -22,6 +22,56 @@
           {{ hasActiveFilter ? '❌ 禁用筛选' : '❌ 全部禁用' }}
         </button>
 
+        <span class="toolbar-divider"></span>
+
+        <!-- ⭐ 标记又贵又差 -->
+        <div class="mark-dominated-group">
+          <button
+            v-if="!hasDominated"
+            class="btn-sm btn-mark-dominated"
+            title="找出所有「又贵又差」的配置（存在明显更便宜且评分更好的选择）"
+            @click="onMarkDominated"
+          >
+            标记又贵又差
+          </button>
+          <button
+            v-else
+            class="btn-sm btn-clear-dominated"
+            :title="`已标记 ${dominatedMap.size} 个配置，点击清除`"
+            @click="clearDominated"
+          >
+            ✕ 清除标记 ({{ dominatedMap.size }})
+          </button>
+
+          <label class="threshold-item" title="价格至少低这个百分比才算「更便宜」">
+            <span class="threshold-label">价≥</span>
+            <input
+              type="number"
+              v-model.number="priceThresholdPct"
+              min="0"
+              max="100"
+              step="1"
+              class="threshold-input"
+              @change="onThresholdChange"
+            />
+            <span class="threshold-unit">%</span>
+          </label>
+
+          <label class="threshold-item" title="评分至少好这个百分比才算「更好」">
+            <span class="threshold-label">评≥</span>
+            <input
+              type="number"
+              v-model.number="scoreThresholdPct"
+              min="0"
+              max="100"
+              step="1"
+              class="threshold-input"
+              @change="onThresholdChange"
+            />
+            <span class="threshold-unit">%</span>
+          </label>
+        </div>
+
         <!-- ⭐ v7.3：清除导入标记（有标记时才显示） -->
         <button
           v-if="importedConfigCount > 0"
@@ -356,8 +406,10 @@
                 enabled: cfg.enabled !== false,
                 disabled: cfg.enabled === false,
                 active: cfg.configId === row.activeConfigId,
-                'is-imported': cfg._isImported === true
+                'is-imported': cfg._isImported === true,
+                'is-dominated': isDominated(row.id, cfg.configId)
               }"
+              :title="getDominatedTooltip(row.id, cfg.configId)"
               @click="selectConfig(index, cfg.configId)"
             >
               <input
@@ -495,13 +547,12 @@
                 </span>
               </span>
 
-              <!-- ⭐ 评分列 -->
+              <!-- ⭐ v13：评分列（不再有分档颜色） -->
               <span class="fld">
                 <span class="k">评分</span>
                 <template v-if="cfg.overallScore != null">
                   <span
                     class="v overall-value"
-                    :class="'overall-' + cfg.overallScore.grade"
                     :title="getOverallTooltip(cfg)"
                     style="cursor: help;"
                   >
@@ -736,8 +787,10 @@
                     enabled: cfg.enabled !== false,
                     disabled: cfg.enabled === false,
                     active: cfg.configId === row.activeConfigId,
-                    'is-imported': cfg._isImported === true
+                    'is-imported': cfg._isImported === true,
+                    'is-dominated': isDominated(row.id, cfg.configId)
                   }"
+                  :title="getDominatedTooltip(row.id, cfg.configId)"
                   @click="selectConfig(index, cfg.configId)"
                 >
                   <div class="cfg-mobile-head">
@@ -859,13 +912,12 @@
                       {{ cfg.havocCost != null ? fmtPrice(cfg.havocCost) : '-' }}
                     </span>
                   </div>
-                  <!-- ⭐ 评分行 -->
+                  <!-- ⭐ v13：评分行（不再有分档颜色） -->
                   <div class="cfg-mobile-row">
                     <span class="k">评分</span>
                     <template v-if="cfg.overallScore != null">
                       <span
                         class="v overall-value"
-                        :class="'overall-' + cfg.overallScore.grade"
                         :title="getOverallTooltip(cfg)"
                       >
                         {{ Math.round(cfg.overallScore.score) }}ms
@@ -1074,6 +1126,271 @@ const compareBySortKey = (a, b, key) => {
 }
 
 // ============================================================
+// ⭐ 又贵又差：标记状态
+//
+// 判定逻辑（全局比较，百分比容差，仅启用配置）：
+//   对配置 A（enabled !== false），若存在配置 B（enabled !== false），满足：
+//     B.havocCost < A.havocCost × (1 - pricePct)   （B 便宜至少 pricePct）
+//     AND
+//     B.score < A.score × (1 - scorePct)            （B 评分好至少 scorePct）
+//   → A 被 B 支配，标记为「又贵又差」
+//
+// ⭐ 只对比启用的配置：
+//   - 被标记的配置：只在 enabled !== false 的配置里找
+//   - 作为「更优选择」的配置：也只能是 enabled !== false 的配置
+//
+// dominatedMap: Map<"weaponId_configId", {
+//   betterKey,
+//   betterLabel,
+//   betterHavocCost,
+//   betterScore,
+//   savedCost,
+//   savedScore,
+//   savedCostPct,
+//   savedScorePct,
+// }>
+// ============================================================
+
+/** 价格阈值（百分比，0~100），默认 10 */
+const priceThresholdPct = ref(10)
+
+/** 评分阈值（百分比，0~100），默认 5 */
+const scoreThresholdPct = ref(5)
+
+const dominatedMap = ref(new Map())
+
+const hasDominated = computed(() => dominatedMap.value.size > 0)
+
+/**
+ * 判断某配置是否被标记
+ */
+const isDominated = (weaponId, configId) => {
+  return dominatedMap.value.has(`${weaponId}_${configId}`)
+}
+
+/**
+ * 获取 tooltip（显示更优选择）
+ */
+const getDominatedTooltip = (weaponId, configId) => {
+  const key = `${weaponId}_${configId}`
+  const info = dominatedMap.value.get(key)
+  if (!info) return ''
+
+  const lines = [
+    `又贵又差`,
+    `──────────────────`,
+    `更优选择：${info.betterLabel}`,
+    `哈弗币 ${fmtPrice(info.betterHavocCost)}（省 ${fmtPrice(info.savedCost)}，${info.savedCostPct.toFixed(1)}%）`,
+    `评分 ${Math.round(info.betterScore)}ms（好 ${Math.round(info.savedScore)}ms，${info.savedScorePct.toFixed(1)}%）`
+  ]
+  return lines.join('\n')
+}
+
+/**
+ * 核心：计算所有「又贵又差」的配置
+ *
+ * 全局比较（不分组），O(n²)，n 约 47
+ * ⭐ 只对比 enabled !== false 的配置
+ */
+const computeDominated = () => {
+  const pricePct = (Number(priceThresholdPct.value) || 0) / 100
+  const scorePct = (Number(scoreThresholdPct.value) || 0) / 100
+
+  // ---------- 1. 收集所有启用的配置 ----------
+  const allConfigs = []
+
+  for (const row of rowsWithCurrent.value) {
+    if (row._isNewRow) continue
+
+    const weaponId = row.id
+    const weaponName = row.name
+
+    for (const cfg of row._configRows || []) {
+      // ⭐ 只对比启用的配置
+      if (cfg.enabled === false) continue
+
+      if (cfg._havocCost == null || cfg.overallScore == null) continue
+
+      const havocCost = cfg._havocCost.totalCost
+      const score = cfg.overallScore.score
+
+      if (!isFinite(havocCost) || !isFinite(score)) continue
+      if (havocCost <= 0 || score <= 0) continue
+
+      allConfigs.push({
+        key: `${weaponId}_${cfg.configId}`,
+        weaponId,
+        weaponName,
+        configId: cfg.configId,
+        havocCost,
+        score,
+      })
+    }
+  }
+
+  // ---------- 2. 数据检查 ----------
+  if (allConfigs.length === 0) {
+    return {
+      ok: false,
+      reason: 'no-data',
+      totalConfigs: 0,
+    }
+  }
+
+  if (allConfigs.length === 1) {
+    return {
+      ok: false,
+      reason: 'too-few',
+      totalConfigs: allConfigs.length,
+    }
+  }
+
+  // ---------- 3. O(n²) 支配关系查找 ----------
+  const result = new Map()
+
+  for (let i = 0; i < allConfigs.length; i++) {
+    const A = allConfigs[i]
+
+    let bestB = null
+    let bestScore = Infinity
+
+    for (let j = 0; j < allConfigs.length; j++) {
+      if (i === j) continue
+      const B = allConfigs[j]
+
+      // B 便宜至少 pricePct
+      const cheaper = B.havocCost < A.havocCost * (1 - pricePct)
+      // B 评分好至少 scorePct
+      const better = B.score < A.score * (1 - scorePct)
+
+      if (cheaper && better) {
+        if (B.score < bestScore) {
+          bestScore = B.score
+          bestB = B
+        }
+      }
+    }
+
+    if (bestB) {
+      result.set(A.key, {
+        betterKey: bestB.key,
+        betterLabel: `${bestB.weaponName} ${bestB.configId}`,
+        betterHavocCost: bestB.havocCost,
+        betterScore: bestB.score,
+        savedCost: A.havocCost - bestB.havocCost,
+        savedScore: A.score - bestB.score,
+        savedCostPct: ((A.havocCost - bestB.havocCost) / A.havocCost) * 100,
+        savedScorePct: ((A.score - bestB.score) / A.score) * 100,
+      })
+    }
+  }
+
+  return {
+    ok: true,
+    result,
+    totalConfigs: allConfigs.length,
+  }
+}
+
+/**
+ * 点击「标记又贵又差」按钮
+ */
+const onMarkDominated = async () => {
+  const computed = computeDominated()
+
+  if (!computed.ok) {
+    if (computed.reason === 'no-data') {
+      const msg =
+        `⚠️ 没有可用于比较的配置\n\n` +
+        `需要同时满足：\n` +
+        `· 配置已启用\n` +
+        `· 已计算哈弗币消耗（点击「计算 TTK」）\n` +
+        `· 已计算综合评分（选择评分参考装备）\n\n` +
+        `请检查是否所有配置都被禁用了`
+      if (showAlert) await showAlert(msg)
+      else alert(msg)
+    } else if (computed.reason === 'too-few') {
+      const msg = `⚠️ 只有一个可用配置，无法比较`
+      if (showAlert) await showAlert(msg)
+      else alert(msg)
+    }
+    return
+  }
+
+  if (computed.result.size === 0) {
+    dominatedMap.value = new Map()
+    const msg =
+      `✅ 没有「又贵又差」的配置\n\n` +
+      `在「价高 ≥ ${priceThresholdPct.value}%、评分差 ≥ ${scoreThresholdPct.value}%」阈值下，\n` +
+      `所有 ${computed.totalConfigs} 个启用配置都不存在明显更优的选择。`
+    if (showAlert) await showAlert(msg)
+    else alert(msg)
+    return
+  }
+
+  dominatedMap.value = computed.result
+
+  console.log(
+    `🚫 已标记 ${computed.result.size} 个「又贵又差」的配置` +
+    `（启用配置共 ${computed.totalConfigs} 个，阈值：价 ${priceThresholdPct.value}% / 评 ${scoreThresholdPct.value}%）`
+  )
+}
+
+/**
+ * 清除标记
+ */
+const clearDominated = () => {
+  dominatedMap.value = new Map()
+  console.log('✕ 已清除「又贵又差」标记')
+}
+
+/**
+ * 阈值变化：如果已有标记，自动重算
+ */
+const onThresholdChange = () => {
+  // 数值校验
+  if (typeof priceThresholdPct.value !== 'number' || isNaN(priceThresholdPct.value)) {
+    priceThresholdPct.value = 10
+  }
+  if (typeof scoreThresholdPct.value !== 'number' || isNaN(scoreThresholdPct.value)) {
+    scoreThresholdPct.value = 5
+  }
+  priceThresholdPct.value = Math.max(0, Math.min(100, priceThresholdPct.value))
+  scoreThresholdPct.value = Math.max(0, Math.min(100, scoreThresholdPct.value))
+
+  // 已标记时，自动重算
+  if (hasDominated.value) {
+    onMarkDominated()
+  }
+}
+
+// ============================================================
+// ⭐ 数据变化时自动清除标记
+// ============================================================
+
+watch(
+  () => appStore.state.havocCosts,
+  () => {
+    if (dominatedMap.value.size > 0) {
+      clearDominated()
+      console.log('ℹ️ 哈弗币数据变化，已自动清除「又贵又差」标记')
+    }
+  },
+  { deep: true }
+)
+
+watch(
+  () => appStore.state.weaponScores,
+  () => {
+    if (dominatedMap.value.size > 0) {
+      clearDominated()
+      console.log('ℹ️ 综合评分变化，已自动清除「又贵又差」标记')
+    }
+  },
+  { deep: true }
+)
+
+// ============================================================
 // 收起/展开状态
 // ============================================================
 const collapsedMap = reactive({})
@@ -1249,11 +1566,13 @@ const getAttrTooltip = (label, original, current) => {
 
 // ============================================================
 // 评分 tooltip（配置行）
+//
+// ⭐ v13：不再显示分档
 // ============================================================
 
 const getOverallTooltip = (cfg) => {
   if (!cfg.overallScore) return ''
-  const { score, grade } = cfg.overallScore
+  const { score } = cfg.overallScore
 
   const aimWeight = paramsStore.state.aimWeight ?? 0.4
   const aimSpeed = cfg.aimSpeed || 0
@@ -1262,7 +1581,6 @@ const getOverallTooltip = (cfg) => {
   const lines = [
     `═══════════════════════════════`,
     `⭐ 评分: ${score.toFixed(1)}ms`,
-    `分档: ${grade}`,
     `───────────────────────────────`,
     `距离加权平均TTK: ${avgTTK.toFixed(1)}ms`,
     `开镜时间: ${aimSpeed}ms × ${aimWeight} = ${(aimWeight * aimSpeed).toFixed(1)}ms`,
@@ -2111,6 +2429,98 @@ const cancelAdd = (index) => {
   color: #bf360c;
 }
 
+/* ⭐ 标记又贵又差：按钮 + 阈值输入 */
+.mark-dominated-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  background: #fff8f8;
+  border: 1px solid #ffcdd2;
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+
+.btn-sm.btn-mark-dominated {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+  height: 22px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.btn-sm.btn-mark-dominated:hover {
+  background: #ffcdd2;
+  border-color: #e57373;
+  color: #b71c1c;
+}
+
+.btn-sm.btn-clear-dominated {
+  background: #f44336;
+  color: #fff;
+  border: 1px solid #f44336;
+  height: 22px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.btn-sm.btn-clear-dominated:hover {
+  background: #d32f2f;
+  border-color: #d32f2f;
+}
+
+/* 阈值输入 */
+.threshold-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-family);
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.threshold-label {
+  color: #888;
+  font-size: 11px;
+}
+
+.threshold-input {
+  width: 38px;
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid #ffcdd2;
+  border-radius: 3px;
+  background: #fff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: #c62828;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.threshold-input:focus {
+  border-color: #f44336;
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.12);
+}
+
+.threshold-input::-webkit-outer-spin-button,
+.threshold-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.threshold-input {
+  -moz-appearance: textfield;
+}
+
+.threshold-unit {
+  color: #888;
+  font-size: 10px;
+}
+
 /* 搜索框 */
 .search-box {
   position: relative;
@@ -2770,6 +3180,31 @@ const cancelAdd = (index) => {
   box-shadow: 0 1px 6px rgba(255, 152, 0, 0.25);
 }
 
+/* ⭐ 又贵又差：淡红背景 */
+.config-item.is-dominated {
+  background: #ffebee;
+  border-color: #ffcdd2;
+  border-left: 4px solid #f44336;
+}
+
+.config-item.is-dominated:hover {
+  background: #ffcdd2;
+}
+
+.config-item.is-dominated.active {
+  background: #ffcdd2;
+  border-color: #ef9a9a;
+  border-left: 4px solid #d32f2f;
+  box-shadow: 0 1px 6px rgba(244, 67, 54, 0.25);
+}
+
+/* 同时被导入 + 支配：支配优先 */
+.config-item.is-imported.is-dominated {
+  background: #ffebee;
+  border-color: #ffcdd2;
+  border-left: 4px solid #f44336;
+}
+
 .config-enabled {
   width: 16px; height: 16px;
   cursor: pointer;
@@ -2934,9 +3369,11 @@ const cancelAdd = (index) => {
   border-bottom-color: #ff9800;
 }
 
+/* ⭐ v13：评分列（不再按分档上色） */
 .fld .v.overall-value {
   font-family: var(--font-mono);
   font-weight: 700;
+  color: var(--color-text);
   padding: 0 4px;
   border-radius: 2px;
   border-bottom: 1px dashed #ccc;
@@ -2947,10 +3384,6 @@ const cancelAdd = (index) => {
   border-bottom-color: var(--color-primary);
 }
 
-.overall-A { color: #4caf50; }
-.overall-B { color: #4a6cf7; }
-.overall-C { color: #ff9800; }
-.overall-D { color: #f44336; }
 .overall-empty { color: #ccc; font-weight: 400; }
 
 .config-item .hitrate-wrap {
@@ -3306,6 +3739,18 @@ const cancelAdd = (index) => {
   border-left: 4px solid #ff9800;
 }
 
+/* ⭐ 移动端：又贵又差 */
+.config-item-mobile.is-dominated {
+  background: #ffebee;
+  border-color: #ffcdd2;
+  border-left: 4px solid #f44336;
+}
+.config-item-mobile.is-dominated.active {
+  background: #ffcdd2;
+  border-color: #ef9a9a;
+  border-left: 4px solid #d32f2f;
+}
+
 /* ⭐ v7.5：移动端 configId 输入框 */
 .config-item-mobile .config-id-input {
   width: 50px;
@@ -3451,6 +3896,21 @@ const cancelAdd = (index) => {
 
   .display-count {
     font-size: 11px;
+  }
+
+  /* 移动端：标记按钮组也换行 */
+  .mark-dominated-group {
+    padding: 2px 6px;
+    gap: 4px;
+  }
+
+  .threshold-input {
+    width: 32px;
+    font-size: 10px;
+  }
+
+  .threshold-label {
+    font-size: 10px;
   }
 }
 </style>

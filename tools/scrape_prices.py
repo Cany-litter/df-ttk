@@ -5,6 +5,11 @@
 # 输入：tools/tasks.json
 # 输出：tools/scraped_prices.json
 #
+# ⭐ v5 改动（默认全量重抓）：
+#   - 修复：默认不再自动跳过已成功的任务
+#   - 只有显式 --resume 才跳过已成功的（真正续跑）
+#   - 这样默认每次运行都会重抓所有任务（价格会更新）
+#
 # ⭐ v4 改进（性能优化：条件等待）：
 #   - ⭐ 全部"死等"改为"条件等待"
 #   - wait_for_timeout → wait_for / wait_for_function
@@ -33,9 +38,9 @@
 #   playwright install chromium
 #
 # 用法：
-#   python scrape_prices.py                # 从头抓
+#   python scrape_prices.py                # 全量重抓所有任务（默认）
+#   python scrape_prices.py --resume       # 只抓上次失败的（跳过已成功的）
 #   python scrape_prices.py --start 10     # 从第 10 条开始
-#   python scrape_prices.py --resume       # 自动跳过已成功的
 #   python scrape_prices.py --debug        # 打印调试日志
 
 import argparse
@@ -419,9 +424,9 @@ def parse_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "示例:\n"
-            "  python scrape_prices.py                  从头抓\n"
+            "  python scrape_prices.py                  全量重抓（默认）\n"
+            "  python scrape_prices.py --resume         跳过已成功的（续跑）\n"
             "  python scrape_prices.py --start 10       从第 10 条开始\n"
-            "  python scrape_prices.py --resume         跳过已成功抓过的\n"
             "  python scrape_prices.py --debug          打印调试日志\n"
         ),
     )
@@ -431,7 +436,7 @@ def parse_args():
     )
     parser.add_argument(
         "--resume", action="store_true",
-        help="自动跳过已成功抓过的任务（用 scraped_prices.json 判断）",
+        help="跳过已成功抓过的任务（默认：全量重抓）",
     )
     parser.add_argument(
         "--save-every", type=int, default=5,
@@ -471,14 +476,21 @@ def main():
     # ---------- 2. 断点续跑 ----------
     existing = load_existing_results()
     already_done = set()
+
     if existing:
         print(f"检测到已有结果: {len(existing)} 条")
-        if args.resume or len(existing) > 0:
-            for item in existing:
-                if item.get("status") == STATUS_OK:
-                    already_done.add(make_result_key(item))
-            if already_done:
-                print(f"其中成功的: {len(already_done)} 条")
+
+    # ⭐ v5：只有显式 --resume 才跳过已成功的
+    if args.resume:
+        for item in existing:
+            if item.get("status") == STATUS_OK:
+                already_done.add(make_result_key(item))
+        if already_done:
+            print(f"其中成功的: {len(already_done)} 条（--resume，将跳过）")
+        else:
+            print("ℹ️ --resume 已开启，但没有已成功的结果，将全量重抓")
+    else:
+        print("ℹ️ 未加 --resume，将全量重抓所有任务（价格会更新）")
 
     # 过滤待抓
     todo_tasks = []

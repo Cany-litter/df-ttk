@@ -38,6 +38,12 @@
 //     用于单武器重算时的"全局分档对齐"
 //   - 问题 8：无改动（App.vue 里处理）
 //
+// ⭐ v13 改动（删除分档）：
+//   - 删除 appState.weaponScoresGlobalRange 字段
+//   - 删除 setWeaponScoresGlobalRange / getWeaponScoresGlobalRange
+//   - clearWeaponScores 只清评分，不再清全局范围
+//   - weaponScores 结构：{ "weaponId_configId": { score } }（不再有 grade）
+//
 // 本文件由原 dataStore.js / paramsStore.js / appStore.js 合并而来。
 
 import { reactive, readonly } from 'vue'
@@ -796,8 +802,7 @@ export const equipStore = {
 // ============================================================
 // 4. appStore
 //
-// ⭐ v8：新增 weaponScoresGlobalRange
-//   用于单武器重算时的"全局分档对齐"
+// ⭐ v13：删除 weaponScoresGlobalRange（分档用）
 // ============================================================
 
 const appState = reactive({
@@ -808,12 +813,8 @@ const appState = reactive({
   havocCosts: {},
 
   // ⭐ 综合评分（多套装备）
-  // 结构：{ "weaponId_configId": { score, grade } }
+  // 结构：{ "weaponId_configId": { score } }
   weaponScores: {},
-
-  // ⭐ v8：全局评分范围（用于单武器重算时分档对齐）
-  // 结构：{ min, max }（全量算评分后写入）
-  weaponScoresGlobalRange: { min: 0, max: 0 },
 
   isLoading: false,
   isGlobalCalculating: false,
@@ -873,29 +874,10 @@ export const appStore = {
   },
 
   /**
-   * ⭐ v8：设置全局评分范围
-   *
-   * @param {{ min: number, max: number }} range
-   */
-  setWeaponScoresGlobalRange(range) {
-    if (range && typeof range.min === 'number' && typeof range.max === 'number') {
-      appState.weaponScoresGlobalRange = { min: range.min, max: range.max }
-    }
-  },
-
-  /**
-   * ⭐ v8：获取全局评分范围
-   */
-  getWeaponScoresGlobalRange() {
-    return appState.weaponScoresGlobalRange
-  },
-
-  /**
-   * ⭐ v8：清空综合评分（连全局范围一起清）
+   * ⭐ v13：清空综合评分
    */
   clearWeaponScores() {
     appState.weaponScores = {}
-    appState.weaponScoresGlobalRange = { min: 0, max: 0 }
   },
 
   // ---------- 全局计算状态 ----------

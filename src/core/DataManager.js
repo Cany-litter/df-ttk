@@ -70,6 +70,17 @@
  * - 删除 getEnabledBullets / getDefaultBullet / getBulletRows
  * - 删除 getEnabledArmors / getMuzzleNames
  *
+ * ⭐ v10 改动（导出回写 barrelId / muzzleId）：
+ * - 新增 _fixConfigIdsForExport
+ * - 在 exportToJSON 里、排序之前调用
+ * - 修复：data.json 里只有 barrel 名字、没写 barrelId 的配置，
+ *   导出时 barrelId 为 undefined → 重启加载被 normalizeData 当 -1
+ *   → precision 被清 0 的问题
+ *
+ * ⭐ v13 改动（删除分档）：
+ * - _buildWeaponScoresForExport 不再导出 grade 字段
+ * - 导出的 weaponScores 结构：{ score, meta }
+ *
  * ⭐ 已删除的旧 API：
  * - setCacheManager / getCacheManager
  * - getConfigCache / saveConfigCache
@@ -1827,7 +1838,98 @@ export class DataManager {
   }
 
   // ============================================================
-  // 12. 数据序列化
+  // 12. ⭐ v10：导出前修正 config 的 barrelId / muzzleId
+  // ============================================================
+
+  /**
+   * ⭐ v10：导出前修正 config 的 barrelId / muzzleId
+   *
+   * 背景：
+   *   data.json 里很多 config 只写了 barrel 名字，没写 barrelId。
+   *   运行时靠 getPriceRowsForWeapon 反查，但反查结果不回写 this.data。
+   *   导出时读的是 this.data → barrelId 是 undefined
+   *   → 重启加载时 normalizeData 把 undefined 当 -1 → precision 被清 0
+   *
+   * 修复：
+   *   导出前对每个 config 反查并回写 barrelId / muzzleId，
+   *   保证导出的 JSON 里 barrelId 是显式的正确值。
+   *
+   * ⚠️ 只改 dataToExport（深拷贝），不影响 this.data
+   *
+   * @param {Object} dataToExport - 即将导出的数据副本
+   */
+  _fixConfigIdsForExport(dataToExport) {
+    if (!dataToExport || !Array.isArray(dataToExport.prices)) return;
+
+    // ---------- 1. 构建 weaponId → weapon 映射 ----------
+    const weaponsMap = new Map();
+    for (const w of dataToExport.weapons || []) {
+      weaponsMap.set(w.id, w);
+    }
+
+    // ---------- 2. 枪口列表（用于反查）----------
+    const muzzles = this.muzzles || [];
+
+    // ---------- 3. 遍历所有 config ----------
+    for (const price of dataToExport.prices) {
+      const weapon = weaponsMap.get(price.weaponId);
+
+      if (!weapon || !Array.isArray(price.configs)) continue;
+
+      for (const config of price.configs) {
+        // ---------- 3.1 修正 barrelId ----------
+        const hasBarrelId = (config.barrelId !== undefined && config.barrelId !== null);
+
+        if (!hasBarrelId) {
+          if (config.barrel && config.barrel !== '无') {
+            const barrels = weapon.barrels || [];
+            const idx = barrels.findIndex(b => b.name === config.barrel);
+            config.barrelId = idx >= 0 ? idx : -1;
+          } else {
+            config.barrelId = -1;
+          }
+        }
+
+        // ---------- 3.2 修正 barrel 名字（保证和 barrelId 一致）----------
+        if (config.barrelId >= 0 && weapon.barrels && weapon.barrels[config.barrelId]) {
+          config.barrel = weapon.barrels[config.barrelId].name || '无';
+        } else {
+          config.barrel = '无';
+        }
+
+        // ---------- 3.3 修正 muzzleId ----------
+        const hasMuzzleId = (config.muzzleId !== undefined && config.muzzleId !== null);
+
+        if (!hasMuzzleId) {
+          if (config.muzzle && config.muzzle !== '无') {
+            const idx = muzzles.findIndex(m => m.name === config.muzzle);
+            config.muzzleId = idx >= 0 ? idx : 0;
+          } else {
+            config.muzzleId = 0;
+          }
+        }
+
+        // ---------- 3.4 修正 muzzle 名字 ----------
+        if (config.muzzleId >= 0 && muzzles[config.muzzleId]) {
+          config.muzzle = muzzles[config.muzzleId].name || '无';
+        } else {
+          config.muzzle = '无';
+        }
+
+        // ---------- 3.5 无枪管 → precision 强制 0 ----------
+        if (config.barrelId === -1) {
+          config.precision = 0;
+        } else if (typeof config.precision !== 'number' || isNaN(config.precision)) {
+          config.precision = 0.09;
+        }
+      }
+    }
+
+    console.log('✅ _fixConfigIdsForExport: 已回写 barrelId / muzzleId / precision');
+  }
+
+  // ============================================================
+  // 13. 数据序列化
   // ============================================================
 
   serializeData(data) {
@@ -1862,11 +1964,13 @@ export class DataManager {
   }
 
   // ============================================================
-  // 13. 数据导出/导入
+  // 14. 数据导出/导入
   // ============================================================
 
   /**
    * ⭐ 导出为 JSON 字符串
+   *
+   * ⭐ v10：在排序前调用 _fixConfigIdsForExport
    */
   exportToJSON(extra = {}) {
     try {
@@ -1898,6 +2002,9 @@ export class DataManager {
           }
         }
       }
+
+      // ---------- ⭐ v10：导出前修正 config 的 barrelId / muzzleId ----------
+      this._fixConfigIdsForExport(dataToExport);
 
       // ---------- 排序 ----------
       this._sortWeaponsForExport(dataToExport.weapons);
@@ -1994,6 +2101,7 @@ export class DataManager {
    * ⭐ v7.2：组装综合评分导出数据
    *
    * ⭐ v8：问题 16 - Infinity → null
+   * ⭐ v13：删除 grade 字段
    */
   _buildWeaponScoresForExport(weaponScores, havocCosts) {
     const result = {}
@@ -2028,7 +2136,6 @@ export class DataManager {
       if (!weapon || !priceRow) {
         result[key] = {
           score: val?.score ?? null,
-          grade: val?.grade ?? null,
           meta: {
             weaponId,
             configId,
@@ -2049,9 +2156,9 @@ export class DataManager {
         ? havoc.totalCost
         : null
 
+      // ⭐ v13：不再输出 grade 字段
       result[key] = {
         score: (typeof val?.score === 'number' && isFinite(val.score)) ? val.score : null,
-        grade: val?.grade ?? null,
         meta: {
           weaponId: weapon.id,
           weaponName: weapon.name,
@@ -2332,7 +2439,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 14. 数据重置
+  // 15. 数据重置
   // ============================================================
 
   resetToOriginal() {
@@ -2360,7 +2467,7 @@ export class DataManager {
   }
 
   // ============================================================
-  // 15. 工具方法
+  // 16. 工具方法
   // ============================================================
 
   getStats() {
