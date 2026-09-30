@@ -14,53 +14,43 @@
 //   - 删除 _makeScenarioHash 方法（纯转发，无调用）
 //   - 删除 exportResult 方法（无调用）
 //
+// ⭐ v6 改动（维修包成本）：
+//   - 新增 _getRepairPriceMap：从 data.json 的 otherItems 读维修包价格
+//   - 4/5/6 级护甲/头盔配对应维修包：
+//       4甲 → 标准护甲维修包
+//       5甲 → 精密护甲维修包
+//       6甲 → 高级护甲维修组合
+//       4头 → 标准头盔维修包
+//       5头 → 精密头盔维修包
+//       6头 → 高级头盔维修组合
+//     1~3 级不配
+//   - 维修包价格计入 cost.total（影响预算过滤）
+//   - 同时单独输出 cost.repairCost 供 UI 展示
+//   - 名字匹配不上时静默跳过（成本 0）+ 控制台警告
+//   - 按 1 个算（不做消耗分摊）
+//
 // ⭐ 关键变化（相比旧版）：
 // - 不再用 computeKeyPoints（已删除）
 // - 不再用 ttkCache（已删除）
 // - 改用 TTKMatrix + IndexedDB
 // - 攻击侧/防御侧 TTK 都是精确值（DP，< 0.01% 误差）
 //
-// ⭐ 场景哈希（_makeScenarioHash）：
-//   已改为引用 TTKMatrix.makeScenarioHash，保证完全一致。
-//
 // ⭐ 附件解析（v6 修复）：
 //   config.barrelId 可能是 -1 / undefined，但 config.barrel 有名字。
 //   改用 getPriceRowsForWeapon（内部已按名字反查 barrelId）→ 保证枪管正确应用。
 //
-//   ⚠️ 之前的 bug：
-//     - _buildAttackSide / _prepareEnemies 直接用 price.configs.find(...)
-//     - config.barrelId 是 undefined → barrel = null → 枪管 rangeMult 没应用
-//     - 结果：勇士 #1 的 rangeMult 1.3 没生效 → 22m 用错 decay
-//
 // ⭐ 去重规则（v2 新增）：
 //   同一武器配置（weaponId + configId）只保留一条，取胜率最高的。
-//   防御侧（护甲/头盔）不参与去重 —— 保留胜率最高的甲头组合。
 //
 // ⭐ 评分：单敌人胜率（v3 重构）
-//
-//   旧逻辑：ratio = defenseTTK / attackTTK，取 min
-//   新逻辑：
-//     1. 对每个敌人算胜率（Logistic 曲线）：
-//          winRate_i = 1 / (1 + exp(-(defenseTTK - attackTTK) / K))
-//        K 控制曲线陡峭程度（默认 100ms）
-//     2. 综合胜率 = 所有敌人胜率的聚合
-//          支持 avg / min / geo / harmonic（默认 avg）
-//
-//   排序：按综合胜率降序
-//
-// ⭐ 输出结构（v4 扩展）：
-//   - rest 从 slice(3, 10) → slice(3, 30)，支持"加载更多到 Top 30"
-//   - gear.bullet / gear.armor / gear.helmet 输出 id（供"添加为假想敌"用）
+//   1. 对每个敌人算胜率（Logistic 曲线）：
+//        winRate_i = 1 / (1 + exp(-(defenseTTK - attackTTK) / K))
+//      K 控制曲线陡峭程度（默认 100ms）
+//   2. 综合胜率 = 所有敌人胜率的聚合（默认 avg）
 //
 // ⭐ debug 收集（v5 新增）：
 //   - recommend() 返回 _debug 字段（含每个 combo 的详细输入/输出）
 //   - 数据来自 TTKMatrix 的模块级 _debugMap（不持久化）
-//   - 供 __recDebug() 在控制台按 rank / weaponId / weaponName 查询
-//
-// ⭐ 防御侧缓存 ID（v6 修复）：
-//   - makeDefenseId 现在含 distance + hitRate
-//   - 查询时（queryDefenseTTK）必须传这两个字段，与 buildDefenseMatrix 一致
-//   - 否则改假想敌距离后会命中旧缓存，TTK 用错距离
 
 import {
   computeTTKMatrix,
@@ -81,6 +71,29 @@ import { calculateCurrentValues } from '../utils/weaponCalc.js'
 
 const WIN_RATE_K = 100
 const WIN_RATE_AGG_METHOD = 'avg'
+
+// ============================================================
+// ⭐ v6：维修包配置
+// ============================================================
+//
+// 4/5/6 级护甲/头盔 → 对应维修包名字（必须与 data.json 的 otherItems 里完全一致）
+// 1~3 级 → null（不配维修包）
+//
+// 名字对照（data.json 实际值）：
+//   护甲：4 → "标准护甲维修包"，5 → "精密护甲维修包"，6 → "高级护甲维修组合"
+//   头盔：4 → "标准头盔维修包"，5 → "精密头盔维修包"，6 → "高级头盔维修组合"
+
+const REPAIR_ARMOR_NAMES = {
+  4: '标准护甲维修包',
+  5: '精密护甲维修包',
+  6: '高级护甲维修组合',
+}
+
+const REPAIR_HELMET_NAMES = {
+  4: '标准头盔维修包',
+  5: '精密头盔维修包',
+  6: '高级头盔维修组合',
+}
 
 // ============================================================
 // 评分工具
@@ -125,6 +138,10 @@ function aggregateWinRates(rates, method = WIN_RATE_AGG_METHOD) {
 export class RecEngine {
   constructor(dataManager) {
     this.dm = dataManager
+
+    // ⭐ v6：维修包价格缓存（懒加载）
+    // Map<"armor_4" | "helmet_6", price>
+    this._repairPriceCache = null
   }
 
   // ============================================================
@@ -149,6 +166,69 @@ export class RecEngine {
   _findRowForConfig(weaponId, configId) {
     const rows = this.dm.getPriceRowsForWeapon(weaponId) || []
     return rows.find(r => r.configId === configId) || null
+  }
+
+  // ============================================================
+  // 0.5 ⭐ v6：维修包价格查询
+  // ============================================================
+
+  /**
+   * 懒加载维修包价格表
+   *
+   * 从 data.json 的 otherItems 里找 category === '维修' 的项，
+   * 按名字建索引。
+   *
+   * 只包含 enabled !== false 的项。
+   *
+   * @returns {Map<string, number>} 名字 → 价格
+   */
+  _getRepairPriceMap() {
+    if (this._repairPriceCache) return this._repairPriceCache
+
+    const map = new Map()
+    const items = this.dm.getOtherItems(true) || []
+
+    for (const item of items) {
+      if (item.category !== '维修') continue
+      if (item.enabled === false) continue
+      if (!item.name) continue
+
+      map.set(item.name, item.price || 0)
+    }
+
+    this._repairPriceCache = map
+    return map
+  }
+
+  /**
+   * 按等级取维修包价格
+   *
+   * @param {number} level - 护甲/头盔等级（1~6）
+   * @param {'armor' | 'helmet'} type
+   * @returns {number} 维修包价格（0 = 不配或找不到）
+   */
+  _getRepairPrice(level, type) {
+    if (level !== 4 && level !== 5 && level !== 6) {
+      return 0
+    }
+
+    const nameMap = type === 'armor' ? REPAIR_ARMOR_NAMES : REPAIR_HELMET_NAMES
+    const targetName = nameMap[level]
+    if (!targetName) return 0
+
+    const priceMap = this._getRepairPriceMap()
+    const price = priceMap.get(targetName)
+
+    if (price === undefined) {
+      // ⭐ 名字匹配不上：静默跳过 + 控制台警告
+      console.warn(
+        `⚠️ RecEngine: 未在 otherItems（category=维修）里找到 "${targetName}"，` +
+        `${type} Lv.${level} 的维修包成本记为 0`
+      )
+      return 0
+    }
+
+    return price
   }
 
   // ============================================================
@@ -520,8 +600,8 @@ export class RecEngine {
           ourArmorValue: defense.armor.value,
           ourHelmetLevel: defense.helmet.level,
           ourHelmetValue: defense.helmet.value,
-          distance: enemy.distance,   // ⭐ v6 新增
-          hitRate,                    // ⭐ v6 新增
+          distance: enemy.distance,
+          hitRate,
           scenarioHash,
         })
 
@@ -569,16 +649,32 @@ export class RecEngine {
 
     // ============================================================
     // 5.4 预计算防御侧成本
+    //
+    // ⭐ v6：新增维修包成本
+    //   - 4/5/6 级护甲/头盔配对应维修包
+    //   - 1~3 级不配
+    //   - 名字匹配不上时，_getRepairPrice 返回 0（+ 控制台警告）
     // ============================================================
     const defenseCosts = new Map()
 
     for (const [di, defenseData] of defenseMap.entries()) {
       const armorPrice = defenseData.meta.armorPrice || 0
       const helmetPrice = defenseData.meta.helmetPrice || 0
+
+      const armorLevel = defenseData.meta.armorLevel
+      const helmetLevel = defenseData.meta.helmetLevel
+
+      const armorRepairPrice = this._getRepairPrice(armorLevel, 'armor')
+      const helmetRepairPrice = this._getRepairPrice(helmetLevel, 'helmet')
+      const repairCost = armorRepairPrice + helmetRepairPrice
+
       defenseCosts.set(di, {
         armorPrice,
         helmetPrice,
-        totalCost: armorPrice + helmetPrice,
+        armorRepairPrice,
+        helmetRepairPrice,
+        repairCost,
+        totalCost: armorPrice + helmetPrice + repairCost,
       })
     }
 
@@ -647,6 +743,10 @@ export class RecEngine {
             avgShots: attackCost.avgShots,
             armorPrice: defenseCost.armorPrice,
             helmetPrice: defenseCost.helmetPrice,
+            // ⭐ v6：维修包成本
+            armorRepairPrice: defenseCost.armorRepairPrice,
+            helmetRepairPrice: defenseCost.helmetRepairPrice,
+            repairCost: defenseCost.repairCost,
             total: totalCost,
           }
         })
@@ -696,7 +796,8 @@ export class RecEngine {
         combo.cost.gunPrice +
         combo.cost.bulletCost +
         combo.cost.armorPrice +
-        combo.cost.helmetPrice
+        combo.cost.helmetPrice +
+        combo.cost.repairCost   // ⭐ v6
 
       return {
         rank,
@@ -731,6 +832,12 @@ export class RecEngine {
             level: combo.defenseMeta.helmetLevel,
             value: combo.defenseMeta.helmetValue,
             price: combo.cost.helmetPrice
+          },
+          // ⭐ v6：维修包信息
+          repair: {
+            armorRepairPrice: combo.cost.armorRepairPrice,
+            helmetRepairPrice: combo.cost.helmetRepairPrice,
+            repairCost: combo.cost.repairCost,
           }
         },
         perEnemy: enemies.map(e => ({
@@ -745,10 +852,16 @@ export class RecEngine {
           bulletCost: combo.cost.bulletCost,
           armorPrice: combo.cost.armorPrice,
           helmetPrice: combo.cost.helmetPrice,
+          // ⭐ v6：维修包成本（供 UI 单独显示）
+          armorRepairPrice: combo.cost.armorRepairPrice,
+          helmetRepairPrice: combo.cost.helmetRepairPrice,
+          repairCost: combo.cost.repairCost,
+          // 总价（含维修包）
           total: combo.cost.total,
           totalW: combo.cost.total / 10000,
+          // 装备总价（不含子弹，但含维修包）
           gearTotal,
-          gearTotalW: gearTotal / 10000
+          gearTotalW: gearTotal / 10000,
         }
       }
     }
@@ -758,8 +871,6 @@ export class RecEngine {
 
     // ============================================================
     // 5.8 ⭐ 收集 debug 数据（每个 combo）
-    //
-    // ⭐ v6：makeDefenseId 必须传 distance + hitRate，与 TTKMatrix 一致
     // ============================================================
     const debugCombos = dedupedCombos.slice(0, 30).map((combo, i) => {
       const rank = i + 1
@@ -784,8 +895,8 @@ export class RecEngine {
           ourArmorValue: combo.defenseMeta.armorValue,
           ourHelmetLevel: combo.defenseMeta.helmetLevel,
           ourHelmetValue: combo.defenseMeta.helmetValue,
-          distance: enemy.distance,     // ⭐ v6 新增
-          hitRate: defenseHitRate,      // ⭐ v6 新增
+          distance: enemy.distance,
+          hitRate: defenseHitRate,
           scenarioHash,
         })
 
@@ -869,7 +980,7 @@ export class RecEngine {
 
     recommendations.topN.forEach(rec => {
       const winRatePct = (rec.winRate * 100).toFixed(1)
-      console.log(`\n【#${rec.rank}】综合胜率 ${winRatePct}%  总价 ${rec.cost.gearTotalW.toFixed(1)}W`)
+      console.log(`\n【#${rec.rank}】综合胜率 ${winRatePct}%  总价 ${rec.cost.totalW.toFixed(1)}W`)
       console.log(`  武器: ${rec.gear.weapon.name} ${rec.gear.weapon.configId} (${(rec.gear.weapon.price / 10000).toFixed(1)}W)`)
       if (rec.gear.weapon.buildCode) {
         console.log(`        改枪码: ${rec.gear.weapon.buildCode}`)
@@ -877,6 +988,9 @@ export class RecEngine {
       console.log(`  子弹: ${rec.gear.bullet.name} Lv.${rec.gear.bullet.level} × ${rec.gear.bullet.carryCount} 发 (${(rec.cost.bulletCost / 10000).toFixed(1)}W)`)
       console.log(`  护甲: ${rec.gear.armor.name} Lv.${rec.gear.armor.level} (${(rec.gear.armor.price / 10000).toFixed(1)}W)`)
       console.log(`  头盔: ${rec.gear.helmet.name} Lv.${rec.gear.helmet.level} (${(rec.gear.helmet.price / 10000).toFixed(1)}W)`)
+      if (rec.cost.repairCost > 0) {
+        console.log(`  维修: 甲修 ${(rec.cost.armorRepairPrice / 10000).toFixed(1)}W + 头修 ${(rec.cost.helmetRepairPrice / 10000).toFixed(1)}W = ${(rec.cost.repairCost / 10000).toFixed(1)}W`)
+      }
       console.log(`  对敌:`)
       rec.perEnemy.forEach(e => {
         console.log(`    vs ${e.name}: 攻 ${e.attackTTK.toFixed(0)}ms / 守 ${e.defenseTTK.toFixed(0)}ms / 胜率 ${(e.winRate * 100).toFixed(1)}%`)

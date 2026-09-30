@@ -361,6 +361,22 @@
                   <span class="gear-price">{{ formatPrice(rec.gear.helmet.price) }}</span>
                 </div>
 
+                <!-- ⭐ v6：维修包行（有维修包成本时才显示） -->
+                <div
+                  v-if="rec.cost.repairCost > 0"
+                  class="gear-row repair-row"
+                  :title="repairTooltip(rec)"
+                >
+                  <span class="gear-icon">🔧</span>
+                  <span class="gear-label">维修</span>
+                  <span class="gear-value repair-value">
+                    {{ repairLabel(rec) }}
+                  </span>
+                  <span class="gear-price repair-price">
+                    {{ formatPrice(rec.cost.repairCost) }}
+                  </span>
+                </div>
+
                 <!-- 对敌明细 -->
                 <div class="enemy-ttk-detail">
                   <div class="enemy-ttk-detail-title">
@@ -413,7 +429,7 @@
                       {{ formatTTK(avgDefenseTTK(rec)) }}<small>ms</small>
                     </div>
                   </div>
-                  <div class="metric">
+                  <div class="metric" :title="gearTotalTooltip(rec)">
                     <div class="metric-label">总价</div>
                     <div class="metric-value gear-total">
                       {{ rec.cost.gearTotalW.toFixed(1) }}<small>W</small>
@@ -528,8 +544,12 @@
                     {{ formatPct(rec.winRate) }}
                   </td>
 
-                  <td class="num-cell gear-total">
-                    {{ formatCost(rec.cost?.gearTotalW) }} W
+                  <!-- ⭐ v6：总价单元格（总价 + 小字维修包） -->
+                  <td class="num-cell gear-total" :title="gearTotalTooltip(rec)">
+                    <div class="gear-total-main">{{ formatCost(rec.cost?.gearTotalW) }} W</div>
+                    <div v-if="rec.cost.repairCost > 0" class="gear-total-sub">
+                      含维修 {{ formatCost(rec.cost.repairCost / 10000) }} W
+                    </div>
                   </td>
 
                   <td class="action-cell">
@@ -623,6 +643,11 @@ const DEFAULT_CARRY_COUNT = 120
 const RANDOM_SAMPLE_COUNT = 100
 const RANDOM_TOP_RATIO = 0.3
 
+// ⭐ 随机距离的指数递减系数
+//   0m 概率 ≈ 100m 的 10 倍（K=0.023）
+//   平均距离 ≈ 34m（maxD=100 时）
+const RANDOM_DISTANCE_K = 0.023
+
 const LOAD_MORE_STEP = 20
 const PERSIST_DEBOUNCE_MS = 500
 
@@ -707,9 +732,57 @@ const rand = (min, max) => Math.random() * (max - min) + min
 const randInt = (min, max) => Math.floor(rand(min, max + 1))
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 
-const randomDistanceByType = (type) => {
-  if (type === '冲锋枪' || type === '手枪') return randInt(0, 40)
-  return randInt(20, 100)
+/**
+ * ⭐ v7：按武器射程 + 指数递减概率随机一个距离
+ *
+ * - maxD 取 weapon.ranges[1]（第 2 段射程点）
+ *   · Infinity 或 > 100 → 钳制到 100
+ *   · < 10 → 钳制到 10（防止极短武器采样空间过小）
+ * - 权重 w(d) = exp(-K · d)，K = 0.023
+ *   · 0m 概率 ≈ 100m 的 10 倍（K=0.023 时）
+ *   · 平均距离 ≈ 34m（maxD=100 时）
+ *
+ * 效果预览（maxD 取 ranges[1]）：
+ *   腾龙  46/81  → maxD=81，平均 ≈ 27m
+ *   AS-Val 40/60 → maxD=60，平均 ≈ 20m
+ *   汤姆逊 23/40 → maxD=40，平均 ≈ 13m
+ *   M700  ∞/∞    → maxD=100，平均 ≈ 34m
+ *
+ * @param {Object} weapon - 武器对象（含 ranges）
+ * @returns {number} 距离（整数）
+ */
+const randomDistance = (weapon) => {
+  // ---------- 1. 确定 maxD ----------
+  let maxD = 100
+
+  const ranges = weapon?.ranges
+  if (Array.isArray(ranges) && ranges.length >= 2) {
+    const r2 = ranges[1]
+    if (typeof r2 === 'number' && isFinite(r2)) {
+      maxD = r2
+    }
+  }
+
+  // 钳制到 [10, 100]
+  maxD = Math.max(10, Math.min(100, Math.round(maxD)))
+
+  // ---------- 2. 算权重（指数递减） ----------
+  const weights = []
+  let total = 0
+  for (let d = 0; d <= maxD; d++) {
+    const w = Math.exp(-RANDOM_DISTANCE_K * d)
+    weights.push(w)
+    total += w
+  }
+
+  // ---------- 3. 按权重随机 ----------
+  let r = Math.random() * total
+  for (let d = 0; d <= maxD; d++) {
+    r -= weights[d]
+    if (r <= 0) return d
+  }
+
+  return 0
 }
 
 const weightedPickOffset = (weights) => {
@@ -821,7 +894,8 @@ const randomEnemyOnce = () => {
   const armor = pick(armors)
   const helmet = pickHelmetForArmor(armor, helmets)
 
-  const distance = randomDistanceByType(weapon.type)
+  // ⭐ v7：按武器射程 + 指数递减随机距离
+  const distance = randomDistance(weapon)
 
   return {
     _id: `enemy_${Date.now()}_${++_enemyIdCounter}`,
@@ -890,7 +964,8 @@ const buildEnemyFromRec = (rec) => {
   }
 
   const weapon = dataStore.getWeaponById(weaponId)
-  const distance = randomDistanceByType(weapon?.type || '步枪')
+  // ⭐ v7：按武器射程 + 指数递减随机距离
+  const distance = randomDistance(weapon)
 
   _enemyIdCounter += 1
 
@@ -1313,6 +1388,75 @@ const helmetLabel = (rec) => {
   const h = rec?.gear?.helmet
   if (!h) return '-'
   return `${h.name} Lv.${h.level}（${h.value}）`
+}
+
+// ⭐ v6：维修包标签
+const repairLabel = (rec) => {
+  const repair = rec?.gear?.repair
+  if (!repair || repair.repairCost <= 0) return '-'
+
+  const parts = []
+  if (repair.armorRepairPrice > 0) {
+    const level = rec?.gear?.armor?.level
+    parts.push(`${level}甲修`)
+  }
+  if (repair.helmetRepairPrice > 0) {
+    const level = rec?.gear?.helmet?.level
+    parts.push(`${level}头修`)
+  }
+  return parts.join(' + ') || '-'
+}
+
+// ⭐ v6：维修包 tooltip
+const repairTooltip = (rec) => {
+  const repair = rec?.gear?.repair
+  if (!repair || repair.repairCost <= 0) return ''
+
+  const lines = ['🔧 维修包']
+  if (repair.armorRepairPrice > 0) {
+    const level = rec?.gear?.armor?.level
+    lines.push(`${level}甲 → ${getRepairName(level, 'armor')} ¥${(repair.armorRepairPrice / 10000).toFixed(1)}W`)
+  }
+  if (repair.helmetRepairPrice > 0) {
+    const level = rec?.gear?.helmet?.level
+    lines.push(`${level}头 → ${getRepairName(level, 'helmet')} ¥${(repair.helmetRepairPrice / 10000).toFixed(1)}W`)
+  }
+  lines.push(`合计: ¥${(repair.repairCost / 10000).toFixed(1)}W`)
+  return lines.join('\n')
+}
+
+// ⭐ v6：根据等级取维修包名字（用于 tooltip 展示）
+const REPAIR_ARMOR_NAMES = {
+  4: '标准护甲维修包',
+  5: '精密护甲维修包',
+  6: '高级护甲维修组合',
+}
+const REPAIR_HELMET_NAMES = {
+  4: '标准头盔维修包',
+  5: '精密头盔维修包',
+  6: '高级头盔维修组合',
+}
+const getRepairName = (level, type) => {
+  const map = type === 'armor' ? REPAIR_ARMOR_NAMES : REPAIR_HELMET_NAMES
+  return map[level] || '-'
+}
+
+// ⭐ v6：总价 tooltip（显示含维修包明细）
+const gearTotalTooltip = (rec) => {
+  if (!rec?.cost) return ''
+
+  const lines = ['💰 总价明细']
+  const c = rec.cost
+
+  if (c.gunPrice > 0) lines.push(`武器: ¥${(c.gunPrice / 10000).toFixed(1)}W`)
+  if (c.bulletCost > 0) lines.push(`子弹: ¥${(c.bulletCost / 10000).toFixed(1)}W`)
+  if (c.armorPrice > 0) lines.push(`护甲: ¥${(c.armorPrice / 10000).toFixed(1)}W`)
+  if (c.helmetPrice > 0) lines.push(`头盔: ¥${(c.helmetPrice / 10000).toFixed(1)}W`)
+  if (c.repairCost > 0) lines.push(`维修包: ¥${(c.repairCost / 10000).toFixed(1)}W`)
+  lines.push(`────────────`)
+  lines.push(`合计: ¥${(c.total / 10000).toFixed(1)}W`)
+
+  return lines.join('\n')
 }
 
 const rankIcon = (rank) => {
@@ -2003,8 +2147,8 @@ onBeforeUnmount(() => {
 
 /* ---------- 单个敌人卡片（自适应宽度） ---------- */
 .enemy-card {
-  flex: 1 1 280px;      /* ⭐ 自适应：最小 280px，尽量撑满 */
-  max-width: 340px;     /* ⭐ 最宽 340px，避免一行只有 1~2 个时过宽 */
+  flex: 1 1 280px;
+  max-width: 340px;
   min-width: 0;
   background: #fafbfd;
   border: 1px solid #e0e4ea;
@@ -2027,12 +2171,12 @@ onBeforeUnmount(() => {
 }
 
 /* ⭐ 6 种卡片颜色（index 0~5） */
-.enemy-card[data-index="0"] { border-left: 4px solid #f44336; }  /* 红 */
-.enemy-card[data-index="1"] { border-left: 4px solid #ff9800; }  /* 橙 */
-.enemy-card[data-index="2"] { border-left: 4px solid #9c27b0; }  /* 紫 */
-.enemy-card[data-index="3"] { border-left: 4px solid #2196f3; }  /* 蓝 */
-.enemy-card[data-index="4"] { border-left: 4px solid #4caf50; }  /* 绿 */
-.enemy-card[data-index="5"] { border-left: 4px solid #009688; }  /* 青 */
+.enemy-card[data-index="0"] { border-left: 4px solid #f44336; }
+.enemy-card[data-index="1"] { border-left: 4px solid #ff9800; }
+.enemy-card[data-index="2"] { border-left: 4px solid #9c27b0; }
+.enemy-card[data-index="3"] { border-left: 4px solid #2196f3; }
+.enemy-card[data-index="4"] { border-left: 4px solid #4caf50; }
+.enemy-card[data-index="5"] { border-left: 4px solid #009688; }
 
 .enemy-header {
   display: flex;
@@ -2671,6 +2815,25 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
+/* ⭐ v6：维修包行 */
+.repair-row {
+  background: #f8f9ff;
+  margin: 0 -6px;
+  padding-left: 6px;
+  padding-right: 6px;
+  border-radius: 4px;
+}
+
+.repair-value {
+  color: #5e35b1;
+  font-weight: 600;
+}
+
+.repair-price {
+  color: #5e35b1;
+  font-weight: 700;
+}
+
 .buildcode-row {
   padding: 4px 0;
   margin-top: -2px;
@@ -3113,7 +3276,22 @@ onBeforeUnmount(() => {
 
 .num-cell.ttk-attack { color: #f44336; }
 .num-cell.ttk-defense { color: #4caf50; }
-.num-cell.gear-total { color: #e67e22; }
+
+/* ⭐ v6：总价单元格（主价 + 小字维修包） */
+.num-cell.gear-total {
+  color: #e67e22;
+  line-height: 1.25;
+}
+
+.gear-total-main {
+  font-weight: 700;
+}
+
+.gear-total-sub {
+  font-size: 10px;
+  color: #5e35b1;
+  font-weight: 500;
+}
 
 .num-cell.winrate {
   font-weight: 700;
