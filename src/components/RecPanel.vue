@@ -16,7 +16,7 @@
           </div>
 
           <div class="rec-empty-budget-row">
-            <label class="rec-empty-budget-label">💰 预算</label>
+            <label class="rec-empty-budget-label">💰 我方预算</label>
             <input
               v-model.number="budget"
               type="number"
@@ -84,7 +84,7 @@
                 />
                 <button
                   class="btn-reroll"
-                  title="从推荐结果重新挑一个"
+                  title="按该假想敌的预算，重新随机一套配装"
                   :disabled="isRunning || rerollingIndex !== null"
                   @click="rerollEnemy(index)"
                 >
@@ -103,9 +103,9 @@
 
               <!-- 主体 -->
               <div class="enemy-card-body">
-                <!-- 预算输入 -->
+                <!-- 假想敌自己的预算（约束它的随机配装） -->
                 <div class="enemy-field budget-field">
-                  <span class="label">💰 预算</span>
+                  <span class="label">💰 配装</span>
                   <input
                     v-model.number="enemy.budgetW"
                     type="number"
@@ -231,10 +231,10 @@
             </div>
           </div>
 
-          <!-- 预算 + 开始推荐 -->
+          <!-- 我方预算 + 开始推荐 -->
           <div class="budget-row">
             <div class="budget-group">
-              <label>💰 预算</label>
+              <label>💰 我方预算</label>
               <input
                 v-model.number="budget"
                 type="number"
@@ -244,6 +244,7 @@
                 @input="markDirty"
               />
               <span class="budget-unit">W 哈弗币</span>
+              <span class="budget-hint">（推荐结果必须 ≤ 这个预算）</span>
             </div>
 
             <button
@@ -263,7 +264,7 @@
           v-if="!recommendations"
           class="no-rec-hint"
         >
-          💡 点击上方「🔍 开始推荐」获取推荐结果
+          💡 点击上方「🔍 开始推荐」获取综合推荐
         </div>
 
         <!-- ---------- 假想敌变更提示条 ---------- -->
@@ -274,11 +275,15 @@
           ⚠️ 假想敌或参数已变更，点击「🔍 开始推荐」刷新结果
         </div>
 
-        <!-- ---------- Top 3 卡片 ---------- -->
+        <!-- ============================================================ -->
+        <!-- ⭐ Top 3 卡片（综合推荐，面对所有假想敌取平均胜率） -->
+        <!-- ============================================================ -->
         <template v-if="recommendations && recommendations.topN.length > 0">
           <div class="section-title">
             🏅 Top 3 推荐
             <span class="badge">按综合胜率排序</span>
+            <span class="badge">{{ recommendations.allCount }} 套候选</span>
+            <span class="badge">我方预算 {{ budget }}W</span>
           </div>
 
           <div class="top3-grid">
@@ -294,7 +299,7 @@
                   <span>推荐 #{{ rec.rank }}</span>
                 </div>
                 <span class="winrate-badge">
-                  {{ formatPct(rec.winRate) }}<span class="pct">胜率</span>
+                  {{ formatPct(rec.winRate) }}<span class="pct">综合胜率</span>
                 </span>
               </div>
 
@@ -361,7 +366,7 @@
                   <span class="gear-price">{{ formatPrice(rec.gear.helmet.price) }}</span>
                 </div>
 
-                <!-- ⭐ v6：维修包行（有维修包成本时才显示） -->
+                <!-- 维修包行 -->
                 <div
                   v-if="rec.cost.repairCost > 0"
                   class="gear-row repair-row"
@@ -377,7 +382,7 @@
                   </span>
                 </div>
 
-                <!-- 对敌明细 -->
+                <!-- 对敌明细（所有假想敌） -->
                 <div class="enemy-ttk-detail">
                   <div class="enemy-ttk-detail-title">
                     <span>对敌明细</span>
@@ -452,7 +457,9 @@
           </div>
         </template>
 
-        <!-- ---------- 第 4~30 名表格 ---------- -->
+        <!-- ============================================================ -->
+        <!-- 第 4~30 名表格 -->
+        <!-- ============================================================ -->
         <template v-if="recommendations && recommendations.rest.length > 0">
           <div class="section-title">
             📊 第 4~{{ Math.min(3 + visibleRestCount, 3 + recommendations.rest.length) }} 名
@@ -544,7 +551,6 @@
                     {{ formatPct(rec.winRate) }}
                   </td>
 
-                  <!-- ⭐ v6：总价单元格（总价 + 小字维修包） -->
                   <td class="num-cell gear-total" :title="gearTotalTooltip(rec)">
                     <div class="gear-total-main">{{ formatCost(rec.cost?.gearTotalW) }} W</div>
                     <div v-if="rec.cost.repairCost > 0" class="gear-total-sub">
@@ -581,7 +587,7 @@
         >
           <div class="icon">😢</div>
           <div>没有找到符合条件的方案</div>
-          <div class="hint">请提高预算或调整假想敌配置</div>
+          <div class="hint">请提高我方预算或调整假想敌配置</div>
         </div>
 
       </div>
@@ -634,18 +640,12 @@ const showAlert = inject('showAlert', null)
 // 常量
 // ============================================================
 
-// ⭐ 假想敌上限：3 → 6
 const MAX_ENEMIES = 6
 
 const DEFAULT_BUDGET_W = 100
 const DEFAULT_CARRY_COUNT = 120
 
-const RANDOM_SAMPLE_COUNT = 100
-const RANDOM_TOP_RATIO = 0.3
-
 // ⭐ 随机距离的指数递减系数
-//   0m 概率 ≈ 100m 的 10 倍（K=0.023）
-//   平均距离 ≈ 34m（maxD=100 时）
 const RANDOM_DISTANCE_K = 0.023
 
 const LOAD_MORE_STEP = 20
@@ -663,19 +663,30 @@ const HELMET_OFFSET_WEIGHTS = [
 // 状态
 // ============================================================
 
+/** 我方预算（推荐结果必须 ≤ 这个预算） */
 const budget = ref(100)
+
 const isRunning = ref(false)
+
+/**
+ * ⭐ 综合推荐结果（一套配装打所有假想敌，取平均胜率）
+ * 结构：{ topN, rest, allCount }
+ */
 const recommendations = ref(null)
 
-const recommendDirty = ref(false)
+/**
+ * ⭐ "加载更多"计数
+ */
 const visibleRestCount = ref(10)
+
+const recommendDirty = ref(false)
 
 const copiedKey = ref(null)
 let copiedTimer = null
 
 const enemies = ref([])
 
-// ⭐ v4：重掷中的假想敌索引（用于按钮 loading + 阻止清空 enemies）
+// 重掷中的假想敌索引
 const rerollingIndex = ref(null)
 
 let _enemyIdCounter = 0
@@ -725,34 +736,32 @@ const getBulletOptions = (weaponId) => {
 }
 
 // ============================================================
+// 推荐结果辅助
+// ============================================================
+
+const displayedRest = computed(() => {
+  if (!recommendations.value) return []
+  return recommendations.value.rest.slice(0, visibleRestCount.value)
+})
+
+const handleLoadMore = () => {
+  if (!recommendations.value) return
+  visibleRestCount.value = Math.min(
+    visibleRestCount.value + LOAD_MORE_STEP,
+    recommendations.value.rest.length
+  )
+}
+
+// ============================================================
 // 随机配装工具
 // ============================================================
 
-const rand = (min, max) => Math.random() * (max - min) + min
-const randInt = (min, max) => Math.floor(rand(min, max + 1))
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 
 /**
- * ⭐ v7：按武器射程 + 指数递减概率随机一个距离
- *
- * - maxD 取 weapon.ranges[1]（第 2 段射程点）
- *   · Infinity 或 > 100 → 钳制到 100
- *   · < 10 → 钳制到 10（防止极短武器采样空间过小）
- * - 权重 w(d) = exp(-K · d)，K = 0.023
- *   · 0m 概率 ≈ 100m 的 10 倍（K=0.023 时）
- *   · 平均距离 ≈ 34m（maxD=100 时）
- *
- * 效果预览（maxD 取 ranges[1]）：
- *   腾龙  46/81  → maxD=81，平均 ≈ 27m
- *   AS-Val 40/60 → maxD=60，平均 ≈ 20m
- *   汤姆逊 23/40 → maxD=40，平均 ≈ 13m
- *   M700  ∞/∞    → maxD=100，平均 ≈ 34m
- *
- * @param {Object} weapon - 武器对象（含 ranges）
- * @returns {number} 距离（整数）
+ * 按武器射程 + 指数递减概率随机一个距离
  */
 const randomDistance = (weapon) => {
-  // ---------- 1. 确定 maxD ----------
   let maxD = 100
 
   const ranges = weapon?.ranges
@@ -763,10 +772,8 @@ const randomDistance = (weapon) => {
     }
   }
 
-  // 钳制到 [10, 100]
   maxD = Math.max(10, Math.min(100, Math.round(maxD)))
 
-  // ---------- 2. 算权重（指数递减） ----------
   const weights = []
   let total = 0
   for (let d = 0; d <= maxD; d++) {
@@ -775,7 +782,6 @@ const randomDistance = (weapon) => {
     total += w
   }
 
-  // ---------- 3. 按权重随机 ----------
   let r = Math.random() * total
   for (let d = 0; d <= maxD; d++) {
     r -= weights[d]
@@ -869,6 +875,15 @@ const formatCostW = (costYuan) => {
   return (costYuan / 10000).toFixed(1) + 'W'
 }
 
+// ============================================================
+// ⭐ 随机配装（核心）
+// ============================================================
+
+/**
+ * 随机一套"临时靶子"配装
+ *
+ * 完全均匀随机（武器/护甲/子弹/配置都均匀），用来给推荐引擎当敌人
+ */
 const randomEnemyOnce = () => {
   const dm = dataStore.getDataManager()
   const weapons = dm.getWeapons() || []
@@ -894,7 +909,6 @@ const randomEnemyOnce = () => {
   const armor = pick(armors)
   const helmet = pickHelmetForArmor(armor, helmets)
 
-  // ⭐ v7：按武器射程 + 指数递减随机距离
   const distance = randomDistance(weapon)
 
   return {
@@ -911,44 +925,78 @@ const randomEnemyOnce = () => {
   }
 }
 
-const randomEnemy = (budgetYuan) => {
-  const candidates = []
+/**
+ * ⭐ 随机一个假想敌（核心）
+ *
+ * 流程：
+ *   ① 随机一个"临时靶子"（用 randomEnemyOnce）
+ *   ② 用【临时靶子 + 预算】跑一次推荐引擎
+ *   ③ 从推荐结果（topN + rest）里随机挑一个
+ *   ④ 把挑出的推荐结果转成假想敌，返回
+ *
+ * 兜底：
+ *   - 靶子随机失败 → 返回 null（外部走空模板）
+ *   - 推荐失败 / 结果为空 → 直接返回靶子
+ *
+ * @param {number} budgetYuan - 该假想敌的预算（元）
+ * @returns {Promise<Object|null>}
+ */
+const randomEnemy = async (budgetYuan) => {
+  const budgetW = Math.round(budgetYuan / 10000)
 
-  for (let i = 0; i < RANDOM_SAMPLE_COUNT; i++) {
-    const enemy = randomEnemyOnce()
-    if (!enemy) continue
+  // ① 随机靶子
+  const tempEnemy = randomEnemyOnce()
+  if (!tempEnemy) return null
+  tempEnemy.budgetW = budgetW
 
-    enemy.budgetW = Math.round(budgetYuan / 10000)
-
-    const cost = calcEnemyCost(enemy)
-    if (isFinite(cost) && cost <= budgetYuan) {
-      candidates.push({ enemy, cost })
-    }
+  // ② 跑推荐（用该假想敌的预算）
+  let engineResult = null
+  try {
+    engineResult = await runRecommendInternal(
+      [buildEngineEnemy(tempEnemy)],
+      budgetW,
+      null
+    )
+  } catch (e) {
+    console.warn('⚠️ randomEnemy 推荐失败，回退到靶子:', e)
+    return tempEnemy
   }
 
-  if (candidates.length === 0) {
-    return null
+  // ③ 推荐失败 → 回退到靶子
+  if (!engineResult?.recommendations) {
+    return tempEnemy
   }
 
-  candidates.sort((a, b) => b.cost - a.cost)
+  const recs = engineResult.recommendations
+  const allRecs = [
+    ...(recs.topN || []),
+    ...(recs.rest || []),
+  ]
 
-  const topN = Math.max(1, Math.ceil(candidates.length * RANDOM_TOP_RATIO))
-  const topCandidates = candidates.slice(0, topN)
+  // ④ 推荐结果为空 → 回退到靶子
+  if (allRecs.length === 0) {
+    return tempEnemy
+  }
 
-  const chosen = topCandidates[Math.floor(Math.random() * topCandidates.length)]
-  return chosen.enemy
+  // ⑤ 随机挑一个
+  const chosenRec = pick(allRecs)
+
+  // ⑥ 转成假想敌
+  const enemy = buildEnemyFromRec(chosenRec)
+  if (!enemy) {
+    return tempEnemy
+  }
+
+  // ⑦ 预算对齐
+  enemy.budgetW = budgetW
+
+  return enemy
 }
 
 // ============================================================
-// ⭐ 从推荐结果构造假想敌
+// 从推荐结果构造假想敌
 // ============================================================
 
-/**
- * 从单条推荐结果组装假想敌对象
- *
- * @param {Object} rec - 推荐结果（含 gear + cost + perEnemy）
- * @returns {Object|null} 假想敌对象（含真实 carryCount）
- */
 const buildEnemyFromRec = (rec) => {
   if (!rec || !rec.gear) return null
 
@@ -964,7 +1012,6 @@ const buildEnemyFromRec = (rec) => {
   }
 
   const weapon = dataStore.getWeaponById(weaponId)
-  // ⭐ v7：按武器射程 + 指数递减随机距离
   const distance = randomDistance(weapon)
 
   _enemyIdCounter += 1
@@ -972,7 +1019,7 @@ const buildEnemyFromRec = (rec) => {
   return {
     _id: `enemy_${Date.now()}_${_enemyIdCounter}`,
     name: '',
-    budgetW: budget.value,
+    budgetW: Math.round((rec.cost?.total || 0) / 10000) || budget.value,
     weaponId,
     configId,
     bulletId,
@@ -981,42 +1028,6 @@ const buildEnemyFromRec = (rec) => {
     distance,
     carryCount: rec.gear.bullet.carryCount || DEFAULT_CARRY_COUNT,
   }
-}
-
-/**
- * 从推荐池里挑一个假想敌
- *
- * @param {Object} recs - recommendations（topN + rest）
- * @param {Object} [options]
- * @param {Set<string>} [options.excludeKeys] - 排除的 key（weaponId_configId）
- * @param {boolean} [options.skipFilter=false] - 是否跳过去重（刷新池后用）
- * @returns {Object|null} 假想敌对象，或 { __exhausted: true }（池用尽），或 null（无推荐）
- */
-const pickFromRecommendations = (recs, options = {}) => {
-  if (!recs) return null
-
-  const all = [
-    ...(recs.topN || []),
-    ...(recs.rest || []),
-  ]
-  if (all.length === 0) return null
-
-  // 过滤（除非 skipFilter）
-  let pool = all
-  if (!options.skipFilter && options.excludeKeys && options.excludeKeys.size > 0) {
-    pool = all.filter(rec => {
-      const key = `${rec.gear.weapon?.id}_${rec.gear.weapon?.configId}`
-      return !options.excludeKeys.has(key)
-    })
-  }
-
-  // ⭐ 池用尽 → 返回特殊标记
-  if (pool.length === 0) {
-    return { __exhausted: true }
-  }
-
-  const rec = pool[Math.floor(Math.random() * pool.length)]
-  return buildEnemyFromRec(rec)
 }
 
 // ============================================================
@@ -1059,81 +1070,39 @@ const markDirty = () => {
 }
 
 // ============================================================
-// ⭐ 假想敌操作（统一入口）
+// ⭐ 假想敌操作
 // ============================================================
 
 /**
- * 创建一个假想敌（统一入口）
+ * 创建一个假想敌
  *
- * 优先级：
- * ① recommendations 为 null → 随机采样（回退）
- * ② recommendations 有：
- *    a. 有未用的推荐 → 从里面随机挑
- *    b. 全部用过 → 刷新推荐池，从新池挑（不再去重）
- *
- * ⚠️ 需要 await，因为可能触发刷新推荐池
- *
- * ⭐ v4：新增 excludeIndex 参数
- *   - 用于 rerollEnemy 场景：排除"正在被重掷"的那个假想敌
- *   - usedKeys 计算时 filter 掉 excludeIndex
- *   - 避免重掷成自己
+ * ⭐ 用【传入的预算】作为该假想敌的 budgetW
+ *    内部走"临时靶子 → 推荐 → 挑一个"的完整流程
  *
  * @param {number} index - 假想敌序号（用于命名）
- * @param {number} [excludeIndex=-1] - 要排除的假想敌索引（-1 = 不排除）
+ * @param {number} enemyBudgetW - 该假想敌的配装预算（W 单位）
  * @returns {Promise<Object|null>} 假想敌对象
  */
-const createEnemy = async (index = 0, excludeIndex = -1) => {
+const createEnemy = async (index, enemyBudgetW) => {
   const newName = `假想敌 ${index + 1}`
+  const finalBudgetW = (typeof enemyBudgetW === 'number' && enemyBudgetW > 0)
+    ? enemyBudgetW
+    : DEFAULT_BUDGET_W
 
-  // ⭐ ① 有推荐结果 → 从推荐池挑
-  if (recommendations.value) {
-    // ⭐ v4：实时算 usedKeys（当前已有假想敌的 weaponId_configId）
-    //    排除 excludeIndex 指向的那个
-    const usedKeys = new Set(
-      enemies.value
-        .filter((_, i) => i !== excludeIndex)
-        .map(e => `${e.weaponId}_${e.configId}`)
-    )
-
-    // 尝试从推荐池挑（带去重）
-    const picked = pickFromRecommendations(recommendations.value, {
-      excludeKeys: usedKeys,
-    })
-
-    // ⭐ 池用尽 → 刷新推荐池
-    if (picked && picked.__exhausted) {
-      console.log('⭐ 推荐池已用尽，正在刷新推荐池...')
-      const newRecs = await refreshRecommendations()
-
-      if (newRecs) {
-        // 从新池挑（skipFilter = true，不再去重）
-        const newPicked = pickFromRecommendations(newRecs, { skipFilter: true })
-        if (newPicked && !newPicked.__exhausted) {
-          newPicked.name = newName
-          return newPicked
-        }
-      }
-
-      console.warn('⚠️ 刷新推荐池失败，回退随机采样')
-    } else if (picked && !picked.__exhausted) {
-      picked.name = newName
-      return picked
-    }
+  // ⭐ 走"临时靶子 → 推荐 → 挑一个"的完整流程
+  const enemy = await randomEnemy(finalBudgetW * 10000)
+  if (enemy) {
+    enemy.name = newName
+    enemy.budgetW = finalBudgetW
+    return enemy
   }
 
-  // ⭐ ② 回退：随机采样（用当前预算）
-  const random = randomEnemy(budget.value * 10000)
-  if (random) {
-    random.name = newName
-    return random
-  }
-
-  // ⭐ ③ 最终兜底：空模板
+  // 兜底：空模板
   _enemyIdCounter += 1
   return {
     _id: `enemy_${Date.now()}_${_enemyIdCounter}`,
     name: newName,
-    budgetW: budget.value,
+    budgetW: finalBudgetW,
     weaponId: null,
     configId: null,
     bulletId: null,
@@ -1144,31 +1113,30 @@ const createEnemy = async (index = 0, excludeIndex = -1) => {
   }
 }
 
-// ⭐ 添加假想敌（新增，不是替换）
+/**
+ * 添加假想敌
+ *
+ * ⭐ 用我方预算作为新假想敌的初始 budgetW（用户可改）
+ * ⭐ 不自动刷新推荐
+ */
 const addEnemy = async () => {
   if (enemies.value.length >= MAX_ENEMIES) return
-  if (enemies.value.length === 0) return   // 空状态下不允许手动添加
+  if (enemies.value.length === 0) return
   if (rerollingIndex.value !== null) return
 
-  const enemy = await createEnemy(enemies.value.length)
-  if (!enemy) return
+  const newEnemy = await createEnemy(enemies.value.length, budget.value)
+  if (!newEnemy) return
 
-  enemies.value.push(enemy)
+  enemies.value.push(newEnemy)
   markDirty()
   schedulePersist()
 }
 
 /**
- * ⭐ 重掷假想敌（v4：不清空 enemies，原地替换）
+ * 重掷假想敌（原地替换）
  *
- * 流程：
- * ① 设置 rerollingIndex（按钮 loading）
- * ② 调 createEnemy(index, excludeIndex=index) —— 排除自己
- * ③ 完成后 enemies.value.splice(index, 1, newEnemy) 原地替换
- * ④ 清空 rerollingIndex
- *
- * ⚠️ v4 之前：先清空 enemies → 触发空状态 v-if → 画面消失又出现
- * ⚠️ v4 之后：enemies 保持不变 → 只原地替换 → 无闪烁
+ * ⭐ 用该假想敌自己的 budgetW 重掷
+ * ⭐ 不自动刷新推荐
  */
 const rerollEnemy = async (index) => {
   const enemy = enemies.value[index]
@@ -1177,17 +1145,18 @@ const rerollEnemy = async (index) => {
   if (isRunning.value) return
 
   const oldName = enemy.name
+  const enemyBudgetW = enemy.budgetW || DEFAULT_BUDGET_W
 
   rerollingIndex.value = index
 
   try {
-    // ⭐ excludeIndex = index（排除自己，避免重掷成自己）
-    const newEnemy = await createEnemy(index, index)
+    // ⭐ 用该假想敌的预算重掷
+    const newEnemy = await createEnemy(index, enemyBudgetW)
     if (!newEnemy) return
 
     newEnemy.name = oldName || `假想敌 ${index + 1}`
 
-    // ⭐ 原地替换（不清空）
+    // ⭐ 原地替换
     enemies.value.splice(index, 1, newEnemy)
 
     markDirty()
@@ -1202,7 +1171,9 @@ const rerollEnemy = async (index) => {
 const removeEnemy = (index) => {
   if (enemies.value.length <= 1) return
   if (rerollingIndex.value !== null) return
+
   enemies.value.splice(index, 1)
+
   markDirty()
   schedulePersist()
 }
@@ -1234,7 +1205,11 @@ const onEnemyWeaponChange = (index) => {
   schedulePersist()
 }
 
-// ⭐ 从推荐结果直接添加为假想敌
+/**
+ * 从推荐结果添加为假想敌
+ *
+ * ⭐ 不自动刷新推荐
+ */
 const addAsEnemy = (rec) => {
   if (!rec) return
   if (rerollingIndex.value !== null) return
@@ -1260,24 +1235,7 @@ const addAsEnemy = (rec) => {
   markDirty()
   schedulePersist()
 
-  console.log(`➕ 已添加为假想敌: ${rec.gear.weapon.name} ${rec.gear.weapon.configId} / ${rec.gear.bullet.name} Lv.${rec.gear.bullet.level}`)
-}
-
-// ============================================================
-// 加载更多
-// ============================================================
-
-const displayedRest = computed(() => {
-  if (!recommendations.value) return []
-  return recommendations.value.rest.slice(0, visibleRestCount.value)
-})
-
-const handleLoadMore = () => {
-  if (!recommendations.value) return
-  visibleRestCount.value = Math.min(
-    visibleRestCount.value + LOAD_MORE_STEP,
-    recommendations.value.rest.length
-  )
+  console.log(`➕ 已添加为假想敌: ${rec.gear.weapon.name} ${rec.gear.weapon.configId}（配装预算 ${newEnemy.budgetW}W）`)
 }
 
 // ============================================================
@@ -1329,7 +1287,7 @@ const copyBuildCode = async (code, key) => {
 
 const calcButtonTitle = computed(() => {
   if (isRunning.value) return '推荐中...'
-  return '开始推荐配装'
+  return `综合推荐（我方预算 ${budget.value}W，面对 ${enemies.value.length} 个假想敌）`
 })
 
 // ============================================================
@@ -1390,7 +1348,6 @@ const helmetLabel = (rec) => {
   return `${h.name} Lv.${h.level}（${h.value}）`
 }
 
-// ⭐ v6：维修包标签
 const repairLabel = (rec) => {
   const repair = rec?.gear?.repair
   if (!repair || repair.repairCost <= 0) return '-'
@@ -1407,7 +1364,6 @@ const repairLabel = (rec) => {
   return parts.join(' + ') || '-'
 }
 
-// ⭐ v6：维修包 tooltip
 const repairTooltip = (rec) => {
   const repair = rec?.gear?.repair
   if (!repair || repair.repairCost <= 0) return ''
@@ -1425,7 +1381,6 @@ const repairTooltip = (rec) => {
   return lines.join('\n')
 }
 
-// ⭐ v6：根据等级取维修包名字（用于 tooltip 展示）
 const REPAIR_ARMOR_NAMES = {
   4: '标准护甲维修包',
   5: '精密护甲维修包',
@@ -1441,7 +1396,6 @@ const getRepairName = (level, type) => {
   return map[level] || '-'
 }
 
-// ⭐ v6：总价 tooltip（显示含维修包明细）
 const gearTotalTooltip = (rec) => {
   if (!rec?.cost) return ''
 
@@ -1469,7 +1423,7 @@ const rankIcon = (rank) => {
 }
 
 // ============================================================
-// 胜率相关辅助
+// 胜率相关辅助（综合推荐，面对所有假想敌取平均）
 // ============================================================
 
 const avgAttackTTK = (rec) => {
@@ -1484,6 +1438,7 @@ const avgDefenseTTK = (rec) => {
   return arr.reduce((s, e) => s + (e.defenseTTK || 0), 0) / arr.length
 }
 
+/** 最弱敌人下标（用于高亮） */
 const weakestEnemyIdx = (rec) => {
   const arr = rec?.perEnemy
   if (!arr || arr.length === 0) return -1
@@ -1536,50 +1491,62 @@ const formatBulletPrice = (v) => {
 }
 
 const formatBulletCost = (v) => {
-  if (v === undefined || v === null || !isFinite(v) || v <= 0) return '-'
-  if (v >= 10000) return `¥${(v / 10000).toFixed(1)}W`
-  return `¥${Math.round(v)}`
+  if (v === undefined || v === null || !isFinite(v)) return '-'
+  if (v > 0) {
+    if (v >= 10000) return `¥${(v / 10000).toFixed(1)}W`
+    return `¥${Math.round(v)}`
+  }
+  return '-'
 }
 
 // ============================================================
-// 推荐主流程
+// 引擎参数构建
 // ============================================================
 
-const buildEngineEnemies = () => {
-  return enemies.value.map(e => {
-    const armor = armorOptions.value.find(a => a.id === e.armorId)
-    const helmet = helmetOptions.value.find(h => h.id === e.helmetId)
+const buildEngineEnemy = (e) => {
+  const armor = armorOptions.value.find(a => a.id === e.armorId)
+  const helmet = helmetOptions.value.find(h => h.id === e.helmetId)
 
-    return {
-      name: e.name || '假想敌',
-      weaponId: e.weaponId,
-      configId: e.configId,
-      bulletId: e.bulletId,
-      armorLevel: armor?.level ?? 4,
-      armorValue: armor?.value ?? 0,
-      helmetLevel: helmet?.level ?? 4,
-      helmetValue: helmet?.value ?? 0,
-      distance: e.distance
-    }
-  })
+  return {
+    name: e.name || '假想敌',
+    weaponId: e.weaponId,
+    configId: e.configId,
+    bulletId: e.bulletId,
+    armorLevel: armor?.level ?? 4,
+    armorValue: armor?.value ?? 0,
+    helmetLevel: helmet?.level ?? 4,
+    helmetValue: helmet?.value ?? 0,
+    distance: e.distance
+  }
+}
+
+const buildEngineEnemies = () => {
+  return enemies.value.map(buildEngineEnemy)
 }
 
 const buildEngineParams = () => {
   const p = paramsStore.state
   return {
     hitRateMap: p.hitRateMap || [],
-    hitProb: p.hitProb || { head: 0.1, chest: 0.3, stomach: 0.3, limbs: 0.3 },
+    hitProb: p.hitProb || { head: 0.1, chest: 0.3, stomach: 0.3, legs: 0.3 },
     triggerDelayEnable: p.triggerDelayEnable !== false,
     healthValue: p.healthValue ?? 100
   }
 }
 
-const runRecommendInternal = async (enemiesList, progressRange = null) => {
+/**
+ * ⭐ 单次推荐（内部函数）
+ *
+ * @param {Array} enemiesList - 敌人列表
+ * @param {number} budgetW - 用哪个预算（W 单位）
+ * @param {Array<number>} progressRange - [start, end] 进度区间
+ */
+const runRecommendInternal = async (enemiesList, budgetW, progressRange = null) => {
   const engine = window.__recEngine
   if (!engine) return null
 
   const input = {
-    budget: budget.value,
+    budget: budgetW,
     enemies: enemiesList,
     params: buildEngineParams(),
     kdRatio: paramsStore.state.kdRatio ?? 1.0,
@@ -1619,85 +1586,8 @@ const runRecommendInternal = async (enemiesList, progressRange = null) => {
   return result
 }
 
-const createTempEnemyForFirstRecommend = () => {
-  const tempEnemy = randomEnemy(budget.value * 10000)
-  if (!tempEnemy) return null
-  tempEnemy.name = '临时假想敌'
-  return tempEnemy
-}
-
 // ============================================================
-// ⭐ 刷新推荐池（池用尽时调用）
-// ============================================================
-
-/**
- * 刷新推荐池
- *
- * 流程：
- * ① 随机一个临时假想敌（独立，不进 enemies）
- * ② 跑推荐 → 新 top30
- * ③ 更新 recommendations.value
- *
- * @returns {Promise<Object|null>} 新的 recommendations
- */
-const refreshRecommendations = async () => {
-  progress.value.visible = true
-  progress.value.title = '推荐池已用尽'
-  progress.value.phase = '正在生成新推荐池...'
-  progress.value.percent = 0
-  progress.value.current = 0
-  progress.value.total = 0
-
-  try {
-    // ① 随机临时假想敌
-    const tempEnemy = randomEnemy(budget.value * 10000)
-    if (!tempEnemy) {
-      console.warn('⚠️ refreshRecommendations: 无法生成临时假想敌')
-      return null
-    }
-    tempEnemy.name = '临时假想敌'
-
-    // ② 组装 engine 参数
-    const armor = dataStore.getArmorById(tempEnemy.armorId)
-    const helmet = dataStore.getArmorById(tempEnemy.helmetId)
-
-    const tempEnemiesEngine = [{
-      name: tempEnemy.name,
-      weaponId: tempEnemy.weaponId,
-      configId: tempEnemy.configId,
-      bulletId: tempEnemy.bulletId,
-      armorLevel: armor?.level ?? 4,
-      armorValue: armor?.value ?? 0,
-      helmetLevel: helmet?.level ?? 4,
-      helmetValue: helmet?.value ?? 0,
-      distance: tempEnemy.distance,
-    }]
-
-    // ③ 跑推荐
-    const result = await runRecommendInternal(tempEnemiesEngine, [0, 100])
-
-    if (result && result.recommendations) {
-      recommendations.value = result.recommendations
-      window.__lastRecResult = result
-      console.log(`✅ 推荐池已刷新: Top ${result.recommendations.topN.length} + ${result.recommendations.rest.length}`)
-      return result.recommendations
-    }
-
-    return null
-  } catch (e) {
-    console.error('❌ 刷新推荐池失败:', e)
-    return null
-  } finally {
-    progress.value.visible = false
-    progress.value.percent = 0
-    progress.value.current = 0
-    progress.value.total = 0
-    progress.value.phase = ''
-  }
-}
-
-// ============================================================
-// 推荐主入口
+// ⭐ 推荐主入口（综合推荐）
 // ============================================================
 
 const runRecommend = async () => {
@@ -1712,7 +1602,10 @@ const runRecommend = async () => {
   }
 
   isRunning.value = true
+
+  // 清空旧的推荐结果
   recommendations.value = null
+  visibleRestCount.value = 10
 
   progress.value.visible = true
   progress.value.title = '推荐中...'
@@ -1725,94 +1618,47 @@ const runRecommend = async () => {
   await new Promise(resolve => setTimeout(resolve, 150))
 
   try {
+    // ============================================================
+    // 空 enemies：首次推荐
+    // ============================================================
     if (enemies.value.length === 0) {
-      // ============================================================
-      // 空 enemies：首次推荐的完整流程
-      // ============================================================
       progress.value.title = '正在初始化...'
-      progress.value.phase = '生成初始假想敌'
+      progress.value.phase = '生成初始假想敌（推荐引擎生成）'
       progress.value.percent = 5
 
-      const tempEnemy = createTempEnemyForFirstRecommend()
-      if (!tempEnemy) {
+      const firstEnemy = await createEnemy(0, budget.value)
+      if (!firstEnemy) {
         throw new Error('无法生成初始假想敌，请检查数据')
       }
+      firstEnemy.name = '假想敌 1'
 
-      const tempEnemiesEngine = [{
-        name: tempEnemy.name,
-        weaponId: tempEnemy.weaponId,
-        configId: tempEnemy.configId,
-        bulletId: tempEnemy.bulletId,
-        armorLevel: dataStore.getArmorById(tempEnemy.armorId)?.level ?? 4,
-        armorValue: dataStore.getArmorById(tempEnemy.armorId)?.value ?? 0,
-        helmetLevel: dataStore.getArmorById(tempEnemy.helmetId)?.level ?? 4,
-        helmetValue: dataStore.getArmorById(tempEnemy.helmetId)?.value ?? 0,
-        distance: tempEnemy.distance,
-      }]
-
-      progress.value.phase = '计算初始推荐'
-      progress.value.percent = 10
-
-      const firstResult = await runRecommendInternal(tempEnemiesEngine, [10, 55])
-
-      if (!firstResult || !firstResult.recommendations) {
-        throw new Error('初始推荐失败')
-      }
-
-      progress.value.phase = '生成最终假想敌'
-      progress.value.percent = 60
-
-      // ⭐ 从推荐池挑一个（未用过的）
-      const picked = pickFromRecommendations(firstResult.recommendations)
-
-      if (picked && !picked.__exhausted) {
-        picked.name = '假想敌 1'
-        enemies.value = [picked]
-      } else {
-        // 推荐池为空（理论上不会），回退到临时假想敌
-        tempEnemy.name = '假想敌 1'
-        enemies.value = [tempEnemy]
-      }
-
-      progress.value.phase = '计算最终推荐'
-      progress.value.percent = 65
-
-      const finalEnemiesEngine = buildEngineEnemies()
-      const finalResult = await runRecommendInternal(finalEnemiesEngine, [65, 100])
-
-      if (finalResult && finalResult.recommendations) {
-        recommendations.value = finalResult.recommendations
-        recommendDirty.value = false
-        visibleRestCount.value = 10
-
-        if (engine.printResult) {
-          engine.printResult(finalResult)
-        }
-
-        window.__lastRecResult = finalResult
-      }
-
-      await persistNow()
-
-    } else {
-      // ============================================================
-      // 非空 enemies：直接跑推荐
-      // ============================================================
-      const enemiesEngine = buildEngineEnemies()
-      const result = await runRecommendInternal(enemiesEngine, [0, 100])
-
-      if (result && result.recommendations) {
-        recommendations.value = result.recommendations
-        recommendDirty.value = false
-        visibleRestCount.value = 10
-
-        if (engine.printResult) {
-          engine.printResult(result)
-        }
-
-        window.__lastRecResult = result
-      }
+      enemies.value = [firstEnemy]
     }
+
+    // ============================================================
+    // 综合推荐：一次性传所有敌人
+    // ============================================================
+    const enemiesList = buildEngineEnemies()
+
+    progress.value.title = '综合推荐中...'
+    progress.value.phase = `面对 ${enemiesList.length} 个假想敌（我方预算 ${budget.value}W）`
+    progress.value.percent = 20
+
+    const result = await runRecommendInternal(enemiesList, budget.value, [20, 100])
+
+    if (result && result.recommendations) {
+      recommendations.value = result.recommendations
+      recommendDirty.value = false
+      visibleRestCount.value = 10
+
+      if (engine.printResult) {
+        engine.printResult(result)
+      }
+
+      window.__lastRecResult = result
+    }
+
+    await persistNow()
 
   } catch (error) {
     console.error('❌ 推荐失败:', error)
@@ -1848,10 +1694,14 @@ const initPanel = async () => {
           const n = parseInt(match[1], 10)
           if (n > maxId) maxId = n
         }
+        // ⭐ 兼容旧数据
+        if (typeof e.budgetW !== 'number' || !e.budgetW) {
+          e.budgetW = budget.value
+        }
       }
       _enemyIdCounter = maxId
 
-      console.log(`✅ 已恢复配装面板状态：${enemies.value.length} 个假想敌，预算 ${budget.value}W`)
+      console.log(`✅ 已恢复配装面板状态：${enemies.value.length} 个假想敌，我方预算 ${budget.value}W`)
     } else {
       enemies.value = []
       budget.value = DEFAULT_BUDGET_W
@@ -2145,7 +1995,7 @@ onBeforeUnmount(() => {
   margin-bottom: 14px;
 }
 
-/* ---------- 单个敌人卡片（自适应宽度） ---------- */
+/* ---------- 单个敌人卡片 ---------- */
 .enemy-card {
   flex: 1 1 280px;
   max-width: 340px;
@@ -2164,13 +2014,11 @@ onBeforeUnmount(() => {
   border-color: var(--color-primary);
 }
 
-/* ⭐ v4：重掷中，卡片半透明 + 禁止交互 */
 .enemy-card.is-rerolling {
   opacity: 0.5;
   pointer-events: none;
 }
 
-/* ⭐ 6 种卡片颜色（index 0~5） */
 .enemy-card[data-index="0"] { border-left: 4px solid #f44336; }
 .enemy-card[data-index="1"] { border-left: 4px solid #ff9800; }
 .enemy-card[data-index="2"] { border-left: 4px solid #9c27b0; }
@@ -2201,7 +2049,6 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-/* ⭐ 6 种 index 背景色 */
 .enemy-card[data-index="0"] .enemy-index { background: #f44336; }
 .enemy-card[data-index="1"] .enemy-index { background: #ff9800; }
 .enemy-card[data-index="2"] .enemy-index { background: #9c27b0; }
@@ -2438,6 +2285,7 @@ onBeforeUnmount(() => {
   background: #fff8e1;
   border: 1px solid #ffe0a8;
   border-radius: 6px;
+  flex-wrap: wrap;
 }
 
 .budget-group label {
@@ -2468,6 +2316,13 @@ onBeforeUnmount(() => {
 .budget-unit {
   font-size: 11px;
   color: #e65100;
+}
+
+.budget-hint {
+  font-size: 10px;
+  color: #999;
+  white-space: nowrap;
+  margin-left: 4px;
 }
 
 .calc-btn {
@@ -2544,10 +2399,11 @@ onBeforeUnmount(() => {
   font-size: 15px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .section-title .badge {
@@ -2815,7 +2671,6 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-/* ⭐ v6：维修包行 */
 .repair-row {
   background: #f8f9ff;
   margin: 0 -6px;
@@ -3277,7 +3132,6 @@ onBeforeUnmount(() => {
 .num-cell.ttk-attack { color: #f44336; }
 .num-cell.ttk-defense { color: #4caf50; }
 
-/* ⭐ v6：总价单元格（主价 + 小字维修包） */
 .num-cell.gear-total {
   color: #e67e22;
   line-height: 1.25;
@@ -3379,7 +3233,6 @@ onBeforeUnmount(() => {
    ============================================================ */
 
 @media (max-width: 768px) {
-  /* ⭐ 空状态移动端 */
   .rec-empty-state {
     min-height: 300px;
     padding: 24px 16px;
@@ -3416,7 +3269,6 @@ onBeforeUnmount(() => {
     font-size: 14px;
   }
 
-  /* ⭐ 完整界面移动端 */
   .panel {
     padding: 10px 12px;
   }
@@ -3425,7 +3277,6 @@ onBeforeUnmount(() => {
     gap: 8px;
   }
 
-  /* ⭐ 移动端卡片：强制 100% 宽 */
   .enemy-card {
     flex: 1 1 100%;
     max-width: 100%;
@@ -3450,6 +3301,10 @@ onBeforeUnmount(() => {
   .budget-input {
     width: 70px;
     font-size: 12px;
+  }
+
+  .budget-hint {
+    font-size: 9px;
   }
 
   .calc-btn {
