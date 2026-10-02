@@ -98,7 +98,7 @@ HEADLESS = False
 
 # 浏览器窗口尺寸
 VIEWPORT_WIDTH = 1440
-VIEWPORT_HEIGHT = 900
+VIEWPORT_HEIGHT = 1000
 
 
 # ============================================================
