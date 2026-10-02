@@ -22,7 +22,18 @@
 #   - 正常情况 50~200ms 返回，异常情况才等满这些值
 #   - 新增 WAIT_POLL_INTERVAL（wait_for_function 的轮询间隔）
 #
-# ⚠️ 如果 dfttk.com 更新 DOM，需同步修改 SELECTORS
+# ⭐ v4 改动（子弹价格爬虫）：
+#   - 新增 orzice.com 子弹价格相关常量
+#   - 新增 AMMO_SELECTORS（子弹页表格选择器）
+#   - 新增 AMMO_TASKS_JSON / AMMO_SCRAPED_JSON 中间产物路径
+#   - 新增 ORZICE_AMMO_TOTAL_PAGES（抓取页数）
+#
+# ⭐ v4.1 改动（修正子弹页选择器）：
+#   - 名称元素：.ui-name → .ui-item-main .ui-tname
+#     （截图里 DOM 显示 .ui-name，实际用 .ui-tname）
+#   - ORZICE_HEADLESS 改为 False（首次可能需要登录/看页面）
+#
+# ⚠️ 如果 dfttk.com / orzice.com 更新 DOM，需同步修改 SELECTORS / AMMO_SELECTORS
 
 import os
 
@@ -40,9 +51,13 @@ PROJECT_ROOT = os.path.dirname(TOOLS_DIR)
 DATA_JSON = os.path.join(PROJECT_ROOT, "public", "data.json")
 DATA_BAK = os.path.join(PROJECT_ROOT, "public", "data.json.bak")
 
-# 中间产物
+# 中间产物（武器价格）
 TASKS_JSON = os.path.join(TOOLS_DIR, "tasks.json")
 SCRAPED_JSON = os.path.join(TOOLS_DIR, "scraped_prices.json")
+
+# 中间产物（子弹价格）  ⭐ v4
+AMMO_TASKS_JSON = os.path.join(TOOLS_DIR, "ammo_tasks.json")
+AMMO_SCRAPED_JSON = os.path.join(TOOLS_DIR, "ammo_scraped.json")
 
 
 # ============================================================
@@ -63,12 +78,15 @@ SCRAPED_JSON = os.path.join(TOOLS_DIR, "scraped_prices.json")
 #   rm -rf tools/_browser_profile
 #
 # ⚠️ 不要同时运行两个 scrape_prices.py，会互相锁住 profile。
+#
+# ⭐ v4：子弹价格爬虫（scrape_ammo_prices.py）复用同一个 profile 目录。
+#    orzice.com 可能需要登录，共用 profile 可以保持登录状态。
 
 USER_DATA_DIR = os.path.join(TOOLS_DIR, "_browser_profile")
 
 
 # ============================================================
-# 爬虫配置
+# 爬虫配置（武器价格 - dfttk.com）
 # ============================================================
 
 # 目标站点
@@ -84,7 +102,29 @@ VIEWPORT_HEIGHT = 900
 
 
 # ============================================================
-# 等待时间（毫秒）
+# 爬虫配置（子弹价格 - orzice.com）  ⭐ v4
+# ============================================================
+
+# 目标站点基础 URL
+ORZICE_AMMO_URL = "https://orzice.com/v/ammo"
+
+# URL 参数模板（{page} 会被替换为页码）
+# 原始 URL: https://orzice.com/v/ammo?a=ammo&top=2-2&p=1&grade=-1&n=
+ORZICE_AMMO_PARAMS = "a=ammo&top=2-2&p={page}&grade=-1&n="
+
+# 抓取页数（当前 orzice 子弹价格页共 9 页）
+ORZICE_AMMO_TOTAL_PAGES = 9
+
+# 子弹价格爬虫是否无头模式
+#   ⭐ v4.1：改为 False
+#     - 首次可能需要登录（或查看页面是否正常加载）
+#     - 调试时能看到表格、翻页
+#     - 稳定后可改回 True（后台静默运行）
+ORZICE_HEADLESS = False
+
+
+# ============================================================
+# 等待时间（毫秒） - 武器价格（dfttk.com）
 # ============================================================
 #
 # ⭐ v3 优化：这些值现在作为"兜底超时"，实际使用条件等待。
@@ -128,7 +168,37 @@ WAIT_POLL_INTERVAL = 50
 
 
 # ============================================================
-# CSS 选择器（dfttk.com）
+# 等待时间（毫秒） - 子弹价格（orzice.com）  ⭐ v4
+# ============================================================
+#
+# 子弹价格页是"纯静态表格"（SSR 渲染），不需要交互。
+# 单页需要等：表格渲染 + 首屏数据加载。
+#
+# 实测（本地快环境）：
+#   单页 ~1.5s（含网络 + 渲染）
+#   9 页 ~13s
+#
+# 首次运行若需要手动登录，等待时间会叠加。
+
+# 打开页面 → 等表格出现（兜底超时）
+WAIT_AFTER_AMMO_PAGE_LOAD = 5000
+
+# 抓完当前页 → 进入下一页前的短暂等待（保险）
+WAIT_AFTER_AMMO_PAGE_NAV = 800
+
+# 首次运行时，等用户手动登录的提示（仅 UI，无实际等待）
+# 用户回车后才继续，所以这个常量只是文案
+AMMO_FIRST_RUN_HINT = (
+    "请确认：\n"
+    "  1. 页面已完全加载\n"
+    "  2. 已登录（如果需要）\n"
+    "  3. 子弹列表已正常显示\n"
+    "  4. 翻页按钮可点（「下一页」在底部）"
+)
+
+
+# ============================================================
+# CSS 选择器（dfttk.com） - 武器价格
 # ============================================================
 #
 # ⚠️ 如果 dfttk.com 更新 DOM，这里的选择器需要同步修改。
@@ -206,6 +276,86 @@ SELECTORS = {
 
     # ---------- 总价 ----------
     "price": ".weapon-builder-total-value strong",
+}
+
+
+# ============================================================
+# CSS 选择器（orzice.com） - 子弹价格  ⭐ v4
+# ============================================================
+#
+# ⚠️ 如果 orzice.com 更新 DOM，这里的选择器需要同步修改。
+#
+# DOM 层级速查（从实际 outerHTML 确定）：
+#
+#   表格：
+#     table.ui-table
+#       └─ tbody
+#            └─ tr                    ⭐ 一行 = 一颗子弹
+#
+#   单行结构（真实 outerHTML）：
+#     <tr>
+#       <td>
+#         <div class="ui-item">
+#           <a href="/v/info/673" class="ui-avatar">
+#             <img class="orzice-item-pic" ...>
+#           </a>
+#           <div class="ui-item-main">
+#             <div class="ui-tname">碳纤维穿甲箭矢</div>        ⭐ 子弹名
+#             <div class="ui-tsub">
+#               推荐方式
+#               <span class="ui-sell ShopSellType-3">交易行上架</span>
+#             </div>
+#           </div>
+#         </div>
+#       </td>
+#       <td>
+#         <div class="ui-jb">
+#           <span class="icon-gold-jb">≈ 3.58</span>            （金本位，不用）
+#           <span class="icon-gold-yzj">≈ 1.19</span>           （鱼子酱，不用）
+#         </div>
+#       </td>
+#       <td>
+#         <div class="ui-cell-gold">
+#           <span class="icon-gold ui-num">6,954</span>         ⭐ 当前价格（第 1 个）
+#         </div>
+#       </td>
+#       <td><span class="ui-badge ui-badge-up">9.1%</span></td> （涨幅）
+#       <td>
+#         <div class="ui-cell-gold">
+#           <span class="icon-gold ui-num">5,794</span>         3日价格
+#         </div>
+#       </td>
+#       <td><span class="ui-change is-pos">20.02%</span></td>
+#       <td>
+#         <div class="ui-cell-gold">
+#           <span class="icon-gold ui-num">6,084</span>         7日价格
+#         </div>
+#       </td>
+#       <td><span class="ui-change is-pos">14.3%</span></td>
+#       <td>
+#         <div class="ui-cell-gold">
+#           <span class="icon-gold ui-num">7,244</span>         30日价格
+#         </div>
+#       </td>
+#       <td><span class="ui-change is-neg">-4%</span></td>
+#     </tr>
+#
+#   ⚠️ 一行里有 4 个 .ui-cell-gold .ui-num（当前/3日/7日/30日价格）
+#      用 .first 恰好取到"当前价格"（第一个）
+
+AMMO_SELECTORS = {
+    # ---------- 表格 ----------
+    "table": "table.ui-table",
+    "row": "table.ui-table tbody tr",
+
+    # ---------- 单行内部 ----------
+    # ⭐ v4.1：名称元素的 class 是 .ui-tname（不是 .ui-name）
+    #          在 .ui-item-main 容器里
+    "name": ".ui-item-main .ui-tname",
+
+    # ⭐ 一行有 4 个 .ui-cell-gold .ui-num
+    #    用 .first 取到"当前价格"
+    "price": ".ui-cell-gold .ui-num",
 }
 
 
