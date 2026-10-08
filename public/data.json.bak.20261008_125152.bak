@@ -2495,12 +2495,30 @@
       "pen": 1,
       "price": 602,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2520,12 +2538,30 @@
       "pen": 1,
       "price": 1827,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2545,12 +2581,30 @@
       "pen": 1,
       "price": 5043,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0.5 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2570,12 +2624,30 @@
       "pen": 0.75,
       "price": 162,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -2595,12 +2667,30 @@
       "pen": 1,
       "price": 519,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2620,12 +2710,30 @@
       "pen": 0,
       "price": 248,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.15, "pen": 0 },
-        "5": { "armorMult": 0.15, "pen": 0 },
-        "6": { "armorMult": 0.15, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.15,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.15,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.15,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 0.4,
@@ -2645,12 +2753,30 @@
       "pen": 1,
       "price": 635,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2670,12 +2796,30 @@
       "pen": 0.5,
       "price": 43,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -2695,12 +2839,30 @@
       "pen": 0.75,
       "price": 116,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -2720,12 +2882,30 @@
       "pen": 1,
       "price": 611,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2745,12 +2925,30 @@
       "pen": 0,
       "price": 950,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 0 },
-        "2": { "armorMult": 0.9, "pen": 0 },
-        "3": { "armorMult": 0.9, "pen": 0 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.35,
@@ -2770,12 +2968,30 @@
       "pen": 1,
       "price": 2065,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2795,12 +3011,30 @@
       "pen": 1,
       "price": 5002,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0.5 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 0.85,
@@ -2820,12 +3054,30 @@
       "pen": 0.75,
       "price": 164,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -2845,12 +3097,30 @@
       "pen": 1,
       "price": 524,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -2870,12 +3140,30 @@
       "pen": 1,
       "price": 785,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2895,12 +3183,30 @@
       "pen": 0.5,
       "price": 28,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.05,
@@ -2920,12 +3226,30 @@
       "pen": 0,
       "price": 133,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.2, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 5.5,
@@ -2945,12 +3269,30 @@
       "pen": 0.75,
       "price": 65,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 4.8,
@@ -2970,12 +3312,30 @@
       "pen": 1,
       "price": 519,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -2995,12 +3355,30 @@
       "pen": 0,
       "price": 383,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.15, "pen": 0 },
-        "5": { "armorMult": 0.15, "pen": 0 },
-        "6": { "armorMult": 0.15, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.15,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.15,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.15,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.3,
@@ -3020,12 +3398,30 @@
       "pen": 1,
       "price": 568,
       "armorData": {
-        "1": { "armorMult": 0.75, "pen": 1 },
-        "2": { "armorMult": 0.75, "pen": 0.75 },
-        "3": { "armorMult": 0.75, "pen": 0.5 },
-        "4": { "armorMult": 0.75, "pen": 0 },
-        "5": { "armorMult": 0.43, "pen": 0 },
-        "6": { "armorMult": 0.35, "pen": 0 }
+        "1": {
+          "armorMult": 0.75,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.75,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.75,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.75,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.43,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.35,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 0.85,
@@ -3045,12 +3441,30 @@
       "pen": 1,
       "price": 551,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 4.8,
@@ -3070,12 +3484,30 @@
       "pen": 0,
       "price": 2040,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.6, "pen": 0 },
-        "4": { "armorMult": 0.6, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3095,12 +3527,30 @@
       "pen": 1,
       "price": 400,
       "armorData": {
-        "1": { "armorMult": 0.75, "pen": 1 },
-        "2": { "armorMult": 0.75, "pen": 0.75 },
-        "3": { "armorMult": 0.75, "pen": 0.5 },
-        "4": { "armorMult": 0.75, "pen": 0 },
-        "5": { "armorMult": 0.43, "pen": 0 },
-        "6": { "armorMult": 0.35, "pen": 0 }
+        "1": {
+          "armorMult": 0.75,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.75,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.75,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.75,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.43,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.35,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 0.85,
@@ -3120,12 +3570,30 @@
       "pen": 1,
       "price": 519,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3145,12 +3613,30 @@
       "pen": 1,
       "price": 1772,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3170,12 +3656,30 @@
       "pen": 1,
       "price": 3267,
       "armorData": {
-        "1": { "armorMult": 0.1, "pen": 1 },
-        "2": { "armorMult": 0.1, "pen": 1 },
-        "3": { "armorMult": 0.1, "pen": 0.75 },
-        "4": { "armorMult": 0.1, "pen": 0.5 },
-        "5": { "armorMult": 0.1, "pen": 0.4 },
-        "6": { "armorMult": 0.1, "pen": 0.3 }
+        "1": {
+          "armorMult": 0.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 0.1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 0.1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 0.1,
+          "pen": 0.4
+        },
+        "6": {
+          "armorMult": 0.1,
+          "pen": 0.3
+        }
       },
       "partMult": {
         "head": 1.32,
@@ -3195,12 +3699,30 @@
       "pen": 1,
       "price": 4963,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3220,12 +3742,30 @@
       "pen": 1,
       "price": 147,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3245,12 +3785,30 @@
       "pen": 1,
       "price": 1220,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3270,12 +3828,30 @@
       "pen": 1,
       "price": 1933,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3295,12 +3871,30 @@
       "pen": 1,
       "price": 972,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.25,
@@ -3320,12 +3914,30 @@
       "pen": 1,
       "price": 4162,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3345,12 +3957,30 @@
       "pen": 1,
       "price": 4206,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0.5 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.25,
@@ -3370,12 +4000,30 @@
       "pen": 0,
       "price": 764,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.2, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.5,
@@ -3395,12 +4043,30 @@
       "pen": 1,
       "price": 1213,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3420,12 +4086,30 @@
       "pen": 1,
       "price": 3275,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0.5 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3445,12 +4129,30 @@
       "pen": 0.5,
       "price": 40,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3470,12 +4172,30 @@
       "pen": 0.75,
       "price": 100,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3495,12 +4215,30 @@
       "pen": 1,
       "price": 579,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3520,12 +4258,30 @@
       "pen": 1,
       "price": 1841,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3545,12 +4301,30 @@
       "pen": 1,
       "price": 4749,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3570,12 +4344,30 @@
       "pen": 0.5,
       "price": 35,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3595,12 +4387,30 @@
       "pen": 0.75,
       "price": 80,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3620,12 +4430,30 @@
       "pen": 1,
       "price": 571,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3645,12 +4473,30 @@
       "pen": 1,
       "price": 1761,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3670,12 +4516,30 @@
       "pen": 1,
       "price": 5057,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3695,12 +4559,30 @@
       "pen": 0.5,
       "price": 38,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3720,12 +4602,30 @@
       "pen": 0.75,
       "price": 102,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3745,12 +4645,30 @@
       "pen": 1,
       "price": 585,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3770,12 +4688,30 @@
       "pen": 0,
       "price": 587,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.2, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.4,
@@ -3795,12 +4731,30 @@
       "pen": 1,
       "price": 2073,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3820,12 +4774,30 @@
       "pen": 1,
       "price": 5027,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3845,12 +4817,30 @@
       "pen": 0.75,
       "price": 99,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -3870,12 +4860,30 @@
       "pen": 1,
       "price": 598,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3895,12 +4903,30 @@
       "pen": 1,
       "price": 2128,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3920,12 +4946,30 @@
       "pen": 1,
       "price": 5145,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3945,12 +4989,30 @@
       "pen": 1,
       "price": 2024,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3970,12 +5032,30 @@
       "pen": 1,
       "price": 5074,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -3995,12 +5075,30 @@
       "pen": 0.5,
       "price": 43,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4020,12 +5118,30 @@
       "pen": 0.75,
       "price": 111,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4045,12 +5161,30 @@
       "pen": 1,
       "price": 521,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 0.75 },
-        "3": { "armorMult": 1, "pen": 0.5 },
-        "4": { "armorMult": 1, "pen": 0 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4070,12 +5204,30 @@
       "pen": 1,
       "price": 1751,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4095,12 +5247,30 @@
       "pen": 1,
       "price": 4971,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4120,12 +5290,30 @@
       "pen": 0.75,
       "price": 119,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4145,12 +5333,30 @@
       "pen": 1,
       "price": 608,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 0.75 },
-        "3": { "armorMult": 1, "pen": 0.5 },
-        "4": { "armorMult": 1, "pen": 0 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4170,12 +5376,30 @@
       "pen": 1,
       "price": 1258,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4195,12 +5419,30 @@
       "pen": 1,
       "price": 5967,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4220,12 +5462,30 @@
       "pen": 1,
       "price": 522,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 0.75 },
-        "3": { "armorMult": 1, "pen": 0.5 },
-        "4": { "armorMult": 1, "pen": 0 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4245,12 +5505,30 @@
       "pen": 1,
       "price": 2090,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4270,12 +5548,30 @@
       "pen": 1,
       "price": 6094,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 1 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1, "pen": 0.5 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4295,12 +5591,30 @@
       "pen": 0.5,
       "price": 32,
       "armorData": {
-        "1": { "armorMult": 0.6, "pen": 0.5 },
-        "2": { "armorMult": 0.6, "pen": 0 },
-        "3": { "armorMult": 0.4, "pen": 0 },
-        "4": { "armorMult": 0.3, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.6,
+          "pen": 0.5
+        },
+        "2": {
+          "armorMult": 0.6,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4320,12 +5634,30 @@
       "pen": 0.75,
       "price": 88,
       "armorData": {
-        "1": { "armorMult": 0.7, "pen": 0.75 },
-        "2": { "armorMult": 0.7, "pen": 0.5 },
-        "3": { "armorMult": 0.7, "pen": 0 },
-        "4": { "armorMult": 0.5, "pen": 0 },
-        "5": { "armorMult": 0.4, "pen": 0 },
-        "6": { "armorMult": 0.3, "pen": 0 }
+        "1": {
+          "armorMult": 0.7,
+          "pen": 0.75
+        },
+        "2": {
+          "armorMult": 0.7,
+          "pen": 0.5
+        },
+        "3": {
+          "armorMult": 0.7,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.3,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4345,12 +5677,30 @@
       "pen": 1,
       "price": 366,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4370,12 +5720,30 @@
       "pen": 0,
       "price": 758,
       "armorData": {
-        "1": { "armorMult": 0.4, "pen": 0 },
-        "2": { "armorMult": 0.3, "pen": 0 },
-        "3": { "armorMult": 0.2, "pen": 0 },
-        "4": { "armorMult": 0.2, "pen": 0 },
-        "5": { "armorMult": 0.2, "pen": 0 },
-        "6": { "armorMult": 0.2, "pen": 0 }
+        "1": {
+          "armorMult": 0.4,
+          "pen": 0
+        },
+        "2": {
+          "armorMult": 0.3,
+          "pen": 0
+        },
+        "3": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "4": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.2,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.2,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.4,
@@ -4395,12 +5763,30 @@
       "pen": 1,
       "price": 1726,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4420,12 +5806,30 @@
       "pen": 1,
       "price": 304,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.75 },
-        "3": { "armorMult": 0.9, "pen": 0.5 },
-        "4": { "armorMult": 0.9, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.5
+        },
+        "4": {
+          "armorMult": 0.9,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1.1,
@@ -4445,12 +5849,30 @@
       "pen": 1,
       "price": 2081,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0.5 },
-        "5": { "armorMult": 1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.5
+        },
+        "5": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4470,12 +5892,30 @@
       "pen": 1,
       "price": 4744,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0.5 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.5
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4495,12 +5935,30 @@
       "pen": 1,
       "price": 799,
       "armorData": {
-        "1": { "armorMult": 0.9, "pen": 1 },
-        "2": { "armorMult": 0.9, "pen": 0.9 },
-        "3": { "armorMult": 0.9, "pen": 0.75 },
-        "4": { "armorMult": 1, "pen": 0 },
-        "5": { "armorMult": 0.5, "pen": 0 },
-        "6": { "armorMult": 0.4, "pen": 0 }
+        "1": {
+          "armorMult": 0.9,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 0.9,
+          "pen": 0.9
+        },
+        "3": {
+          "armorMult": 0.9,
+          "pen": 0.75
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0
+        },
+        "5": {
+          "armorMult": 0.5,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.4,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4520,12 +5978,30 @@
       "pen": 1,
       "price": 1994,
       "armorData": {
-        "1": { "armorMult": 1, "pen": 1 },
-        "2": { "armorMult": 1, "pen": 1 },
-        "3": { "armorMult": 1, "pen": 0.9 },
-        "4": { "armorMult": 1, "pen": 0.75 },
-        "5": { "armorMult": 1.1, "pen": 0 },
-        "6": { "armorMult": 0.6, "pen": 0 }
+        "1": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1,
+          "pen": 0.9
+        },
+        "4": {
+          "armorMult": 1,
+          "pen": 0.75
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0
+        },
+        "6": {
+          "armorMult": 0.6,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4545,12 +6021,30 @@
       "pen": 1,
       "price": 7389,
       "armorData": {
-        "1": { "armorMult": 1.1, "pen": 1 },
-        "2": { "armorMult": 1.1, "pen": 1 },
-        "3": { "armorMult": 1.1, "pen": 1 },
-        "4": { "armorMult": 1.1, "pen": 0.9 },
-        "5": { "armorMult": 1.1, "pen": 0.75 },
-        "6": { "armorMult": 1.1, "pen": 0 }
+        "1": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "2": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "3": {
+          "armorMult": 1.1,
+          "pen": 1
+        },
+        "4": {
+          "armorMult": 1.1,
+          "pen": 0.9
+        },
+        "5": {
+          "armorMult": 1.1,
+          "pen": 0.75
+        },
+        "6": {
+          "armorMult": 1.1,
+          "pen": 0
+        }
       },
       "partMult": {
         "head": 1,
@@ -4582,13 +6076,13 @@
             100
           ],
           "hitRate": [
-            0.767,
-            0.678,
-            0.322
+            0.756,
+            0.656,
+            0.344
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 289
+          "aimSpeed": 361
         }
       ]
     },
@@ -4603,7 +6097,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 308,
+          "aimSpeed": 327,
           "buildCode": "AK-12突击步枪-烽火地带-6L9UMHG05506E7BV9G8G5",
           "price": 90000,
           "distance": [
@@ -4612,9 +6106,9 @@
             100
           ],
           "hitRate": [
-            0.744,
+            0.733,
             0.511,
-            0.356
+            0.367
           ],
           "bullet": "",
           "enabled": true
@@ -4640,13 +6134,13 @@
             100
           ],
           "hitRate": [
-            0.8,
-            0.544,
+            0.811,
+            0.567,
             0.267
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 327
+          "aimSpeed": 322
         }
       ]
     },
@@ -4661,7 +6155,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 277,
+          "aimSpeed": 289,
           "buildCode": "AKS-74U突击步枪-烽火地带-6LBAUDO05506E7BV9G8G5",
           "price": 20000,
           "distance": [
@@ -4670,8 +6164,8 @@
             100
           ],
           "hitRate": [
-            0.767,
-            0.678,
+            0.789,
+            0.667,
             0.322
           ],
           "bullet": "",
@@ -4690,17 +6184,17 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 302,
+          "aimSpeed": 368,
           "buildCode": "AR57突击步枪-烽火地带-6LDOTE805506E7BV9G8G5",
-          "price": 230000,
+          "price": 220000,
           "distance": [
             30,
             50,
             100
           ],
           "hitRate": [
-            0.822,
-            0.678,
+            0.844,
+            0.656,
             0.344
           ],
           "bullet": "",
@@ -4719,7 +6213,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 302,
+          "aimSpeed": 314,
           "buildCode": "AS Val突击步枪-烽火地带-6LB5Q7805506E7BV9G8G5",
           "price": 270000,
           "distance": [
@@ -4728,7 +6222,7 @@
             100
           ],
           "hitRate": [
-            0.378,
+            0.367,
             0.222,
             0.111
           ],
@@ -4758,11 +6252,11 @@
           "hitRate": [
             0.844,
             0.589,
-            0.256
+            0.244
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 321
+          "aimSpeed": 348
         }
       ]
     },
@@ -4785,13 +6279,13 @@
             100
           ],
           "hitRate": [
-            0.744,
-            0.511,
-            0.289
+            0.733,
+            0.5,
+            0.267
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 327
+          "aimSpeed": 395
         }
       ]
     },
@@ -4806,7 +6300,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 302,
+          "aimSpeed": 314,
           "buildCode": "CAR-15突击步枪-烽火地带-6LB8QVO05506E7BV9G8G5",
           "price": 20000,
           "distance": [
@@ -4843,13 +6337,13 @@
             100
           ],
           "hitRate": [
-            0.867,
-            0.656,
+            0.889,
+            0.667,
             0.389
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 399
+          "aimSpeed": 383
         }
       ]
     },
@@ -4865,7 +6359,7 @@
           "muzzle": "无",
           "precision": 0,
           "buildCode": "K416突击步枪-烽火地带-6L9TPL005506E7BV9G8G5",
-          "price": 230000,
+          "price": 220000,
           "distance": [
             30,
             50,
@@ -4873,12 +6367,12 @@
           ],
           "hitRate": [
             0.856,
-            0.589,
-            0.3
+            0.6,
+            0.278
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 283
+          "aimSpeed": 308
         }
       ]
     },
@@ -4903,11 +6397,11 @@
           "hitRate": [
             0.9,
             0.744,
-            0.356
+            0.367
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 361
+          "aimSpeed": 375
         }
       ]
     },
@@ -4922,9 +6416,9 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 333,
+          "aimSpeed": 368,
           "buildCode": "KC17突击步枪-烽火地带-6LA50VO05506E7BV9G8G5",
-          "price": 240000,
+          "price": 230000,
           "distance": [
             30,
             50,
@@ -4951,7 +6445,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 314,
+          "aimSpeed": 359,
           "buildCode": "M16A4突击步枪-烽火地带-6LBBG3405506E7BV9G8G5",
           "price": 20000,
           "distance": [
@@ -4962,7 +6456,7 @@
           "hitRate": [
             0.867,
             0.7,
-            0.411
+            0.433
           ],
           "bullet": "",
           "enabled": true
@@ -4980,9 +6474,9 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 302,
+          "aimSpeed": 308,
           "buildCode": "M4A1突击步枪-烽火地带-6LA4E4005506E7BV9G8G5",
-          "price": 120000,
+          "price": 110000,
           "distance": [
             30,
             50,
@@ -4991,7 +6485,7 @@
           "hitRate": [
             0.889,
             0.778,
-            0.278
+            0.3
           ],
           "bullet": "",
           "enabled": true
@@ -5007,20 +6501,20 @@
           "barrel": "无",
           "muzzle": "无",
           "buildCode": "M7战斗步枪-烽火地带-6LA53FC05506E7BV9G8G5",
-          "price": 250000,
+          "price": 260000,
           "distance": [
             30,
             50,
             100
           ],
           "hitRate": [
-            0.778,
-            0.633,
-            0.311
+            0.789,
+            0.611,
+            0.322
           ],
           "enabled": true,
           "precision": 0,
-          "aimSpeed": 367,
+          "aimSpeed": 396,
           "barrelId": -1,
           "muzzleId": 0
         }
@@ -5037,7 +6531,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 283,
+          "aimSpeed": 365,
           "buildCode": "MCX LT突击步枪-烽火地带-6LA59HG05506E7BV9G8G5",
           "price": 100000,
           "distance": [
@@ -5046,9 +6540,9 @@
             100
           ],
           "hitRate": [
-            0.967,
+            0.978,
             0.744,
-            0.367
+            0.378
           ],
           "bullet": "",
           "enabled": true
@@ -5066,9 +6560,9 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 339,
+          "aimSpeed": 369,
           "buildCode": "MDR突击步枪-烽火地带-6LDOVSG05506E7BV9G8G5",
-          "price": 240000,
+          "price": 250000,
           "distance": [
             30,
             50,
@@ -5077,7 +6571,7 @@
           "hitRate": [
             0.811,
             0.644,
-            0.333
+            0.3
           ],
           "bullet": "",
           "enabled": true
@@ -5104,12 +6598,12 @@
           ],
           "hitRate": [
             0.133,
-            0.067,
+            0.078,
             0.033
           ],
           "bullet": "",
           "enabled": true,
-          "aimSpeed": 355
+          "aimSpeed": 348
         }
       ]
     },
@@ -5124,7 +6618,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 314,
+          "aimSpeed": 321,
           "buildCode": "PTR-32突击步枪-烽火地带-6LA6UCS05506E7BV9G8G5",
           "price": 50000,
           "distance": [
@@ -5133,7 +6627,7 @@
             100
           ],
           "hitRate": [
-            0.789,
+            0.778,
             0.567,
             0.333
           ],
@@ -5153,7 +6647,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 321,
+          "aimSpeed": 326,
           "buildCode": "QBZ95-1突击步枪-烽火地带-6LA797S05506E7BV9G8G5",
           "price": 50000,
           "distance": [
@@ -5162,8 +6656,8 @@
             100
           ],
           "hitRate": [
-            0.7,
-            0.444,
+            0.667,
+            0.478,
             0.289
           ],
           "bullet": "",
@@ -5182,7 +6676,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 349,
+          "aimSpeed": 386,
           "buildCode": "RM277突击步枪-烽火地带-6LA86TC05506E7BV9G8G5",
           "price": 120000,
           "distance": [
@@ -5193,7 +6687,7 @@
           "hitRate": [
             0.689,
             0.478,
-            0.267
+            0.278
           ],
           "bullet": "",
           "enabled": true
@@ -5211,9 +6705,9 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 327,
+          "aimSpeed": 361,
           "buildCode": "SCAR-H战斗步枪-烽火地带-6LA889O05506E7BV9G8G5",
-          "price": 180000,
+          "price": 150000,
           "distance": [
             30,
             50,
@@ -5221,8 +6715,8 @@
           ],
           "hitRate": [
             0.7,
-            0.511,
-            0.278
+            0.5,
+            0.3
           ],
           "bullet": "",
           "enabled": true
@@ -5240,9 +6734,9 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 283,
+          "aimSpeed": 327,
           "buildCode": "SG552突击步枪-烽火地带-6LDOSI005506E7BV9G8G5",
-          "price": 40000,
+          "price": 50000,
           "distance": [
             30,
             50,
@@ -5269,18 +6763,18 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 270,
+          "aimSpeed": 321,
           "buildCode": "汤姆逊冲锋枪-烽火地带-6LCIO8005506E7BV9G8G5",
-          "price": 180000,
+          "price": 170000,
           "distance": [
             30,
             50,
             100
           ],
           "hitRate": [
-            0.789,
+            0.822,
             0.522,
-            0.211
+            0.189
           ],
           "bullet": "",
           "enabled": true
@@ -5298,7 +6792,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 277,
+          "aimSpeed": 289,
           "buildCode": "野牛冲锋枪-烽火地带-6LBAVR005506E7BV9G8G5",
           "price": 10000,
           "distance": [
@@ -5308,8 +6802,8 @@
           ],
           "hitRate": [
             0.811,
-            0.7,
-            0.4
+            0.689,
+            0.467
           ],
           "bullet": "",
           "enabled": true
@@ -5334,12 +6828,12 @@
           "hitRate": [
             0.889,
             0.667,
-            0.344
+            0.322
           ],
           "enabled": true,
           "bullet": "",
           "precision": 0,
-          "aimSpeed": 270,
+          "aimSpeed": 338,
           "barrelId": -1,
           "muzzleId": 0
         }
@@ -5354,7 +6848,7 @@
           "barrel": "无",
           "muzzle": "无",
           "buildCode": "MK4冲锋枪-烽火地带-6LDP1P805506E7BV9G8G5",
-          "price": 200000,
+          "price": 170000,
           "distance": [
             30,
             50,
@@ -5362,14 +6856,14 @@
           ],
           "hitRate": [
             0.861,
-            0.708,
+            0.736,
             0.375
           ],
           "enabled": true,
           "muzzleId": 0,
           "bullet": "",
           "precision": 0,
-          "aimSpeed": 289,
+          "aimSpeed": 342,
           "barrelId": -1
         }
       ]
@@ -5392,12 +6886,12 @@
           "hitRate": [
             0.967,
             0.811,
-            0.311
+            0.3
           ],
           "enabled": true,
           "bullet": "",
           "precision": 0,
-          "aimSpeed": 250,
+          "aimSpeed": 317,
           "barrelId": -1,
           "muzzleId": 0
         }
@@ -5412,7 +6906,7 @@
           "barrel": "无",
           "muzzle": "无",
           "buildCode": "MP7冲锋枪-烽火地带-6LA9CUO05506E7BV9G8G5",
-          "price": 290000,
+          "price": 280000,
           "distance": [
             30,
             50,
@@ -5421,13 +6915,13 @@
           "hitRate": [
             0.844,
             0.611,
-            0.344
+            0.333
           ],
           "enabled": true,
           "muzzleId": 0,
           "bullet": "",
           "precision": 0,
-          "aimSpeed": 270,
+          "aimSpeed": 343,
           "barrelId": -1
         }
       ]
@@ -5448,14 +6942,14 @@
             100
           ],
           "hitRate": [
-            0.822,
-            0.589,
-            0.3
+            0.811,
+            0.567,
+            0.311
           ],
           "enabled": true,
           "muzzleId": 0,
           "precision": 0,
-          "aimSpeed": 314,
+          "aimSpeed": 418,
           "barrelId": -1
         }
       ]
@@ -5476,13 +6970,13 @@
             100
           ],
           "hitRate": [
-            0.867,
-            0.678,
+            0.856,
+            0.633,
             0.322
           ],
           "enabled": true,
           "precision": 0,
-          "aimSpeed": 289,
+          "aimSpeed": 343,
           "muzzleId": 0,
           "barrelId": -1
         }
@@ -5499,16 +6993,16 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 230,
+          "aimSpeed": 265,
           "buildCode": "SMG-45冲锋枪-烽火地带-6LBB73S05506E7BV9G8G5",
-          "price": 50000,
+          "price": 60000,
           "distance": [
             30,
             50,
             100
           ],
           "hitRate": [
-            0.933,
+            0.947,
             0.907,
             0.253
           ],
@@ -5526,7 +7020,7 @@
           "barrel": "无",
           "muzzle": "无",
           "buildCode": "SR-3M紧凑突击步枪-烽火地带-6L7H3RC05506E7BV9G8G5",
-          "price": 150000,
+          "price": 140000,
           "distance": [
             30,
             50,
@@ -5534,13 +7028,13 @@
           ],
           "hitRate": [
             0.822,
-            0.689,
+            0.7,
             0.322
           ],
           "enabled": true,
           "muzzleId": 0,
           "precision": 0,
-          "aimSpeed": 296,
+          "aimSpeed": 340,
           "barrelId": -1
         }
       ]
@@ -5556,7 +7050,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 263,
+          "aimSpeed": 250,
           "buildCode": "UZI冲锋枪-烽火地带-6LBB1OC05506E7BV9G8G5",
           "price": 20000,
           "distance": [
@@ -5583,21 +7077,21 @@
           "barrel": "无",
           "muzzle": "无",
           "buildCode": "Vector冲锋枪-烽火地带-6LA9LRG05506E7BV9G8G5",
-          "price": 260000,
+          "price": 250000,
           "distance": [
             30,
             50,
             100
           ],
           "hitRate": [
-            0.711,
-            0.4,
+            0.7,
+            0.433,
             0.222
           ],
           "enabled": true,
           "bullet": "",
           "precision": 0,
-          "aimSpeed": 256,
+          "aimSpeed": 308,
           "muzzleId": 0,
           "barrelId": -1
         }
@@ -5614,7 +7108,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 479,
+          "aimSpeed": 338,
           "buildCode": "M249轻机枪-烽火地带-6LBB2VO05506E7BV9G8G5",
           "price": 60000,
           "distance": [
@@ -5624,8 +7118,8 @@
           ],
           "hitRate": [
             0.922,
-            0.544,
-            0.267
+            0.556,
+            0.233
           ],
           "bullet": "",
           "enabled": true
@@ -5641,20 +7135,20 @@
           "barrel": "无",
           "muzzle": "无",
           "buildCode": "M250通用机枪-烽火地带-6L7H9OK05506E7BV9G8G5",
-          "price": 350000,
+          "price": 300000,
           "distance": [
             30,
             50,
             100
           ],
           "hitRate": [
-            0.867,
-            0.544,
+            0.844,
+            0.567,
             0.256
           ],
           "enabled": true,
           "precision": 0,
-          "aimSpeed": 375,
+          "aimSpeed": 425,
           "muzzleId": 0,
           "barrelId": -1
         }
@@ -5671,7 +7165,7 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0,
-          "aimSpeed": 408,
+          "aimSpeed": 430,
           "buildCode": "PKM通用机枪-烽火地带-6LAE4I005506E7BV9G8G5",
           "price": 100000,
           "distance": [
@@ -5681,8 +7175,8 @@
           ],
           "hitRate": [
             0.733,
-            0.556,
-            0.356
+            0.567,
+            0.333
           ],
           "bullet": "",
           "enabled": true
@@ -5698,20 +7192,20 @@
           "barrel": "无",
           "muzzle": "无",
           "buildCode": "QJB201轻机枪-烽火地带-6L7HDU805506E7BV9G8G5",
-          "price": 130000,
+          "price": 120000,
           "distance": [
             30,
             50,
             100
           ],
           "hitRate": [
-            0.511,
-            0.278,
+            0.522,
+            0.289,
             0.089
           ],
           "enabled": true,
           "precision": 0,
-          "aimSpeed": 447,
+          "aimSpeed": 359,
           "barrelId": -1,
           "muzzleId": 0
         }
@@ -5726,20 +7220,20 @@
           "barrel": "无",
           "muzzle": "无",
           "buildCode": "M14射手步枪-烽火地带-6L7HJR005506E7BV9G8G5",
-          "price": 260000,
+          "price": 270000,
           "distance": [
             30,
             50,
             100
           ],
           "hitRate": [
-            0.211,
+            0.2,
             0.111,
             0.044
           ],
           "enabled": true,
           "precision": 0,
-          "aimSpeed": 361,
+          "aimSpeed": 437,
           "barrelId": -1,
           "muzzleId": 0
         }
@@ -5793,13 +7287,13 @@
           ],
           "hitRate": [
             1,
-            1,
-            1
+            0.9,
+            0.6
           ],
           "bullet": "",
           "enabled": true,
           "precision": 0.09,
-          "aimSpeed": 238
+          "aimSpeed": 386
         }
       ]
     },
@@ -5821,14 +7315,14 @@
             100
           ],
           "hitRate": [
-            1,
-            1,
-            1
+            1.0,
+            1.0,
+            1.0
           ],
           "bullet": "",
           "enabled": true,
           "precision": 0,
-          "aimSpeed": 469
+          "aimSpeed": 383
         }
       ]
     },
@@ -5843,9 +7337,9 @@
           "muzzleId": 0,
           "muzzle": "无",
           "precision": 0.09,
-          "aimSpeed": 226,
+          "aimSpeed": 243,
           "buildCode": "93R-烽火地带-6LCIS9405506E7BV9G8G5",
-          "price": 90000,
+          "price": 100000,
           "distance": [
             30,
             50,
@@ -5854,7 +7348,7 @@
           "hitRate": [
             0.944,
             0.789,
-            0.322
+            0.311
           ],
           "bullet": "",
           "enabled": true
@@ -5878,12 +7372,12 @@
           ],
           "hitRate": [
             0.889,
-            0.711,
-            0.378
+            0.733,
+            0.422
           ],
           "enabled": true,
           "precision": 0,
-          "aimSpeed": 327,
+          "aimSpeed": 397,
           "barrelId": -1,
           "muzzleId": 0
         }
@@ -6730,7 +8224,7 @@
   },
   "weaponScores": {
     "6_#1": {
-      "score": 646.1571745846002,
+      "score": 656.9571745846002,
       "meta": {
         "weaponId": 6,
         "weaponName": "ASh-12",
@@ -6745,36 +8239,14 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "ASh-12战斗步枪-烽火地带-6L9V56G05506E7BV9G8G5",
-        "aimSpeed": 321,
-        "price": 300000,
-        "havocCost": 367619.16927684424,
-        "enabled": true
-      }
-    },
-    "20_#1": {
-      "score": 661.0307817134345,
-      "meta": {
-        "weaponId": 20,
-        "weaponName": "MK4",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "MK4冲锋枪-烽火地带-6LDP1P805506E7BV9G8G5",
-        "aimSpeed": 289,
-        "price": 200000,
-        "havocCost": 256838.28612238273,
+        "aimSpeed": 348,
+        "price": 500000,
+        "havocCost": 479836.08327766537,
         "enabled": true
       }
     },
     "5_#1": {
-      "score": 665.2509098348742,
+      "score": 670.0509098348742,
       "meta": {
         "weaponId": 5,
         "weaponName": "AS-Val",
@@ -6789,17 +8261,17 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "AS Val突击步枪-烽火地带-6LB5Q7805506E7BV9G8G5",
-        "aimSpeed": 302,
-        "price": 270000,
-        "havocCost": 549632.4947476491,
+        "aimSpeed": 314,
+        "price": 470000,
+        "havocCost": 516966.31367935636,
         "enabled": true
       }
     },
-    "13_#1": {
-      "score": 693.0118404561672,
+    "20_#1": {
+      "score": 682.2307817134345,
       "meta": {
-        "weaponId": 13,
-        "weaponName": "KC17",
+        "weaponId": 20,
+        "weaponName": "MK4",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -6810,15 +8282,15 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "KC17突击步枪-烽火地带-6LA50VO05506E7BV9G8G5",
-        "aimSpeed": 333,
-        "price": 240000,
-        "havocCost": 364731.03855286445,
+        "buildCode": "MK4冲锋枪-烽火地带-6LDP1P805506E7BV9G8G5",
+        "aimSpeed": 342,
+        "price": 400000,
+        "havocCost": 381963.00037439517,
         "enabled": true
       }
     },
     "21_#1": {
-      "score": 701.1826841401195,
+      "score": 698.3826841401195,
       "meta": {
         "weaponId": 21,
         "weaponName": "MK47",
@@ -6833,17 +8305,17 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "MK47突击步枪-烽火地带-6LA7T7005506E7BV9G8G5",
-        "aimSpeed": 355,
-        "price": 280000,
-        "havocCost": 831232.8866207438,
+        "aimSpeed": 348,
+        "price": 760000,
+        "havocCost": 665555.4654053483,
         "enabled": true
       }
     },
-    "7_#1": {
-      "score": 702.1714166242532,
+    "13_#1": {
+      "score": 707.0118404561672,
       "meta": {
-        "weaponId": 7,
-        "weaponName": "AUG",
+        "weaponId": 13,
+        "weaponName": "KC17",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -6854,191 +8326,15 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "AUG突击步枪-烽火地带-6L9V87S05506E7BV9G8G5",
-        "aimSpeed": 327,
-        "price": 130000,
-        "havocCost": 298542.1240477026,
-        "enabled": true
-      }
-    },
-    "12_#1": {
-      "score": 708.9448974194955,
-      "meta": {
-        "weaponId": 12,
-        "weaponName": "K437",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "K437突击步枪-烽火地带-6LA4TMO05506E7BV9G8G5",
-        "aimSpeed": 361,
-        "price": 150000,
-        "havocCost": 284798.85577814555,
-        "enabled": true
-      }
-    },
-    "4_#1": {
-      "score": 714.6795228570295,
-      "meta": {
-        "weaponId": 4,
-        "weaponName": "AR57",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "AR57突击步枪-烽火地带-6LDOTE805506E7BV9G8G5",
-        "aimSpeed": 302,
-        "price": 230000,
-        "havocCost": 380962.68127252354,
-        "enabled": true
-      }
-    },
-    "11_#1": {
-      "score": 724.5401661913521,
-      "meta": {
-        "weaponId": 11,
-        "weaponName": "K416",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "K416突击步枪-烽火地带-6L9TPL005506E7BV9G8G5",
-        "aimSpeed": 283,
-        "price": 230000,
-        "havocCost": 351066.3722217501,
-        "enabled": true
-      }
-    },
-    "35_#1": {
-      "score": 731.3114119620425,
-      "meta": {
-        "weaponId": 35,
-        "weaponName": "SCAR-H",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "SCAR-H战斗步枪-烽火地带-6LA889O05506E7BV9G8G5",
-        "aimSpeed": 327,
-        "price": 180000,
-        "havocCost": 255217.02683159977,
-        "enabled": true
-      }
-    },
-    "1_#1": {
-      "score": 734.2132723351588,
-      "meta": {
-        "weaponId": 1,
-        "weaponName": "AK12",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "AK-12突击步枪-烽火地带-6L9UMHG05506E7BV9G8G5",
-        "aimSpeed": 308,
-        "price": 90000,
-        "havocCost": 273178.86984901526,
-        "enabled": true
-      }
-    },
-    "17_#1": {
-      "score": 735.1784738073316,
-      "meta": {
-        "weaponId": 17,
-        "weaponName": "M4A1",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "M4A1突击步枪-烽火地带-6LA4E4005506E7BV9G8G5",
-        "aimSpeed": 302,
-        "price": 120000,
-        "havocCost": 271171.564932426,
-        "enabled": true
-      }
-    },
-    "47_#1": {
-      "score": 736.5225597222692,
-      "meta": {
-        "weaponId": 47,
-        "weaponName": "MDR突击步枪",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "MDR突击步枪-烽火地带-6LDOVSG05506E7BV9G8G5",
-        "aimSpeed": 339,
-        "price": 240000,
-        "havocCost": 282927.14402265364,
-        "enabled": true
-      }
-    },
-    "14_#1": {
-      "score": 743.5695994463919,
-      "meta": {
-        "weaponId": 14,
-        "weaponName": "M14",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "M14射手步枪-烽火地带-6L7HJR005506E7BV9G8G5",
-        "aimSpeed": 361,
-        "price": 260000,
-        "havocCost": 527717.8798602829,
+        "buildCode": "KC17突击步枪-烽火地带-6LA50VO05506E7BV9G8G5",
+        "aimSpeed": 368,
+        "price": 400000,
+        "havocCost": 444437.5674523491,
         "enabled": true
       }
     },
     "48_#1": {
-      "score": 745.7460226772835,
+      "score": 711.3460226772835,
       "meta": {
         "weaponId": 48,
         "weaponName": "SVCH",
@@ -7053,17 +8349,17 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "SVCH精确射手步枪-烽火地带-6L8M6Q005506E7BV9G8G5",
-        "aimSpeed": 469,
-        "price": 100000,
-        "havocCost": 170885.91444708518,
+        "aimSpeed": 383,
+        "price": 550000,
+        "havocCost": 479506.3333169854,
         "enabled": true
       }
     },
-    "36_#1": {
-      "score": 747.7721956632626,
+    "12_#1": {
+      "score": 714.5448974194956,
       "meta": {
-        "weaponId": 36,
-        "weaponName": "SG552",
+        "weaponId": 12,
+        "weaponName": "K437",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -7074,18 +8370,18 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "SG552突击步枪-烽火地带-6LDOSI005506E7BV9G8G5",
-        "aimSpeed": 283,
-        "price": 40000,
-        "havocCost": 227906.88531236092,
+        "buildCode": "K437突击步枪-烽火地带-6LA4TMO05506E7BV9G8G5",
+        "aimSpeed": 375,
+        "price": 570000,
+        "havocCost": 553996.1343896919,
         "enabled": true
       }
     },
-    "18_#1": {
-      "score": 752.7418188865117,
+    "7_#1": {
+      "score": 729.3714166242531,
       "meta": {
-        "weaponId": 18,
-        "weaponName": "M7",
+        "weaponId": 7,
+        "weaponName": "AUG",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -7096,40 +8392,18 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "M7战斗步枪-烽火地带-6LA53FC05506E7BV9G8G5",
-        "aimSpeed": 367,
-        "price": 250000,
-        "havocCost": 386638.44098749437,
+        "buildCode": "AUG突击步枪-烽火地带-6L9V87S05506E7BV9G8G5",
+        "aimSpeed": 395,
+        "price": 280000,
+        "havocCost": 352595.0762704613,
         "enabled": true
       }
     },
-    "52_#1": {
-      "score": 754.7471846349331,
+    "11_#1": {
+      "score": 734.5401661913521,
       "meta": {
-        "weaponId": 52,
-        "weaponName": "93R",
-        "configId": "#1",
-        "barrel": "HVK鼬鼠冲锋枪套件",
-        "barrelId": 0,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "93R-烽火地带-6LCIS9405506E7BV9G8G5",
-        "aimSpeed": 226,
-        "price": 90000,
-        "havocCost": 240486.3350157743,
-        "enabled": true
-      }
-    },
-    "40_#1": {
-      "score": 756.655418307429,
-      "meta": {
-        "weaponId": 40,
-        "weaponName": "Vector",
+        "weaponId": 11,
+        "weaponName": "K416",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -7140,18 +8414,40 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "Vector冲锋枪-烽火地带-6LA9LRG05506E7BV9G8G5",
-        "aimSpeed": 256,
+        "buildCode": "K416突击步枪-烽火地带-6L9TPL005506E7BV9G8G5",
+        "aimSpeed": 308,
+        "price": 330000,
+        "havocCost": 396854.52262449695,
+        "enabled": true
+      }
+    },
+    "17_#1": {
+      "score": 737.5784738073316,
+      "meta": {
+        "weaponId": 17,
+        "weaponName": "M4A1",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M4A1突击步枪-烽火地带-6LA4E4005506E7BV9G8G5",
+        "aimSpeed": 308,
         "price": 260000,
-        "havocCost": 469314.7162593766,
+        "havocCost": 349475.73098041746,
         "enabled": true
       }
     },
-    "19_#1": {
-      "score": 757.9696260895917,
+    "4_#1": {
+      "score": 741.0795228570296,
       "meta": {
-        "weaponId": 19,
-        "weaponName": "MCX-LT",
+        "weaponId": 4,
+        "weaponName": "AR57",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -7162,18 +8458,18 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "MCX LT突击步枪-烽火地带-6LA59HG05506E7BV9G8G5",
-        "aimSpeed": 283,
-        "price": 100000,
-        "havocCost": 261165.98423902306,
+        "buildCode": "AR57突击步枪-烽火地带-6LDOTE805506E7BV9G8G5",
+        "aimSpeed": 368,
+        "price": 450000,
+        "havocCost": 506464.053815034,
         "enabled": true
       }
     },
-    "41_#1": {
-      "score": 764.1063141249219,
+    "1_#1": {
+      "score": 741.8132723351587,
       "meta": {
-        "weaponId": 41,
-        "weaponName": "腾龙",
+        "weaponId": 1,
+        "weaponName": "AK12",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -7184,59 +8480,15 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "腾龙突击步枪-烽火地带-6L9UNPS05506E7BV9G8G5",
-        "aimSpeed": 289,
-        "price": 130000,
-        "havocCost": 309453.1113397199,
-        "enabled": true
-      }
-    },
-    "50_#1": {
-      "score": 773.81437234429,
-      "meta": {
-        "weaponId": 50,
-        "weaponName": "Marlin杠杆步枪",
-        "configId": "#1",
-        "barrel": "猎鹿人枪管-蜂鸟杠杆",
-        "barrelId": 2,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0.09,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "杠杆式步枪-烽火地带-6LAE61405506E7BV9G8G5",
-        "aimSpeed": 238,
-        "price": 190000,
-        "havocCost": 221373.7179844064,
-        "enabled": true
-      }
-    },
-    "2_#1": {
-      "score": 775.8695328539477,
-      "meta": {
-        "weaponId": 2,
-        "weaponName": "AKM",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "AKM突击步枪-烽火地带-6LDJTI005506E7BV9G8G5",
+        "buildCode": "AK-12突击步枪-烽火地带-6L9UMHG05506E7BV9G8G5",
         "aimSpeed": 327,
-        "price": 110000,
-        "havocCost": 261774.28385650518,
+        "price": 260000,
+        "havocCost": 352872.020281898,
         "enabled": true
       }
     },
     "28_#1": {
-      "score": 779.486243449996,
+      "score": 744.286243449996,
       "meta": {
         "weaponId": 28,
         "weaponName": "QJB201",
@@ -7251,17 +8503,17 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "QJB201轻机枪-烽火地带-6L7HDU805506E7BV9G8G5",
-        "aimSpeed": 447,
-        "price": 130000,
-        "havocCost": 442996.4587700357,
+        "aimSpeed": 359,
+        "price": 450000,
+        "havocCost": 505176.3900824991,
         "enabled": true
       }
     },
-    "34_#1": {
-      "score": 784.5073537641915,
+    "35_#1": {
+      "score": 744.9114119620424,
       "meta": {
-        "weaponId": 34,
-        "weaponName": "RM277",
+        "weaponId": 35,
+        "weaponName": "SCAR-H",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -7272,18 +8524,18 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "RM277突击步枪-烽火地带-6LA86TC05506E7BV9G8G5",
-        "aimSpeed": 349,
-        "price": 120000,
-        "havocCost": 309624.2775758893,
+        "buildCode": "SCAR-H战斗步枪-烽火地带-6LA889O05506E7BV9G8G5",
+        "aimSpeed": 361,
+        "price": 330000,
+        "havocCost": 334370.9198376233,
         "enabled": true
       }
     },
-    "23_#1": {
-      "score": 787.3944179636098,
+    "47_#1": {
+      "score": 748.5225597222692,
       "meta": {
-        "weaponId": 23,
-        "weaponName": "MP7",
+        "weaponId": 47,
+        "weaponName": "MDR突击步枪",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -7294,18 +8546,40 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "MP7冲锋枪-烽火地带-6LA9CUO05506E7BV9G8G5",
-        "aimSpeed": 270,
-        "price": 290000,
-        "havocCost": 337197.3935859143,
+        "buildCode": "MDR突击步枪-烽火地带-6LDOVSG05506E7BV9G8G5",
+        "aimSpeed": 369,
+        "price": 500000,
+        "havocCost": 446756.5140568567,
         "enabled": true
       }
     },
-    "46_#1": {
-      "score": 788.40709956768,
+    "52_#1": {
+      "score": 761.5471846349332,
       "meta": {
-        "weaponId": 46,
-        "weaponName": "汤姆逊冲锋枪",
+        "weaponId": 52,
+        "weaponName": "93R",
+        "configId": "#1",
+        "barrel": "HVK鼬鼠冲锋枪套件",
+        "barrelId": 0,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "93R-烽火地带-6LCIS9405506E7BV9G8G5",
+        "aimSpeed": 243,
+        "price": 90000,
+        "havocCost": 228100.52835444256,
+        "enabled": true
+      }
+    },
+    "18_#1": {
+      "score": 764.3418188865118,
+      "meta": {
+        "weaponId": 18,
+        "weaponName": "M7",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -7316,15 +8590,125 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "汤姆逊冲锋枪-烽火地带-6LCIO8005506E7BV9G8G5",
-        "aimSpeed": 270,
-        "price": 180000,
-        "havocCost": 357821.7518176591,
+        "buildCode": "M7战斗步枪-烽火地带-6LA53FC05506E7BV9G8G5",
+        "aimSpeed": 396,
+        "price": 930000,
+        "havocCost": 815418.1203397454,
+        "enabled": true
+      }
+    },
+    "36_#1": {
+      "score": 765.3721956632626,
+      "meta": {
+        "weaponId": 36,
+        "weaponName": "SG552",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SG552突击步枪-烽火地带-6LDOSI005506E7BV9G8G5",
+        "aimSpeed": 327,
+        "price": 110000,
+        "havocCost": 258072.8251759222,
+        "enabled": true
+      }
+    },
+    "2_#1": {
+      "score": 773.8695328539477,
+      "meta": {
+        "weaponId": 2,
+        "weaponName": "AKM",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "AKM突击步枪-烽火地带-6LDJTI005506E7BV9G8G5",
+        "aimSpeed": 322,
+        "price": 310000,
+        "havocCost": 368335.2149076329,
+        "enabled": true
+      }
+    },
+    "14_#1": {
+      "score": 773.9695994463918,
+      "meta": {
+        "weaponId": 14,
+        "weaponName": "M14",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M14射手步枪-烽火地带-6L7HJR005506E7BV9G8G5",
+        "aimSpeed": 437,
+        "price": 970000,
+        "havocCost": 769943.8666095133,
+        "enabled": true
+      }
+    },
+    "40_#1": {
+      "score": 777.4554183074291,
+      "meta": {
+        "weaponId": 40,
+        "weaponName": "Vector",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "Vector冲锋枪-烽火地带-6LA9LRG05506E7BV9G8G5",
+        "aimSpeed": 308,
+        "price": 510000,
+        "havocCost": 566064.1738297944,
+        "enabled": true
+      }
+    },
+    "19_#1": {
+      "score": 790.7696260895916,
+      "meta": {
+        "weaponId": 19,
+        "weaponName": "MCX-LT",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "MCX LT突击步枪-烽火地带-6LA59HG05506E7BV9G8G5",
+        "aimSpeed": 365,
+        "price": 340000,
+        "havocCost": 412007.8913906142,
         "enabled": true
       }
     },
     "27_#1": {
-      "score": 790.2520795541305,
+      "score": 792.2520795541305,
       "meta": {
         "weaponId": 27,
         "weaponName": "QBZ95-1",
@@ -7339,17 +8723,17 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "QBZ95-1突击步枪-烽火地带-6LA797S05506E7BV9G8G5",
-        "aimSpeed": 321,
-        "price": 50000,
-        "havocCost": 312898.0832956786,
+        "aimSpeed": 326,
+        "price": 200000,
+        "havocCost": 345510.82066223875,
         "enabled": true
       }
     },
-    "37_#1": {
-      "score": 790.772732851283,
+    "41_#1": {
+      "score": 792.9063141249219,
       "meta": {
-        "weaponId": 37,
-        "weaponName": "SMG-45",
+        "weaponId": 41,
+        "weaponName": "腾龙",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -7360,18 +8744,18 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "SMG-45冲锋枪-烽火地带-6LBB73S05506E7BV9G8G5",
-        "aimSpeed": 230,
-        "price": 50000,
-        "havocCost": 254521.15172298657,
+        "buildCode": "腾龙突击步枪-烽火地带-6L9UNPS05506E7BV9G8G5",
+        "aimSpeed": 361,
+        "price": 250000,
+        "havocCost": 371208.7066113608,
         "enabled": true
       }
     },
-    "25_#1": {
-      "score": 796.0137026815056,
+    "34_#1": {
+      "score": 799.3073537641915,
       "meta": {
-        "weaponId": 25,
-        "weaponName": "PKM",
+        "weaponId": 34,
+        "weaponName": "RM277",
         "configId": "#1",
         "barrel": "无",
         "barrelId": -1,
@@ -7382,147 +8766,15 @@
         "bulletName": "",
         "bulletLevel": null,
         "bulletPrice": 0,
-        "buildCode": "PKM通用机枪-烽火地带-6LAE4I005506E7BV9G8G5",
-        "aimSpeed": 408,
-        "price": 100000,
-        "havocCost": 281139.9948631565,
-        "enabled": true
-      }
-    },
-    "16_#1": {
-      "score": 799.70357655218,
-      "meta": {
-        "weaponId": 16,
-        "weaponName": "M250",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "M250通用机枪-烽火地带-6L7H9OK05506E7BV9G8G5",
-        "aimSpeed": 375,
-        "price": 350000,
-        "havocCost": 431259.1762771043,
-        "enabled": true
-      }
-    },
-    "26_#1": {
-      "score": 801.6626856289743,
-      "meta": {
-        "weaponId": 26,
-        "weaponName": "PTR-32",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "PTR-32突击步枪-烽火地带-6LA6UCS05506E7BV9G8G5",
-        "aimSpeed": 314,
-        "price": 50000,
-        "havocCost": 226784.66356735237,
-        "enabled": true
-      }
-    },
-    "51_#1": {
-      "score": 803.3369633443984,
-      "meta": {
-        "weaponId": 51,
-        "weaponName": "M16A4",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "M16A4突击步枪-烽火地带-6LBBG3405506E7BV9G8G5",
-        "aimSpeed": 314,
-        "price": 20000,
-        "havocCost": 196864.86687200432,
-        "enabled": true
-      }
-    },
-    "38_#1": {
-      "score": 810.4564204200893,
-      "meta": {
-        "weaponId": 38,
-        "weaponName": "SR-3M",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "SR-3M紧凑突击步枪-烽火地带-6L7H3RC05506E7BV9G8G5",
-        "aimSpeed": 296,
-        "price": 150000,
-        "havocCost": 313075.797469987,
-        "enabled": true
-      }
-    },
-    "9_#1": {
-      "score": 811.4306494539122,
-      "meta": {
-        "weaponId": 9,
-        "weaponName": "G3",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "G3战斗步枪-烽火地带-6LDO7T805506E7BV9G8G5",
-        "aimSpeed": 399,
-        "price": 70000,
-        "havocCost": 174056.61444556015,
-        "enabled": true
-      }
-    },
-    "31_#1": {
-      "score": 823.094782857251,
-      "meta": {
-        "weaponId": 31,
-        "weaponName": "QCQ171",
-        "configId": "#1",
-        "barrel": "无",
-        "barrelId": -1,
-        "muzzle": "无",
-        "muzzleId": 0,
-        "precision": 0,
-        "bulletId": "",
-        "bulletName": "",
-        "bulletLevel": null,
-        "bulletPrice": 0,
-        "buildCode": "QCQ171冲锋枪-烽火地带-6LA9FM405506E7BV9G8G5",
-        "aimSpeed": 289,
-        "price": 130000,
-        "havocCost": 281269.82382662856,
+        "buildCode": "RM277突击步枪-烽火地带-6LA86TC05506E7BV9G8G5",
+        "aimSpeed": 386,
+        "price": 320000,
+        "havocCost": 402467.0661180476,
         "enabled": true
       }
     },
     "15_#1": {
-      "score": 856.3281174386742,
+      "score": 799.9281174386742,
       "meta": {
         "weaponId": 15,
         "weaponName": "M249",
@@ -7537,14 +8789,234 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "M249轻机枪-烽火地带-6LBB2VO05506E7BV9G8G5",
-        "aimSpeed": 479,
-        "price": 60000,
-        "havocCost": 246446.71009910814,
+        "aimSpeed": 338,
+        "price": 150000,
+        "havocCost": 279204.6164829215,
+        "enabled": true
+      }
+    },
+    "26_#1": {
+      "score": 804.4626856289742,
+      "meta": {
+        "weaponId": 26,
+        "weaponName": "PTR-32",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "PTR-32突击步枪-烽火地带-6LA6UCS05506E7BV9G8G5",
+        "aimSpeed": 321,
+        "price": 220000,
+        "havocCost": 315462.0933401692,
+        "enabled": true
+      }
+    },
+    "37_#1": {
+      "score": 804.772732851283,
+      "meta": {
+        "weaponId": 37,
+        "weaponName": "SMG-45",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SMG-45冲锋枪-烽火地带-6LBB73S05506E7BV9G8G5",
+        "aimSpeed": 265,
+        "price": 140000,
+        "havocCost": 293275.2779302013,
+        "enabled": true
+      }
+    },
+    "25_#1": {
+      "score": 804.8137026815056,
+      "meta": {
+        "weaponId": 25,
+        "weaponName": "PKM",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "PKM通用机枪-烽火地带-6LAE4I005506E7BV9G8G5",
+        "aimSpeed": 430,
+        "price": 310000,
+        "havocCost": 399694.9500561203,
+        "enabled": true
+      }
+    },
+    "9_#1": {
+      "score": 805.0306494539122,
+      "meta": {
+        "weaponId": 9,
+        "weaponName": "G3",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "G3战斗步枪-烽火地带-6LDO7T805506E7BV9G8G5",
+        "aimSpeed": 383,
+        "price": 230000,
+        "havocCost": 269706.91677899915,
+        "enabled": true
+      }
+    },
+    "46_#1": {
+      "score": 808.80709956768,
+      "meta": {
+        "weaponId": 46,
+        "weaponName": "汤姆逊冲锋枪",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "汤姆逊冲锋枪-烽火地带-6LCIO8005506E7BV9G8G5",
+        "aimSpeed": 321,
+        "price": 170000,
+        "havocCost": 323195.2295125942,
+        "enabled": true
+      }
+    },
+    "23_#1": {
+      "score": 816.5944179636099,
+      "meta": {
+        "weaponId": 23,
+        "weaponName": "MP7",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "MP7冲锋枪-烽火地带-6LA9CUO05506E7BV9G8G5",
+        "aimSpeed": 343,
+        "price": 560000,
+        "havocCost": 504838.53653701645,
+        "enabled": true
+      }
+    },
+    "16_#1": {
+      "score": 819.70357655218,
+      "meta": {
+        "weaponId": 16,
+        "weaponName": "M250",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M250通用机枪-烽火地带-6L7H9OK05506E7BV9G8G5",
+        "aimSpeed": 425,
+        "price": 780000,
+        "havocCost": 696762.5038930483,
+        "enabled": true
+      }
+    },
+    "51_#1": {
+      "score": 821.3369633443984,
+      "meta": {
+        "weaponId": 51,
+        "weaponName": "M16A4",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "M16A4突击步枪-烽火地带-6LBBG3405506E7BV9G8G5",
+        "aimSpeed": 359,
+        "price": 110000,
+        "havocCost": 240705.30173965008,
+        "enabled": true
+      }
+    },
+    "38_#1": {
+      "score": 828.0564204200894,
+      "meta": {
+        "weaponId": 38,
+        "weaponName": "SR-3M",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "SR-3M紧凑突击步枪-烽火地带-6L7H3RC05506E7BV9G8G5",
+        "aimSpeed": 340,
+        "price": 400000,
+        "havocCost": 466411.79656554566,
+        "enabled": true
+      }
+    },
+    "31_#1": {
+      "score": 844.694782857251,
+      "meta": {
+        "weaponId": 31,
+        "weaponName": "QCQ171",
+        "configId": "#1",
+        "barrel": "无",
+        "barrelId": -1,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "QCQ171冲锋枪-烽火地带-6LA9FM405506E7BV9G8G5",
+        "aimSpeed": 343,
+        "price": 510000,
+        "havocCost": 515153.60479168384,
         "enabled": true
       }
     },
     "24_#1": {
-      "score": 904.9666947379551,
+      "score": 946.5666947379551,
       "meta": {
         "weaponId": 24,
         "weaponName": "P90",
@@ -7559,14 +9031,36 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "P90冲锋枪-烽火地带-6LA9DT405506E7BV9G8G5",
-        "aimSpeed": 314,
-        "price": 80000,
-        "havocCost": 305230.95013695006,
+        "aimSpeed": 418,
+        "price": 410000,
+        "havocCost": 499260.81513658713,
+        "enabled": true
+      }
+    },
+    "50_#1": {
+      "score": 953.8808302848472,
+      "meta": {
+        "weaponId": 50,
+        "weaponName": "Marlin杠杆步枪",
+        "configId": "#1",
+        "barrel": "猎鹿人枪管-蜂鸟杠杆",
+        "barrelId": 2,
+        "muzzle": "无",
+        "muzzleId": 0,
+        "precision": 0.09,
+        "bulletId": "",
+        "bulletName": "",
+        "bulletLevel": null,
+        "bulletPrice": 0,
+        "buildCode": "杠杆式步枪-烽火地带-6LAE61405506E7BV9G8G5",
+        "aimSpeed": 386,
+        "price": 230000,
+        "havocCost": 248173.7179844064,
         "enabled": true
       }
     },
     "44_#1": {
-      "score": 990.6292097059884,
+      "score": 1017.8292097059884,
       "meta": {
         "weaponId": 44,
         "weaponName": "勇士",
@@ -7581,14 +9075,14 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "勇士冲锋枪-烽火地带-6LA99F405506E7BV9G8G5",
-        "aimSpeed": 270,
-        "price": 50000,
-        "havocCost": 231555.36342559228,
+        "aimSpeed": 338,
+        "price": 140000,
+        "havocCost": 274692.0018356318,
         "enabled": true
       }
     },
     "22_#1": {
-      "score": 1001.6210408006269,
+      "score": 1028.421040800627,
       "meta": {
         "weaponId": 22,
         "weaponName": "MP5",
@@ -7603,14 +9097,14 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "MP5冲锋枪-烽火地带-6LDP26005506E7BV9G8G5",
-        "aimSpeed": 250,
-        "price": 50000,
-        "havocCost": 230106.3331235319,
+        "aimSpeed": 317,
+        "price": 180000,
+        "havocCost": 313275.1245459779,
         "enabled": true
       }
     },
     "8_#1": {
-      "score": 1060.7286275375666,
+      "score": 1065.5286275375665,
       "meta": {
         "weaponId": 8,
         "weaponName": "CAR-15",
@@ -7625,14 +9119,14 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "CAR-15突击步枪-烽火地带-6LB8QVO05506E7BV9G8G5",
-        "aimSpeed": 302,
+        "aimSpeed": 314,
         "price": 20000,
-        "havocCost": 229790.76636969254,
+        "havocCost": 242514.22650962346,
         "enabled": true
       }
     },
     "39_#1": {
-      "score": 1090.686078477665,
+      "score": 1085.4860784776652,
       "meta": {
         "weaponId": 39,
         "weaponName": "UZI",
@@ -7647,14 +9141,14 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "UZI冲锋枪-烽火地带-6LBB1OC05506E7BV9G8G5",
-        "aimSpeed": 263,
+        "aimSpeed": 250,
         "price": 20000,
-        "havocCost": 223847.0743482683,
+        "havocCost": 236123.96181754707,
         "enabled": true
       }
     },
     "10_#1": {
-      "score": 1440.019429583793,
+      "score": 1468.019429583793,
       "meta": {
         "weaponId": 10,
         "weaponName": "G18",
@@ -7669,14 +9163,14 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "G18-CFG1",
-        "aimSpeed": 327,
-        "price": 30000,
-        "havocCost": 244847.18959075407,
+        "aimSpeed": 397,
+        "price": 130000,
+        "havocCost": 336301.3464890319,
         "enabled": true
       }
     },
     "3_#1": {
-      "score": 1575.8445807599742,
+      "score": 1580.6445807599741,
       "meta": {
         "weaponId": 3,
         "weaponName": "AKS-74U",
@@ -7691,14 +9185,14 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "AKS-74U突击步枪-烽火地带-6LBAUDO05506E7BV9G8G5",
-        "aimSpeed": 277,
+        "aimSpeed": 289,
         "price": 20000,
-        "havocCost": 217738.9693551932,
+        "havocCost": 240530.82607363368,
         "enabled": true
       }
     },
     "45_#1": {
-      "score": 1705.4085438561715,
+      "score": 1710.2085438561714,
       "meta": {
         "weaponId": 45,
         "weaponName": "野牛",
@@ -7713,9 +9207,9 @@
         "bulletLevel": null,
         "bulletPrice": 0,
         "buildCode": "野牛冲锋枪-烽火地带-6LBAVR005506E7BV9G8G5",
-        "aimSpeed": 277,
-        "price": 10000,
-        "havocCost": 207432.67620883672,
+        "aimSpeed": 289,
+        "price": 20000,
+        "havocCost": 233541.34666446707,
         "enabled": true
       }
     }
