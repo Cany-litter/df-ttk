@@ -1,33 +1,8 @@
 // src/core/FastTTK.js
 //
-// TTK 计算统一入口（含 TTKCalculator）
+// TTK 计算统一入口
 //
-// ⭐ v2 改动（合并优化）：
-//   - TTKCalculator.js 已被合并进本文件
-//   - computeSingleTTK / getKeyDistances / interpolateKeyPoints
-//     / computeDistanceSeries / buildArmedWeapons / computeDistanceWeightedAvg
-//     现在都在本文件里
-//   - 对外 API 完全不变
-//
-// ⭐ v3 改动（继续合并）：
-//   - 上一轮 TTKDP.js 已被合并进 TTKMatrix.js
-//
-// ⭐ v4 改动（死代码清理）：
-//   - 删除 queryMatrixStats（无引用）
-//
-// ⭐ v5 改动（距离切片 + 绝对距离权重）：
-//   - getKeyDistances 新增 minDistance 参数（默认 0）
-//     → 支持「只算 50~100m」这种切片，关键点也从 minDistance 开始
-//   - computeDistanceWeightedAvg 改用「绝对距离权重」：
-//       w(d) = 1.5 - (d / 100) × 1.0
-//     ⚠️ 权重曲线是全局固定的（0m→1.5，100m→0.5），
-//        不随切片范围拉伸。切片只是「只取区间内的点，只累加这些点的权重」。
-//     这样：
-//       · 全量 0~100m  → 0m→1.5，100m→0.5（行为不变）
-//       · 切片 0~50m   → 0m→1.5，50m→1.0
-//       · 切片 50~100m → 50m→1.0，100m→0.5
-//
-// ⭐ 职责：
+// 职责：
 // - 对外提供统一的 TTK 计算 API（computeTTK / computeTTKMatrix / 缓存管理）
 // - 提供"关键点 + 插值"的完整序列计算
 // - 提供"武装武器"构建
@@ -37,15 +12,24 @@
 // - 'fast'    → 用 DP（< 10ms，精度 < 0.01%）
 // - 'precise' → 用蒙特卡洛（~700ms，精度 ~1%）
 //
-// ⭐ 依赖：
-// - TTKMatrix（DP 引擎 + 矩阵 + IDB）
+// 关键点算法（getKeyDistances）：
+// - 端点：minDistance / maxDistance
+// - 命中率节点：config.distance[i] ± 1
+// - 射程衰减节点：weapon.ranges[i] ± 1（有限值）
+//
+// 距离权重曲线（固定，不随切片拉伸）：
+//   w(d) = 1.5 - (d / 100) × 1.0
+//   0m → 1.5，50m → 1.0，100m → 0.5
+//
+// 依赖：
+// - TTKMatrix（DP 引擎 + 矩阵 + IndexedDB）
 // - SimulationEngine（子弹反查 + 蒙特卡洛）
 // - weaponCalc（附件计算）
 
 import {
-  // DP 引擎（原 TTKDP.js）
+  // DP 引擎
   computeTTKWithDP,
-  // 矩阵（原 TTKMatrix.js）
+  // 矩阵
   buildAllMatrix,
   getAttackTTK,
   getDefenseTTK,
@@ -53,7 +37,6 @@ import {
   clearMatrixCache,
 } from './TTKMatrix.js'
 
-import { SimulationEngine } from './SimulationEngine.js'
 import { calculateCurrentValues } from '../utils/weaponCalc.js'
 
 // ============================================================
@@ -62,13 +45,13 @@ import { calculateCurrentValues } from '../utils/weaponCalc.js'
 
 const DEFAULT_MODE = 'fast'
 
-/** ⭐ v5：权重曲线的参考满量程（100m → 权重 0.5） */
+/** 权重曲线的参考满量程（100m → 权重 0.5） */
 const WEIGHT_FULL_RANGE = 100
 
-/** ⭐ v5：权重曲线 起点（0m → 1.5） */
+/** 权重曲线 起点（0m → 1.5） */
 const WEIGHT_BASE = 1.5
 
-/** ⭐ v5：权重曲线 满量程衰减量（100m 时减 1.0 → 0.5） */
+/** 权重曲线 满量程衰减量（100m 时减 1.0 → 0.5） */
 const WEIGHT_DECAY = 1.0
 
 // ============================================================
@@ -121,6 +104,9 @@ export function computeTTKFast(options) {
 
 /**
  * 精算模式（蒙特卡洛）
+ *
+ * ⚠️ 注意：主链路已不再调用此模式。此函数保留仅供未来扩展或对照验证。
+ *          当前所有 UI 都走 'fast'（DP）。
  */
 export async function computeTTKPrecise(options) {
   const {
@@ -133,7 +119,9 @@ export async function computeTTKPrecise(options) {
     simCount = 20000,
   } = options
 
-  // 组装 simParams
+  // 延迟 import，避免主链路打包时把 SimulationEngine 拉进来
+  const { SimulationEngine } = await import('./SimulationEngine.js')
+
   const simParams = {
     distance,
     hitRate: scenario.hitRate ?? 0.85,
@@ -146,7 +134,6 @@ export async function computeTTKPrecise(options) {
     triggerDelayEnable: scenario.triggerDelayEnable !== false,
   }
 
-  // 调蒙特卡洛
   const result = SimulationEngine.calculateSinglePoint(
     weapon,
     simParams,
@@ -155,7 +142,6 @@ export async function computeTTKPrecise(options) {
     bulletData
   )
 
-  // 计算时间（秒 → 毫秒），加上飞行延迟 + 扳机延迟
   const velocity = weapon._current?.velocity ?? weapon.velocity ?? 575
   const flightTime = (distance / velocity) * 1000
   const triggerMs = scenario.triggerDelayEnable !== false ? (weapon.triggerDelay || 0) : 0
@@ -165,7 +151,7 @@ export async function computeTTKPrecise(options) {
   return {
     ttk,
     shots: result.avgShots,
-    hits: result.avgShots * (scenario.hitRate ?? 0.85),  // 近似
+    hits: result.avgShots * (scenario.hitRate ?? 0.85),
     mode: 'precise',
     debug: {
       flightTime,
@@ -185,7 +171,7 @@ export async function computeTTKMatrix(options) {
 }
 
 // ============================================================
-// ============ 缓存管理（转发） ============================
+// ============ 缓存管理（转发） =============================
 // ============================================================
 
 export async function queryAttackTTK(options) {
@@ -201,7 +187,7 @@ export async function clearMatrix() {
 }
 
 // ============================================================
-// ============ 模式说明 ====================================
+// ============ 模式说明 =====================================
 // ============================================================
 
 export function getModeDescription(mode) {
@@ -220,21 +206,8 @@ export function getDefaultMode() {
 }
 
 // ============================================================
-// ============ TTKCalculator（原文件） ====================
+// ============ 单点 TTK 计算 ================================
 // ============================================================
-//
-// 职责：
-// - 提供"单点 TTK 计算"（computeSingleTTK）
-// - 提供"关键点 + 插值"的完整序列计算（computeDistanceSeries）
-// - 提供"武装武器"构建（buildArmedWeapons）
-// - 提供关键点算法（getKeyDistances）和插值（interpolateKeyPoints）
-//
-// 为什么抽出来：
-// - App.vue 的 handleDistanceChart / buildDistanceStats 用它
-// - EquipScoreEngine.js 的评分计算也要用同样的逻辑
-// - 避免两份实现，保证"折线图"和"评分"用完全一样的算法
-
-// ---------- 1. 单点 TTK 计算 ----------
 
 /**
  * 计算单条 TTK（DP 快速模式）
@@ -250,11 +223,10 @@ export function getDefaultMode() {
  * @returns {Promise<Object|null>} { ttk, shots, hits } 或 null
  */
 export async function computeSingleTTK(armedWeapon, attachment, params, dm) {
-  const realBulletKey = SimulationEngine.getRealBulletKey(
+  const realBulletKey = dm.getRealBulletKey(
     attachment.bulletType,
     armedWeapon,
-    params,
-    dm
+    params
   )
   if (!realBulletKey) {
     console.warn(`⚠️ computeSingleTTK: 未匹配子弹 ${armedWeapon._displayName || armedWeapon.name}`)
@@ -291,7 +263,7 @@ export async function computeSingleTTK(armedWeapon, attachment, params, dm) {
         healthValue: params.healthValue,
       },
       distance: params.distance,
-      mode: 'fast',   // DP
+      mode: 'fast',
     })
 
     return {
@@ -308,15 +280,12 @@ export async function computeSingleTTK(armedWeapon, attachment, params, dm) {
   }
 }
 
-// ---------- 2. 关键点算法 ----------
+// ============================================================
+// ============ 关键点算法 ===================================
+// ============================================================
 
 /**
  * 生成关键距离点
- *
- * ⭐ v5：新增 minDistance 参数（默认 0）
- *   - 支持「只算 50~100m」这种切片
- *   - 关键点集合从 [0, maxDistance] 改为 [minDistance, maxDistance]
- *   - 命中率节点 / 射程衰减节点也只在 (minDistance, maxDistance) 之间才加
  *
  * 包含：
  * - 端点：minDistance, maxDistance
@@ -337,7 +306,7 @@ export function getKeyDistances(weapon, config, maxDistance = 100, minDistance =
 
   const points = new Set([minDistance, maxDistance])
 
-  // ---------- 命中率节点 ----------
+  // 命中率节点
   const configDistances = config?.distance
   if (Array.isArray(configDistances)) {
     for (const d of configDistances) {
@@ -352,7 +321,7 @@ export function getKeyDistances(weapon, config, maxDistance = 100, minDistance =
     }
   }
 
-  // ---------- 射程衰减节点 ----------
+  // 射程衰减节点
   const ranges = weapon?.ranges || weapon?._current?.ranges
   if (Array.isArray(ranges)) {
     for (const r of ranges) {
@@ -370,7 +339,9 @@ export function getKeyDistances(weapon, config, maxDistance = 100, minDistance =
   return Array.from(points).sort((a, b) => a - b)
 }
 
-// ---------- 3. 插值 ----------
+// ============================================================
+// ============ 插值 =========================================
+// ============================================================
 
 /**
  * 线性插值（关键点 → 全量距离点）
@@ -405,7 +376,6 @@ export function interpolateKeyPoints(keyPoints, fullDistances) {
     if (d === p1.d) {
       result.push({ ttk: p1.ttk, shots: p1.shots })
     } else if (p1.d === p2.d) {
-      // 边界情况（两个关键点 d 相同）
       result.push({ ttk: p1.ttk, shots: p1.shots })
     } else {
       // 线性插值
@@ -420,7 +390,9 @@ export function interpolateKeyPoints(keyPoints, fullDistances) {
   return result
 }
 
-// ---------- 4. 完整序列计算（关键点 + 插值） ----------
+// ============================================================
+// ============ 完整序列计算（关键点 + 插值） ================
+// ============================================================
 
 /**
  * 给一个武器 + 配置，算关键点 + 插值
@@ -436,7 +408,7 @@ export function interpolateKeyPoints(keyPoints, fullDistances) {
 export async function computeDistanceSeries(weapon, attachment, config, params, dm, fullDistances) {
   const keyDistances = getKeyDistances(weapon, config)
 
-  // ---------- 算关键点 ----------
+  // 算关键点
   const keyPoints = []
   for (const d of keyDistances) {
     const single = await computeSingleTTK(weapon, attachment, {
@@ -456,7 +428,7 @@ export async function computeDistanceSeries(weapon, attachment, config, params, 
     }
   }
 
-  // ---------- 插值成全量 ----------
+  // 插值成全量
   const interpolated = interpolateKeyPoints(keyPoints, fullDistances)
 
   return {
@@ -466,7 +438,9 @@ export async function computeDistanceSeries(weapon, attachment, config, params, 
   }
 }
 
-// ---------- 5. 武装武器构建 ----------
+// ============================================================
+// ============ 武装武器构建 =================================
+// ============================================================
 
 /**
  * 构建"武装后"的武器（应用枪管 / 枪口 / 精校）
@@ -521,7 +495,7 @@ export function buildArmedWeapons(configs, dm) {
 
     armed.push(armedWeapon)
 
-    // ---------- 拼 hitRateMap ----------
+    // 拼 hitRateMap
     let hitRateMap = []
     if (
       config.distance &&
@@ -555,17 +529,18 @@ export function buildArmedWeapons(configs, dm) {
   return { armed, attachments }
 }
 
-// ---------- 6. 距离加权平均 ----------
+// ============================================================
+// ============ 距离加权平均 =================================
+// ============================================================
 
 /**
- * ⭐ v5：绝对距离权重（曲线固定，不随切片拉伸）
+ * 距离权重（曲线固定，不随切片拉伸）
  *
  *   w(d) = 1.5 - (d / 100) × 1.0
  *
  *   0m   → 1.5
  *   50m  → 1.0
  *   100m → 0.5
- *   100m 以上 → 也按这个公式继续下降（会被 clamp 到 >= 0）
  *
  * @param {number} distance
  * @returns {number} 权重
@@ -577,18 +552,13 @@ export function getDistanceWeight(distance) {
 }
 
 /**
- * ⭐ v5：距离加权平均 TTK
+ * 距离加权平均 TTK
  *
  * 权重曲线固定（0m→1.5，100m→0.5），不随切片范围拉伸。
  * 切片只影响「取哪些点、累加哪些权重」。
  *
- * 行为对照：
- *   · 全量 0~100m  → 0m→1.5，100m→0.5（旧行为完全一致）
- *   · 切片 0~50m   → 0m→1.5，50m→1.0
- *   · 切片 50~100m → 50m→1.0，100m→0.5
- *
  * @param {Array<number>} times - 每个距离点的 TTK（长度 = distances.length）
- * @param {Array<number>} distances - 距离数组（如 [0, 1, 2, ..., 100]）
+ * @param {Array<number>} distances - 距离数组
  * @returns {number} 加权平均 TTK（无有效数据时返回 Infinity）
  */
 export function computeDistanceWeightedAvg(times, distances) {
@@ -611,7 +581,7 @@ export function computeDistanceWeightedAvg(times, distances) {
 }
 
 /**
- * ⭐ v5：距离加权平均 shots（用于哈弗币消耗）
+ * 距离加权平均 shots（用于哈弗币消耗）
  *
  * 和 computeDistanceWeightedAvg 同款权重，只是作用于 shots 而非 ttk。
  *

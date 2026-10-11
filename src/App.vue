@@ -3,80 +3,29 @@
   ⚠️ 维护提示：本文件有 3 处"距离点循环"，逻辑相似但用途不同：
 
     1. handleCalculate() → handleDistanceChart() → buildDistanceStats()
-       - ⭐ 主力：算 101 个距离点，生成折线图数据
-       - ⭐ v7：装备从 equipStore.calcEquip 读（不再从 paramsStore 读）
+       - 主力：算 101 个距离点，生成折线图数据
+       - 装备从 equipStore.calcEquip 读
 
     2. computeHavocCosts()
-       - ⭐ 用「关键点」求平均 shots（不插值，关键点平均即可）
-       - ⭐ v7：装备从 equipStore.calcEquip 读
-       - ⭐ v14：距离范围跟随评分切片，改成加权平均
+       - 用「关键点」求平均 shots（加权平均）
+       - 装备从 equipStore.calcEquip 读
+       - 距离范围跟随评分切片
 
-    3. updateSingleWeaponTTK()
-       - ⭐ 「关键点 + 插值」（保留作备用，不主动调用）
+    3. updateSingleWeaponTTK()（备用，不主动调用）
 
-  ⭐ 关键点算法（getKeyDistances）：
+  关键点算法（getKeyDistances）：
     - 端点：minDistance / maxDistance
     - 命中率节点：config.distance[i] ± 1
     - 射程衰减节点：weapon.ranges[i] ± 1（有限值）
 
-  ⭐ 参数导出/导入（v3）：
-    - 导出：exportData() 把 paramsStore.state 作为 extra.params 传给 dataStore.exportData
-    - 导入：importData() 接收 { data, params, equipState }
+  距离切片：
+    - getSegmentDistances() 从 customStart / customEnd 切出 distances
+    - 评分 / 哈弗币 按切片范围计算
+    - 折线图仍用全量 distances
 
-  ⭐ 启动时自动加载参数（v3）：
-    - onMounted 里 dataStore.loadData() 返回 { params, equipState }
-    - data.json 顶层若有 params / equipState 字段，会被提取并返回
-
-  ⭐ 图表布局（v3）：
-    - PC 端：两个图表默认并排（grid 1fr 1fr），更矮（16:9 / 260px）
-    - 放大按钮（PC only）：点击后该图表铺满整行，另一个 v-show 隐藏
-    - 移动端：单列（沿用组件自带样式），隐藏放大按钮
-
-  ⭐ 滚动到顶部/返回（v4）：
-    - 右下角悬浮按钮（纯图标 ⬆️ / ⬇️）
-
-  ⭐ 装备双模式（v7）：
-    - 折线图/柱状图/TTK列/哈弗币/单次模拟 → 用 equipStore.calcEquip（单套）
-    - 综合评分 → 用 equipStore.scoreEquips（多套）
-    - 两种模式独立，互不影响
-
-  ⭐ v7.1 修复进度条 850/0：
-    - recomputeScores 的 onProgress 改为 appStore.updateCalcProgress(current, total)
-    - 单枪更新回调里改标题改用 appStore.setCalcProgressTitle(...)
-
-  ⭐ v7.2 导出综合评分（仅导出，不导入）：
-    - exportData 把 appStore.state.weaponScores + havocCosts 传给 DataManager
-    - DataManager 组装带 meta 的结构
-    - 导入时 DataManager 显式忽略 weaponScores
-
-  ⭐ v7.3 增量导入（双模式）：
-    - importData 弹出 ImportModeDialog 让用户选择：
-      · 全量覆盖（overwrite）
-      · 增量覆盖（merge）
-    - 导入后按 mode 显示不同的结果提示
-
-  ⭐ v7.4 更新评分按钮：
-    - "更新 TTK"按钮改名为"更新评分"
-    - 点击后只重算当前武器下所有配置的评分（不更新折线图/柱状图/哈弗币）
-    - onUpdateWeaponTTK 改为只调用 recomputeSingleWeaponScores(weaponId)
-    - updateSingleWeaponTTK 函数保留作备用（不再主动调用）
-
-  ⭐ v8 改动（问题 1 / 3 / 4 / 8 / 15）：
-    - 问题 1：handleCalculate 开头清理脏武器的 IndexedDB 缓存
-    - 问题 3 / 15：recomputeScores 保存全局 min/max（v13 已删除）
-    - 问题 4：recomputeSingleWeaponScores 处理 result.empty
-    - 问题 8：recomputeSingleWeaponScores 空装备时清空该武器评分
-
-  ⭐ v13 改动（删除分档）：
-    - recomputeScores 不再调用 extractGlobalRange / setWeaponScoresGlobalRange
-    - recomputeSingleWeaponScores 不再传 globalRange 参数
-    - weaponScores 结构：{ "weaponId_configId": { score } }（不再有 grade）
-
-  ⭐ v14 改动（距离切片 + 哈弗币加权）：
-    - 新增 getSegmentDistances()：从 customStart / customEnd 切出 distances
-    - recomputeScores / recomputeSingleWeaponScores 传切片 distances
-    - computeHavocCosts 改成「切片范围 + 加权平均」（和评分同款权重）
-    - handleCalculate 里的 params.distance 逻辑不变（柱状图单点取值）
+  装备双模式：
+    - 折线图/柱状图/TTK列/哈弗币/单次模拟 → equipStore.calcEquip（单套）
+    - 综合评分 → equipStore.scoreEquips（多套）
 -->
 <template>
   <div id="app">
@@ -106,7 +55,6 @@
           <div class="chart-header">
             <h3 class="chart-title">📊 TTK 对比</h3>
             <div class="chart-controls">
-              <!-- ⭐ v14：距离输入框从 ParamsPanel 挪到柱状图标题栏 -->
               <label class="distance-inline-label" title="柱状图展示此距离处的单点 TTK">
                 <span>距离:</span>
                 <input
@@ -339,7 +287,7 @@
       @cancel="onConfirmReject"
     />
 
-    <!-- ⭐ v7.3：导入模式选择对话框 -->
+    <!-- 导入模式选择对话框 -->
     <ImportModeDialog
       v-model:visible="importModeVisible"
       :file-name="importModeFileName"
@@ -387,7 +335,6 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, provide, nextTick, watch } from 'vue'
 import { dataStore, paramsStore, appStore, equipStore } from '@/stores/stores'
-import { SimulationEngine } from '@/core/SimulationEngine'
 
 import {
   computeSingleTTK,
@@ -438,7 +385,7 @@ const lineChartRef = ref(null)
 const expandedChart = ref(null)
 const isMobile = ref(false)
 
-// ⭐ v7.3：导入模式选择
+// 导入模式选择
 const importModeVisible = ref(false)
 const importModeFileName = ref('')
 let _importModeResolve = null
@@ -449,7 +396,7 @@ const updateIsMobile = () => {
 }
 
 // ============================================================
-// ⭐ v7：获取当前"计算装备"（含兜底）
+// 获取当前"计算装备"（含兜底）
 // ============================================================
 const getCalcEquip = () => {
   const eq = equipStore.state.calcEquip
@@ -470,7 +417,7 @@ const getCalcEquip = () => {
 }
 
 // ============================================================
-// ⭐ v14：距离切片
+// 距离切片
 // ============================================================
 
 /**
@@ -497,7 +444,7 @@ const getSegmentDistances = () => {
   return distances.value.filter(d => d >= s && d <= e)
 }
 
-// ⭐ v14：柱状图的「距离」双向绑定到 paramsStore.distance
+// 柱状图的「距离」双向绑定到 paramsStore.distance
 const barDistance = computed({
   get: () => paramsStore.state.distance,
   set: (val) => {
@@ -509,14 +456,13 @@ const barDistance = computed({
 })
 
 const onBarDistanceChange = () => {
-  // 校验 + 回填
   let v = Number(barDistance.value)
   if (isNaN(v) || v < 0) v = 30
   paramsStore.update('distance', v)
 }
 
 // ============================================================
-// ⭐ v7：综合评分计算的"取消信号"
+// 综合评分计算的"取消信号"
 // ============================================================
 let currentScoreSignal = null
 
@@ -703,10 +649,6 @@ const applyCustomRange = () => {
   customStart.value = s
   customEnd.value = e
 
-  // ⭐ v14：分段变化后，评分 / 哈弗币范围也变了 → 自动重算
-  // （下次点「计算 TTK」或「更新评分」时生效）
-
-  // 提示用户
   console.log(`✅ 距离分段已应用: ${s}~${e}m（评分/哈弗币将按此范围计算）`)
 }
 
@@ -727,7 +669,7 @@ const onItemsUpdate = () => {
 }
 
 // ============================================================
-// ⭐ v7：装备变化事件
+// 装备变化事件
 // ============================================================
 const onEquipChanged = (payload) => {
   console.log(`⭐ 装备已更新: mode=${payload.mode}, 数量=${payload.equips.length}`)
@@ -763,7 +705,7 @@ const getEnabledConfigs = () => {
 }
 
 // ============================================================
-// ⭐ v8：清理脏武器的 IndexedDB 缓存（问题 1）
+// 清理脏武器的 IndexedDB 缓存
 // ============================================================
 const clearDirtyWeaponCaches = async () => {
   const dirtyIds = dataStore.getModifiedWeaponIds()
@@ -816,7 +758,7 @@ const handleCalculate = async () => {
     const dm = dataStore.getDataManager()
     const params = paramsStore.state
 
-    // ⭐ v8：问题 1 - 清理脏武器的 IndexedDB 缓存
+    // 清理脏武器的 IndexedDB 缓存
     await clearDirtyWeaponCaches()
 
     appStore.showCalcProgress('计算 TTK 中...', enabledConfigs.length)
@@ -864,7 +806,7 @@ const handleCalculate = async () => {
 
     console.log(`✅ 柱状图数据已从折线图数据提取: ${results.length} 个配置 @ ${params.distance}m`)
 
-    // ---------- 哈弗币消耗（⭐ v14：切片范围 + 加权平均）----------
+    // ---------- 哈弗币消耗（切片范围 + 加权平均）----------
     await computeHavocCosts(enabledConfigs, dm, params)
 
   } catch (error) {
@@ -878,16 +820,12 @@ const handleCalculate = async () => {
 }
 
 // ============================================================
-// ⭐ v7：综合评分重算（用 equipStore.scoreEquips，全量）
-//
-// ⭐ v13：不再保存全局 min/max（分档已删除）
-// ⭐ v14：传切片 distances
+// 综合评分重算（用 equipStore.scoreEquips，全量）
 // ============================================================
 const recomputeScores = async () => {
   const equips = equipStore.state.scoreEquips || []
 
   if (equips.length === 0) {
-    // 全量版本：清空评分
     appStore.clearWeaponScores()
     console.log('ℹ️ 未选择评分参考装备，综合评分已清空')
     return
@@ -909,7 +847,7 @@ const recomputeScores = async () => {
     return
   }
 
-  // ⭐ v14：切片 distances
+  // 切片 distances
   const segmentDistances = getSegmentDistances()
   if (segmentDistances.length === 0) {
     appStore.clearWeaponScores()
@@ -924,7 +862,7 @@ const recomputeScores = async () => {
       configs,
       equips,
       baseParams: paramsStore.state,
-      distances: segmentDistances,   // ⭐ v14：传切片
+      distances: segmentDistances,
       onProgress: (current, total) => {
         if (signal.cancelled) return
         appStore.updateCalcProgress(current, total)
@@ -957,18 +895,12 @@ const recomputeScores = async () => {
 }
 
 // ============================================================
-// ⭐ v7.4 / v8 / v13 / v14：只重算单把武器的评分（用于"更新评分"按钮）
-//
-// ⭐ v8：
-//   - 问题 4：处理 result.empty（带 reason）
-//   - 问题 8：空装备时清空该武器评分
-// ⭐ v13：不再传 globalRange
-// ⭐ v14：传切片 distances
+// 只重算单把武器的评分（用于"更新评分"按钮）
 // ============================================================
 const recomputeSingleWeaponScores = async (weaponId) => {
   const equips = equipStore.state.scoreEquips || []
 
-  // ⭐ v8：问题 8 - 空装备时清空该武器评分
+  // 空装备时清空该武器评分
   if (equips.length === 0) {
     const oldScores = appStore.state.weaponScores || {}
     const newScores = { ...oldScores }
@@ -998,7 +930,7 @@ const recomputeSingleWeaponScores = async (weaponId) => {
     return
   }
 
-  // ⭐ v14：切片 distances
+  // 切片 distances
   const segmentDistances = getSegmentDistances()
   if (segmentDistances.length === 0) {
     console.warn('⚠️ 切片 distances 为空，跳过单枪评分')
@@ -1010,10 +942,10 @@ const recomputeSingleWeaponScores = async (weaponId) => {
     configs: allConfigs,
     equips,
     baseParams: paramsStore.state,
-    distances: segmentDistances,   // ⭐ v14
+    distances: segmentDistances,
   })
 
-  // ⭐ v8：问题 4 - 处理空结果
+  // 处理空结果
   if (result.empty) {
     switch (result.reason) {
       case 'no_configs':
@@ -1058,7 +990,7 @@ const recomputeSingleWeaponScores = async (weaponId) => {
 }
 
 // ============================================================
-// ⭐ v7：watch 评分参考变化 → 自动重算评分
+// watch 评分参考变化 → 自动重算评分
 // ============================================================
 let _scoreEquipsDebounceTimer = null
 const _EQUIP_DEBOUNCE_MS = 200
@@ -1075,7 +1007,7 @@ watch(
   { deep: true }
 )
 
-// ⭐ v7：计算装备变化 → 不自动重算，只提示用户手动点"计算 TTK"
+// 计算装备变化 → 不自动重算，只提示用户手动点"计算 TTK"
 let _calcEquipDebounceTimer = null
 watch(
   () => equipStore.state.calcEquip,
@@ -1088,7 +1020,7 @@ watch(
   { deep: true }
 )
 
-// ⭐ v14：分段范围变化 → 提示用户手动重算（评分/哈弗币范围变了）
+// 分段范围变化 → 提示用户手动重算
 let _segmentDebounceTimer = null
 watch(
   () => [customStart.value, customEnd.value],
@@ -1101,15 +1033,12 @@ watch(
 )
 
 /**
- * ⭐ v7.4 / v8：更新单把武器的评分
+ * 更新单把武器的评分
  *
- * 原名 onUpdateWeaponTTK，现改为"更新评分"按钮的处理函数。
+ * 只重算当前武器下所有配置的评分
+ * 不更新折线图 / 柱状图 / 哈弗币
  *
- * 职责：
- *   - 只重算当前武器下所有配置的评分
- *   - 不更新折线图 / 柱状图 / 哈弗币（那些由"计算 TTK"按钮负责）
- *
- * ⭐ v8：在重算前，先清理该武器的 IndexedDB 缓存（问题 1）
+ * 重算前先清理该武器的 IndexedDB 缓存
  */
 const onUpdateWeaponTTK = async ({ weaponId }) => {
   if (!weaponId) return
@@ -1130,7 +1059,7 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
   appStore.showCalcProgress(`更新 ${weaponName} 的评分中...`, 1)
 
   try {
-    // ⭐ v8：问题 1 - 重算前清理该武器的 IndexedDB 缓存
+    // 重算前清理该武器的 IndexedDB 缓存
     if (dataStore.isWeaponModified(weaponId)) {
       try {
         const { deleteMatrixEntriesByPrefix } = await import('@/core/TTKMatrix')
@@ -1143,10 +1072,10 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
       }
     }
 
-    // ⭐ 只重算评分
+    // 只重算评分
     await recomputeSingleWeaponScores(weaponId)
 
-    // 清除"脏"标记（数据已同步到评分）
+    // 清除"脏"标记
     dataStore.clearWeaponModified(weaponId)
 
     console.log(`✅ ${weaponName} 评分更新完成`)
@@ -1162,9 +1091,7 @@ const onUpdateWeaponTTK = async ({ weaponId }) => {
 // ============================================================
 // 哈弗币消耗计算（全量）
 //
-// ⭐ v14：改成「切片范围 + 加权平均」
-//   - 距离范围跟随 customStart / customEnd
-//   - 用 computeDistanceWeightedAvgShots 加权平均（同款权重）
+// 改成「切片范围 + 加权平均」
 // ============================================================
 const computeHavocCosts = async (enabledConfigs, dm, params) => {
   const havocCosts = {}
@@ -1173,7 +1100,7 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
 
   const { armed, attachments } = buildArmedWeapons(enabledConfigs, dm)
 
-  // ⭐ v14：切片 distances
+  // 切片 distances
   const segmentDistances = getSegmentDistances()
   const minDist = segmentDistances.length > 0 ? segmentDistances[0] : 0
   const maxDist = segmentDistances.length > 0 ? segmentDistances[segmentDistances.length - 1] : 100
@@ -1197,7 +1124,7 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
       continue
     }
 
-    // ⭐ v14：关键点范围按切片
+    // 关键点范围按切片
     const keyDistances = getKeyDistances(weaponArmed, config, maxDist, minDist)
     const shotsArr = []
 
@@ -1218,15 +1145,14 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
       continue
     }
 
-    // ⭐ v14：加权平均（同款权重曲线）
+    // 加权平均（同款权重曲线）
     const avgShots = computeDistanceWeightedAvgShots(shotsArr, keyDistances)
 
     let bulletPrice = 0
-    const bulletId = SimulationEngine.getRealBulletKey(
+    const bulletId = dm.getRealBulletKey(
       attachment.bulletType,
       weaponArmed,
-      params,
-      dm
+      params
     )
     if (bulletId) {
       const bullet = dm.getBulletById(bulletId)
@@ -1255,7 +1181,6 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
       kdRatio,
       extractRate,
       extraCost,
-      // ⭐ v14：记录切片范围（方便调试）
       _minDist: minDist,
       _maxDist: maxDist,
     }
@@ -1271,9 +1196,6 @@ const computeHavocCosts = async (enabledConfigs, dm, params) => {
 
 // ============================================================
 // 折线图数据构建（全量）
-//
-// ⭐ v14：折线图仍用全量 distances，不切片
-//   （切片只影响显示，评分/哈弗币用切片范围）
 // ============================================================
 const buildDistanceStats = async (armed, attachments) => {
   const params = paramsStore.state
@@ -1310,7 +1232,7 @@ const buildDistanceStats = async (armed, attachments) => {
       continue
     }
 
-    // ⭐ v14：折线图排序的 weightedAvg 仍按全量 distances 算（行为不变）
+    // 折线图排序的 weightedAvg 仍按全量 distances 算
     const weightedAvg = computeDistanceWeightedAvg(times, distances.value)
 
     stats.push({
@@ -1376,7 +1298,7 @@ const exportData = async () => {
   }
 }
 
-// ⭐ v7.3：导入模式选择对话框
+// 导入模式选择对话框
 const showImportModeDialog = (fileName, jsonStr) => {
   return new Promise((resolve) => {
     _importModeResolve = resolve
@@ -1401,7 +1323,7 @@ const onImportModeCancel = () => {
   if (resolve) resolve(null)
 }
 
-// ⭐ v7.3：导入主流程
+// 导入主流程
 const importData = () => {
   const input = document.createElement('input')
   input.type = 'file'
@@ -1507,7 +1429,6 @@ const resetData = async () => {
 
     equipStore.resetToDefault()
 
-    // ⭐ v13：清空综合评分
     appStore.clearWeaponScores()
     console.log('🗑️ 已重置装备状态 + 清空综合评分')
 
@@ -1818,7 +1739,6 @@ body {
   flex-wrap: wrap;
 }
 
-/* ⭐ v14：柱状图标题栏的「距离」输入框 */
 .distance-inline-label {
   display: inline-flex;
   align-items: center;

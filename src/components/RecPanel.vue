@@ -1,13 +1,56 @@
 <!-- src/components/RecPanel.vue -->
+<!--
+  配装推荐面板
+
+  假想敌生成流程：
+    createEnemy(index, budgetW, excludeWeaponIds)
+      ① _makeTemporaryTarget(budgetW)   预算内按比例随机配装
+          · 武器：配置价格 ≤ 剩余 × 40%
+          · 子弹：单价 × 120 ≤ 剩余 × 50%
+          · 防御：护甲+头盔+甲修+头修 ≤ 剩余
+          · 顺序：武器 → 子弹 → 防御
+          · 距离：固定 30m
+          · 无重试，找不到就用最便宜的兜底
+      ② 用靶子跑推荐 → top30
+      ③ 从 top30 随机挑一个
+          · ⭐ 过滤掉 excludeWeaponIds 里的武器
+          · 全都过滤掉则回退到全量池
+      ④ 转成假想敌
+          · 距离：按武器射程分段权重随机
+
+  武器去重：
+    · 同一批假想敌之间，尽量不用相同武器
+    · 添加假想敌 → 排除所有已有假想敌的武器
+    · 重掷假想敌 → 排除其他假想敌的武器（不排除自己）
+    · 武器池用尽 → 允许重复
+
+  距离分段权重：
+    · 段数 = 有限 ranges 数 + 1
+    · 段间权重 N : (N-1) : ... : 1
+    · 段内均匀
+    · 最后一段到 100m
+
+  成本计算：
+    · 从推荐结果来的假想敌 → 用 _recCost.total（推荐引擎算的）
+    · 手动编辑的假想敌 → 本地算（含维修包）
+
+  维修包：
+    · 按护甲/头盔等级自动配（4→标准，5→精密，6→高级）
+    · 1~3 级不配
+    · 显示时合并为一行「维修」
+
+  持久化：
+    · 保存前深拷贝 + 去掉 Vue 响应式 + 剔除 _recCost
+-->
 <template>
   <div class="rec-panel">
 
     <!-- ============================================================ -->
-    <!-- ⭐ 视图切换：空状态 / 完整界面 -->
+    <!-- 视图切换：空状态 / 完整界面 -->
     <!-- ============================================================ -->
     <Transition name="rec-view-fade" mode="out-in">
 
-      <!-- ============ 状态 1：空状态（无假想敌） ============ -->
+      <!-- 状态 1：空状态（无假想敌） -->
       <div v-if="enemies.length === 0" key="empty" class="rec-empty-state">
         <div class="rec-empty-card">
           <div class="rec-empty-title">🎯 配装推荐</div>
@@ -39,10 +82,10 @@
         </div>
       </div>
 
-      <!-- ============ 状态 3：完整界面 ============ -->
+      <!-- 状态 3：完整界面 -->
       <div v-else key="full" class="rec-full-view">
 
-        <!-- ---------- 假想敌配置区 ---------- -->
+        <!-- 假想敌配置区 -->
         <div class="panel">
           <div class="enemies-header">
             <div class="panel-title">
@@ -103,7 +146,7 @@
 
               <!-- 主体 -->
               <div class="enemy-card-body">
-                <!-- 假想敌自己的预算（约束它的随机配装） -->
+                <!-- 假想敌自己的预算 -->
                 <div class="enemy-field budget-field">
                   <span class="label">💰 配装</span>
                   <input
@@ -117,18 +160,15 @@
                 </div>
 
                 <!-- 武器 -->
-                <div class="enemy-field">
+                <div class="enemy-field with-price">
                   <span class="label">武器</span>
                   <select v-model="enemy.weaponId" @change="onEnemyWeaponChange(index)">
                     <option :value="null" disabled>请选择武器</option>
-                    <option
-                      v-for="w in weaponOptions"
-                      :key="w.id"
-                      :value="w.id"
-                    >
+                    <option v-for="w in weaponOptions" :key="w.id" :value="w.id">
                       {{ w.name }}
                     </option>
                   </select>
+                  <span class="price-tag">{{ formatPrice(getCostBreakdown(enemy).weapon) }}</span>
                 </div>
 
                 <!-- 配置 -->
@@ -151,7 +191,7 @@
                 </div>
 
                 <!-- 子弹 -->
-                <div class="enemy-field">
+                <div class="enemy-field with-price">
                   <span class="label">子弹</span>
                   <select
                     v-model="enemy.bulletId"
@@ -167,36 +207,46 @@
                       {{ b.display }}
                     </option>
                   </select>
+                  <span class="price-tag">{{ formatPrice(getCostBreakdown(enemy).bullet) }}</span>
                 </div>
 
                 <!-- 护甲 -->
-                <div class="enemy-field">
+                <div class="enemy-field with-price">
                   <span class="label">护甲</span>
-                  <select v-model="enemy.armorId" @change="markDirty">
+                  <select v-model="enemy.armorId" @change="onEnemyArmorChange(index)">
                     <option :value="null" disabled>请选择护甲</option>
-                    <option
-                      v-for="a in armorOptions"
-                      :key="a.id"
-                      :value="a.id"
-                    >
+                    <option v-for="a in armorOptions" :key="a.id" :value="a.id">
                       {{ a.name }} Lv.{{ a.level }}（{{ a.value }}）
                     </option>
                   </select>
+                  <span class="price-tag">{{ formatPrice(getCostBreakdown(enemy).armor) }}</span>
                 </div>
 
                 <!-- 头盔 -->
-                <div class="enemy-field">
+                <div class="enemy-field with-price">
                   <span class="label">头盔</span>
-                  <select v-model="enemy.helmetId" @change="markDirty">
+                  <select v-model="enemy.helmetId" @change="onEnemyHelmetChange(index)">
                     <option :value="null" disabled>请选择头盔</option>
-                    <option
-                      v-for="h in helmetOptions"
-                      :key="h.id"
-                      :value="h.id"
-                    >
+                    <option v-for="h in helmetOptions" :key="h.id" :value="h.id">
                       {{ h.name }} Lv.{{ h.level }}（{{ h.value }}）
                     </option>
                   </select>
+                  <span class="price-tag">{{ formatPrice(getCostBreakdown(enemy).helmet) }}</span>
+                </div>
+
+                <!-- 维修（甲修 + 头修，合并一行） -->
+                <div class="enemy-field with-price repair-field">
+                  <span class="label">维修</span>
+                  <span
+                    class="readonly-value"
+                    :class="{ 'is-empty': !hasRepair(enemy) }"
+                    :title="getRepairTooltip(enemy)"
+                  >
+                    {{ getRepairLabel(enemy) }}
+                  </span>
+                  <span class="price-tag repair-tag">
+                    {{ formatPrice(getCostBreakdown(enemy).armorRepair + getCostBreakdown(enemy).helmetRepair) }}
+                  </span>
                 </div>
 
                 <!-- 距离 -->
@@ -215,18 +265,18 @@
                 </div>
               </div>
 
-              <!-- 底部：携带发数 + 总价 -->
+              <!-- 底部：携带数 + 总价 + 预算占比 -->
               <div class="card-footer">
-                <span>总价</span>
-                <span
-                  class="cost-total"
-                  :class="{ over: isOverBudget(enemy) }"
-                >
+                <div class="cost-total-row">
                   <span class="carry-count">{{ getCarryCount(enemy) }}发</span>
                   <span class="cost-sep">·</span>
-                  ¥{{ formatCostW(calcEnemyCost(enemy)) }}
-                  <template v-if="isOverBudget(enemy)">⚠️</template>
-                </span>
+                  <span class="cost-total" :class="{ over: isOverBudget(enemy) }">
+                    ¥{{ formatCostW(calcEnemyCost(enemy)) }}
+                  </span>
+                  <span class="cost-ratio" :class="{ over: isOverBudget(enemy) }">
+                    ({{ getCostRatio(enemy) }}%)
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -259,7 +309,7 @@
           </div>
         </div>
 
-        <!-- ---------- 无推荐结果提示 ---------- -->
+        <!-- 无推荐结果提示 -->
         <div
           v-if="!recommendations"
           class="no-rec-hint"
@@ -267,7 +317,7 @@
           💡 点击上方「🔍 开始推荐」获取综合推荐
         </div>
 
-        <!-- ---------- 假想敌变更提示条 ---------- -->
+        <!-- 假想敌变更提示条 -->
         <div
           v-if="recommendDirty && recommendations"
           class="dirty-hint"
@@ -276,7 +326,7 @@
         </div>
 
         <!-- ============================================================ -->
-        <!-- ⭐ Top 3 卡片（综合推荐，面对所有假想敌取平均胜率） -->
+        <!-- Top 3 卡片 -->
         <!-- ============================================================ -->
         <template v-if="recommendations && recommendations.topN.length > 0">
           <div class="section-title">
@@ -382,7 +432,7 @@
                   </span>
                 </div>
 
-                <!-- 对敌明细（所有假想敌） -->
+                <!-- 对敌明细 -->
                 <div class="enemy-ttk-detail">
                   <div class="enemy-ttk-detail-title">
                     <span>对敌明细</span>
@@ -580,7 +630,7 @@
           </div>
         </template>
 
-        <!-- ---------- 空状态（推荐完成后无结果） ---------- -->
+        <!-- 空状态（推荐完成后无结果） -->
         <div
           v-if="recommendations && recommendations.topN.length === 0"
           class="empty-state"
@@ -593,15 +643,12 @@
       </div>
     </Transition>
 
-    <!-- ============================================================ -->
     <!-- 进度遮罩 -->
-    <!-- ============================================================ -->
     <Teleport to="body">
       <div v-if="progress.visible" class="rec-progress-overlay">
         <div class="rec-progress-box">
           <div class="rec-progress-icon">⏳</div>
           <div class="rec-progress-title">{{ progress.title }}</div>
-
           <div class="rec-progress-phase">{{ progress.phase }}</div>
 
           <div class="rec-progress-bar-container">
@@ -633,7 +680,7 @@ import {
   loadRecPanelState,
 } from '@/core/TTKMatrix'
 
-// ⭐ 注入通用弹窗
+// 注入通用弹窗
 const showAlert = inject('showAlert', null)
 
 // ============================================================
@@ -641,52 +688,50 @@ const showAlert = inject('showAlert', null)
 // ============================================================
 
 const MAX_ENEMIES = 6
-
 const DEFAULT_BUDGET_W = 100
 const DEFAULT_CARRY_COUNT = 120
+const FIXED_TARGET_DISTANCE = 30
 
-// ⭐ 随机距离的指数递减系数
-const RANDOM_DISTANCE_K = 0.023
+/** 假想敌靶子的预算分配上限（参考） */
+const TARGET_BUDGET = {
+  WEAPON: 0.4,
+  BULLET: 0.5,
+  DEFENSE: 1.0,
+}
+
+/** 维修包名字映射（跟 RecEngine 保持一致） */
+const REPAIR_ARMOR_NAMES = {
+  4: '标准护甲维修包',
+  5: '精密护甲维修包',
+  6: '高级护甲维修组合',
+}
+const REPAIR_HELMET_NAMES = {
+  4: '标准头盔维修包',
+  5: '精密头盔维修包',
+  6: '高级头盔维修组合',
+}
+
+/** 距离随机上限 */
+const MAX_DISTANCE = 100
+/** 无有限射程时的默认段边界 */
+const DEFAULT_RANGE_BOUNDS = [40, 70]
 
 const LOAD_MORE_STEP = 20
 const PERSIST_DEBOUNCE_MS = 500
-
-const HELMET_OFFSET_WEIGHTS = [
-  { offset: -1, weight: 0.05 },
-  { offset:  0, weight: 0.45 },
-  { offset:  1, weight: 0.35 },
-  { offset:  2, weight: 0.12 },
-  { offset:  3, weight: 0.03 },
-]
 
 // ============================================================
 // 状态
 // ============================================================
 
-/** 我方预算（推荐结果必须 ≤ 这个预算） */
 const budget = ref(100)
-
 const isRunning = ref(false)
-
-/**
- * ⭐ 综合推荐结果（一套配装打所有假想敌，取平均胜率）
- * 结构：{ topN, rest, allCount }
- */
 const recommendations = ref(null)
-
-/**
- * ⭐ "加载更多"计数
- */
 const visibleRestCount = ref(10)
-
 const recommendDirty = ref(false)
-
 const copiedKey = ref(null)
 let copiedTimer = null
 
 const enemies = ref([])
-
-// 重掷中的假想敌索引
 const rerollingIndex = ref(null)
 
 let _enemyIdCounter = 0
@@ -706,17 +751,15 @@ let persistTimer = null
 // 数据选项
 // ============================================================
 
-const weaponOptions = computed(() => {
-  return dataStore.state.weapons || []
-})
+const weaponOptions = computed(() => dataStore.state.weapons || [])
 
-const armorOptions = computed(() => {
-  return (dataStore.state.armors || []).filter(a => a.type === 'armor')
-})
+const armorOptions = computed(() =>
+  (dataStore.state.armors || []).filter(a => a.type === 'armor')
+)
 
-const helmetOptions = computed(() => {
-  return (dataStore.state.armors || []).filter(a => a.type === 'helmet')
-})
+const helmetOptions = computed(() =>
+  (dataStore.state.armors || []).filter(a => a.type === 'helmet')
+)
 
 const getConfigOptions = (weaponId) => {
   if (!weaponId) return []
@@ -729,9 +772,10 @@ const getBulletOptions = (weaponId) => {
   if (!weapon || !weapon.allowedBullet) return []
 
   const bullets = dataStore.getBulletsByCaliber(weapon.allowedBullet) || []
+  const dm = dataStore.getDataManager()
   return bullets.map(b => ({
     id: b.id,
-    display: dataStore.getDataManager().getBulletDisplay(b)
+    display: dm.getBulletDisplay(b)
   }))
 }
 
@@ -753,80 +797,177 @@ const handleLoadMore = () => {
 }
 
 // ============================================================
-// 随机配装工具
+// 工具函数
 // ============================================================
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 
 /**
- * 按武器射程 + 指数递减概率随机一个距离
+ * 按武器射程分段，随机一个距离
+ *
+ * 逻辑：
+ *   · 段数 = 有限 ranges 数 + 1
+ *   · 段间权重 N : (N-1) : ... : 1
+ *   · 段内均匀
+ *   · 最后一段到 MAX_DISTANCE (100)
+ *
+ * 举例 AS-Val（ranges = [27, 54, ∞, ∞]）：
+ *   段1: [0, 26]    weight = 3  (50%)
+ *   段2: [27, 53]   weight = 2  (33.3%)
+ *   段3: [54, 100]  weight = 1  (16.7%)
+ *
+ * 举例 野牛（ranges = [20, 27, 40, 55]）：
+ *   段1: [0, 19]    weight = 5  (33.3%)
+ *   段2: [20, 26]   weight = 4  (26.7%)
+ *   段3: [27, 39]   weight = 3  (20%)
+ *   段4: [40, 54]   weight = 2  (13.3%)
+ *   段5: [55, 100]  weight = 1  (6.7%)
+ *
+ * @param {Object} weapon
+ * @returns {number} 距离（整数）
  */
 const randomDistance = (weapon) => {
-  let maxD = 100
-
+  // ---------- 提取有限 ranges（遇到 Infinity 就停）----------
   const ranges = weapon?.ranges
-  if (Array.isArray(ranges) && ranges.length >= 2) {
-    const r2 = ranges[1]
-    if (typeof r2 === 'number' && isFinite(r2)) {
-      maxD = r2
+  let bounds = []
+
+  if (Array.isArray(ranges)) {
+    for (const r of ranges) {
+      if (typeof r === 'number' && isFinite(r) && r > 0) {
+        bounds.push(Math.round(r))
+      } else {
+        break
+      }
     }
   }
 
-  maxD = Math.max(10, Math.min(100, Math.round(maxD)))
-
-  const weights = []
-  let total = 0
-  for (let d = 0; d <= maxD; d++) {
-    const w = Math.exp(-RANDOM_DISTANCE_K * d)
-    weights.push(w)
-    total += w
+  // 无有限射程 → 用默认
+  if (bounds.length === 0) {
+    bounds = [...DEFAULT_RANGE_BOUNDS]
   }
 
-  let r = Math.random() * total
-  for (let d = 0; d <= maxD; d++) {
-    r -= weights[d]
-    if (r <= 0) return d
-  }
+  // ---------- 构建段 ----------
+  const segments = []
+  let prevEnd = 0
 
-  return 0
-}
-
-const weightedPickOffset = (weights) => {
-  const total = weights.reduce((sum, w) => sum + w.weight, 0)
-  let r = Math.random() * total
-  for (const w of weights) {
-    r -= w.weight
-    if (r <= 0) return w.offset
-  }
-  return weights[weights.length - 1].offset
-}
-
-const pickHelmetForArmor = (armor, helmets) => {
-  if (!armor || !helmets || helmets.length === 0) {
-    return pick(helmets)
-  }
-
-  const armorLevel = armor.level ?? 4
-  const offset = weightedPickOffset(HELMET_OFFSET_WEIGHTS)
-
-  let targetLevel = armorLevel - offset
-  targetLevel = Math.max(1, Math.min(6, targetLevel))
-
-  const sameLevel = helmets.filter(h => h.level === targetLevel)
-  if (sameLevel.length > 0) {
-    return pick(sameLevel)
-  }
-
-  let closest = helmets[0]
-  let minDiff = Math.abs((closest.level ?? 1) - targetLevel)
-  for (const h of helmets) {
-    const diff = Math.abs((h.level ?? 1) - targetLevel)
-    if (diff < minDiff) {
-      minDiff = diff
-      closest = h
+  for (const b of bounds) {
+    if (b > prevEnd) {
+      segments.push({ start: prevEnd, end: b - 1 })
+      prevEnd = b
     }
   }
-  return closest
+  // 最后一段
+  if (MAX_DISTANCE >= prevEnd) {
+    segments.push({ start: prevEnd, end: MAX_DISTANCE })
+  }
+
+  if (segments.length === 0) return 30   // 兜底
+
+  // ---------- 权重：N : (N-1) : ... : 1 ----------
+  const N = segments.length
+  const weights = segments.map((_, i) => N - i)
+  const totalWeight = weights.reduce((a, b) => a + b, 0)
+
+  // ---------- 按权重选段 ----------
+  let r = Math.random() * totalWeight
+  let chosen = segments[segments.length - 1]
+
+  for (let i = 0; i < segments.length; i++) {
+    if (r < weights[i]) {
+      chosen = segments[i]
+      break
+    }
+    r -= weights[i]
+  }
+
+  // ---------- 段内均匀随机 ----------
+  const range = chosen.end - chosen.start + 1
+  return chosen.start + Math.floor(Math.random() * range)
+}
+
+/**
+ * 维修包名字 → ID 映射（懒加载缓存）
+ */
+let _repairIdCache = null
+
+const _getRepairIdMap = () => {
+  if (_repairIdCache) return _repairIdCache
+
+  const dm = dataStore.getDataManager()
+  const items = dm.getOtherItems(true) || []
+
+  const armorMap = {}
+  const helmetMap = {}
+
+  for (const item of items) {
+    if (item.category !== '维修') continue
+    if (item.enabled === false) continue
+
+    for (const [level, name] of Object.entries(REPAIR_ARMOR_NAMES)) {
+      if (item.name === name) {
+        armorMap[level] = item.id
+      }
+    }
+    for (const [level, name] of Object.entries(REPAIR_HELMET_NAMES)) {
+      if (item.name === name) {
+        helmetMap[level] = item.id
+      }
+    }
+  }
+
+  _repairIdCache = { armorMap, helmetMap }
+  return _repairIdCache
+}
+
+/**
+ * 按等级查维修包 ID
+ */
+const _getRepairIdByLevel = (level, type) => {
+  if (level !== 4 && level !== 5 && level !== 6) return null
+  const { armorMap, helmetMap } = _getRepairIdMap()
+  const map = type === 'armor' ? armorMap : helmetMap
+  return map[level] || null
+}
+
+/**
+ * 按 ID 查维修包对象
+ */
+const _getRepairById = (id) => {
+  if (!id) return null
+  const dm = dataStore.getDataManager()
+  return dm.getOtherItemById(id) || null
+}
+
+/**
+ * 查维修包价格（按名字查，用于靶子生成阶段）
+ */
+const _getRepairPriceByName = (level, type, repairPriceMap) => {
+  if (level !== 4 && level !== 5 && level !== 6) return 0
+  const nameMap = type === 'armor' ? REPAIR_ARMOR_NAMES : REPAIR_HELMET_NAMES
+  const name = nameMap[level]
+  if (!name) return 0
+  const price = repairPriceMap.get(name)
+  if (price === undefined) {
+    console.warn(`⚠️ RecPanel: 未找到维修包 "${name}"，成本记 0`)
+    return 0
+  }
+  return price
+}
+
+/**
+ * 懒加载维修包价格表（按名字）
+ */
+const _getRepairPriceMap = () => {
+  const dm = dataStore.getDataManager()
+  const items = dm.getOtherItems(true) || []
+  const map = new Map()
+  for (const item of items) {
+    if (item.category !== '维修') continue
+    if (item.enabled === false) continue
+    if (!item.name) continue
+    map.set(item.name, item.price || 0)
+  }
+  return map
 }
 
 const getCarryCount = (enemy) => {
@@ -836,31 +977,142 @@ const getCarryCount = (enemy) => {
   return DEFAULT_CARRY_COUNT
 }
 
-const calcEnemyCost = (enemy) => {
-  if (!enemy || !enemy.weaponId) return Infinity
+/**
+ * 获取假想敌的各部分价格明细
+ */
+const getCostBreakdown = (enemy) => {
+  const empty = {
+    weapon: 0, bullet: 0, armor: 0, helmet: 0,
+    armorRepair: 0, helmetRepair: 0, total: 0,
+  }
+  if (!enemy || !enemy.weaponId) return empty
 
   const dm = dataStore.getDataManager()
   const weapon = dm.getWeaponById(enemy.weaponId)
-  if (!weapon) return Infinity
+  if (!weapon) return empty
 
+  // 武器
   const configs = dataStore.getPriceRowsForWeapon(enemy.weaponId) || []
   const config = configs.find(c => c.configId === enemy.configId)
-  const configPrice = config?.price || 0
+  const weaponCost = config?.price || 0
 
+  // 子弹
   const bullets = dm.getBulletsByCaliber(weapon.allowedBullet) || []
   const bullet = bullets.find(b => b.id === enemy.bulletId)
-  const bulletPrice = bullet?.price || 0
+  const bulletCost = (bullet?.price || 0) * getCarryCount(enemy)
 
+  // 护甲 + 头盔
   const armor = dm.getArmorById(enemy.armorId)
-  const armorPrice = armor?.price || 0
-
   const helmet = dm.getArmorById(enemy.helmetId)
-  const helmetPrice = helmet?.price || 0
+  const armorCost = armor?.price || 0
+  const helmetCost = helmet?.price || 0
 
-  const carryCount = getCarryCount(enemy)
-  const bulletCost = bulletPrice * carryCount
+  // 维修包
+  const armorRepair = _getRepairById(enemy.armorRepairId)
+  const helmetRepair = _getRepairById(enemy.helmetRepairId)
+  const armorRepairCost = armorRepair?.price || 0
+  const helmetRepairCost = helmetRepair?.price || 0
 
-  return configPrice + bulletCost + armorPrice + helmetPrice
+  return {
+    weapon: weaponCost,
+    bullet: bulletCost,
+    armor: armorCost,
+    helmet: helmetCost,
+    armorRepair: armorRepairCost,
+    helmetRepair: helmetRepairCost,
+    total: weaponCost + bulletCost + armorCost + helmetCost + armorRepairCost + helmetRepairCost,
+  }
+}
+
+/**
+ * 是否有维修包
+ */
+const hasRepair = (enemy) => {
+  return !!(enemy?.armorRepairId || enemy?.helmetRepairId)
+}
+
+/**
+ * 维修标签（合并甲修 + 头修）
+ */
+const getRepairLabel = (enemy) => {
+  if (!enemy) return '不配'
+  const armorRepair = _getRepairById(enemy.armorRepairId)
+  const helmetRepair = _getRepairById(enemy.helmetRepairId)
+
+  const parts = []
+  if (armorRepair) {
+    const level = getArmorLevel(enemy.armorId)
+    parts.push(`${level}甲修`)
+  }
+  if (helmetRepair) {
+    const level = getHelmetLevel(enemy.helmetId)
+    parts.push(`${level}头修`)
+  }
+
+  if (parts.length === 0) return '不配'
+  return parts.join(' + ')
+}
+
+/**
+ * 维修 tooltip
+ */
+const getRepairTooltip = (enemy) => {
+  if (!enemy) return ''
+  const armorRepair = _getRepairById(enemy.armorRepairId)
+  const helmetRepair = _getRepairById(enemy.helmetRepairId)
+
+  const lines = ['🔧 维修包']
+  if (armorRepair) {
+    lines.push(`甲修: ${armorRepair.name} ¥${(armorRepair.price / 10000).toFixed(1)}W`)
+  }
+  if (helmetRepair) {
+    lines.push(`头修: ${helmetRepair.name} ¥${(helmetRepair.price / 10000).toFixed(1)}W`)
+  }
+  if (lines.length === 1) {
+    lines.push('不配维修包')
+  }
+  return lines.join('\n')
+}
+
+/**
+ * 查护甲/头盔等级
+ */
+const getArmorLevel = (armorId) => {
+  const a = dataStore.getDataManager().getArmorById(armorId)
+  return a?.level ?? '?'
+}
+
+const getHelmetLevel = (helmetId) => {
+  const h = dataStore.getDataManager().getArmorById(helmetId)
+  return h?.level ?? '?'
+}
+
+/**
+ * 计算假想敌成本
+ *
+ * 优先用推荐引擎算好的 _recCost.total，否则本地算
+ */
+const calcEnemyCost = (enemy) => {
+  if (!enemy) return Infinity
+
+  if (enemy._recCost && typeof enemy._recCost.total === 'number' && isFinite(enemy._recCost.total)) {
+    return enemy._recCost.total
+  }
+
+  const breakdown = getCostBreakdown(enemy)
+  if (breakdown.total === 0 && !enemy.weaponId) return Infinity
+  return breakdown.total
+}
+
+/**
+ * 成本 / 预算 比例
+ */
+const getCostRatio = (enemy) => {
+  if (!enemy) return '0.0'
+  const cost = calcEnemyCost(enemy)
+  const budgetYuan = (enemy.budgetW || DEFAULT_BUDGET_W) * 10000
+  if (budgetYuan <= 0) return '0.0'
+  return ((cost / budgetYuan) * 100).toFixed(1)
 }
 
 const isOverBudget = (enemy) => {
@@ -876,128 +1128,219 @@ const formatCostW = (costYuan) => {
 }
 
 // ============================================================
-// ⭐ 随机配装（核心）
+// 临时靶子生成
 // ============================================================
 
-/**
- * 随机一套"临时靶子"配装
- *
- * 完全均匀随机（武器/护甲/子弹/配置都均匀），用来给推荐引擎当敌人
- */
-const randomEnemyOnce = () => {
-  const dm = dataStore.getDataManager()
-  const weapons = dm.getWeapons() || []
-  const armors = dm.getArmorsByType('armor') || []
-  const helmets = dm.getArmorsByType('helmet') || []
+const _makeTemporaryTarget = (budgetW) => {
+  console.log('\n═══════════════════════════════════════════')
+  console.log(`🎲 [靶子生成] 开始，预算 ${budgetW}W`)
+  console.log('═══════════════════════════════════════════')
 
-  if (weapons.length === 0 || armors.length === 0 || helmets.length === 0) {
+  const dm = dataStore.getDataManager()
+  const budgetYuan = budgetW * 10000
+
+  // ---------- 数据检查 ----------
+  const allConfigs = []
+  for (const weapon of dm.getWeapons() || []) {
+    const rows = dataStore.getPriceRowsForWeapon(weapon.id) || []
+    for (const row of rows) {
+      if (row.enabled === false) continue
+      allConfigs.push({ weapon, row })
+    }
+  }
+  if (allConfigs.length === 0) {
+    console.warn('❌ 靶子生成失败：没有可用的武器配置')
     return null
   }
 
-  const weapon = pick(weapons)
+  const allArmors = dm.getArmorsByType('armor') || []
+  const allHelmets = dm.getArmorsByType('helmet') || []
+  if (allArmors.length === 0 || allHelmets.length === 0) {
+    console.warn('❌ 靶子生成失败：没有可用的护甲或头盔')
+    return null
+  }
 
-  const configs = (dataStore.getPriceRowsForWeapon(weapon.id) || [])
-    .filter(c => c.enabled !== false)
-  if (configs.length === 0) return null
-  const config = pick(configs)
+  console.log(`📊 数据池: 配置 ${allConfigs.length} 个, 护甲 ${allArmors.length} 个, 头盔 ${allHelmets.length} 个`)
 
-  const bullets = (dm.getBulletsByCaliber(weapon.allowedBullet) || [])
-    .filter(b => b.enabled !== false)
-  if (bullets.length === 0) return null
-  const bullet = pick(bullets)
+  const repairPriceMap = _getRepairPriceMap()
 
-  const armor = pick(armors)
-  const helmet = pickHelmetForArmor(armor, helmets)
+  let remaining = budgetYuan
+  console.log(`💰 初始预算: ${(remaining / 10000).toFixed(1)}W`)
 
-  const distance = randomDistance(weapon)
+  // ---------- ① 武器 ----------
+  console.log('\n─── ① 武器选择 ───')
+  const weaponUpperLimit = remaining * TARGET_BUDGET.WEAPON
+  console.log(`   上限: 剩余 × ${TARGET_BUDGET.WEAPON} = ${(weaponUpperLimit / 10000).toFixed(1)}W`)
 
+  const weaponCandidates = allConfigs.filter(
+    c => (c.row.price || 0) <= weaponUpperLimit
+  )
+  console.log(`   候选数: ${weaponCandidates.length} / ${allConfigs.length}`)
+
+  let chosenWeaponConfig = null
+  if (weaponCandidates.length > 0) {
+    chosenWeaponConfig = pick(weaponCandidates)
+  } else {
+    chosenWeaponConfig = [...allConfigs].sort(
+      (a, b) => (a.row.price || 0) - (b.row.price || 0)
+    )[0]
+    console.warn('   ⚠️ 无候选，兜底用最便宜配置')
+  }
+
+  const weapon = chosenWeaponConfig.weapon
+  const config = chosenWeaponConfig.row
+  const weaponPrice = config.price || 0
+
+  console.log(`   ✅ 选中: ${weapon.name} ${config.configId} (${config.barrel || '无枪管'})`)
+  console.log(`   价格: ${(weaponPrice / 10000).toFixed(1)}W`)
+
+  remaining -= weaponPrice
+  console.log(`   剩余: ${(remaining / 10000).toFixed(1)}W`)
+
+  // ---------- ② 子弹 ----------
+  console.log('\n─── ② 子弹选择 ───')
+  const allBullets = dm.getBulletsByCaliber(weapon.allowedBullet) || []
+  if (allBullets.length === 0) {
+    console.warn(`   ❌ 武器 ${weapon.name} 没有可用子弹`)
+    return null
+  }
+
+  const bulletUpperLimit = remaining * TARGET_BUDGET.BULLET
+  console.log(`   上限: 剩余 × ${TARGET_BUDGET.BULLET} = ${(bulletUpperLimit / 10000).toFixed(1)}W`)
+  console.log(`   口径: ${weapon.allowedBullet}, 可用子弹 ${allBullets.length} 颗`)
+
+  const bulletCandidates = allBullets.filter(
+    b => (b.price || 0) * DEFAULT_CARRY_COUNT <= bulletUpperLimit
+  )
+  console.log(`   候选数: ${bulletCandidates.length} / ${allBullets.length}`)
+
+  let chosenBullet = null
+  if (bulletCandidates.length > 0) {
+    chosenBullet = pick(bulletCandidates)
+  } else {
+    chosenBullet = [...allBullets].sort(
+      (a, b) => (a.price || 0) - (b.price || 0)
+    )[0]
+    console.warn('   ⚠️ 无候选，兜底用最便宜子弹')
+  }
+
+  const bulletCost = (chosenBullet.price || 0) * DEFAULT_CARRY_COUNT
+  console.log(`   ✅ 选中: ${chosenBullet.name} Lv.${chosenBullet.level}`)
+  console.log(`   单价: ¥${chosenBullet.price}/发 × ${DEFAULT_CARRY_COUNT} 发 = ¥${(bulletCost / 10000).toFixed(1)}W`)
+
+  remaining -= bulletCost
+  console.log(`   剩余: ${(remaining / 10000).toFixed(1)}W`)
+
+  // ---------- ③ 防御 ----------
+  console.log('\n─── ③ 防御选择 ───')
+  const defenseUpperLimit = remaining * TARGET_BUDGET.DEFENSE
+  console.log(`   上限: 剩余 × ${TARGET_BUDGET.DEFENSE} = ${(defenseUpperLimit / 10000).toFixed(1)}W`)
+
+  const defenseCandidates = []
+  for (const armor of allArmors) {
+    for (const helmet of allHelmets) {
+      const armorRepair = _getRepairPriceByName(armor.level, 'armor', repairPriceMap)
+      const helmetRepair = _getRepairPriceByName(helmet.level, 'helmet', repairPriceMap)
+      const defenseCost = (armor.price || 0) + (helmet.price || 0) + armorRepair + helmetRepair
+      if (defenseCost <= defenseUpperLimit) {
+        defenseCandidates.push({ armor, helmet })
+      }
+    }
+  }
+  console.log(`   候选数: ${defenseCandidates.length} / ${allArmors.length * allHelmets.length}`)
+
+  let chosenDefense = null
+  if (defenseCandidates.length > 0) {
+    chosenDefense = pick(defenseCandidates)
+  } else {
+    const cheapestArmor = [...allArmors].sort(
+      (a, b) => (a.price || 0) - (b.price || 0)
+    )[0]
+    const cheapestHelmet = [...allHelmets].sort(
+      (a, b) => (a.price || 0) - (b.price || 0)
+    )[0]
+    chosenDefense = { armor: cheapestArmor, helmet: cheapestHelmet }
+    console.warn('   ⚠️ 无候选，兜底用最便宜护甲+头盔')
+  }
+
+  const armor = chosenDefense.armor
+  const helmet = chosenDefense.helmet
+
+  // 维修包
+  const armorRepairId = _getRepairIdByLevel(armor.level, 'armor')
+  const helmetRepairId = _getRepairIdByLevel(helmet.level, 'helmet')
+  const armorRepairItem = _getRepairById(armorRepairId)
+  const helmetRepairItem = _getRepairById(helmetRepairId)
+  const armorRepairPrice = armorRepairItem?.price || 0
+  const helmetRepairPrice = helmetRepairItem?.price || 0
+  const defenseCost = (armor.price || 0) + (helmet.price || 0) + armorRepairPrice + helmetRepairPrice
+
+  console.log(`   ✅ 选中: ${armor.name} Lv.${armor.level} + ${helmet.name} Lv.${helmet.level}`)
+  console.log(`   护甲: ¥${((armor.price || 0) / 10000).toFixed(1)}W`)
+  console.log(`   头盔: ¥${((helmet.price || 0) / 10000).toFixed(1)}W`)
+  console.log(`   甲修: ¥${(armorRepairPrice / 10000).toFixed(1)}W (${armorRepairItem?.name || '不配'})`)
+  console.log(`   头修: ¥${(helmetRepairPrice / 10000).toFixed(1)}W (${helmetRepairItem?.name || '不配'})`)
+  console.log(`   防御成本: ¥${(defenseCost / 10000).toFixed(1)}W`)
+
+  remaining -= defenseCost
+  console.log(`   剩余: ${(remaining / 10000).toFixed(1)}W`)
+
+  // ---------- 组装靶子 ----------
+  const totalCost = weaponPrice + bulletCost + defenseCost
+  const usageRatio = budgetYuan > 0 ? (totalCost / budgetYuan * 100) : 0
+
+  console.log('\n─── 靶子汇总 ───')
+  console.log(`   武器: ${(weaponPrice / 10000).toFixed(1)}W`)
+  console.log(`   子弹: ${(bulletCost / 10000).toFixed(1)}W`)
+  console.log(`   防御: ${(defenseCost / 10000).toFixed(1)}W`)
+  console.log(`   总计: ${(totalCost / 10000).toFixed(1)}W / 预算 ${budgetW}W (${usageRatio.toFixed(1)}%)`)
+  console.log(`   距离: ${FIXED_TARGET_DISTANCE}m (固定)`)
+  console.log('═══════════════════════════════════════════\n')
+
+  _enemyIdCounter += 1
   return {
-    _id: `enemy_${Date.now()}_${++_enemyIdCounter}`,
+    _id: `enemy_${Date.now()}_${_enemyIdCounter}`,
     name: '',
-    budgetW: 0,
+    budgetW,
     weaponId: weapon.id,
     configId: config.configId,
-    bulletId: bullet.id,
+    bulletId: chosenBullet.id,
     armorId: armor.id,
     helmetId: helmet.id,
-    distance,
+    armorRepairId,
+    helmetRepairId,
+    distance: FIXED_TARGET_DISTANCE,
     carryCount: DEFAULT_CARRY_COUNT,
   }
 }
 
 /**
- * ⭐ 随机一个假想敌（核心）
- *
- * 流程：
- *   ① 随机一个"临时靶子"（用 randomEnemyOnce）
- *   ② 用【临时靶子 + 预算】跑一次推荐引擎
- *   ③ 从推荐结果（topN + rest）里随机挑一个
- *   ④ 把挑出的推荐结果转成假想敌，返回
- *
- * 兜底：
- *   - 靶子随机失败 → 返回 null（外部走空模板）
- *   - 推荐失败 / 结果为空 → 直接返回靶子
- *
- * @param {number} budgetYuan - 该假想敌的预算（元）
- * @returns {Promise<Object|null>}
+ * 空模板假想敌（兜底）
  */
-const randomEnemy = async (budgetYuan) => {
-  const budgetW = Math.round(budgetYuan / 10000)
-
-  // ① 随机靶子
-  const tempEnemy = randomEnemyOnce()
-  if (!tempEnemy) return null
-  tempEnemy.budgetW = budgetW
-
-  // ② 跑推荐（用该假想敌的预算）
-  let engineResult = null
-  try {
-    engineResult = await runRecommendInternal(
-      [buildEngineEnemy(tempEnemy)],
-      budgetW,
-      null
-    )
-  } catch (e) {
-    console.warn('⚠️ randomEnemy 推荐失败，回退到靶子:', e)
-    return tempEnemy
+const _makeEmptyEnemy = (index, budgetW) => {
+  _enemyIdCounter += 1
+  return {
+    _id: `enemy_${Date.now()}_${_enemyIdCounter}`,
+    name: `假想敌 ${index + 1}`,
+    budgetW,
+    weaponId: null,
+    configId: null,
+    bulletId: null,
+    armorId: null,
+    helmetId: null,
+    armorRepairId: null,
+    helmetRepairId: null,
+    distance: randomDistance(null),
+    carryCount: DEFAULT_CARRY_COUNT,
   }
-
-  // ③ 推荐失败 → 回退到靶子
-  if (!engineResult?.recommendations) {
-    return tempEnemy
-  }
-
-  const recs = engineResult.recommendations
-  const allRecs = [
-    ...(recs.topN || []),
-    ...(recs.rest || []),
-  ]
-
-  // ④ 推荐结果为空 → 回退到靶子
-  if (allRecs.length === 0) {
-    return tempEnemy
-  }
-
-  // ⑤ 随机挑一个
-  const chosenRec = pick(allRecs)
-
-  // ⑥ 转成假想敌
-  const enemy = buildEnemyFromRec(chosenRec)
-  if (!enemy) {
-    return tempEnemy
-  }
-
-  // ⑦ 预算对齐
-  enemy.budgetW = budgetW
-
-  return enemy
 }
 
-// ============================================================
-// 从推荐结果构造假想敌
-// ============================================================
-
-const buildEnemyFromRec = (rec) => {
+/**
+ * 推荐结果 → 假想敌对象
+ *
+ * 距离按武器射程分段权重随机
+ */
+const _recToEnemy = (rec, budgetW) => {
   if (!rec || !rec.gear) return null
 
   const weaponId = rec.gear.weapon?.id
@@ -1005,41 +1348,232 @@ const buildEnemyFromRec = (rec) => {
   const bulletId = rec.gear.bullet?.id
   const armorId = rec.gear.armor?.id
   const helmetId = rec.gear.helmet?.id
+  const armorLevel = rec.gear.armor?.level
+  const helmetLevel = rec.gear.helmet?.level
+  const armorRepairPrice = rec.gear.repair?.armorRepairPrice || 0
+  const helmetRepairPrice = rec.gear.repair?.helmetRepairPrice || 0
 
   if (!weaponId || !configId || !bulletId || !armorId || !helmetId) {
-    console.warn('⚠️ buildEnemyFromRec: 推荐结果缺少必要字段', rec)
+    console.warn('⚠️ RecPanel: _recToEnemy 缺少必要字段', rec)
     return null
   }
 
-  const weapon = dataStore.getWeaponById(weaponId)
+  // 按等级 + 是否有维修费，反推维修包 ID
+  const armorRepairId = armorRepairPrice > 0
+    ? _getRepairIdByLevel(armorLevel, 'armor')
+    : null
+  const helmetRepairId = helmetRepairPrice > 0
+    ? _getRepairIdByLevel(helmetLevel, 'helmet')
+    : null
+
+  // 距离按武器射程分段权重随机
+  const weapon = dataStore.getDataManager().getWeaponById(weaponId)
   const distance = randomDistance(weapon)
 
   _enemyIdCounter += 1
-
   return {
     _id: `enemy_${Date.now()}_${_enemyIdCounter}`,
     name: '',
-    budgetW: Math.round((rec.cost?.total || 0) / 10000) || budget.value,
+    budgetW,
     weaponId,
     configId,
     bulletId,
     armorId,
     helmetId,
+    armorRepairId,
+    helmetRepairId,
     distance,
     carryCount: rec.gear.bullet.carryCount || DEFAULT_CARRY_COUNT,
+    _recCost: rec.cost || null,
   }
+}
+
+// ============================================================
+// 假想敌创建（带武器去重）
+// ============================================================
+
+/**
+ * 创建假想敌
+ *
+ * 流程：临时靶子 → 跑推荐 → 从 top30 挑 → 转假想敌
+ *
+ * @param {number} index - 假想敌序号
+ * @param {number} enemyBudgetW - 预算（W）
+ * @param {Array<number>} excludeWeaponIds - 要排除的武器 ID（去重）
+ * @returns {Promise<Object>}
+ */
+const createEnemy = async (index, enemyBudgetW, excludeWeaponIds = []) => {
+  const finalBudgetW = (typeof enemyBudgetW === 'number' && enemyBudgetW > 0)
+    ? enemyBudgetW
+    : DEFAULT_BUDGET_W
+
+  console.log(`\n\n╔═══════════════════════════════════════════╗`)
+  console.log(`║  创建假想敌 #${index + 1}  (预算 ${finalBudgetW}W)`)
+  if (excludeWeaponIds.length > 0) {
+    console.log(`║  排除武器: [${excludeWeaponIds.join(', ')}]`)
+  }
+  console.log(`╚═══════════════════════════════════════════╝`)
+
+  // ---------- ① 临时靶子 ----------
+  const target = _makeTemporaryTarget(finalBudgetW)
+  if (!target) {
+    console.warn('❌ 临时靶子生成失败，返回空模板')
+    return _makeEmptyEnemy(index, finalBudgetW)
+  }
+
+  const targetCost = getCostBreakdown(target).total
+  console.log(`\n🎯 靶子已生成: 成本 ${(targetCost / 10000).toFixed(1)}W / 预算 ${finalBudgetW}W\n`)
+
+  // ---------- ② 用靶子跑推荐 ----------
+  console.log('═══════════════════════════════════════════')
+  console.log('🔍 [步骤 ②] 用靶子跑推荐')
+  console.log('═══════════════════════════════════════════')
+
+  let recs = null
+  try {
+    const result = await runRecommendInternal(
+      [buildEngineEnemy(target)],
+      finalBudgetW,
+      null
+    )
+    if (result?.recommendations) {
+      recs = result.recommendations
+      console.log(`✅ 推荐完成`)
+    } else {
+      console.warn('❌ 推荐返回空')
+    }
+  } catch (e) {
+    console.warn('❌ 推荐抛异常:', e)
+  }
+
+  // ---------- 打印 top30 ----------
+  if (recs) {
+    const allRecs = [...(recs.topN || []), ...(recs.rest || [])]
+    console.log(`\n📋 临时推荐池 (共 ${allRecs.length} 个):`)
+    console.log('───────────────────────────────────────────')
+    allRecs.forEach((r, i) => {
+      const cost = r.cost?.total || 0
+      const costW = (cost / 10000).toFixed(1)
+      const ratio = finalBudgetW > 0 ? (cost / (finalBudgetW * 10000) * 100).toFixed(1) : '0'
+      const winRate = (r.winRate * 100).toFixed(1)
+      const wid = r.gear?.weapon?.id
+      const weapon = `${r.gear?.weapon?.name || '?'} ${r.gear?.weapon?.configId || ''}`
+      const excluded = excludeWeaponIds.includes(wid) ? ' 🚫' : ''
+      console.log(
+        `  #${String(i + 1).padStart(2)}  ${costW.padStart(6)}W (${ratio.padStart(5)}%)  ` +
+        `胜率 ${winRate.padStart(5)}%  ${weapon}${excluded}`
+      )
+    })
+    console.log('───────────────────────────────────────────')
+
+    const costs = allRecs.map(r => r.cost?.total || 0)
+    if (costs.length > 0) {
+      const minCost = Math.min(...costs)
+      const maxCost = Math.max(...costs)
+      const avgCost = costs.reduce((s, c) => s + c, 0) / costs.length
+      console.log(`💰 成本分布: min ${(minCost / 10000).toFixed(1)}W / avg ${(avgCost / 10000).toFixed(1)}W / max ${(maxCost / 10000).toFixed(1)}W`)
+    }
+    console.log('')
+  }
+
+  // ---------- ③ 从 top30 随机挑一个（过滤已用武器） ----------
+  console.log('═══════════════════════════════════════════')
+  console.log('🎲 [步骤 ③] 从推荐池随机挑一个')
+  console.log('═══════════════════════════════════════════')
+
+  const allRecs = recs
+    ? [...(recs.topN || []), ...(recs.rest || [])]
+    : []
+
+  // ⭐ 过滤掉已用武器
+  let candidateRecs = allRecs
+  if (excludeWeaponIds.length > 0) {
+    const filtered = allRecs.filter(r => {
+      const wid = r.gear?.weapon?.id
+      return wid && !excludeWeaponIds.includes(wid)
+    })
+    if (filtered.length > 0) {
+      candidateRecs = filtered
+      console.log(`🎯 武器去重：${allRecs.length} → ${filtered.length}（排除 ${excludeWeaponIds.length} 个武器）`)
+    } else {
+      candidateRecs = allRecs
+      console.warn(`⚠️ 所有候选武器都已用过，回退到全量池 (${allRecs.length} 个)`)
+    }
+  }
+
+  let chosenRec = null
+  if (candidateRecs.length > 0) {
+    const chosenIndex = Math.floor(Math.random() * candidateRecs.length)
+    chosenRec = candidateRecs[chosenIndex]
+
+    const cost = chosenRec.cost?.total || 0
+    const ratio = finalBudgetW > 0 ? (cost / (finalBudgetW * 10000) * 100).toFixed(1) : '0'
+    console.log(`✅ 随机命中: #${chosenIndex + 1}`)
+    console.log(`   ${chosenRec.gear?.weapon?.name || '?'} ${chosenRec.gear?.weapon?.configId || ''} (武器ID: ${chosenRec.gear?.weapon?.id})`)
+    console.log(`   成本 ${(cost / 10000).toFixed(1)}W (${ratio}%)`)
+    console.log(`   胜率 ${(chosenRec.winRate * 100).toFixed(1)}%`)
+  } else {
+    console.warn('⚠️ 推荐池为空，回退到靶子')
+  }
+
+  // ---------- ④ 转假想敌 ----------
+  console.log('\n═══════════════════════════════════════════')
+  console.log('✅ [步骤 ④] 转成假想敌')
+  console.log('═══════════════════════════════════════════')
+
+  let enemy = chosenRec ? _recToEnemy(chosenRec, finalBudgetW) : null
+
+  if (!enemy) {
+    enemy = target
+    if (allRecs.length === 0) {
+      console.warn('⚠️ 推荐结果为空，回退到靶子')
+    }
+  }
+
+  enemy.budgetW = finalBudgetW
+  enemy.name = `假想敌 ${index + 1}`
+
+  const finalCost = calcEnemyCost(enemy)
+  const finalRatio = finalBudgetW > 0 ? (finalCost / (finalBudgetW * 10000) * 100).toFixed(1) : '0'
+  const source = chosenRec ? '推荐池' : '靶子(回退)'
+
+  console.log(`   来源: ${source}`)
+  console.log(`   武器ID: ${enemy.weaponId}`)
+  console.log(`   最终成本: ${(finalCost / 10000).toFixed(1)}W / 预算 ${finalBudgetW}W (${finalRatio}%)`)
+  console.log(`   最终距离: ${enemy.distance}m`)
+  console.log('╚═══════════════════════════════════════════╝\n\n')
+
+  return enemy
 }
 
 // ============================================================
 // 持久化
 // ============================================================
 
+const _serializeEnemies = (list) => {
+  return list.map(e => ({
+    _id: e._id,
+    name: e.name,
+    budgetW: e.budgetW,
+    weaponId: e.weaponId,
+    configId: e.configId,
+    bulletId: e.bulletId,
+    armorId: e.armorId,
+    helmetId: e.helmetId,
+    armorRepairId: e.armorRepairId,
+    helmetRepairId: e.helmetRepairId,
+    distance: e.distance,
+    carryCount: e.carryCount,
+  }))
+}
+
 const schedulePersist = () => {
   clearTimeout(persistTimer)
   persistTimer = setTimeout(async () => {
     try {
+      const cleanEnemies = JSON.parse(JSON.stringify(_serializeEnemies(enemies.value)))
       await saveRecPanelState({
-        enemies: enemies.value,
+        enemies: cleanEnemies,
         budget: budget.value,
       })
     } catch (e) {
@@ -1050,18 +1584,15 @@ const schedulePersist = () => {
 
 const persistNow = async () => {
   try {
+    const cleanEnemies = JSON.parse(JSON.stringify(_serializeEnemies(enemies.value)))
     await saveRecPanelState({
-      enemies: enemies.value,
+      enemies: cleanEnemies,
       budget: budget.value,
     })
   } catch (e) {
     console.warn('⚠️ 保存配装面板状态失败:', e)
   }
 }
-
-// ============================================================
-// 脏标记
-// ============================================================
 
 const markDirty = () => {
   if (recommendations.value) {
@@ -1070,74 +1601,43 @@ const markDirty = () => {
 }
 
 // ============================================================
-// ⭐ 假想敌操作
+// 假想敌操作
 // ============================================================
 
 /**
- * 创建一个假想敌
- *
- * ⭐ 用【传入的预算】作为该假想敌的 budgetW
- *    内部走"临时靶子 → 推荐 → 挑一个"的完整流程
- *
- * @param {number} index - 假想敌序号（用于命名）
- * @param {number} enemyBudgetW - 该假想敌的配装预算（W 单位）
- * @returns {Promise<Object|null>} 假想敌对象
+ * 收集当前所有假想敌的武器 ID（去重）
  */
-const createEnemy = async (index, enemyBudgetW) => {
-  const newName = `假想敌 ${index + 1}`
-  const finalBudgetW = (typeof enemyBudgetW === 'number' && enemyBudgetW > 0)
-    ? enemyBudgetW
-    : DEFAULT_BUDGET_W
-
-  // ⭐ 走"临时靶子 → 推荐 → 挑一个"的完整流程
-  const enemy = await randomEnemy(finalBudgetW * 10000)
-  if (enemy) {
-    enemy.name = newName
-    enemy.budgetW = finalBudgetW
-    return enemy
-  }
-
-  // 兜底：空模板
-  _enemyIdCounter += 1
-  return {
-    _id: `enemy_${Date.now()}_${_enemyIdCounter}`,
-    name: newName,
-    budgetW: finalBudgetW,
-    weaponId: null,
-    configId: null,
-    bulletId: null,
-    armorId: null,
-    helmetId: null,
-    distance: 30,
-    carryCount: DEFAULT_CARRY_COUNT,
-  }
+const _collectUsedWeaponIds = (excludeIndex = -1) => {
+  const ids = []
+  enemies.value.forEach((e, i) => {
+    if (i === excludeIndex) return
+    if (e.weaponId !== null && e.weaponId !== undefined) {
+      if (!ids.includes(e.weaponId)) {
+        ids.push(e.weaponId)
+      }
+    }
+  })
+  return ids
 }
 
-/**
- * 添加假想敌
- *
- * ⭐ 用我方预算作为新假想敌的初始 budgetW（用户可改）
- * ⭐ 不自动刷新推荐
- */
 const addEnemy = async () => {
   if (enemies.value.length >= MAX_ENEMIES) return
   if (enemies.value.length === 0) return
   if (rerollingIndex.value !== null) return
 
-  const newEnemy = await createEnemy(enemies.value.length, budget.value)
-  if (!newEnemy) return
+  // 排除所有已有假想敌的武器
+  const excludeWeaponIds = _collectUsedWeaponIds()
 
+  const newEnemy = await createEnemy(
+    enemies.value.length,
+    budget.value,
+    excludeWeaponIds
+  )
   enemies.value.push(newEnemy)
   markDirty()
   schedulePersist()
 }
 
-/**
- * 重掷假想敌（原地替换）
- *
- * ⭐ 用该假想敌自己的 budgetW 重掷
- * ⭐ 不自动刷新推荐
- */
 const rerollEnemy = async (index) => {
   const enemy = enemies.value[index]
   if (!enemy) return
@@ -1147,16 +1647,14 @@ const rerollEnemy = async (index) => {
   const oldName = enemy.name
   const enemyBudgetW = enemy.budgetW || DEFAULT_BUDGET_W
 
+  // 排除其他假想敌的武器（不排除自己）
+  const excludeWeaponIds = _collectUsedWeaponIds(index)
+
   rerollingIndex.value = index
 
   try {
-    // ⭐ 用该假想敌的预算重掷
-    const newEnemy = await createEnemy(index, enemyBudgetW)
-    if (!newEnemy) return
-
+    const newEnemy = await createEnemy(index, enemyBudgetW, excludeWeaponIds)
     newEnemy.name = oldName || `假想敌 ${index + 1}`
-
-    // ⭐ 原地替换
     enemies.value.splice(index, 1, newEnemy)
 
     markDirty()
@@ -1173,7 +1671,6 @@ const removeEnemy = (index) => {
   if (rerollingIndex.value !== null) return
 
   enemies.value.splice(index, 1)
-
   markDirty()
   schedulePersist()
 }
@@ -1181,6 +1678,8 @@ const removeEnemy = (index) => {
 const onEnemyWeaponChange = (index) => {
   const enemy = enemies.value[index]
   if (!enemy) return
+
+  enemy._recCost = null
 
   enemy.configId = null
   enemy.bulletId = null
@@ -1205,10 +1704,37 @@ const onEnemyWeaponChange = (index) => {
   schedulePersist()
 }
 
+const onEnemyArmorChange = (index) => {
+  const enemy = enemies.value[index]
+  if (!enemy) return
+
+  enemy._recCost = null
+
+  // 按新护甲等级自动配维修包
+  const armor = dataStore.getDataManager().getArmorById(enemy.armorId)
+  enemy.armorRepairId = _getRepairIdByLevel(armor?.level, 'armor')
+
+  markDirty()
+  schedulePersist()
+}
+
+const onEnemyHelmetChange = (index) => {
+  const enemy = enemies.value[index]
+  if (!enemy) return
+
+  enemy._recCost = null
+
+  const helmet = dataStore.getDataManager().getArmorById(enemy.helmetId)
+  enemy.helmetRepairId = _getRepairIdByLevel(helmet?.level, 'helmet')
+
+  markDirty()
+  schedulePersist()
+}
+
 /**
  * 从推荐结果添加为假想敌
  *
- * ⭐ 不自动刷新推荐
+ * 不去重（用户主动选的）
  */
 const addAsEnemy = (rec) => {
   if (!rec) return
@@ -1221,7 +1747,7 @@ const addAsEnemy = (rec) => {
     return
   }
 
-  const newEnemy = buildEnemyFromRec(rec)
+  const newEnemy = _recToEnemy(rec, budget.value)
   if (!newEnemy) {
     const msg = '⚠️ 该推荐结果缺少必要字段，无法添加'
     if (showAlert) showAlert(msg)
@@ -1230,12 +1756,13 @@ const addAsEnemy = (rec) => {
   }
 
   newEnemy.name = `假想敌 ${enemies.value.length + 1}`
-
   enemies.value.push(newEnemy)
   markDirty()
   schedulePersist()
 
-  console.log(`➕ 已添加为假想敌: ${rec.gear.weapon.name} ${rec.gear.weapon.configId}（配装预算 ${newEnemy.budgetW}W）`)
+  console.log(
+    `➕ 已添加为假想敌: ${rec.gear.weapon.name} ${rec.gear.weapon.configId}（配装预算 ${newEnemy.budgetW}W，距离 ${newEnemy.distance}m）`
+  )
 }
 
 // ============================================================
@@ -1381,16 +1908,6 @@ const repairTooltip = (rec) => {
   return lines.join('\n')
 }
 
-const REPAIR_ARMOR_NAMES = {
-  4: '标准护甲维修包',
-  5: '精密护甲维修包',
-  6: '高级护甲维修组合',
-}
-const REPAIR_HELMET_NAMES = {
-  4: '标准头盔维修包',
-  5: '精密头盔维修包',
-  6: '高级头盔维修组合',
-}
 const getRepairName = (level, type) => {
   const map = type === 'armor' ? REPAIR_ARMOR_NAMES : REPAIR_HELMET_NAMES
   return map[level] || '-'
@@ -1423,7 +1940,7 @@ const rankIcon = (rank) => {
 }
 
 // ============================================================
-// 胜率相关辅助（综合推荐，面对所有假想敌取平均）
+// 胜率相关辅助
 // ============================================================
 
 const avgAttackTTK = (rec) => {
@@ -1438,7 +1955,6 @@ const avgDefenseTTK = (rec) => {
   return arr.reduce((s, e) => s + (e.defenseTTK || 0), 0) / arr.length
 }
 
-/** 最弱敌人下标（用于高亮） */
 const weakestEnemyIdx = (rec) => {
   const arr = rec?.perEnemy
   if (!arr || arr.length === 0) return -1
@@ -1534,13 +2050,6 @@ const buildEngineParams = () => {
   }
 }
 
-/**
- * ⭐ 单次推荐（内部函数）
- *
- * @param {Array} enemiesList - 敌人列表
- * @param {number} budgetW - 用哪个预算（W 单位）
- * @param {Array<number>} progressRange - [start, end] 进度区间
- */
 const runRecommendInternal = async (enemiesList, budgetW, progressRange = null) => {
   const engine = window.__recEngine
   if (!engine) return null
@@ -1587,7 +2096,7 @@ const runRecommendInternal = async (enemiesList, budgetW, progressRange = null) 
 }
 
 // ============================================================
-// ⭐ 推荐主入口（综合推荐）
+// 推荐主入口
 // ============================================================
 
 const runRecommend = async () => {
@@ -1602,8 +2111,6 @@ const runRecommend = async () => {
   }
 
   isRunning.value = true
-
-  // 清空旧的推荐结果
   recommendations.value = null
   visibleRestCount.value = 10
 
@@ -1618,26 +2125,17 @@ const runRecommend = async () => {
   await new Promise(resolve => setTimeout(resolve, 150))
 
   try {
-    // ============================================================
-    // 空 enemies：首次推荐
-    // ============================================================
     if (enemies.value.length === 0) {
       progress.value.title = '正在初始化...'
-      progress.value.phase = '生成初始假想敌（推荐引擎生成）'
+      progress.value.phase = '生成初始假想敌'
       progress.value.percent = 5
 
-      const firstEnemy = await createEnemy(0, budget.value)
-      if (!firstEnemy) {
-        throw new Error('无法生成初始假想敌，请检查数据')
-      }
+      // 第一个假想敌，无需排除
+      const firstEnemy = await createEnemy(0, budget.value, [])
       firstEnemy.name = '假想敌 1'
-
       enemies.value = [firstEnemy]
     }
 
-    // ============================================================
-    // 综合推荐：一次性传所有敌人
-    // ============================================================
     const enemiesList = buildEngineEnemies()
 
     progress.value.title = '综合推荐中...'
@@ -1694,7 +2192,6 @@ const initPanel = async () => {
           const n = parseInt(match[1], 10)
           if (n > maxId) maxId = n
         }
-        // ⭐ 兼容旧数据
         if (typeof e.budgetW !== 'number' || !e.budgetW) {
           e.budgetW = budget.value
         }
@@ -1768,7 +2265,7 @@ onBeforeUnmount(() => {
 }
 
 /* ============================================================
-   ⭐ 视图切换过渡动画
+   视图切换过渡动画
    ============================================================ */
 
 .rec-view-fade-enter-active {
@@ -1790,7 +2287,7 @@ onBeforeUnmount(() => {
 }
 
 /* ============================================================
-   ⭐ 空状态（居中卡片）
+   空状态（居中卡片）
    ============================================================ */
 
 .rec-empty-state {
@@ -1916,7 +2413,7 @@ onBeforeUnmount(() => {
 }
 
 /* ============================================================
-   ⭐ 完整界面容器
+   完整界面容器
    ============================================================ */
 
 .rec-full-view {
@@ -1997,8 +2494,7 @@ onBeforeUnmount(() => {
 
 /* ---------- 单个敌人卡片 ---------- */
 .enemy-card {
-  flex: 1 1 280px;
-  max-width: 340px;
+  flex: 1 1 300px;
   min-width: 0;
   background: #fafbfd;
   border: 1px solid #e0e4ea;
@@ -2229,29 +2725,71 @@ onBeforeUnmount(() => {
   font-weight: 500;
 }
 
+/* ---------- 带价格的字段 ---------- */
+.enemy-field.with-price .label {
+  width: 36px;
+}
+
+.enemy-field .price-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #e67e22;
+  font-weight: 600;
+  flex-shrink: 0;
+  min-width: 50px;
+  text-align: right;
+}
+
+.enemy-field .price-tag.repair-tag {
+  color: #5e35b1;
+}
+
+/* ---------- 维修字段（只读） ---------- */
+.repair-field {
+  background: #f8f9ff;
+  border-radius: 3px;
+  padding: 2px 2px !important;
+}
+
+.enemy-field .readonly-value {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px dashed #d0d0d0;
+  border-radius: 3px;
+  font-family: var(--font-family);
+  font-size: 11px;
+  background: #fff;
+  color: #5e35b1;
+  height: 24px;
+  line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enemy-field .readonly-value.is-empty {
+  color: #bbb;
+  font-style: italic;
+}
+
+/* ---------- 卡片底部 ---------- */
 .card-footer {
-  margin-top: 6px;
-  padding-top: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px dashed #e0e4ea;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 5px;
   font-size: 11px;
   color: #888;
 }
 
-.card-footer .cost-total {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 12px;
-  color: #e67e22;
-  display: inline-flex;
+.cost-total-row {
+  display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 4px;
-}
-
-.card-footer .cost-total.over {
-  color: #f44336;
 }
 
 .card-footer .carry-count {
@@ -2261,7 +2799,28 @@ onBeforeUnmount(() => {
 
 .card-footer .cost-sep {
   color: #ccc;
-  font-weight: 400;
+}
+
+.card-footer .cost-total {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: #e67e22;
+}
+
+.card-footer .cost-total.over {
+  color: #f44336;
+}
+
+.card-footer .cost-ratio {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #999;
+}
+
+.card-footer .cost-ratio.over {
+  color: #f44336;
+  font-weight: 600;
 }
 
 /* ============================================================
@@ -3288,10 +3847,25 @@ onBeforeUnmount(() => {
     width: 40px;
   }
 
+  .enemy-field.with-price .label {
+    width: 34px;
+  }
+
   .enemy-field select,
   .enemy-field input {
     font-size: 10px;
     height: 26px;
+  }
+
+  .enemy-field .readonly-value {
+    font-size: 10px;
+    height: 26px;
+    line-height: 20px;
+  }
+
+  .enemy-field .price-tag {
+    font-size: 9px;
+    min-width: 44px;
   }
 
   .budget-row {

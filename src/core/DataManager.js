@@ -1,100 +1,54 @@
 // src/core/DataManager.js
 /**
  * 数据管理器
- * 负责数据的加载、保存、导入、导出和查询
+ *
+ * 职责：
+ * - 数据的加载、规范化、导入、导出、重置
+ * - 各种数据实体的查询（武器 / 子弹 / 护甲头盔 / 其他物品 / 枪口 / 价格配置）
+ * - 各种数据实体的增删改
+ * - 修改追踪（记录被修改的武器 ID，供上层跳缓存用）
  *
  * 数据流向：
- * 1. 从 data.json 加载原始数据
- * 2. 数据存储在 this.data 中
- * 3. 导出时序列化 this.data（排序后导出，不影响内存数据）
- * 4. 导入时替换 this.data（或合并）
- * 5. 重置时恢复 this.originalData
+ * 1. 从 data.json 加载原始数据 → normalizeData 规范化 → 存 this.data
+ * 2. this.originalData 保存初始快照，用于 resetToOriginal
+ * 3. 导出时序列化 this.data（排序 + 清理运行时字段，不影响内存数据）
  *
- * 修改追踪：
- * - modifiedWeaponIds: 记录被修改的武器 ID
- * - 用于增量计算，只重新计算被修改的武器
+ * 导入双模式：
+ * - overwrite（默认）：全量覆盖
+ * - merge：增量合并，新增项打 _isImported 标记
  *
- * 导出排序：
- * - weapons: 按类型 → 名称 排序
- * - bullets: 按口径 → 等级 → 默认 排序
- * - prices: 按类型 → 武器名称 → 配置序号 排序
- * - armors: 按 type → level(desc) → value(desc) 排序
- * - otherItems: 按 category → 名称 排序
+ * 数据实体：
+ * - weapons（武器）
+ * - bullets（子弹）
+ * - prices（价格配置）
+ * - armors（护甲 + 头盔，用 type 区分）
+ * - otherItems（其他物品：背包 / 胸挂 / 治疗 / 维修 / 其他）
  *
- * ⭐ 子弹 ID 规范（v2）：
- * - 格式：${caliber}#${序号}
- * - 序号：口径内递增，按 level 升序 + name 字典序分配
- * - 稳定：序号一旦分配，不随 level/name 变化
- * - 禁止修改 caliber / id
+ * 关键约束：
+ * - 子弹 ID 格式 `${caliber}#${序号}`，序号一旦分配不随 level/name 变化
+ * - 禁止修改子弹 caliber / id
+ * - 无枪管（barrelId === -1）时，精校（precision）强制为 0
+ * - 子弹 isDefault 在同一 caliber + level 组内唯一
  *
- * ⭐ 参数导出/导入（v3）：
- * - exportToJSON / exportToFile 支持 extra 参数
- * - importFromJSON 返回 { data, params, equipState }
+ * ⭐ [FIX] 本次修复内容（避免导出/导入丢失数据）：
  *
- * ⭐ 精校与枪管一致性（v4）：
- * - 无枪管（barrelId === -1）时，精校（precision）必须为 0
+ *   [FIX-1] normalizeData 保留顶层 version / updatedAt / meta
+ *           —— 之前加载后 this.data 里没有这三个字段，导出时永久丢失
  *
- * ⭐ 其他物品（v5）：
- * - data.json 顶层新增 otherItems 数组
+ *   [FIX-2] exportToJSON 组装 output 时保证 version / updatedAt / meta 有值
+ *           —— 即便 serialized 里没有，也写默认值
  *
- * ⭐ 装备状态（v6 → v7）：
- * - v6：extra.selectedEquips（数组）
- * - v7：extra.equipState（对象 { mode, calcEquip, scoreEquips }）
+ *   [FIX-3] _fixConfigIdsForExport 找不到枪管时不再清 precision
+ *           —— 之前 barrel 名字找不到会强设 barrelId=-1 → precision=0
  *
- * ⭐ v7.1 导出清理废弃字段：
- * - 删除顶层 selectedEquips
- * - 删除 params 里的 armorLevel / armorValue / helmetLevel / helmetValue
+ *   [FIX-4] exportToJSON 导出前回写 prices[].weaponName
+ *           —— 增量导入后可能为空，从 weapons 反查补上
  *
- * ⭐ v7.2 导出综合评分（仅导出，不导入）：
- * - exportToJSON / exportToFile 支持 extra.weaponScores + extra.havocCosts
- * - 按 score 升序
- * - 导入时不恢复评分
+ *   [FIX-5] _sortPricesForExport 的 config 序号排序修正
+ *           —— 之前 getConfigNum(a) 传的是 price 对象（没有 id），永远返回 0
  *
- * ⭐ v7.3 增量导入（合并模式）：
- * - importFromJSON(jsonStr, options) 支持 options.mode
- *   - 'overwrite'（默认）：原有全量覆盖
- *   - 'merge'：增量合并
- * - 新增 clearImportMarks()：清除所有 `_isImported` 标记
- * - 导出时自动剔除 `_isImported` 字段
- *
- * ⭐ v7.5 支持编辑配置 ID：
- * - 新增 updateConfigId(weaponId, oldConfigId, newConfigId)
- * - 约束：新 ID 必须是 "#数字" 格式，不能重复
- *
- * ⭐ v8 改动（全问题修复）：
- * - 问题 1：改武器属性时标记"脏武器"，配合 App.vue 的"跳缓存"方案
- * - 问题 2 / 12：updateConfigId 成功后调用 _invalidateConfigCache
- * - 问题 16：_buildWeaponScoresForExport 里 Infinity → null
- *
- * ⭐ v9 改动（死代码清理）：
- * - 删除 getEnabledBullets / getDefaultBullet / getBulletRows
- * - 删除 getEnabledArmors / getMuzzleNames
- *
- * ⭐ v10 改动（导出回写 barrelId / muzzleId）：
- * - 新增 _fixConfigIdsForExport
- * - 在 exportToJSON 里、排序之前调用
- * - 修复：data.json 里只有 barrel 名字、没写 barrelId 的配置，
- *   导出时 barrelId 为 undefined → 重启加载被 normalizeData 当 -1
- *   → precision 被清 0 的问题
- *
- * ⭐ v13 改动（删除分档）：
- * - _buildWeaponScoresForExport 不再导出 grade 字段
- * - 导出的 weaponScores 结构：{ score, meta }
- *
- * ⭐ v14 改动（呼吸 / 屏息 / 后坐力 / 稳定性）：
- * - getPriceRowsForWeapon 显式带出：
- *   · breathSway / breathHoldDuration / breathHoldReduction
- *   · recoilVerticalAuto / recoilHorizontalAuto
- *   · recoilVerticalBurst / recoilHorizontalBurst
- *   · stabilityMultiplier
- * - 均为配置级字段，不参与 TTK 计算，仅供 UI 展示与后续扩展
- *
- * ⭐ 已删除的旧 API：
- * - setCacheManager / getCacheManager
- * - getConfigCache / saveConfigCache
- * - clearWeaponCache / clearAllCache / getCacheStats
- * - setTtkCacheManager / getTtkCacheManager
- * - getTtkCache / setTtkCache / getTtkCacheStats
+ *   [FIX-6] _buildWeaponScoresForExport 的 _missing 分支补全 meta 字段
+ *           —— 外部工具读 weaponName 时不会 undefined
  */
 
 // ============================================================
@@ -121,6 +75,11 @@ const DEPRECATED_PARAM_KEYS = [
   'helmetValue',
 ]
 
+// ============================================================
+// 导出时顶层元信息的默认值（[FIX-1] / [FIX-2]）
+// ============================================================
+const DEFAULT_DATA_VERSION = '1.0'
+
 export class DataManager {
   constructor() {
     this.data = {
@@ -128,7 +87,7 @@ export class DataManager {
       bullets: [],
       prices: [],
       armors: [],
-      otherItems: []    // ⭐ v5：其他物品
+      otherItems: []
     };
     this.originalData = null;
     this.isLoaded = false;
@@ -145,9 +104,8 @@ export class DataManager {
     // 修改追踪
     this.modifiedWeaponIds = new Set();
 
-    // ⭐ v8：缓存失效回调（可选）
-    //   App.vue 可以注入一个函数，DataManager 在需要清缓存时调用
-    //   如果没注入，就只做标记，由调用方自行处理
+    // 缓存失效回调（可选）
+    // 外部可注入函数，DataManager 在需要清缓存时调用
     this.onCacheInvalidate = null;
   }
 
@@ -156,9 +114,7 @@ export class DataManager {
   // ============================================================
 
   /**
-   * ⭐ 从 URL 加载数据
-   *
-   * ⭐ v7：返回值 { data, params, equipState }
+   * 从 URL 加载数据
    *
    * @param {string} url
    * @returns {Promise<{ data: Object, params: Object|null, equipState: Object|null }>}
@@ -178,13 +134,13 @@ export class DataManager {
         throw new Error('数据格式无效，请检查 data.json 文件');
       }
 
-      // ⭐ 提取 params（在 normalizeData 之前）
+      // 提取 params（在 normalizeData 之前）
       let params = null;
       if (rawData.params && typeof rawData.params === 'object') {
         params = this._cleanParams(rawData.params);
       }
 
-      // ⭐ v7：提取 equipState
+      // 提取 equipState
       let equipState = null;
       if (rawData.equipState && typeof rawData.equipState === 'object') {
         equipState = this._validateEquipState(rawData.equipState);
@@ -220,7 +176,7 @@ export class DataManager {
   }
 
   /**
-   * ⭐ 清理 params 里的废弃字段
+   * 清理 params 里的废弃字段
    */
   _cleanParams(params) {
     const cleaned = JSON.parse(JSON.stringify(params));
@@ -250,6 +206,8 @@ export class DataManager {
 
   /**
    * 规范化数据
+   *
+   * ⭐ [FIX-1] 末尾保留顶层 version / updatedAt / meta
    */
   normalizeData(data) {
     const normalized = JSON.parse(JSON.stringify(data));
@@ -386,6 +344,22 @@ export class DataManager {
     // ---------- 6. 删除旧 ttkCache 字段 ----------
     if (normalized.ttkCache !== undefined) {
       delete normalized.ttkCache;
+    }
+
+    // ---------- 7. ⭐ [FIX-1] 保留顶层元信息 ----------
+    // 之前这三个字段被 normalizeData 丢弃，导致导出时永久丢失
+    if (data.version !== undefined && data.version !== null) {
+      normalized.version = data.version;
+    } else {
+      normalized.version = DEFAULT_DATA_VERSION;
+    }
+
+    if (data.updatedAt !== undefined && data.updatedAt !== null) {
+      normalized.updatedAt = data.updatedAt;
+    }
+
+    if (data.meta !== undefined && data.meta !== null && typeof data.meta === 'object') {
+      normalized.meta = data.meta;
     }
 
     return normalized;
@@ -575,6 +549,30 @@ export class DataManager {
     return candidates[0];
   }
 
+  /**
+   * 根据武器 + 参数查子弹 ID
+   *
+   * 优先用显式指定的 bulletType（假想敌场景，可能指定被禁用的子弹）；
+   * 否则按武器的 allowedBullet + params.bulletLevel 查启用的子弹。
+   *
+   * @param {string} selectedBulletType - 显式指定的子弹 ID（可为空）
+   * @param {Object} weapon - 武器对象
+   * @param {Object} params - 含 bulletLevel
+   * @returns {string|null} 子弹 ID
+   */
+  getRealBulletKey(selectedBulletType, weapon, params) {
+    if (selectedBulletType) return selectedBulletType;
+
+    const caliber = weapon?.allowedBullet;
+    if (!caliber) {
+      console.warn(`武器 ${weapon?.name} 没有指定口径`);
+      return null;
+    }
+
+    const bullet = this.getBulletByCaliberAndLevel(caliber, params.bulletLevel);
+    return bullet ? bullet.id : null;
+  }
+
   getBulletsByCaliber(caliber, includeDisabled = false) {
     let bullets = this.data.bullets.filter(b => b.caliber === caliber);
     if (!includeDisabled) {
@@ -584,30 +582,30 @@ export class DataManager {
   }
 
   getNextBulletId(caliber) {
-    if (!caliber) return ''
+    if (!caliber) return '';
 
-    const sameCaliber = this.data.bullets.filter(b => b.caliber === caliber)
+    const sameCaliber = this.data.bullets.filter(b => b.caliber === caliber);
     if (sameCaliber.length === 0) {
-      return `${caliber}#1`
+      return `${caliber}#1`;
     }
 
-    let maxIndex = 0
+    let maxIndex = 0;
     for (const b of sameCaliber) {
-      const match = String(b.id).match(/#(\d+)$/)
+      const match = String(b.id).match(/#(\d+)$/);
       if (match) {
-        const n = parseInt(match[1], 10)
-        if (!isNaN(n) && n > maxIndex) maxIndex = n
+        const n = parseInt(match[1], 10);
+        if (!isNaN(n) && n > maxIndex) maxIndex = n;
       }
     }
 
-    return `${caliber}#${maxIndex + 1}`
+    return `${caliber}#${maxIndex + 1}`;
   }
 
   getBulletDisplay(bullet) {
-    if (!bullet) return '-'
-    const parts = [bullet.caliber, `Lv.${bullet.level}`]
-    if (bullet.name) parts.push(bullet.name)
-    return parts.join(' ')
+    if (!bullet) return '-';
+    const parts = [bullet.caliber, `Lv.${bullet.level}`];
+    if (bullet.name) parts.push(bullet.name);
+    return parts.join(' ');
   }
 
   // ============================================================
@@ -926,7 +924,7 @@ export class DataManager {
         ? config.aimSpeed
         : 0;
 
-      // ⭐ 呼吸 / 屏息（配置级）
+      // 呼吸 / 屏息（配置级）
       const breathSway = (typeof config.breathSway === 'number' && isFinite(config.breathSway))
         ? config.breathSway
         : null;
@@ -939,7 +937,7 @@ export class DataManager {
         ? config.breathHoldReduction
         : null;
 
-      // ⭐ 后坐力 / 稳定性（配置级）
+      // 后坐力 / 稳定性（配置级）
       const recoilVerticalAuto = (typeof config.recoilVerticalAuto === 'number' && isFinite(config.recoilVerticalAuto))
         ? config.recoilVerticalAuto
         : null;
@@ -970,12 +968,12 @@ export class DataManager {
         precision: precision,
         aimSpeed: aimSpeed,
 
-        // ⭐ 呼吸 / 屏息（配置级）
+        // 呼吸 / 屏息（配置级）
         breathSway,
         breathHoldDuration,
         breathHoldReduction,
 
-        // ⭐ 后坐力 / 稳定性（配置级）
+        // 后坐力 / 稳定性（配置级）
         recoilVerticalAuto,
         recoilHorizontalAuto,
         recoilVerticalBurst,
@@ -1200,11 +1198,6 @@ export class DataManager {
 
   // ============================================================
   // 7. 数据更新 - 武器
-  //
-  // ⭐ v8：问题 1
-  //   所有"改武器属性"的方法都调用 markWeaponModified（已有）
-  //   调用方（App.vue）可以通过 modifiedWeaponIds 判断哪些武器"脏"
-  //   评分计算时跳过这些武器的缓存（强制重算）
   // ============================================================
 
   updateWeapon(weaponId, updates) {
@@ -1260,9 +1253,6 @@ export class DataManager {
 
   // ============================================================
   // 8. 数据更新 - 子弹
-  //
-  // ⭐ v8：问题 1
-  //   改子弹时，用 markWeaponsByBullet 标记"用到该子弹的所有武器"
   // ============================================================
 
   addBullet(bulletData) {
@@ -1426,14 +1416,12 @@ export class DataManager {
     const caliber = bullet.caliber;
     const level = bullet.level;
 
-    let changed = 0;
     for (const b of this.data.bullets) {
       if (b.caliber === caliber && String(b.level) === String(level)) {
         if (b.id === bulletId) {
           b.isDefault = true;
         } else if (b.isDefault === true) {
           b.isDefault = false;
-          changed++;
         }
       }
     }
@@ -1504,11 +1492,10 @@ export class DataManager {
   }
 
   /**
-   * ⭐ v7.5：修改配置的 ID（序号）
+   * 修改配置的 ID（序号）
    *
-   * ⭐ v8：问题 2 / 12
-   *   成功后主动清 IndexedDB 里 `atk_{weaponId}_{oldConfigId}_*` 的缓存。
-   *   （key 变了，旧缓存成孤儿，主动清掉更干净）
+   * 成功后主动清 IndexedDB 里 `atk_{weaponId}_{oldConfigId}_*` 的缓存
+   * （key 变了，旧缓存成孤儿，主动清掉更干净）
    *
    * @param {number} weaponId
    * @param {string} oldConfigId
@@ -1517,91 +1504,90 @@ export class DataManager {
    */
   async updateConfigId(weaponId, oldConfigId, newConfigId) {
     // ---------- 1. 基础校验 ----------
-    const newId = String(newConfigId || '').trim()
+    const newId = String(newConfigId || '').trim();
 
     if (!newId) {
-      return { ok: false, error: 'ID 不能为空' }
+      return { ok: false, error: 'ID 不能为空' };
     }
 
     if (!/^#\d+$/.test(newId)) {
-      return { ok: false, error: 'ID 格式必须是 "#数字"（如 #1、#10）' }
+      return { ok: false, error: 'ID 格式必须是 "#数字"（如 #1、#10）' };
     }
 
     if (newId === oldConfigId) {
-      return { ok: true }
+      return { ok: true };
     }
 
     // ---------- 2. 找价格条目 ----------
-    const price = this.getPriceByWeaponId(weaponId)
+    const price = this.getPriceByWeaponId(weaponId);
     if (!price) {
-      return { ok: false, error: '未找到该武器的价格配置' }
+      return { ok: false, error: '未找到该武器的价格配置' };
     }
 
-    const configs = price.configs || []
+    const configs = price.configs || [];
 
     // ---------- 3. 找目标配置 ----------
-    const targetConfig = configs.find(c => c.id === oldConfigId)
+    const targetConfig = configs.find(c => c.id === oldConfigId);
     if (!targetConfig) {
-      return { ok: false, error: `未找到配置 ${oldConfigId}` }
+      return { ok: false, error: `未找到配置 ${oldConfigId}` };
     }
 
     // ---------- 4. 检查重复 ----------
-    const duplicate = configs.find(c => c.id === newId && c !== targetConfig)
+    const duplicate = configs.find(c => c.id === newId && c !== targetConfig);
     if (duplicate) {
-      return { ok: false, error: `ID ${newId} 已存在，不能重复` }
+      return { ok: false, error: `ID ${newId} 已存在，不能重复` };
     }
 
     // ---------- 5. 修改 ----------
-    targetConfig.id = newId
-    this.markWeaponModified(weaponId)
+    targetConfig.id = newId;
+    this.markWeaponModified(weaponId);
 
-    console.log(`✅ 配置 ID 修改: ${weaponId} ${oldConfigId} → ${newId}`)
+    console.log(`✅ 配置 ID 修改: ${weaponId} ${oldConfigId} → ${newId}`);
 
-    // ---------- 6. ⭐ v8：清 IndexedDB 缓存 ----------
-    let cacheDeleted = 0
+    // ---------- 6. 清 IndexedDB 缓存 ----------
+    let cacheDeleted = 0;
     try {
-      const prefix = `atk_${weaponId}_${String(oldConfigId).replace('#', '')}_`
-      cacheDeleted = await this._invalidateCacheByPrefix(prefix)
+      const prefix = `atk_${weaponId}_${String(oldConfigId).replace('#', '')}_`;
+      cacheDeleted = await this._invalidateCacheByPrefix(prefix);
       if (cacheDeleted > 0) {
-        console.log(`🧹 已清除该配置的缓存 ${cacheDeleted} 条（prefix=${prefix}）`)
+        console.log(`🧹 已清除该配置的缓存 ${cacheDeleted} 条（prefix=${prefix}）`);
       }
     } catch (e) {
-      console.warn('⚠️ 清缓存失败（不影响功能）:', e)
+      console.warn('⚠️ 清缓存失败（不影响功能）:', e);
     }
 
-    return { ok: true, cacheDeleted }
+    return { ok: true, cacheDeleted };
   }
 
   /**
-   * ⭐ v8：清 IndexedDB 缓存（按前缀）
+   * 清 IndexedDB 缓存（按前缀）
    *
    * 内部调用 TTKMatrix.deleteMatrixEntriesByPrefix
-   * 用**动态 import** 避免"DataManager → TTKMatrix → DataManager"循环依赖
+   * 用动态 import 避免循环依赖
    *
    * @param {string} prefix
    * @returns {Promise<number>} 删除的数量
    */
   async _invalidateCacheByPrefix(prefix) {
-    if (!prefix) return 0
+    if (!prefix) return 0;
 
     try {
-      const mod = await import('./TTKMatrix.js')
+      const mod = await import('./TTKMatrix.js');
       if (mod && typeof mod.deleteMatrixEntriesByPrefix === 'function') {
-        const count = await mod.deleteMatrixEntriesByPrefix(prefix)
-        // 同时回调（如果 App.vue 注入了）
+        const count = await mod.deleteMatrixEntriesByPrefix(prefix);
         if (typeof this.onCacheInvalidate === 'function') {
           try {
-            this.onCacheInvalidate({ type: 'prefix', prefix, count })
+            this.onCacheInvalidate({ type: 'prefix', prefix, count });
           } catch (e) {
-            console.warn('⚠️ onCacheInvalidate 回调失败:', e)
+            console.warn('⚠️ onCacheInvalidate 回调失败:', e);
           }
         }
-        return count
+        return count;
       }
     } catch (e) {
-      console.warn('⚠️ _invalidateCacheByPrefix 失败:', e)
+      console.warn('⚠️ _invalidateCacheByPrefix 失败:', e);
     }
-    return 0
+    return 0;
   }
 
   addPriceConfig(weaponId, configData) {
@@ -1863,10 +1849,25 @@ export class DataManager {
     });
   }
 
+  /**
+   * 排序 prices
+   *
+   * ⭐ [FIX-5] config 序号排序修正
+   *   之前 getConfigNum(a) 里 a 是 price 对象（没有 id），永远返回 0
+   *   现在取 price.configs[0].id 的序号来排
+   */
   _sortPricesForExport(prices, weaponsMap) {
     if (!prices || prices.length === 0) return;
 
     const typeOrder = DataManager.TYPE_ORDER;
+
+    // ⭐ [FIX-5] 从 price.configs[0].id 里提取序号
+    const getFirstConfigNum = (price) => {
+      const first = (price.configs || [])[0];
+      if (!first) return 0;
+      const match = String(first.id || '').match(/#(\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    };
 
     prices.sort((a, b) => {
       const weaponA = weaponsMap.get(a.weaponId);
@@ -1881,23 +1882,17 @@ export class DataManager {
       const nameCompare = nameA.localeCompare(nameB, 'zh-CN');
       if (nameCompare !== 0) return nameCompare;
 
-      const getConfigNum = (config) => {
-        const id = config.id || '';
-        const match = id.match(/#(\d+)/);
-        return match ? parseInt(match[1]) : 0;
-      };
-      const numA = getConfigNum(a);
-      const numB = getConfigNum(b);
-      return numA - numB;
+      // ⭐ [FIX-5] 用第一个 config 的序号
+      return getFirstConfigNum(a) - getFirstConfigNum(b);
     });
   }
 
   // ============================================================
-  // 12. ⭐ v10：导出前修正 config 的 barrelId / muzzleId
+  // 12. 导出前修正 config 的 barrelId / muzzleId
   // ============================================================
 
   /**
-   * ⭐ v10：导出前修正 config 的 barrelId / muzzleId
+   * 导出前修正 config 的 barrelId / muzzleId
    *
    * 背景：
    *   data.json 里很多 config 只写了 barrel 名字，没写 barrelId。
@@ -1909,69 +1904,88 @@ export class DataManager {
    *   导出前对每个 config 反查并回写 barrelId / muzzleId，
    *   保证导出的 JSON 里 barrelId 是显式的正确值。
    *
-   * ⚠️ 只改 dataToExport（深拷贝），不影响 this.data
+   * 只改 dataToExport（深拷贝），不影响 this.data
+   *
+   * ⭐ [FIX-3] 找不到枪管时，不再强设 barrelId=-1 → precision 不再被清 0
+   *   改为：保留原 barrelId（若有），仅 console.warn
    *
    * @param {Object} dataToExport - 即将导出的数据副本
    */
   _fixConfigIdsForExport(dataToExport) {
     if (!dataToExport || !Array.isArray(dataToExport.prices)) return;
 
-    // ---------- 1. 构建 weaponId → weapon 映射 ----------
     const weaponsMap = new Map();
     for (const w of dataToExport.weapons || []) {
       weaponsMap.set(w.id, w);
     }
 
-    // ---------- 2. 枪口列表（用于反查）----------
     const muzzles = this.muzzles || [];
 
-    // ---------- 3. 遍历所有 config ----------
     for (const price of dataToExport.prices) {
       const weapon = weaponsMap.get(price.weaponId);
 
       if (!weapon || !Array.isArray(price.configs)) continue;
 
       for (const config of price.configs) {
-        // ---------- 3.1 修正 barrelId ----------
+        // 修正 barrelId
         const hasBarrelId = (config.barrelId !== undefined && config.barrelId !== null);
 
         if (!hasBarrelId) {
+          // 有名字，按名字反查
           if (config.barrel && config.barrel !== '无') {
             const barrels = weapon.barrels || [];
             const idx = barrels.findIndex(b => b.name === config.barrel);
-            config.barrelId = idx >= 0 ? idx : -1;
+            if (idx >= 0) {
+              config.barrelId = idx;
+            } else {
+              // ⭐ [FIX-3] 找不到枪管：保留原值，不清 precision
+              console.warn(
+                `⚠️ _fixConfigIdsForExport: 找不到枪管 "${config.barrel}"` +
+                `（武器 ${price.weaponId} 配置 ${config.id}），保留原 barrelId`
+              );
+              // 注意：不覆盖 config.barrelId，让调用方保留现有值
+            }
           } else {
+            // 无枪管：明确设置 -1
             config.barrelId = -1;
           }
         }
 
-        // ---------- 3.2 修正 barrel 名字（保证和 barrelId 一致）----------
+        // 修正 barrel 名字（保证和 barrelId 一致）
         if (config.barrelId >= 0 && weapon.barrels && weapon.barrels[config.barrelId]) {
           config.barrel = weapon.barrels[config.barrelId].name || '无';
-        } else {
+        } else if (config.barrelId === -1) {
           config.barrel = '无';
         }
+        // ⭐ [FIX-3] 如果 barrelId 仍是 undefined，保留原 barrel 名字
 
-        // ---------- 3.3 修正 muzzleId ----------
+        // 修正 muzzleId
         const hasMuzzleId = (config.muzzleId !== undefined && config.muzzleId !== null);
 
         if (!hasMuzzleId) {
           if (config.muzzle && config.muzzle !== '无') {
             const idx = muzzles.findIndex(m => m.name === config.muzzle);
-            config.muzzleId = idx >= 0 ? idx : 0;
+            if (idx >= 0) {
+              config.muzzleId = idx;
+            } else {
+              console.warn(
+                `⚠️ _fixConfigIdsForExport: 找不到枪口 "${config.muzzle}"` +
+                `（武器 ${price.weaponId} 配置 ${config.id}），保留原 muzzleId`
+              );
+              // 不覆盖
+            }
           } else {
             config.muzzleId = 0;
           }
         }
 
-        // ---------- 3.4 修正 muzzle 名字 ----------
+        // 修正 muzzle 名字
         if (config.muzzleId >= 0 && muzzles[config.muzzleId]) {
           config.muzzle = muzzles[config.muzzleId].name || '无';
-        } else {
-          config.muzzle = '无';
         }
 
-        // ---------- 3.5 无枪管 → precision 强制 0 ----------
+        // 无枪管 → precision 强制 0
+        // ⭐ [FIX-3] 只在明确 barrelId === -1 时清 precision
         if (config.barrelId === -1) {
           config.precision = 0;
         } else if (typeof config.precision !== 'number' || isNaN(config.precision)) {
@@ -2023,25 +2037,26 @@ export class DataManager {
   // ============================================================
 
   /**
-   * ⭐ 导出为 JSON 字符串
+   * 导出为 JSON 字符串
    *
-   * ⭐ v10：在排序前调用 _fixConfigIdsForExport
+   * ⭐ [FIX-2] output 里保证 version / updatedAt / meta 有值
+   * ⭐ [FIX-4] 导出前回写 prices[].weaponName
    */
   exportToJSON(extra = {}) {
     try {
       const dataToExport = JSON.parse(JSON.stringify(this.data));
 
-      // ---------- 清理运行时字段 ----------
+      // 清理运行时字段
       if (Array.isArray(dataToExport.weapons)) {
         dataToExport.weapons = dataToExport.weapons
           .filter(w => !w._isNewRow)
           .map(w => {
             if (w._isImported) {
-              const { _isImported, ...rest } = w
-              return rest
+              const { _isImported, ...rest } = w;
+              return rest;
             }
-            return w
-          })
+            return w;
+          });
       }
 
       if (Array.isArray(dataToExport.prices)) {
@@ -2049,19 +2064,19 @@ export class DataManager {
           if (Array.isArray(p.configs)) {
             p.configs = p.configs.map(c => {
               if (c._isImported) {
-                const { _isImported, ...rest } = c
-                return rest
+                const { _isImported, ...rest } = c;
+                return rest;
               }
-              return c
-            })
+              return c;
+            });
           }
         }
       }
 
-      // ---------- ⭐ v10：导出前修正 config 的 barrelId / muzzleId ----------
+      // 导出前修正 config 的 barrelId / muzzleId
       this._fixConfigIdsForExport(dataToExport);
 
-      // ---------- 排序 ----------
+      // 排序
       this._sortWeaponsForExport(dataToExport.weapons);
       this._sortBulletsForExport(dataToExport.bullets);
       this._sortArmorsForExport(dataToExport.armors);
@@ -2072,15 +2087,35 @@ export class DataManager {
         dataToExport.weapons.forEach(w => weaponsMap.set(w.id, w));
       }
 
+      // ⭐ [FIX-4] 导出前回写 prices[].weaponName
+      if (Array.isArray(dataToExport.prices)) {
+        for (const price of dataToExport.prices) {
+          const weapon = weaponsMap.get(price.weaponId);
+          if (weapon) {
+            price.weaponName = weapon.name;
+          } else if (!price.weaponName) {
+            // 武器都找不到，保留空字符串，避免 undefined
+            price.weaponName = '';
+          }
+        }
+      }
+
       this._sortPricesForExport(dataToExport.prices, weaponsMap);
 
       const serialized = this.serializeData(dataToExport);
 
+      // ⭐ [FIX-2] 顶层元信息保证有值
       const output = {
+        version: serialized.version || DEFAULT_DATA_VERSION,
+        updatedAt: serialized.updatedAt || new Date().toISOString().slice(0, 10),
+        meta: serialized.meta || {
+          description: 'Delta Force TTK 计算器 - 统一数据源',
+          updatedAt: new Date().toISOString(),
+        },
         ...serialized,
       };
 
-      // ---------- params ----------
+      // params
       if (extra && extra.params && typeof extra.params === 'object') {
         const cleanedParams = this._cleanParams(extra.params);
         if (Object.keys(cleanedParams).length > 0) {
@@ -2088,7 +2123,7 @@ export class DataManager {
         }
       }
 
-      // ---------- equipState ----------
+      // equipState
       if (extra && extra.equipState && typeof extra.equipState === 'object') {
         const equipState = this._validateEquipState(
           JSON.parse(JSON.stringify(extra.equipState))
@@ -2105,7 +2140,7 @@ export class DataManager {
         delete output.selectedEquips;
       }
 
-      // ---------- v7.2：综合评分数据 ----------
+      // 综合评分数据（仅导出，不导入）
       if (extra && extra.weaponScores && typeof extra.weaponScores === 'object') {
         const scoreKeys = Object.keys(extra.weaponScores);
         if (scoreKeys.length > 0) {
@@ -2153,65 +2188,79 @@ export class DataManager {
   }
 
   /**
-   * ⭐ v7.2：组装综合评分导出数据
+   * 组装综合评分导出数据
    *
-   * ⭐ v8：问题 16 - Infinity → null
-   * ⭐ v13：删除 grade 字段
+   * Infinity / NaN 显式转 null
+   *
+   * ⭐ [FIX-6] _missing 分支补全 meta 字段
    */
   _buildWeaponScoresForExport(weaponScores, havocCosts) {
-    const result = {}
+    const result = {};
 
     const entries = Object.entries(weaponScores).map(([key, val]) => {
-      // ⭐ v8：Infinity / NaN 显式转 null
-      const rawScore = val?.score
-      const score = (typeof rawScore === 'number' && isFinite(rawScore)) ? rawScore : null
-      return { key, val, score }
-    })
+      const rawScore = val?.score;
+      const score = (typeof rawScore === 'number' && isFinite(rawScore)) ? rawScore : null;
+      return { key, val, score };
+    });
 
     entries.sort((a, b) => {
-      if (a.score === null && b.score === null) return 0
-      if (a.score === null) return 1
-      if (b.score === null) return -1
-      return a.score - b.score
-    })
+      if (a.score === null && b.score === null) return 0;
+      if (a.score === null) return 1;
+      if (b.score === null) return -1;
+      return a.score - b.score;
+    });
 
     for (const { key, val } of entries) {
-      const underscoreIdx = key.indexOf('_')
-      if (underscoreIdx === -1) continue
+      const underscoreIdx = key.indexOf('_');
+      if (underscoreIdx === -1) continue;
 
-      const weaponIdStr = key.slice(0, underscoreIdx)
-      const configId = key.slice(underscoreIdx + 1)
-      const weaponId = parseInt(weaponIdStr, 10)
-      if (!isFinite(weaponId)) continue
+      const weaponIdStr = key.slice(0, underscoreIdx);
+      const configId = key.slice(underscoreIdx + 1);
+      const weaponId = parseInt(weaponIdStr, 10);
+      if (!isFinite(weaponId)) continue;
 
-      const weapon = this.getWeaponById(weaponId)
-      const priceRows = this.getPriceRowsForWeapon(weaponId) || []
-      const priceRow = priceRows.find(r => r.configId === configId)
+      const weapon = this.getWeaponById(weaponId);
+      const priceRows = this.getPriceRowsForWeapon(weaponId) || [];
+      const priceRow = priceRows.find(r => r.configId === configId);
 
       if (!weapon || !priceRow) {
+        // ⭐ [FIX-6] 补全 meta 字段
         result[key] = {
           score: val?.score ?? null,
           meta: {
             weaponId,
+            weaponName: weapon?.name || '',
             configId,
+            barrel: '',
+            barrelId: -1,
+            muzzle: '',
+            muzzleId: 0,
+            precision: 0,
+            bulletId: '',
+            bulletName: '',
+            bulletLevel: null,
+            bulletPrice: 0,
+            buildCode: '',
+            aimSpeed: 0,
+            price: 0,
+            havocCost: null,
+            enabled: false,
             _missing: true,
           }
-        }
-        continue
+        };
+        continue;
       }
 
       const bullet = priceRow.bulletId
         ? this.getBulletById(priceRow.bulletId)
-        : null
+        : null;
 
-      const havoc = havocCosts[key] || null
+      const havoc = havocCosts[key] || null;
 
-      // ⭐ v8：Infinity → null
       const havocCost = (havoc && typeof havoc.totalCost === 'number' && isFinite(havoc.totalCost))
         ? havoc.totalCost
-        : null
+        : null;
 
-      // ⭐ v13：不再输出 grade 字段
       result[key] = {
         score: (typeof val?.score === 'number' && isFinite(val.score)) ? val.score : null,
         meta: {
@@ -2233,14 +2282,14 @@ export class DataManager {
           havocCost,
           enabled: priceRow.enabled !== false,
         }
-      }
+      };
     }
 
-    return result
+    return result;
   }
 
   /**
-   * ⭐ 导出为文件
+   * 导出为文件
    */
   exportToFile(filename = null, extra = {}) {
     const jsonStr = this.exportToJSON(extra);
@@ -2259,10 +2308,13 @@ export class DataManager {
   }
 
   /**
-   * ⭐ v7.3：从 JSON 字符串导入（支持双模式）
+   * 从 JSON 字符串导入（支持双模式）
+   *
+   * @param {string} jsonStr
+   * @param {Object} options - { mode: 'overwrite' | 'merge' }
    */
   importFromJSON(jsonStr, options = {}) {
-    const mode = options.mode === 'merge' ? 'merge' : 'overwrite'
+    const mode = options.mode === 'merge' ? 'merge' : 'overwrite';
 
     try {
       const parsed = JSON.parse(jsonStr);
@@ -2326,42 +2378,42 @@ export class DataManager {
       prices: { added: 0, updated: 0, configsAdded: 0, configsUpdated: 0 },
       armors: { added: 0, updated: 0 },
       otherItems: { added: 0, updated: 0 },
-    }
+    };
 
-    const clone = (x) => JSON.parse(JSON.stringify(x))
+    const clone = (x) => JSON.parse(JSON.stringify(x));
 
     // ---------- 1. 武器 ----------
-    const weaponMap = new Map(this.data.weapons.map(w => [w.id, w]))
+    const weaponMap = new Map(this.data.weapons.map(w => [w.id, w]));
     for (const impW of imported.weapons || []) {
-      const imp = clone(impW)
+      const imp = clone(impW);
       if (weaponMap.has(imp.id)) {
-        Object.assign(weaponMap.get(imp.id), imp)
-        stats.weapons.updated++
+        Object.assign(weaponMap.get(imp.id), imp);
+        stats.weapons.updated++;
       } else {
-        this.data.weapons.push({ ...imp, _isImported: true })
-        stats.weapons.added++
+        this.data.weapons.push({ ...imp, _isImported: true });
+        stats.weapons.added++;
       }
     }
 
     // ---------- 2. 子弹 ----------
-    const bulletMap = new Map(this.data.bullets.map(b => [b.id, b]))
+    const bulletMap = new Map(this.data.bullets.map(b => [b.id, b]));
     for (const impB of imported.bullets || []) {
-      const imp = clone(impB)
+      const imp = clone(impB);
       if (bulletMap.has(imp.id)) {
-        Object.assign(bulletMap.get(imp.id), imp)
-        stats.bullets.updated++
+        Object.assign(bulletMap.get(imp.id), imp);
+        stats.bullets.updated++;
       } else {
-        this.data.bullets.push(imp)
-        stats.bullets.added++
+        this.data.bullets.push(imp);
+        stats.bullets.added++;
       }
     }
 
     // ---------- 3. 价格配置 ----------
-    const priceMap = new Map(this.data.prices.map(p => [p.weaponId, p]))
+    const priceMap = new Map(this.data.prices.map(p => [p.weaponId, p]));
 
     for (const impPrice of imported.prices || []) {
-      const wid = impPrice.weaponId
-      let localPrice = priceMap.get(wid)
+      const wid = impPrice.weaponId;
+      let localPrice = priceMap.get(wid);
 
       if (!localPrice) {
         const newPrice = {
@@ -2371,71 +2423,91 @@ export class DataManager {
             ...clone(c),
             _isImported: true,
           })),
-        }
-        this.data.prices.push(newPrice)
-        priceMap.set(wid, newPrice)
-        stats.prices.added++
-        stats.prices.configsAdded += newPrice.configs.length
-        continue
+        };
+        this.data.prices.push(newPrice);
+        priceMap.set(wid, newPrice);
+        stats.prices.added++;
+        stats.prices.configsAdded += newPrice.configs.length;
+        continue;
       }
 
-      const localCfgMap = new Map((localPrice.configs || []).map(c => [c.id, c]))
+      const localCfgMap = new Map((localPrice.configs || []).map(c => [c.id, c]));
       for (const impCfg of impPrice.configs || []) {
-        const cfgId = impCfg.id
-        const imp = clone(impCfg)
+        const cfgId = impCfg.id;
+        const imp = clone(impCfg);
 
         if (localCfgMap.has(cfgId)) {
-          Object.assign(localCfgMap.get(cfgId), imp)
-          stats.prices.configsUpdated++
+          Object.assign(localCfgMap.get(cfgId), imp);
+          stats.prices.configsUpdated++;
         } else {
-          localPrice.configs.push({ ...imp, _isImported: true })
-          stats.prices.configsAdded++
+          localPrice.configs.push({ ...imp, _isImported: true });
+          stats.prices.configsAdded++;
         }
+      }
+
+      // ⭐ 增量导入时，若本地 weaponName 为空，用文件里的补上
+      if (!localPrice.weaponName && impPrice.weaponName) {
+        localPrice.weaponName = impPrice.weaponName;
       }
     }
 
     // ---------- 4. 护甲 ----------
-    const armorMap = new Map(this.data.armors.map(a => [a.id, a]))
+    const armorMap = new Map(this.data.armors.map(a => [a.id, a]));
     for (const impA of imported.armors || []) {
-      const imp = clone(impA)
+      const imp = clone(impA);
       if (armorMap.has(imp.id)) {
-        Object.assign(armorMap.get(imp.id), imp)
-        stats.armors.updated++
+        Object.assign(armorMap.get(imp.id), imp);
+        stats.armors.updated++;
       } else {
-        this.data.armors.push(imp)
-        stats.armors.added++
+        this.data.armors.push(imp);
+        stats.armors.added++;
       }
     }
 
     // ---------- 5. 其他物品 ----------
-    const otherMap = new Map(this.data.otherItems.map(i => [i.id, i]))
+    const otherMap = new Map(this.data.otherItems.map(i => [i.id, i]));
     for (const impI of imported.otherItems || []) {
-      const imp = clone(impI)
+      const imp = clone(impI);
       if (otherMap.has(imp.id)) {
-        Object.assign(otherMap.get(imp.id), imp)
-        stats.otherItems.updated++
+        Object.assign(otherMap.get(imp.id), imp);
+        stats.otherItems.updated++;
       } else {
-        this.data.otherItems.push(imp)
-        stats.otherItems.added++
+        this.data.otherItems.push(imp);
+        stats.otherItems.added++;
       }
     }
 
-    // ---------- 6. 更新 originalData ----------
-    this.originalData = JSON.parse(JSON.stringify(this.data))
-    this.isLoaded = true
-    this.clearAllModified()
-
-    // ---------- 7. 提取 params / equipState ----------
-    let params = null
-    if (imported.params && typeof imported.params === 'object') {
-      params = this._cleanParams(imported.params)
+    // ---------- 6. ⭐ [FIX-1] 更新顶层元信息 ----------
+    if (imported.version !== undefined) {
+      this.data.version = imported.version;
+    }
+    if (imported.updatedAt !== undefined) {
+      this.data.updatedAt = imported.updatedAt;
+    }
+    if (imported.meta !== undefined && typeof imported.meta === 'object') {
+      // 合并 meta：本地有的保留，文件有的覆盖
+      this.data.meta = {
+        ...(this.data.meta || {}),
+        ...imported.meta,
+      };
     }
 
-    let equipState = null
+    // ---------- 7. 更新 originalData ----------
+    this.originalData = JSON.parse(JSON.stringify(this.data));
+    this.isLoaded = true;
+    this.clearAllModified();
+
+    // ---------- 8. 提取 params / equipState ----------
+    let params = null;
+    if (imported.params && typeof imported.params === 'object') {
+      params = this._cleanParams(imported.params);
+    }
+
+    let equipState = null;
     if (imported.equipState && typeof imported.equipState === 'object') {
-      equipState = this._validateEquipState(imported.equipState)
+      equipState = this._validateEquipState(imported.equipState);
     } else if (Array.isArray(imported.selectedEquips)) {
-      equipState = this._validateEquipState({ scoreEquips: imported.selectedEquips })
+      equipState = this._validateEquipState({ scoreEquips: imported.selectedEquips });
     }
 
     console.log(
@@ -2444,35 +2516,35 @@ export class DataManager {
       `配置 +${stats.prices.configsAdded}/~${stats.prices.configsUpdated}, ` +
       `子弹 +${stats.bullets.added}/~${stats.bullets.updated}, ` +
       `护甲 +${stats.armors.added}/~${stats.armors.updated}`
-    )
+    );
 
-    return { data: this.data, params, equipState, stats, mode: 'merge' }
+    return { data: this.data, params, equipState, stats, mode: 'merge' };
   }
 
   /**
-   * ⭐ v7.3：清除所有导入标记
+   * 清除所有导入标记（_isImported）
    */
   clearImportMarks() {
-    let count = 0
+    let count = 0;
 
     for (const w of this.data.weapons || []) {
       if (w._isImported) {
-        delete w._isImported
-        count++
+        delete w._isImported;
+        count++;
       }
     }
 
     for (const p of this.data.prices || []) {
       for (const c of p.configs || []) {
         if (c._isImported) {
-          delete c._isImported
-          count++
+          delete c._isImported;
+          count++;
         }
       }
     }
 
-    console.log(`🧹 已清除 ${count} 个导入标记`)
-    return count
+    console.log(`🧹 已清除 ${count} 个导入标记`);
+    return count;
   }
 
   importFromFile(file) {
@@ -2546,53 +2618,55 @@ export class DataManager {
 
     if (this.getBulletById(str)) return str;
 
-    const idInParens = str.match(/\(([^()]+)\)$/)
+    const idInParens = str.match(/\(([^()]+)\)$/);
     if (idInParens) {
-      const maybeId = idInParens[1].trim()
-      if (this.getBulletById(maybeId)) return maybeId
+      const maybeId = idInParens[1].trim();
+      if (this.getBulletById(maybeId)) return maybeId;
     }
 
-    const match = str.match(/^(.+?)\s+Lv\.(\S+)(?:\s+(.+))?$/)
+    const match = str.match(/^(.+?)\s+Lv\.(\S+)(?:\s+(.+))?$/);
     if (match) {
-      const caliber = match[1].trim()
-      const level = match[2].trim()
-      const name = match[3] ? match[3].trim() : null
+      const caliber = match[1].trim();
+      const level = match[2].trim();
+      const name = match[3] ? match[3].trim() : null;
 
       if (name) {
         const exact = this.data.bullets.find(b =>
           b.caliber === caliber &&
           String(b.level) === level &&
           (b.name || '') === name
-        )
-        if (exact) return exact.id
+        );
+        if (exact) return exact.id;
       }
 
       const candidates = this.data.bullets.filter(b =>
         b.caliber === caliber && String(b.level) === level
-      )
+      );
       if (candidates.length > 0) {
-        const defaultBullet = candidates.find(b => b.isDefault === true)
-        return (defaultBullet || candidates[0]).id
+        const defaultBullet = candidates.find(b => b.isDefault === true);
+        return (defaultBullet || candidates[0]).id;
       }
 
-      const normalizedCaliber = caliber.replace(/mm$/i, '').toLowerCase()
+      const normalizedCaliber = caliber.replace(/mm$/i, '').toLowerCase();
       const byNormalized = this.data.bullets.find(b => {
-        const bCal = String(b.caliber).replace(/mm$/i, '').toLowerCase()
-        return bCal === normalizedCaliber && String(b.level) === level
-      })
-      if (byNormalized) return byNormalized.id
+        const bCal = String(b.caliber).replace(/mm$/i, '').toLowerCase();
+        return bCal === normalizedCaliber && String(b.level) === level;
+      });
+      if (byNormalized) return byNormalized.id;
     }
 
     for (const b of this.data.bullets) {
-      const display = this.getBulletDisplay(b)
-      if (display === str) return b.id
+      const display = this.getBulletDisplay(b);
+      if (display === str) return b.id;
     }
 
-    return null
+    return null;
   }
 }
 
+// ============================================================
 // 导出单例
+// ============================================================
 let dataManagerInstance = null;
 
 export function getDataManager() {

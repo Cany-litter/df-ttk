@@ -30,7 +30,7 @@
           </button>
         </div>
 
-        <!-- ⭐ TTK 分解 -->
+        <!-- TTK 分解 -->
         <div v-if="simResult" class="ttk-breakdown">
           <div class="breakdown-item">
             <span class="breakdown-label">飞行延迟</span>
@@ -54,9 +54,7 @@
           </div>
         </div>
 
-        <!-- ============================================================ -->
-        <!-- ⭐ 桌面：9 列明细表 -->
-        <!-- ============================================================ -->
+        <!-- 桌面：9 列明细表 -->
         <table v-if="!isMobile" class="step-table">
           <thead>
             <tr>
@@ -242,9 +240,7 @@
           </tbody>
         </table>
 
-        <!-- ============================================================ -->
-        <!-- ⭐ 移动端：每发一个紧凑块（两行制） -->
-        <!-- ============================================================ -->
+        <!-- 移动端：每发一个紧凑块 -->
         <div v-else class="step-list">
           <template v-for="(s, idx) in simResult?.steps || []" :key="idx">
             <!-- 连发间隔分隔行 -->
@@ -424,9 +420,406 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { dataStore, paramsStore, equipStore } from '@/stores/stores'
-import { SimulationEngine } from '@/core/SimulationEngine'
-import { BulletStrategyFactory, setSeed } from '@/core/SimulationEngine'
 import { calculateCurrentValues } from '@/utils/weaponCalc'
+
+// ============================================================
+// 单次模拟核心（原 SimulationEngine.js 内联）
+// ============================================================
+
+// ---------- RNG ----------
+let currentSeed = 12345
+
+function setSeed(seed) {
+  currentSeed = seed
+}
+
+function seededRandom() {
+  currentSeed = (1664525 * currentSeed + 1013904223) % Math.pow(2, 32)
+  return currentSeed / Math.pow(2, 32)
+}
+
+// ---------- 距离衰减 ----------
+class DistanceDecayCalculator {
+  static calculate(distance, weapon) {
+    const { ranges, decays } = weapon
+    if (distance < ranges[0]) return decays[0]
+    if (distance < ranges[1]) return decays[1]
+    if (distance < ranges[2]) return decays[2]
+    if (distance < ranges[3]) return decays[3]
+    return decays[4]
+  }
+}
+
+// ---------- 护甲减伤 ----------
+class ArmorDamageCalculator {
+  static calculate(pureDamage, penDamage, armorDamage, armorValue) {
+    if (armorDamage >= armorValue) {
+      const frac = armorValue / armorDamage
+      return {
+        finalDamage: frac * penDamage + (1 - frac) * pureDamage,
+        remainingArmor: 0,
+      }
+    }
+    return {
+      finalDamage: penDamage,
+      remainingArmor: armorValue - armorDamage,
+    }
+  }
+}
+
+// ---------- 命中部位选择 ----------
+class HitPartSelector {
+  static select(hitProb) {
+    const rnd = seededRandom()
+    let sum = 0
+    for (const key of ['head', 'chest', 'stomach', 'limbs']) {
+      sum += hitProb[key]
+      if (rnd <= sum) return key
+    }
+    return 'chest'
+  }
+
+  static selectWithBias(referencePart, hitProb, biasStrength = 0.7) {
+    const parts = ['head', 'chest', 'stomach', 'limbs']
+    const partIndex = parts.indexOf(referencePart)
+    if (partIndex === -1) return this.select(hitProb)
+
+    if (seededRandom() < biasStrength) return referencePart
+
+    const direction = seededRandom() < 0.5 ? -1 : 1
+    let newIndex = partIndex + direction
+    if (newIndex < 0) newIndex = 1
+    else if (newIndex >= parts.length) newIndex = parts.length - 2
+    if (newIndex === partIndex) return referencePart
+    return parts[newIndex]
+  }
+}
+
+// ---------- 子弹策略 ----------
+function getPartMult(bulletData, hitPart) {
+  const pm = bulletData?.partMult
+  if (!pm || typeof pm !== 'object') return 1
+  const v = pm[hitPart]
+  return (typeof v === 'number' && isFinite(v)) ? v : 1
+}
+
+class RIPBulletStrategy {
+  static calculateHitDamageWithPart(weapon, params, bulletData, decay, hitPart, armorState, collectDebug = false) {
+    const fixedHitPart = 'limbs'
+    const partMult = getPartMult(bulletData, fixedHitPart)
+    const weaponMult = weapon.mult[fixedHitPart] || 1
+    const baseF = weapon.flesh * partMult * weaponMult
+    const pureDamage = baseF * decay
+
+    const result = {
+      damage: pureDamage,
+      newArmorState: { ...armorState },
+      hitPart: fixedHitPart,
+    }
+
+    if (collectDebug) {
+      result.debug = {
+        hitPart: fixedHitPart,
+        mult: weaponMult,
+        partMult,
+        weaponFlesh: weapon.flesh,
+        baseDamage: baseF,
+        decay,
+        pureDamage,
+        pen: null,
+        penDamage: null,
+        armorDamage: null,
+        armorBefore: null,
+        armorAfter: null,
+        armorBroken: false,
+        ignoreArmor: true,
+      }
+    }
+    return result
+  }
+}
+
+class StandardBulletStrategy {
+  static calculateHitDamageWithPart(weapon, params, bulletData, decay, hitPart, armorState, collectDebug = false) {
+    const { armorLevel, helmetLevel } = params
+    const { armorVal, helmetVal } = armorState
+
+    const partMult = getPartMult(bulletData, hitPart)
+    const weaponMult = weapon.mult[hitPart] || 1
+    const baseF = weapon.flesh * partMult * weaponMult
+    const pureDamage = baseF * decay
+
+    const armorData = bulletData?.armorData || {}
+    const armorLevelStr = String(armorLevel)
+    const helmetLevelStr = String(helmetLevel)
+    const armorLevelData = armorData[armorLevelStr] || { pen: 0 }
+    const helmetLevelData = armorData[helmetLevelStr] || { pen: 0 }
+
+    const pen = hitPart === 'head' ? helmetLevelData.pen : armorLevelData.pen
+    const armorMult = hitPart === 'head' ? helmetLevelData.armorMult : armorLevelData.armorMult
+    const penDamage = pureDamage * pen
+
+    let finalDamage
+    let newArmorState = { ...armorState }
+    let armorBefore = null
+    let armorAfter = null
+    let armorBroken = false
+    let armorDamage = null
+
+    if (hitPart === 'limbs') {
+      finalDamage = pureDamage
+    } else if (hitPart === 'head') {
+      if (helmetVal <= 0) {
+        finalDamage = pureDamage
+        armorBefore = helmetVal
+        armorAfter = 0
+      } else {
+        const helmetD = weapon.armor * (armorMult || 1)
+        armorBefore = helmetVal
+        armorDamage = helmetD
+        const r = ArmorDamageCalculator.calculate(pureDamage, penDamage, helmetD, helmetVal)
+        finalDamage = r.finalDamage
+        newArmorState.helmetVal = r.remainingArmor
+        armorAfter = r.remainingArmor
+        armorBroken = r.remainingArmor <= 0 && helmetD >= helmetVal
+      }
+    } else {
+      if (armorVal <= 0) {
+        finalDamage = pureDamage
+        armorBefore = armorVal
+        armorAfter = 0
+      } else {
+        const armorD = weapon.armor * (armorMult || 1)
+        armorBefore = armorVal
+        armorDamage = armorD
+        const r = ArmorDamageCalculator.calculate(pureDamage, penDamage, armorD, armorVal)
+        finalDamage = r.finalDamage
+        newArmorState.armorVal = r.remainingArmor
+        armorAfter = r.remainingArmor
+        armorBroken = r.remainingArmor <= 0 && armorD >= armorVal
+      }
+    }
+
+    const response = { damage: finalDamage, newArmorState, hitPart }
+
+    if (collectDebug) {
+      response.debug = {
+        hitPart,
+        mult: weaponMult,
+        partMult,
+        weaponFlesh: weapon.flesh,
+        baseDamage: baseF,
+        decay,
+        pureDamage,
+        pen,
+        penDamage,
+        armorDamage,
+        armorBefore,
+        armorAfter,
+        armorBroken,
+        ignoreArmor: hitPart === 'limbs',
+      }
+    }
+    return response
+  }
+}
+
+class BulletStrategyFactory {
+  static getStrategy(bulletType, bulletData = null) {
+    const key = String(bulletData?.name || bulletType || '')
+    if (/RIP|CT/i.test(key)) return RIPBulletStrategy
+    return StandardBulletStrategy
+  }
+}
+
+// ---------- 时间间隔计算 ----------
+function getIntervalAfterShot(weapon, shot, isBurstMode) {
+  if (isBurstMode) {
+    return 60 / weapon.burstInternalROF
+  }
+
+  const baseRof = weapon._current?.rof ?? weapon.rof ?? 600
+  const stages = weapon._current?.rofStages ?? weapon.rofStages
+
+  if (!stages || !Array.isArray(stages) || stages.length === 0) {
+    return 60 / baseRof
+  }
+
+  let rofAdd = 0
+  for (const stage of stages) {
+    if (stage.untilShot === undefined || stage.untilShot === null || shot <= stage.untilShot) {
+      rofAdd = stage.rofAdd || 0
+      break
+    }
+  }
+
+  const effectiveRof = baseRof + rofAdd
+  if (!isFinite(effectiveRof) || effectiveRof <= 0) {
+    return 60 / baseRof
+  }
+  return 60 / effectiveRof
+}
+
+function updateBurstInterval(weapon, currentShot, burstStats) {
+  if (currentShot <= weapon.burstCount) {
+    return
+  }
+  if (currentShot % weapon.burstCount === 1) {
+    burstStats.count += 1
+    burstStats.totalTime += weapon.burstInterval
+  }
+}
+
+// ---------- 单次模拟（记录模式） ----------
+function simulateOneTTKWithDetail(weapon, params, bulletStrategy, bulletData) {
+  let health = params.healthValue || 100
+  let armorState = {
+    armorVal: params.armorValue,
+    helmetVal: params.helmetValue,
+  }
+
+  const { distance, hitProb } = params
+
+  const hitRate = (typeof params.hitRate === 'number')
+    ? params.hitRate
+    : (typeof weapon.hitRate === 'number' ? weapon.hitRate : 0.85)
+
+  const isBurstMode = weapon.fireMode === 'burst' && weapon.burstCount && weapon.burstInternalROF
+  const decay = DistanceDecayCalculator.calculate(distance, weapon)
+
+  const velocity = weapon._current?.velocity ?? weapon.velocity ?? 575
+  const flightTime = distance / velocity
+
+  let shots = 0
+  let hits = 0
+  let burstStats = { count: 0, totalTime: 0 }
+
+  let firstHitPartInBurst = null
+  let burstShots = 0
+  const BURST_BIAS = 0.7
+
+  const steps = []
+  let shootingIntervalTotal = 0
+
+  while (health > 0) {
+    shots++
+    burstShots++
+
+    // 判断本发之前是否插入了连发间隔
+    let burstGapBefore = 0
+    if (isBurstMode) {
+      const isNewBurstStart = (shots > weapon.burstCount) && (shots % weapon.burstCount === 1)
+      if (isNewBurstStart) {
+        burstGapBefore = weapon.burstInterval
+      }
+      updateBurstInterval(weapon, shots, burstStats)
+    }
+
+    // 计算本发之前的射击间隔（由上一发所属阶段决定）
+    let shotIntervalBefore = 0
+    if (shots > 1 && burstGapBefore === 0) {
+      shotIntervalBefore = getIntervalAfterShot(weapon, shots - 1, isBurstMode)
+      if (!isBurstMode) {
+        shootingIntervalTotal += shotIntervalBefore
+      }
+    }
+
+    // 命中率判断
+    if (seededRandom() > hitRate) {
+      steps.push({
+        shot: shots,
+        hit: false,
+        hitPart: null,
+        finalDamage: 0,
+        health,
+        armorVal: armorState.armorVal,
+        helmetVal: armorState.helmetVal,
+        burstGapBefore,
+        shotIntervalBefore,
+        debug: null,
+      })
+      continue
+    }
+
+    // 命中
+    hits++
+
+    // 部位选择
+    let hitPart
+    if (isBurstMode) {
+      const isBurstStart = (burstShots % weapon.burstCount === 1)
+      if (isBurstStart) {
+        firstHitPartInBurst = HitPartSelector.select(hitProb)
+        hitPart = firstHitPartInBurst
+      } else {
+        hitPart = HitPartSelector.selectWithBias(
+          firstHitPartInBurst,
+          hitProb,
+          BURST_BIAS
+        )
+      }
+    } else {
+      hitPart = HitPartSelector.select(hitProb)
+    }
+
+    // 调用策略时传 collectDebug = true
+    const { damage, newArmorState, debug } = bulletStrategy.calculateHitDamageWithPart(
+      weapon, params, bulletData, decay, hitPart, armorState, true
+    )
+
+    health -= damage
+    if (health < 0) health = 0
+    armorState = newArmorState
+
+    steps.push({
+      shot: shots,
+      hit: true,
+      hitPart,
+      finalDamage: damage,
+      health,
+      armorVal: armorState.armorVal,
+      helmetVal: armorState.helmetVal,
+      burstGapBefore,
+      shotIntervalBefore,
+      debug,
+    })
+  }
+
+  // 总时间
+  let shootingIntervalTime
+  if (isBurstMode) {
+    const burstIntervalCount = burstStats.count
+    const shotInterval = 60 / weapon.burstInternalROF
+    shootingIntervalTime = shotInterval * (shots - 1 - burstIntervalCount)
+  } else {
+    shootingIntervalTime = shootingIntervalTotal
+  }
+
+  const totalTime = flightTime + shootingIntervalTime + burstStats.totalTime
+
+  return {
+    steps,
+    totalTime,
+    totalTimeMs: totalTime * 1000,
+    shots,
+    hits,
+    misses: shots - hits,
+    finalHealth: health,
+    finalArmorVal: armorState.armorVal,
+    finalHelmetVal: armorState.helmetVal,
+    isBurstMode,
+    flightTime,
+    shotInterval: shots > 1 ? shootingIntervalTime / (shots - 1) : 0,
+    burstInterval: isBurstMode ? weapon.burstInterval : 0,
+    burstIntervalCount: burstStats.count,
+    burstIntervalTotal: burstStats.totalTime,
+    shootingIntervalTime,
+  }
+}
+
+// ============================================================
+// 组件业务逻辑
+// ============================================================
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -449,7 +842,7 @@ const triggerDelayRaw = ref(0)
 // 固定的"首次打开"种子
 const INITIAL_SEED = 12345
 
-// ⭐ 是否为移动端（视口宽度 <= 768）
+// 是否为移动端
 const isMobile = ref(false)
 const updateIsMobile = () => {
   isMobile.value = window.innerWidth <= 768
@@ -470,7 +863,6 @@ const weaponName = computed(() => {
   return w?.name || '未知武器'
 })
 
-// ⭐ v7：从 equipStore.calcEquip 读护甲头盔等级
 const armorLevel = computed(() => {
   const eq = equipStore.state.calcEquip
   return eq?.armorLevel ?? 4
@@ -541,9 +933,7 @@ const intervalToRof = (intervalSec) => {
 }
 
 // ============================================================
-// ⭐ v7：获取当前"计算装备"（含兜底）
-//
-// 从 equipStore.calcEquip 读护甲头盔，没选时用默认值兜底
+// 获取当前"计算装备"（含兜底）
 // ============================================================
 const getCalcEquip = () => {
   const eq = equipStore.state.calcEquip
@@ -603,14 +993,14 @@ const runSimulation = (seed) => {
 
   const params = paramsStore.state
 
-  // ⭐ v7：把 equipStore.calcEquip 的 4 个字段合并进 simParams
+  // 把 equipStore.calcEquip 的 4 个字段合并进 simParams
   const calcEquip = getCalcEquip()
 
-  const bulletKey = SimulationEngine.getRealBulletKey(
+  // 用 dm.getRealBulletKey
+  const bulletKey = dm.getRealBulletKey(
     bulletIdFromRow,
     armedWeapon,
-    params,
-    dm
+    params
   )
   if (!bulletKey) {
     console.warn('⚠️ 未匹配到子弹')
@@ -634,7 +1024,6 @@ const runSimulation = (seed) => {
 
   const simParams = {
     ...params,
-    // ⭐ v7：覆盖护甲头盔
     armorLevel: calcEquip.armorLevel,
     armorValue: calcEquip.armorValue,
     helmetLevel: calcEquip.helmetLevel,
@@ -645,7 +1034,7 @@ const runSimulation = (seed) => {
 
   setSeed(seed)
   const strategy = BulletStrategyFactory.getStrategy(bulletKey, bulletData)
-  const result = SimulationEngine.simulateOneTTKWithDetail(
+  const result = simulateOneTTKWithDetail(
     armedWeapon,
     simParams,
     strategy,
@@ -696,7 +1085,7 @@ watch(
   }
 )
 
-// ⭐ v7：calcEquip 变化时，弹窗打开状态下也重跑
+// calcEquip 变化时，弹窗打开状态下也重跑
 watch(
   () => equipStore.state.calcEquip,
   () => {
@@ -708,7 +1097,7 @@ watch(
 
 <style scoped>
 /* ============================================================
-   样式部分与之前完全相同，未改动
+   样式部分与原来完全相同，未改动
    ============================================================ */
 
 .modal-overlay {
