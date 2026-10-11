@@ -97,7 +97,7 @@
           <span class="unit"></span>
         </div>
 
-        <!-- ⭐ 第 5 行：开火模式 / 连发数 / 内部射速 / 连发间隔 -->
+        <!-- 第 5 行：开火模式 / 连发数 / 内部射速 / 连发间隔 -->
         <div class="edit-row row-4cols">
           <span class="label">模式</span>
           <select v-model="form.fireMode" class="edit-select">
@@ -136,6 +136,19 @@
             :disabled="!isBurstMode"
           />
           <span class="unit">s</span>
+        </div>
+
+        <!-- ⭐ 第 6 行：开火稳定性（武器级） -->
+        <div class="edit-row row-2cols">
+          <span class="label">开火稳定性</span>
+          <input
+            v-model.number="form.baseStability"
+            type="number"
+            class="edit-input num"
+            step="0.01"
+            min="0"
+          />
+          <span class="unit"></span>
         </div>
       </div>
 
@@ -196,7 +209,9 @@ const form = ref({
   fireMode: '',
   burstCount: 3,
   burstInternalROF: 800,
-  burstInterval: 0.1
+  burstInterval: 0.1,
+  // ⭐ 武器级：基础开火稳定性
+  baseStability: 1.0
 })
 
 // 射程/衰减的显示字符串
@@ -263,7 +278,11 @@ const loadWeapon = () => {
     fireMode: weapon.fireMode || '',
     burstCount: weapon.burstCount ?? 3,
     burstInternalROF: weapon.burstInternalROF ?? 800,
-    burstInterval: weapon.burstInterval ?? 0.1
+    burstInterval: weapon.burstInterval ?? 0.1,
+    // ⭐ 武器级：基础开火稳定性（缺省 1.0）
+    baseStability: (typeof weapon.baseStability === 'number' && isFinite(weapon.baseStability))
+      ? weapon.baseStability
+      : 1.0
   }
 
   rangesDisplay.value = fmtRanges(form.value.ranges)
@@ -328,7 +347,10 @@ const save = async () => {
     fireMode,
     burstCount: isBurst ? form.value.burstCount : null,
     burstInternalROF: isBurst ? form.value.burstInternalROF : null,
-    burstInterval: isBurst ? form.value.burstInterval : null
+    burstInterval: isBurst ? form.value.burstInterval : null,
+
+    // ⭐ 武器级：基础开火稳定性
+    baseStability: form.value.baseStability
   }
 
   const ok = dm.updateWeapon(props.weaponId, updates)
@@ -432,7 +454,7 @@ const close = () => {
 }
 
 /* ============================================================
-   5 行布局（Grid 严格对齐）
+   6 行布局（Grid 严格对齐）
    ============================================================ */
 .edit-row {
   display: grid;
@@ -453,7 +475,7 @@ const close = () => {
     42px minmax(0, 1fr) 38px;
 }
 
-/* 2 列（第 3 行） */
+/* 2 列（第 3、6 行） */
 .edit-row.row-2cols {
   grid-template-columns:
     42px minmax(0, 1fr) 38px

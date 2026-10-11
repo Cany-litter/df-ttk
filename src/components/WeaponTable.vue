@@ -492,33 +492,6 @@
               </div>
 
               <span class="fld">
-                <span class="k">开镜</span>
-                <input
-                  type="number"
-                  class="inline-input aim-input"
-                  :value="cfg.aimSpeed"
-                  min="0"
-                  step="1"
-                  @click.stop
-                  @change="updateConfigField(index, cfg.configId, 'aimSpeed', parseFloat($event.target.value) || 0)"
-                />
-                <span class="unit-tiny">ms</span>
-              </span>
-
-              <span class="fld">
-                <span class="k">价格</span>
-                <input
-                  type="number"
-                  class="inline-input price-input"
-                  :value="cfg.price / 10000"
-                  step="0.1" min="0"
-                  @click.stop
-                  @change="updateConfigField(index, cfg.configId, 'price', parseFloat($event.target.value) * 10000)"
-                />
-                <span class="price-unit">W</span>
-              </span>
-
-              <span class="fld">
                 <span class="k">子弹</span>
                 <select
                   class="inline-select"
@@ -563,6 +536,10 @@
               </span>
 
               <div class="config-actions">
+                <button
+                  class="cfg-btn extra"
+                  @click.stop="openExtraData(index, cfg.configId)"
+                >其他数据</button>
                 <button
                   class="cfg-btn detail"
                   @click.stop="showDetail(index, cfg.configId)"
@@ -861,31 +838,6 @@
                     />
                   </div>
                   <div class="cfg-mobile-row">
-                    <span class="k">开镜</span>
-                    <input
-                      type="number"
-                      class="inline-input"
-                      :value="cfg.aimSpeed"
-                      min="0"
-                      step="1"
-                      @click.stop
-                      @change="updateConfigField(index, cfg.configId, 'aimSpeed', parseFloat($event.target.value) || 0)"
-                    />
-                    <span class="k">ms</span>
-                  </div>
-                  <div class="cfg-mobile-row">
-                    <span class="k">价格</span>
-                    <input
-                      type="number"
-                      class="inline-input"
-                      :value="cfg.price / 10000"
-                      step="0.1"
-                      @click.stop
-                      @change="updateConfigField(index, cfg.configId, 'price', parseFloat($event.target.value) * 10000)"
-                    />
-                    <span class="k">W</span>
-                  </div>
-                  <div class="cfg-mobile-row">
                     <span class="k">子弹</span>
                     <select
                       class="inline-select flex-1"
@@ -925,6 +877,7 @@
                     </template>
                     <span v-else class="v overall-empty">—</span>
                     <div class="config-actions">
+                      <button class="cfg-btn extra" @click.stop="openExtraData(index, cfg.configId)">其他数据</button>
                       <button class="cfg-btn detail" @click.stop="showDetail(index, cfg.configId)">模拟</button>
                       <button class="cfg-btn del" @click.stop="deleteConfig(index, cfg.configId)">删除</button>
                     </div>
@@ -958,6 +911,180 @@
         </template>
       </div>
     </div>
+
+    <!-- ============================================================ -->
+    <!-- ⭐ 其他数据弹窗（全局一个） -->
+    <!-- ============================================================ -->
+    <Teleport to="body">
+      <div
+        v-if="showExtraData"
+        class="extra-data-overlay"
+        @click.self="closeExtraData"
+      >
+        <div class="extra-data-modal">
+          <div class="extra-data-header">
+            <h3 class="extra-data-title">
+              其他数据 · {{ extraDataTitle }}
+            </h3>
+            <button class="extra-data-close" @click="closeExtraData">&times;</button>
+          </div>
+
+          <div class="extra-data-body">
+            <!-- 价格 -->
+            <div class="extra-row">
+              <label>价格</label>
+              <div class="extra-input-wrap">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  :value="extraForm.priceInW"
+                  @blur="onExtraBlur('price', $event)"
+                />
+                <span class="unit">W</span>
+              </div>
+            </div>
+
+            <!-- 开镜时间 -->
+            <div class="extra-row">
+              <label>开镜时间</label>
+              <div class="extra-input-wrap">
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  :value="extraForm.aimSpeed"
+                  @blur="onExtraBlur('aimSpeed', $event)"
+                />
+                <span class="unit">ms</span>
+              </div>
+            </div>
+
+            <!-- 呼吸晃动 -->
+            <div class="extra-row">
+              <label>呼吸晃动</label>
+              <div class="extra-input-wrap">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  :value="extraForm.breathSway"
+                  placeholder="未填"
+                  @blur="onExtraBlur('breathSway', $event)"
+                />
+              </div>
+            </div>
+
+            <!-- 屏息时长 -->
+            <div class="extra-row">
+              <label>屏息时长</label>
+              <div class="extra-input-wrap">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  :value="extraForm.breathHoldDuration"
+                  placeholder="未填"
+                  @blur="onExtraBlur('breathHoldDuration', $event)"
+                />
+                <span class="unit">s</span>
+              </div>
+            </div>
+
+            <!-- 屏息后坐力减免 -->
+            <div class="extra-row">
+              <label>屏息减免</label>
+              <div class="extra-input-wrap">
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  max="1"
+                  :value="extraForm.breathHoldReduction"
+                  placeholder="未填"
+                  @blur="onExtraBlur('breathHoldReduction', $event)"
+                />
+              </div>
+            </div>
+
+            <!-- ⭐ 垂后(自) -->
+            <div class="extra-row">
+              <label>垂后(自)</label>
+              <div class="extra-input-wrap">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  :value="extraForm.recoilVerticalAuto"
+                  placeholder="未填"
+                  @blur="onExtraBlur('recoilVerticalAuto', $event)"
+                />
+              </div>
+            </div>
+
+            <!-- ⭐ 水后(自) -->
+            <div class="extra-row">
+              <label>水后(自)</label>
+              <div class="extra-input-wrap">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  :value="extraForm.recoilHorizontalAuto"
+                  placeholder="未填"
+                  @blur="onExtraBlur('recoilHorizontalAuto', $event)"
+                />
+              </div>
+            </div>
+
+            <!-- ⭐ 垂后(单) -->
+            <div class="extra-row">
+              <label>垂后(单)</label>
+              <div class="extra-input-wrap">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  :value="extraForm.recoilVerticalBurst"
+                  placeholder="未填"
+                  @blur="onExtraBlur('recoilVerticalBurst', $event)"
+                />
+              </div>
+            </div>
+
+            <!-- ⭐ 水后(单) -->
+            <div class="extra-row">
+              <label>水后(单)</label>
+              <div class="extra-input-wrap">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  :value="extraForm.recoilHorizontalBurst"
+                  placeholder="未填"
+                  @blur="onExtraBlur('recoilHorizontalBurst', $event)"
+                />
+              </div>
+            </div>
+
+            <!-- ⭐ 开火稳定性倍率 -->
+            <div class="extra-row">
+              <label>开火稳定性</label>
+              <div class="extra-input-wrap">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  :value="extraForm.stabilityMultiplier"
+                  placeholder="未填"
+                  @blur="onExtraBlur('stabilityMultiplier', $event)"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -2183,6 +2310,143 @@ const fallbackCopy = (text) => {
 }
 
 // ============================================================
+// ⭐ 其他数据弹窗
+// ============================================================
+
+const showExtraData = ref(false)
+const extraDataWeaponId = ref(null)
+const extraDataConfigId = ref(null)
+
+const extraForm = ref({
+  priceInW: '',
+  aimSpeed: '',
+  breathSway: '',
+  breathHoldDuration: '',
+  breathHoldReduction: '',
+  // ⭐ 新增 5 个：后坐力 / 稳定性
+  recoilVerticalAuto: '',
+  recoilHorizontalAuto: '',
+  recoilVerticalBurst: '',
+  recoilHorizontalBurst: '',
+  stabilityMultiplier: ''
+})
+
+const extraDataTitle = computed(() => {
+  if (!extraDataWeaponId.value) return ''
+  const row = rowsWithCurrent.value.find(r => r.id === extraDataWeaponId.value)
+  if (!row) return ''
+  return `${row.name} ${extraDataConfigId.value}`
+})
+
+const openExtraData = (index, configId) => {
+  const row = displayedRows.value[index]
+  if (!row) return
+
+  const cfg = (row._configRows || []).find(c => c.configId === configId)
+  if (!cfg) return
+
+  extraDataWeaponId.value = row.id
+  extraDataConfigId.value = configId
+
+  // 填充表单
+  extraForm.value = {
+    priceInW: cfg.price ? (cfg.price / 10000).toFixed(1) : '',
+    aimSpeed: cfg.aimSpeed ?? '',
+    breathSway: cfg.breathSway ?? '',
+    breathHoldDuration: cfg.breathHoldDuration ?? '',
+    breathHoldReduction: cfg.breathHoldReduction ?? '',
+    // ⭐ 新增 5 个
+    recoilVerticalAuto: cfg.recoilVerticalAuto ?? '',
+    recoilHorizontalAuto: cfg.recoilHorizontalAuto ?? '',
+    recoilVerticalBurst: cfg.recoilVerticalBurst ?? '',
+    recoilHorizontalBurst: cfg.recoilHorizontalBurst ?? '',
+    stabilityMultiplier: cfg.stabilityMultiplier ?? ''
+  }
+
+  showExtraData.value = true
+}
+
+const closeExtraData = () => {
+  showExtraData.value = false
+  extraDataWeaponId.value = null
+  extraDataConfigId.value = null
+}
+
+const onExtraBlur = (field, event) => {
+  const weaponId = extraDataWeaponId.value
+  const configId = extraDataConfigId.value
+  if (!weaponId || !configId) return
+
+  const raw = event.target.value
+  const dm = dataStore.getDataManager()
+
+  switch (field) {
+    case 'price': {
+      const value = Math.round((parseFloat(raw) || 0) * 10000)
+      dm.updatePriceConfig(weaponId, configId, { price: value })
+      break
+    }
+
+    case 'aimSpeed': {
+      const value = Math.max(0, parseFloat(raw) || 0)
+      dm.updatePriceConfig(weaponId, configId, { aimSpeed: value })
+      break
+    }
+
+    case 'breathSway': {
+      const value = raw === '' ? null : (parseFloat(raw) || 0)
+      dm.updatePriceConfig(weaponId, configId, { breathSway: value })
+      break
+    }
+
+    case 'breathHoldDuration': {
+      const value = raw === '' ? null : (parseFloat(raw) || 0)
+      dm.updatePriceConfig(weaponId, configId, { breathHoldDuration: value })
+      break
+    }
+
+    case 'breathHoldReduction': {
+      const value = raw === '' ? null : Math.max(0, Math.min(1, parseFloat(raw) || 0))
+      dm.updatePriceConfig(weaponId, configId, { breathHoldReduction: value })
+      break
+    }
+
+    // ⭐ 新增 5 个：后坐力 / 稳定性（都是倍率）
+    case 'recoilVerticalAuto': {
+      const value = raw === '' ? null : (parseFloat(raw) || 0)
+      dm.updatePriceConfig(weaponId, configId, { recoilVerticalAuto: value })
+      break
+    }
+
+    case 'recoilHorizontalAuto': {
+      const value = raw === '' ? null : (parseFloat(raw) || 0)
+      dm.updatePriceConfig(weaponId, configId, { recoilHorizontalAuto: value })
+      break
+    }
+
+    case 'recoilVerticalBurst': {
+      const value = raw === '' ? null : (parseFloat(raw) || 0)
+      dm.updatePriceConfig(weaponId, configId, { recoilVerticalBurst: value })
+      break
+    }
+
+    case 'recoilHorizontalBurst': {
+      const value = raw === '' ? null : (parseFloat(raw) || 0)
+      dm.updatePriceConfig(weaponId, configId, { recoilHorizontalBurst: value })
+      break
+    }
+
+    case 'stabilityMultiplier': {
+      const value = raw === '' ? null : (parseFloat(raw) || 0)
+      dm.updatePriceConfig(weaponId, configId, { stabilityMultiplier: value })
+      break
+    }
+  }
+
+  dataStore.refreshPrices()
+}
+
+// ============================================================
 // 配置增删
 // ============================================================
 const addConfig = async (row) => {
@@ -3129,12 +3393,10 @@ const cancelAdd = (index) => {
     190px    /* 枪管 */
     160px    /* 枪口 */
     250px    /* 命中率 */
-    80px     /* 开镜 */
-    110px    /* 价格 */
     140px    /* 子弹 */
     90px     /* 哈弗币 */
     130px    /* 评分 */
-    minmax(110px, 1fr);   /* 操作 */
+    minmax(200px, 1fr);   /* 操作（3 个按钮） */
   align-items: center;
   column-gap: 8px;
 
@@ -3144,7 +3406,7 @@ const cancelAdd = (index) => {
   border-radius: 6px;
   transition: all 0.15s;
   cursor: pointer;
-  min-width: 1550px;
+  min-width: 1450px;
 }
 
 .config-item.enabled { border-left: 3px solid var(--color-success); }
@@ -3492,6 +3754,20 @@ const cancelAdd = (index) => {
 .cfg-btn.detail:hover { background: var(--color-primary-hover); }
 .cfg-btn.del { background: #f0f0f0; color: #666; }
 .cfg-btn.del:hover { background: #e0e0e0; color: #f44336; }
+
+/* ⭐ 其他数据按钮 */
+.cfg-btn.extra {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+.cfg-btn.extra:hover {
+  background: #d4ead6;
+  border-color: #81c784;
+}
+.cfg-btn.extra:active {
+  transform: scale(0.97);
+}
 
 /* ---------- 新增行 ---------- */
 .new-row-fields {
@@ -3911,6 +4187,173 @@ const cancelAdd = (index) => {
 
   .threshold-label {
     font-size: 10px;
+  }
+}
+
+/* ============================================================
+   ⭐ 其他数据弹窗
+   ============================================================ */
+.extra-data-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100000;
+  animation: extra-fade-in 0.15s ease;
+}
+
+@keyframes extra-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.extra-data-modal {
+  background: #fff;
+  border-radius: 10px;
+  width: 420px;
+  max-width: 92vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: extra-slide-in 0.18s ease;
+}
+
+@keyframes extra-slide-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.extra-data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+.extra-data-title {
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.extra-data-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #999;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.15s;
+}
+.extra-data-close:hover {
+  color: #333;
+}
+
+.extra-data-body {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.extra-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.extra-row label {
+  width: 90px;
+  font-family: var(--font-family);
+  font-size: 13px;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.extra-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.extra-input-wrap input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: #fafbfd;
+  color: #1a1a2e;
+  outline: none;
+  transition: all 0.15s;
+  height: 30px;
+}
+
+.extra-input-wrap input:focus {
+  background: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.12);
+}
+
+.extra-input-wrap input::placeholder {
+  color: #bbb;
+  font-family: var(--font-family);
+}
+
+.extra-input-wrap .unit {
+  font-family: var(--font-family);
+  font-size: 12px;
+  color: #999;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+/* ============================================================
+   其他数据弹窗 - 移动端
+   ============================================================ */
+@media (max-width: 768px) {
+  .extra-data-modal {
+    width: 92vw;
+  }
+
+  .extra-data-header {
+    padding: 10px 14px;
+  }
+
+  .extra-data-title {
+    font-size: 13px;
+  }
+
+  .extra-data-body {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .extra-row label {
+    width: 72px;
+    font-size: 12px;
+  }
+
+  .extra-input-wrap input {
+    height: 32px;
+    font-size: 13px;
   }
 }
 </style>

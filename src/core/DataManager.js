@@ -81,6 +81,14 @@
  * - _buildWeaponScoresForExport 不再导出 grade 字段
  * - 导出的 weaponScores 结构：{ score, meta }
  *
+ * ⭐ v14 改动（呼吸 / 屏息 / 后坐力 / 稳定性）：
+ * - getPriceRowsForWeapon 显式带出：
+ *   · breathSway / breathHoldDuration / breathHoldReduction
+ *   · recoilVerticalAuto / recoilHorizontalAuto
+ *   · recoilVerticalBurst / recoilHorizontalBurst
+ *   · stabilityMultiplier
+ * - 均为配置级字段，不参与 TTK 计算，仅供 UI 展示与后续扩展
+ *
  * ⭐ 已删除的旧 API：
  * - setCacheManager / getCacheManager
  * - getConfigCache / saveConfigCache
@@ -99,7 +107,7 @@ const perf = {
     this.marks[name] = {
       time: performance.now(),
       description
-    }
+    };
   }
 };
 
@@ -918,6 +926,40 @@ export class DataManager {
         ? config.aimSpeed
         : 0;
 
+      // ⭐ 呼吸 / 屏息（配置级）
+      const breathSway = (typeof config.breathSway === 'number' && isFinite(config.breathSway))
+        ? config.breathSway
+        : null;
+
+      const breathHoldDuration = (typeof config.breathHoldDuration === 'number' && isFinite(config.breathHoldDuration))
+        ? config.breathHoldDuration
+        : null;
+
+      const breathHoldReduction = (typeof config.breathHoldReduction === 'number' && isFinite(config.breathHoldReduction))
+        ? config.breathHoldReduction
+        : null;
+
+      // ⭐ 后坐力 / 稳定性（配置级）
+      const recoilVerticalAuto = (typeof config.recoilVerticalAuto === 'number' && isFinite(config.recoilVerticalAuto))
+        ? config.recoilVerticalAuto
+        : null;
+
+      const recoilHorizontalAuto = (typeof config.recoilHorizontalAuto === 'number' && isFinite(config.recoilHorizontalAuto))
+        ? config.recoilHorizontalAuto
+        : null;
+
+      const recoilVerticalBurst = (typeof config.recoilVerticalBurst === 'number' && isFinite(config.recoilVerticalBurst))
+        ? config.recoilVerticalBurst
+        : null;
+
+      const recoilHorizontalBurst = (typeof config.recoilHorizontalBurst === 'number' && isFinite(config.recoilHorizontalBurst))
+        ? config.recoilHorizontalBurst
+        : null;
+
+      const stabilityMultiplier = (typeof config.stabilityMultiplier === 'number' && isFinite(config.stabilityMultiplier))
+        ? config.stabilityMultiplier
+        : null;
+
       return {
         weaponName: weapon.name,
         configId: config.id || '#1',
@@ -927,6 +969,19 @@ export class DataManager {
         muzzleId: muzzleId,
         precision: precision,
         aimSpeed: aimSpeed,
+
+        // ⭐ 呼吸 / 屏息（配置级）
+        breathSway,
+        breathHoldDuration,
+        breathHoldReduction,
+
+        // ⭐ 后坐力 / 稳定性（配置级）
+        recoilVerticalAuto,
+        recoilHorizontalAuto,
+        recoilVerticalBurst,
+        recoilHorizontalBurst,
+        stabilityMultiplier,
+
         buildCode: config.buildCode || '-',
         price: config.price || 0,
         distance: distances,

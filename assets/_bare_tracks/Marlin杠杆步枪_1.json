@@ -1,0 +1,21 @@
+{
+  "weaponId": 50,
+  "weaponName": "Marlin杠杆步枪",
+  "configId": "#1",
+  "schemeIndex": 1,
+  "rounds": 1,
+  "shots": [
+    {
+      "x": 50,
+      "y": 50,
+      "hit": true
+    }
+  ],
+  "canvasBox": {
+    "x": 487.66,
+    "y": 158.8,
+    "width": 488.0,
+    "height": 639.89
+  },
+  "capturedAt": "2026-10-09T22:06:01.799560"
+}

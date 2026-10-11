@@ -1,0 +1,3378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>压枪本地模拟器 · 分页签</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    margin: 0; padding: 0;
+    background: #14161a; color: #d8dce3;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    width: 340px;
+    background: #1d2027;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    border-right: 1px solid #2a2e37;
+    flex-shrink: 0;
+  }
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-thumb {
+    background: #3a3f4a;
+    border-radius: 3px;
+  }
+
+  .sidebar h2 {
+    font-size: 12px;
+    margin: 0;
+    color: #fff;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    user-select: none;
+    flex-shrink: 0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #2a2e37;
+  }
+
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  .load-info {
+    font-size: 11px;
+    color: #9aa3b2;
+    line-height: 1.6;
+    font-family: ui-monospace, Consolas, monospace;
+    padding: 6px 8px;
+    background: #14161a;
+    border-radius: 5px;
+    word-break: break-all;
+    flex-shrink: 0;
+  }
+  .load-info b { color: #4caf50; }
+  .load-info .warn { color: #ff9800; }
+  .load-info .err { color: #f44336; }
+
+  .weapon-search {
+    width: 100%;
+    padding: 5px 8px;
+    background: #14161a;
+    color: #d8dce3;
+    border: 1px solid #3a3f4a;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+    flex-shrink: 0;
+  }
+  .weapon-search:focus { border-color: #2f6fed; }
+  .weapon-search::placeholder { color: #5a616e; }
+
+  .weapon-list {
+    height: 400px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    font-size: 12px;
+    background: #14161a;
+    border-radius: 5px;
+    padding: 4px;
+    border: 1px solid #2a2e37;
+  }
+  .weapon-list::-webkit-scrollbar { width: 6px; }
+  .weapon-list::-webkit-scrollbar-thumb {
+    background: #3a3f4a;
+    border-radius: 3px;
+  }
+
+  .weapon-item {
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+  }
+  .weapon-item:hover { background: #2a2e37; }
+  .weapon-item.active { background: #2f6fed; color: #fff; }
+  .weapon-item .name {
+    flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .weapon-item .cfg {
+    font-size: 11px; color: #7c8595; flex-shrink: 0;
+    font-family: ui-monospace, Consolas, monospace;
+  }
+  .weapon-item.active .cfg { color: #cce0ff; }
+  .weapon-item .status {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 10px; flex-shrink: 0; min-width: 48px; text-align: right;
+  }
+  .weapon-item .status.ok { color: #4caf50; }
+  .weapon-item.active .status.ok { color: #b9f6ca; }
+
+  .weapon-list .empty {
+    padding: 20px 8px; text-align: center;
+    color: #5a616e; font-style: italic;
+  }
+
+  .collapsible-header {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none; padding: 4px 0;
+    border-bottom: 1px solid #2a2e37; margin: 0;
+    font-size: 12px; color: #fff; font-weight: 600; flex-shrink: 0;
+  }
+  .collapsible-header:hover { color: #4caf50; }
+  .collapsible-header .arrow {
+    font-size: 10px; color: #9aa3b2;
+    transition: transform 0.15s; display: inline-block;
+  }
+  .collapsible-header.expanded .arrow { transform: rotate(90deg); }
+
+  .config-detail {
+    flex-shrink: 0; font-size: 11px;
+    font-family: ui-monospace, Consolas, monospace;
+    background: #14161a; border-radius: 5px;
+    padding: 8px 10px; line-height: 1.6;
+    color: #d8dce3; border: 1px solid #2a2e37; display: none;
+  }
+  .config-detail.expanded { display: block; }
+  .config-detail .empty {
+    color: #5a616e; font-style: italic;
+    padding: 16px 0; text-align: center;
+  }
+  .config-detail .section-title {
+    color: #4caf50; font-weight: 600;
+    margin-top: 8px; margin-bottom: 2px;
+    border-bottom: 1px dashed #2a2e37;
+    padding-bottom: 2px; font-size: 11px;
+  }
+  .config-detail .section-title:first-child { margin-top: 0; }
+  .config-detail .row {
+    display: flex; justify-content: space-between; gap: 8px; padding: 1px 0;
+  }
+  .config-detail .row .k { color: #9aa3b2; }
+  .config-detail .row .v { color: #d8dce3; text-align: right; }
+  .config-detail .row .v.missing { color: #5a616e; }
+  .config-detail .row .v.ok { color: #4caf50; }
+  .config-detail .row .v.warn { color: #ff9800; }
+
+  .slider-row {
+    display: flex; align-items: center; gap: 6px; font-size: 11px;
+  }
+  .slider-row label { width: 88px; color: #9aa3b2; flex-shrink: 0; }
+  .slider-row input[type=range] { flex: 1; }
+  .slider-row .val {
+    font-family: ui-monospace, Consolas, monospace;
+    color: #4caf50; min-width: 62px; text-align: right; font-size: 11px;
+  }
+
+  .readonly-row {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; padding: 2px 0;
+  }
+  .readonly-row label { width: 72px; color: #9aa3b2; flex-shrink: 0; }
+  .readonly-row .val {
+    font-family: ui-monospace, Consolas, monospace;
+    color: #4caf50; font-size: 11px; text-align: right;
+    flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .readonly-row .val.missing { color: #5a616e; font-style: italic; }
+
+  .btn-row { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn-row button {
+    flex: 1; padding: 6px;
+    background: #2a2e37; color: #d8dce3;
+    border: 1px solid #3a3f4a; border-radius: 5px;
+    cursor: pointer; font-size: 11px; font-family: inherit;
+  }
+  .btn-row button:hover { background: #353a45; }
+  .btn-row button.primary {
+    background: #2f6fed; border-color: #2f6fed; color: #fff;
+  }
+  .btn-row button.primary:hover {
+    background: #2456c9; border-color: #2456c9;
+  }
+  .btn-row button.export {
+    background: #4caf50; border-color: #4caf50; color: #fff;
+  }
+  .btn-row button.export:hover {
+    background: #3d8b40; border-color: #3d8b40;
+  }
+  .btn-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .part-stat {
+    display: flex; justify-content: space-between;
+    font-size: 11px; padding: 2px 6px; border-radius: 3px;
+    font-family: ui-monospace, Consolas, monospace;
+  }
+  .part-stat .name { color: #d8dce3; }
+  .part-stat .val { color: #4caf50; }
+
+  .stat-info {
+    font-size: 11px; color: #9aa3b2; line-height: 1.6;
+    font-family: ui-monospace, Consolas, monospace;
+    padding: 6px 8px; background: #14161a;
+    border-radius: 5px; border: 1px solid #2a2e37;
+  }
+  .stat-info b { color: #4caf50; }
+
+  .export-progress {
+    font-size: 10px; color: #4caf50;
+    font-family: ui-monospace, Consolas, monospace;
+    min-height: 14px; line-height: 1.4; word-break: break-all;
+  }
+
+  .main {
+    flex: 1; position: relative; background: #0a0c10;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+
+  .tab-nav {
+    display: flex; background: #1d2027;
+    border-bottom: 1px solid #2a2e37; flex-shrink: 0;
+  }
+  .tab-btn {
+    padding: 8px 20px; background: transparent; color: #9aa3b2;
+    border: none; border-bottom: 2px solid transparent;
+    cursor: pointer; font-family: inherit;
+    font-size: 12px; font-weight: 500; transition: all 0.15s;
+  }
+  .tab-btn:hover { color: #d8dce3; background: #2a2e37; }
+  .tab-btn.active {
+    color: #fff; border-bottom-color: #2f6fed; background: #1d2027;
+  }
+
+  .playbar {
+    padding: 6px 12px; background: #1d2027;
+    border-bottom: 1px solid #2a2e37;
+    display: flex; gap: 8px; align-items: center;
+    font-size: 11px; flex-wrap: wrap; flex-shrink: 0;
+  }
+  .playbar button {
+    padding: 5px 10px; background: #2a2e37; color: #d8dce3;
+    border: 1px solid #3a3f4a; border-radius: 4px;
+    cursor: pointer; font-size: 11px; min-width: 36px; font-family: inherit;
+  }
+  .playbar button:hover { background: #353a45; }
+  .playbar button.primary {
+    background: #2f6fed; border-color: #2f6fed; color: #fff;
+  }
+  .playbar button.primary:hover { background: #2456c9; }
+  .playbar button.export {
+    background: #4caf50; border-color: #4caf50; color: #fff;
+  }
+  .playbar button.export:hover { background: #3d8b40; }
+  .playbar button.export-xlsx {
+    background: #2f6fed; border-color: #2f6fed; color: #fff;
+  }
+  .playbar button.export-xlsx:hover { background: #2456c9; }
+  .playbar button.dice {
+    min-width: 28px; padding: 4px 8px; font-size: 13px; line-height: 1;
+  }
+  .playbar button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .playbar select {
+    background: #2a2e37; color: #d8dce3;
+    border: 1px solid #3a3f4a; border-radius: 4px;
+    padding: 4px 6px; font-size: 11px; font-family: inherit;
+  }
+  .playbar .time-label {
+    font-family: ui-monospace, Consolas, monospace;
+    color: #4caf50; min-width: 150px;
+  }
+  .playbar .progress-wrap {
+    flex: 1; min-width: 120px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .playbar input[type=range] { flex: 1; accent-color: #2f6fed; }
+  .playbar .seed-label {
+    color: #9aa3b2;
+    font-family: ui-monospace, Consolas, monospace;
+    flex-shrink: 0;
+  }
+  .playbar input[type=text].seed-input {
+    width: 140px; background: #14161a; color: #4caf50;
+    border: 1px solid #3a3f4a; border-radius: 4px;
+    padding: 4px 6px; font-size: 11px;
+    font-family: ui-monospace, Consolas, monospace; outline: none;
+  }
+  .playbar input[type=text].seed-input:focus { border-color: #2f6fed; }
+  .playbar .export-progress { flex-basis: 100%; }
+
+  .tab-content {
+    flex: 1; overflow: hidden; display: flex; min-height: 0;
+  }
+  .tab-pane {
+    flex: 1; overflow: hidden; display: none; min-height: 0;
+  }
+  .tab-pane.active { display: grid; }
+  .tab-pane.tab-live.active {
+    grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: #2a2e37;
+  }
+  .tab-pane.tab-static.active {
+    grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: #2a2e37;
+  }
+
+  .canvas-cell {
+    position: relative; background: #0a0c10; overflow: hidden;
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .canvas-cell .cell-title {
+    padding: 6px 10px; background: #1d2027;
+    border-bottom: 1px solid #2a2e37;
+    font-size: 12px; font-weight: 600; color: #fff;
+    flex-shrink: 0; display: flex;
+    justify-content: space-between; align-items: center; gap: 6px;
+  }
+  .canvas-cell .cell-title .left {
+    display: flex; align-items: center; gap: 6px; min-width: 0;
+  }
+  .canvas-cell .cell-title .hit {
+    font-family: ui-monospace, Consolas, monospace;
+    color: #4caf50; font-weight: normal; font-size: 11px; flex-shrink: 0;
+  }
+  .canvas-cell .cell-title .hit.muted { color: #5a616e; }
+  .canvas-cell .cell-title .reset-view-btn {
+    background: #2a2e37; color: #d8dce3;
+    border: 1px solid #3a3f4a; border-radius: 3px;
+    padding: 2px 8px; font-family: inherit;
+    font-size: 10px; cursor: pointer; flex-shrink: 0;
+  }
+  .canvas-cell .cell-title .reset-view-btn:hover {
+    background: #353a45; color: #4caf50;
+  }
+  .canvas-cell .cell-body {
+    position: relative; flex: 1; overflow: hidden;
+    cursor: crosshair; min-height: 0;
+  }
+  .canvas-cell canvas.main-canvas {
+    position: absolute; left: 0; top: 0;
+    image-rendering: pixelated; image-rendering: crisp-edges; z-index: 1;
+  }
+  .canvas-cell canvas.trail-canvas {
+    position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none;
+  }
+  .canvas-cell svg.overlay {
+    position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+    pointer-events: none; overflow: visible; z-index: 3;
+  }
+  .canvas-cell .info-panel {
+    position: absolute; right: 8px; bottom: 8px;
+    background: rgba(255,255,255,0.9); color: #000;
+    border: 1px solid #ccc; border-radius: 4px;
+    padding: 6px 10px; font-size: 11px; font-weight: bold;
+    line-height: 1.5; white-space: nowrap;
+    pointer-events: none; z-index: 10;
+  }
+
+  .legend {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(20, 22, 26, 0.9);
+    border: 1px solid #3a3f4a; border-radius: 6px;
+    padding: 8px 10px; font-size: 11px; color: #d8dce3;
+    z-index: 10; min-width: 150px; user-select: none;
+  }
+  .legend .legend-title {
+    font-weight: bold; color: #fff; font-size: 12px; margin-bottom: 4px;
+  }
+  .legend .legend-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 2px 4px; line-height: 1.5; border-radius: 3px;
+    cursor: pointer; transition: background 0.12s, opacity 0.12s;
+  }
+  .legend .legend-row:hover { background: rgba(47, 111, 237, 0.15); }
+  .legend .legend-row.is-hidden {
+    opacity: 0.35; text-decoration: line-through;
+  }
+  .legend .legend-row .ico {
+    width: 16px; height: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .legend .legend-row .ico .diamond {
+    width: 8px; height: 8px; border: 1.5px solid;
+    transform: rotate(45deg); box-sizing: border-box;
+  }
+  .legend .legend-row .ico .line {
+    width: 14px; height: 0; border-top: 2px solid;
+  }
+  .legend .legend-row .ico .dash {
+    width: 14px; height: 0; border-top: 2px dashed;
+  }
+  .legend .legend-row .ico .trail-yellow {
+    width: 16px; height: 6px;
+    background: linear-gradient(to right,
+      rgba(255,235,59,0.0) 0%,
+      rgba(255,235,59,0.4) 50%,
+      rgba(255,235,59,0.95) 100%);
+    border-radius: 3px;
+  }
+  .legend .legend-row .ico .circle {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 2px solid; box-sizing: border-box;
+  }
+  .legend .legend-row .ico .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor;
+  }
+  .legend .legend-row .ico .ellipse {
+    width: 14px; height: 8px; border-radius: 50%;
+    border: 1.5px dashed; box-sizing: border-box;
+  }
+  .legend .legend-row .ico .rect {
+    width: 12px; height: 8px; border: 1.5px solid; box-sizing: border-box;
+  }
+  .legend .legend-row .ico .cross {
+    position: relative; width: 10px; height: 10px;
+  }
+  .legend .legend-row .ico .cross::before,
+  .legend .legend-row .ico .cross::after {
+    content: ''; position: absolute; background: currentColor;
+  }
+  .legend .legend-row .ico .cross::before {
+    left: 50%; top: 0; width: 2px; height: 100%;
+    transform: translateX(-50%);
+  }
+  .legend .legend-row .ico .cross::after {
+    top: 50%; left: 0; height: 2px; width: 100%;
+    transform: translateY(-50%);
+  }
+
+  .cell-empty {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px;
+    color: #5a616e; font-size: 12px;
+    z-index: 5; pointer-events: none;
+  }
+  .cell-empty .icon { font-size: 32px; opacity: 0.5; }
+
+  .loading {
+    position: fixed; inset: 0;
+    background: rgba(14,16,20,0.9); z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+    font-size: 14px; color: #d8dce3;
+  }
+  .loading.hidden { display: none; }
+  .loading .spinner {
+    width: 40px; height: 40px;
+    border: 4px solid #2a2e37; border-top-color: #2f6fed;
+    border-radius: 50%; animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div id="loadingText">加载中...</div>
+</div>
+
+<div class="sidebar">
+
+  <h2>📁 加载</h2>
+  <div class="load-info" id="autoLoadInfo">未加载</div>
+
+  <h2>🔫 武器选择</h2>
+  <input type="text" class="weapon-search" id="weaponSearch"
+         placeholder="搜索武器名 / 配置..." />
+  <div class="weapon-list" id="weaponList"></div>
+
+  <h2 id="configToggle" class="collapsible-header">
+    <span>📋 配置数据 <span class="arrow">▶</span></span>
+  </h2>
+  <div class="config-detail" id="configDetail">
+    <div class="empty">未选择武器</div>
+  </div>
+
+  <h2>🎯 稳定性 / 呼吸</h2>
+  <div class="section">
+    <div class="slider-row">
+      <label>σ 倍率</label>
+      <input type="range" id="sigmaScaleRange" min="0" max="3" step="0.05" value="1.5">
+      <span class="val" id="sigmaScaleVal">1.50</span>
+    </div>
+    <div class="slider-row">
+      <label>呼吸倍率</label>
+      <input type="range" id="breathScaleRange" min="0" max="30" step="0.5" value="10">
+      <span class="val" id="breathScaleVal">10.0</span>
+    </div>
+    <div class="slider-row">
+      <label>呼吸 freq</label>
+      <input type="range" id="breathFreqRange" min="0.01" max="1" step="0.01" value="0.12">
+      <span class="val" id="breathFreqVal">0.12</span>
+    </div>
+  </div>
+
+  <h2>🎮 压枪（单位 %/秒²）</h2>
+  <div class="section">
+    <div class="slider-row">
+      <label>垂直加速度上限</label>
+      <input type="range" id="aMaxVRange" min="0" max="1000" step="10" value="500">
+      <span class="val" id="aMaxVVal">500</span>
+    </div>
+    <div class="slider-row">
+      <label>水平加速度上限</label>
+      <input type="range" id="aMaxHRange" min="0" max="1000" step="10" value="500">
+      <span class="val" id="aMaxHVal">500</span>
+    </div>
+    <div class="slider-row">
+      <label>反馈垂直加速度</label>
+      <input type="range" id="fbAccelVRange" min="0" max="1000" step="10" value="500">
+      <span class="val" id="fbAccelVVal">500</span>
+    </div>
+    <div class="slider-row">
+      <label>反馈水平加速度</label>
+      <input type="range" id="fbAccelHRange" min="0" max="1000" step="10" value="500">
+      <span class="val" id="fbAccelHVal">500</span>
+    </div>
+    <div class="slider-row">
+      <label>平滑窗口</label>
+      <input type="range" id="smoothWinRange" min="1" max="21" step="2" value="9">
+      <span class="val" id="smoothWinVal">9</span>
+    </div>
+    <div style="font-size:10px;color:#5a616e;line-height:1.5;padding:2px 0;">
+      反馈阈值（按距离固定）：30m=5, 50m=4, 100m=3
+    </div>
+  </div>
+
+  <h2>📊 统计</h2>
+  <div class="section">
+    <div class="stat-info" id="statInfo">未运行</div>
+    <div id="partStats"></div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="live">🎯 真人模拟</button>
+    <button class="tab-btn" data-tab="static">📊 裸弹道 + 不压枪 + 平滑</button>
+  </div>
+
+  <div class="playbar">
+    <button id="btnRun" class="primary">▶ 运行</button>
+    <button id="btnPause" disabled>⏸</button>
+    <button id="btnReset" disabled>⟲</button>
+    <select id="speedSelect" disabled>
+      <option value="0.1">0.1x</option>
+      <option value="0.25">0.25x</option>
+      <option value="0.5">0.5x</option>
+      <option value="1" selected>1x</option>
+      <option value="2">2x</option>
+      <option value="4">4x</option>
+    </select>
+    <span class="time-label" id="timeLabel">第 0/0 发 · t=0.000s</span>
+    <div class="progress-wrap">
+      <input type="range" id="progressRange" min="0" max="0" value="0" step="1" disabled>
+    </div>
+    <span class="seed-label">种子:</span>
+    <input type="text" class="seed-input" id="seedInput" value="0"
+           title="编辑种子后点「▶ 运行」生效">
+    <button class="dice" id="btnRandomSeed" title="随机生成种子">🎲</button>
+    <button class="export" id="btnExport">📤 导出 data.json</button>
+    <button class="export-xlsx" id="btnExportXlsx">📊 导出 xlsx</button>
+    <div class="export-progress" id="exportProgress"></div>
+  </div>
+
+  <div class="tab-content">
+
+    <div class="tab-pane tab-live active" id="pane-live">
+      <div class="canvas-cell" data-dist="30">
+        <div class="cell-title">
+          <div class="left">
+            <span>🎯 30m 真人模拟</span>
+            <span class="hit muted" data-hit>—</span>
+          </div>
+          <button class="reset-view-btn" title="恢复视野">🎯 复位</button>
+        </div>
+        <div class="cell-body">
+          <canvas class="main-canvas"></canvas>
+          <canvas class="trail-canvas"></canvas>
+          <svg class="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="legend"></div>
+          <div class="info-panel" style="display:none;"></div>
+          <div class="cell-empty">
+            <div class="icon">🎯</div>
+            <div>点击顶部「▶ 运行」开始</div>
+          </div>
+        </div>
+      </div>
+      <div class="canvas-cell" data-dist="50">
+        <div class="cell-title">
+          <div class="left">
+            <span>🎯 50m 真人模拟</span>
+            <span class="hit muted" data-hit>—</span>
+          </div>
+          <button class="reset-view-btn" title="恢复视野">🎯 复位</button>
+        </div>
+        <div class="cell-body">
+          <canvas class="main-canvas"></canvas>
+          <canvas class="trail-canvas"></canvas>
+          <svg class="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="legend"></div>
+          <div class="info-panel" style="display:none;"></div>
+          <div class="cell-empty">
+            <div class="icon">🎯</div>
+            <div>点击顶部「▶ 运行」开始</div>
+          </div>
+        </div>
+      </div>
+      <div class="canvas-cell" data-dist="100">
+        <div class="cell-title">
+          <div class="left">
+            <span>🎯 100m 真人模拟</span>
+            <span class="hit muted" data-hit>—</span>
+          </div>
+          <button class="reset-view-btn" title="恢复视野">🎯 复位</button>
+        </div>
+        <div class="cell-body">
+          <canvas class="main-canvas"></canvas>
+          <canvas class="trail-canvas"></canvas>
+          <svg class="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="legend"></div>
+          <div class="info-panel" style="display:none;"></div>
+          <div class="cell-empty">
+            <div class="icon">🎯</div>
+            <div>点击顶部「▶ 运行」开始</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane tab-static" id="pane-static">
+      <div class="canvas-cell" data-dist="0">
+        <div class="cell-title">
+          <div class="left">
+            <span>① 裸弹道</span>
+            <span class="hit muted" data-hit>—</span>
+          </div>
+          <button class="reset-view-btn" title="恢复视野">🎯 复位</button>
+        </div>
+        <div class="cell-body">
+          <canvas class="main-canvas"></canvas>
+          <canvas class="trail-canvas"></canvas>
+          <svg class="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="legend"></div>
+          <div class="info-panel" style="display:none;"></div>
+          <div class="cell-empty">
+            <div class="icon">📊</div>
+            <div>点击顶部「▶ 运行」开始</div>
+          </div>
+        </div>
+      </div>
+      <div class="canvas-cell" data-dist="-2">
+        <div class="cell-title">
+          <div class="left">
+            <span>② 不压枪（仅后坐力 + 屏息）</span>
+            <span class="hit muted" data-hit>—</span>
+          </div>
+          <button class="reset-view-btn" title="恢复视野">🎯 复位</button>
+        </div>
+        <div class="cell-body">
+          <canvas class="main-canvas"></canvas>
+          <canvas class="trail-canvas"></canvas>
+          <svg class="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="legend"></div>
+          <div class="info-panel" style="display:none;"></div>
+          <div class="cell-empty">
+            <div class="icon">📊</div>
+            <div>点击顶部「▶ 运行」开始</div>
+          </div>
+        </div>
+      </div>
+      <div class="canvas-cell" data-dist="-1">
+        <div class="cell-title">
+          <div class="left">
+            <span>③ 平滑压枪</span>
+            <span class="hit muted" data-hit>—</span>
+          </div>
+          <button class="reset-view-btn" title="恢复视野">🎯 复位</button>
+        </div>
+        <div class="cell-body">
+          <canvas class="main-canvas"></canvas>
+          <canvas class="trail-canvas"></canvas>
+          <svg class="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="legend"></div>
+          <div class="info-panel" style="display:none;"></div>
+          <div class="cell-empty">
+            <div class="icon">📊</div>
+            <div>点击顶部「▶ 运行」开始</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 常量
+// ============================================================
+
+const IMG_W = 1012;
+const IMG_H = 1327;
+const CX = IMG_W / 2;
+const CY = IMG_H / 2;
+
+const FIXED_SCOPE = 2.25;
+
+// 每发之间的子步数（仅用于把准心/鼠标轨迹按时间连续化）
+const SUB_STEPS = 16;
+
+const SCALE_BY_DIST = {
+  30:  (FIXED_SCOPE / 2) * (10 / 30),
+  50:  (FIXED_SCOPE / 2) * (10 / 50),
+  100: (FIXED_SCOPE / 2) * (10 / 100),
+};
+
+const FB_THRESHOLD_BY_DIST = { 30: 5, 50: 4, 100: 3 };
+
+const PARTS = [
+  { idx: 0, name: '空/脱靶', color: '#2a2e37' },
+  { idx: 1, name: '头部',   color: '#e53935' },
+  { idx: 2, name: '胸部',   color: '#fb8c00' },
+  { idx: 3, name: '腹部',   color: '#fdd835' },
+  { idx: 4, name: '上臂',   color: '#43a047' },
+  { idx: 5, name: '下臂',   color: '#00acc1' },
+  { idx: 6, name: '大腿',   color: '#1e88e5' },
+  { idx: 7, name: '小腿',   color: '#8e24aa' },
+];
+const IDX_TO_PART = {};
+for (const p of PARTS) IDX_TO_PART[p.idx] = p;
+
+const PARTS_FOR_EXCEL = [
+  { idx: 1, name: '头部' }, { idx: 2, name: '胸部' },
+  { idx: 3, name: '腹部' }, { idx: 4, name: '上臂' },
+  { idx: 5, name: '下臂' }, { idx: 6, name: '大腿' },
+  { idx: 7, name: '小腿' }, { idx: 0, name: '脱靶' },
+];
+
+const COLORS = {
+  bare:          '#9aa3b2',
+  uncontrolled:  '#e0e0e0',
+  smooth:        '#00bcd4',
+  ideal:         '#ff9800',
+  mouse:         '#2196f3',
+  feedback:      '#e91e63',
+  expected:      '#ff9800',
+  threshold:     '#ff5722',
+  dense:         '#00c853',
+  hit:           '#00e5ff',
+  hitMiss:       '#ff1744',
+  breathEnd:     '#ff00ff',
+  crosshair:     '#ffeb3b',
+};
+
+const PATH_GRID = "../assets/_part_grid_fixed.txt";
+const PATH_IMG = "../assets/靶场假人.png";
+const PATH_TRACKS = "../assets/_bare_tracks/";
+const PATH_INDEX = PATH_TRACKS + "_index.json";
+const PATH_DATA_JSON = "../public/data.json";
+
+const FALLBACK_FILES = [
+  "93R_1.json", "AK12_1.json", "AKM_1.json", "AKS-74U_1.json",
+  "AR57_1.json", "AS-Val_1.json", "ASh-12_1.json", "AUG_1.json",
+  "CAR-15_1.json", "G18_1.json", "G3_1.json", "K416_1.json",
+  "K437_1.json", "KC17_1.json", "M14_1.json", "M16A4_1.json",
+  "M249_1.json", "M250_1.json", "M4A1_1.json", "M7_1.json",
+  "MCX-LT_1.json", "MDR突击步枪_1.json", "MK47_1.json",
+  "MK4_1.json", "MP5_1.json", "MP7_1.json",
+  "Marlin杠杆步枪_1.json", "P90_1.json", "PKM_1.json",
+  "PTR-32_1.json", "QBZ95-1_1.json", "QCQ171_1.json",
+  "QJB201_1.json", "RM277_1.json", "SCAR-H_1.json",
+  "SG552_1.json", "SMG-45_1.json", "SR-3M_1.json",
+  "SVCH_1.json", "UZI_1.json", "Vector_1.json",
+  "勇士_1.json", "汤姆逊冲锋枪_1.json", "腾龙_1.json",
+  "野牛_1.json",
+];
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const CELL_LIVE = 'live';
+const CELL_BARE = 'bare';
+const CELL_SMOOTH = 'smooth';
+const CELL_UNCONTROLLED = 'uncontrolled';
+
+const LEGEND_DEFS = {
+  bare:         { type: 'diamond', color: COLORS.bare,        name: '裸弹道点（背景参考）' },
+  uncontrolled: { type: 'diamond', color: COLORS.uncontrolled,name: '不压枪落点（对比）' },
+  smooth:       { type: 'line',    color: COLORS.smooth,      name: '平滑曲线（拟合）' },
+  ideal:        { type: 'dash',    color: COLORS.ideal,       name: '反推压枪曲线（理想）' },
+  mouse:        { type: 'line',    color: COLORS.mouse,       name: '实际鼠标轨迹' },
+  feedback:     { type: 'line',    color: COLORS.feedback,    name: '反馈偏移' },
+  expected:     { type: 'circle',  color: COLORS.expected,    name: '期望中心' },
+  threshold:    { type: 'ellipse', color: COLORS.threshold,   name: '反馈阈值' },
+  dense:        { type: 'rect',    color: COLORS.dense,       name: '密集框' },
+  hit:          { type: 'diamond', color: COLORS.hit,         name: '落点' },
+  hitMiss:      { type: 'diamond', color: COLORS.hitMiss,     name: '脱靶' },
+  crosshair:    { type: 'dot',     color: COLORS.crosshair,   name: '准心' },
+  crossTrail:   { type: 'trail-yellow', color: COLORS.crosshair, name: '准心拖尾（越晚越亮）' },
+  breathEnd:    { type: 'cross',   color: COLORS.breathEnd,   name: '屏息结束' },
+};
+
+const LEGEND_LIVE = [
+  'bare', 'smooth', 'ideal', 'mouse', 'feedback', 'expected',
+  'threshold', 'breathEnd', 'hit', 'hitMiss', 'crosshair', 'crossTrail', 'dense',
+];
+const LEGEND_BARE = ['hit', 'hitMiss', 'dense'];
+const LEGEND_SMOOTH = ['uncontrolled', 'smooth', 'ideal', 'expected',
+                       'hit', 'hitMiss', 'dense'];
+const LEGEND_UNCONTROLLED = ['expected', 'breathEnd', 'hit', 'hitMiss',
+                             'dense'];
+
+const visibleLines = new Set(['hit', 'hitMiss', 'crosshair', 'crossTrail', 'breathEnd']);
+
+// ============================================================
+// 伪随机
+// ============================================================
+
+function hashSeed(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+function makeRng(seed) {
+  let a = seed >>> 0;
+  return function() {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function gaussRng(rng, mu, sigma) {
+  if (sigma <= 0) return mu;
+  let u = 0, v = 0;
+  while (u === 0) u = rng();
+  while (v === 0) v = rng();
+  return mu + sigma * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  return {
+    r: parseInt(h.substring(0, 2), 16),
+    g: parseInt(h.substring(2, 4), 16),
+    b: parseInt(h.substring(4, 6), 16),
+  };
+}
+
+// ============================================================
+// 状态
+// ============================================================
+
+let grid = null;
+let baseImage = null;
+
+let allTracks = {};
+let fileList = [];
+let currentFname = null;
+let currentTrack = null;
+
+let dataJson = null;
+let weaponListCache = [];
+let currentItem = null;
+let currentSearchQuery = '';
+
+let currentTab = 'live';
+
+const cells = new Map();
+
+const anim = {
+  playing: false,
+  currentShot: 0,
+  shotProgress: 0,
+  speed: 1.0,
+  lastFrameTime: 0,
+  accumulatedTime: 0,
+  rafId: null,
+};
+
+const loadingEl = document.getElementById('loading');
+const loadingText = document.getElementById('loadingText');
+
+// ============================================================
+// 坐标换算
+// ============================================================
+
+function pctToImg(xPct, yPct) {
+  return { x: xPct / 100 * IMG_W, y: yPct / 100 * IMG_H };
+}
+
+function getScale(distance) {
+  if (distance === 30 || distance === 50 || distance === 100) {
+    return SCALE_BY_DIST[distance];
+  }
+  return SCALE_BY_DIST[30];
+}
+
+function getFbThreshold(distance) {
+  return FB_THRESHOLD_BY_DIST[distance] ?? FB_THRESHOLD_BY_DIST[30];
+}
+
+// ============================================================
+// 初始化画布
+// ============================================================
+
+function initCells() {
+  document.querySelectorAll('#pane-live .canvas-cell').forEach(cellEl => {
+    const dist = parseInt(cellEl.dataset.dist, 10);
+    initOneCell(cellEl, `live-${dist}`, CELL_LIVE, dist);
+  });
+
+  const bareEl = document.querySelector('#pane-static .canvas-cell[data-dist="0"]');
+  if (bareEl) initOneCell(bareEl, 'static-bare', CELL_BARE, 0);
+
+  const unctrlEl = document.querySelector('#pane-static .canvas-cell[data-dist="-2"]');
+  if (unctrlEl) initOneCell(unctrlEl, 'static-uncontrolled', CELL_UNCONTROLLED, 0);
+
+  const smoothEl = document.querySelector('#pane-static .canvas-cell[data-dist="-1"]');
+  if (smoothEl) initOneCell(smoothEl, 'static-smooth', CELL_SMOOTH, 0);
+}
+
+function initOneCell(cellEl, cellId, type, distance) {
+  const canvas = cellEl.querySelector('canvas.main-canvas');
+  const trail = cellEl.querySelector('canvas.trail-canvas');
+  const svg = cellEl.querySelector('svg.overlay');
+  const wrap = cellEl.querySelector('.cell-body');
+  const legend = cellEl.querySelector('.legend');
+  const info = cellEl.querySelector('.info-panel');
+  const hitEl = cellEl.querySelector('[data-hit]');
+  const emptyEl = cellEl.querySelector('.cell-empty');
+  const resetBtn = cellEl.querySelector('.reset-view-btn');
+
+  const view = {
+    canvas,
+    ctx: canvas.getContext('2d'),
+    trail,
+    trailCtx: trail.getContext('2d'),
+    svg,
+    wrap,
+    legend,
+    info,
+    hitEl,
+    emptyEl,
+    zoom: 1,
+    panX: 0,
+    panY: 0,
+  };
+
+  const cell = {
+    id: cellId,
+    type,
+    distance,
+    el: cellEl,
+    view,
+    simResult: null,
+    legendLines: type === CELL_LIVE ? LEGEND_LIVE
+                : type === CELL_BARE ? LEGEND_BARE
+                : type === CELL_UNCONTROLLED ? LEGEND_UNCONTROLLED
+                : LEGEND_SMOOTH,
+  };
+
+  cells.set(cellId, cell);
+
+  renderLegend(cell);
+  setupCellInteraction(cell);
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetCellView(cell);
+    });
+  }
+}
+
+function setupCellInteraction(cell) {
+  const v = cell.view;
+
+  v.wrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = v.wrap.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const imgX = (mx - v.panX) / v.zoom;
+    const imgY = (my - v.panY) / v.zoom;
+    const factor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+    v.zoom = Math.max(0.1, Math.min(40, v.zoom * factor));
+    v.panX = mx - imgX * v.zoom;
+    v.panY = my - imgY * v.zoom;
+    renderOneCell(cell);
+  }, { passive: false });
+
+  let isPanning = false;
+  let isSpace = false;
+  let last = { x: 0, y: 0 };
+
+  v.wrap.addEventListener('mousedown', (e) => {
+    if ((isSpace && e.button === 0) || e.button === 1) {
+      isPanning = true;
+      last = { x: e.clientX, y: e.clientY };
+      v.wrap.style.cursor = 'grabbing';
+      e.preventDefault();
+    }
+  });
+  v.wrap.addEventListener('mousemove', (e) => {
+    if (isPanning) {
+      v.panX += e.clientX - last.x;
+      v.panY += e.clientY - last.y;
+      last = { x: e.clientX, y: e.clientY };
+      renderOneCell(cell);
+    }
+  });
+  v.wrap.addEventListener('mouseup', () => {
+    isPanning = false;
+    v.wrap.style.cursor = isSpace ? 'grab' : 'crosshair';
+  });
+  v.wrap.addEventListener('mouseleave', () => { isPanning = false; });
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      isSpace = true;
+      v.wrap.style.cursor = 'grab';
+      if (e.target === document.body) e.preventDefault();
+    }
+  });
+  document.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+      isSpace = false;
+      v.wrap.style.cursor = 'crosshair';
+    }
+  });
+}
+
+function resetCellView(cell) {
+  const v = cell.view;
+  const rect = v.wrap.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+
+  const zx = rect.width / IMG_W;
+  const zy = rect.height / IMG_H;
+  v.zoom = Math.min(zx, zy) * 0.95;
+  v.panX = (rect.width - IMG_W * v.zoom) / 2;
+  v.panY = (rect.height - IMG_H * v.zoom) / 2;
+
+  renderOneCell(cell);
+}
+
+// ============================================================
+// 渲染图例（可点击）
+// ============================================================
+
+function renderLegend(cell) {
+  const el = cell.view.legend;
+  let html = '';
+  for (const key of cell.legendLines) {
+    const def = LEGEND_DEFS[key];
+    if (!def) continue;
+    const hidden = !visibleLines.has(key);
+    html += `<div class="legend-row${hidden ? ' is-hidden' : ''}" data-line="${key}">
+      <span class="ico" style="color:${def.color};">`;
+    if (def.type === 'diamond') {
+      html += `<span class="diamond" style="border-color:${def.color};"></span>`;
+    } else if (def.type === 'line') {
+      html += `<span class="line" style="border-color:${def.color};"></span>`;
+    } else if (def.type === 'dash') {
+      html += `<span class="dash" style="border-color:${def.color};"></span>`;
+    } else if (def.type === 'trail-yellow') {
+      html += `<span class="trail-yellow"></span>`;
+    } else if (def.type === 'dot') {
+      html += `<span class="dot" style="background:${def.color};"></span>`;
+    } else if (def.type === 'circle') {
+      html += `<span class="circle" style="border-color:${def.color};"></span>`;
+    } else if (def.type === 'ellipse') {
+      html += `<span class="ellipse" style="border-color:${def.color};"></span>`;
+    } else if (def.type === 'rect') {
+      html += `<span class="rect" style="border-color:${def.color};"></span>`;
+    } else if (def.type === 'cross') {
+      html += `<span class="cross"></span>`;
+    }
+    html += `</span><span>${def.name}</span></div>`;
+  }
+  el.innerHTML = html;
+
+  el.querySelectorAll('.legend-row').forEach(rowEl => {
+    rowEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const line = rowEl.dataset.line;
+      if (!line) return;
+      if (visibleLines.has(line)) visibleLines.delete(line);
+      else visibleLines.add(line);
+      refreshAllLegends();
+      renderAll();
+    });
+  });
+}
+
+function refreshAllLegends() {
+  for (const cell of cells.values()) {
+    const el = cell.view.legend;
+    if (!el) continue;
+    el.querySelectorAll('.legend-row').forEach(rowEl => {
+      const line = rowEl.dataset.line;
+      if (!line) return;
+      rowEl.classList.toggle('is-hidden', !visibleLines.has(line));
+    });
+  }
+}
+
+// ============================================================
+// 自动加载
+// ============================================================
+
+async function autoLoad() {
+  loadingText.textContent = '加载部位网格 ...';
+  let gridOK = false;
+  try {
+    const text = await fetch(PATH_GRID).then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.text();
+    });
+    loadGridFromText(text);
+    gridOK = true;
+  } catch (e) { console.error('grid 加载失败', e); }
+
+  loadingText.textContent = '加载假人原图 ...';
+  let imgOK = false;
+  try {
+    const resp = await fetch(PATH_IMG);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const blob = await resp.blob();
+    await loadImageFromBlob(blob);
+    imgOK = true;
+  } catch (e) { console.error('原图加载失败', e); }
+
+  loadingText.textContent = '加载 data.json ...';
+  let dataOK = false;
+  try {
+    const resp = await fetch(PATH_DATA_JSON);
+    if (resp.ok) {
+      dataJson = await resp.json();
+      dataOK = true;
+    }
+  } catch (e) { console.warn('data.json 加载失败', e); }
+
+  loadingText.textContent = '读取裸弹道索引 ...';
+  let indexOK = false;
+  try {
+    const resp = await fetch(PATH_INDEX);
+    if (resp.ok) {
+      const idx = await resp.json();
+      if (Array.isArray(idx.files) && idx.files.length > 0) {
+        fileList = idx.files;
+        indexOK = true;
+      }
+    }
+  } catch (e) {
+    console.warn('_index.json 读取失败，用 fallback 列表', e);
+  }
+  if (!indexOK) fileList = FALLBACK_FILES.slice();
+
+  loadingText.textContent = `加载裸弹道 (${fileList.length} 个) ...`;
+  let nLoaded = 0, nFailed = 0;
+  for (const fname of fileList) {
+    try {
+      const url = PATH_TRACKS + encodeURIComponent(fname);
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const text = await resp.text();
+      if (text.trim().startsWith('<')) throw new Error('返回的是 HTML，不是 JSON');
+      allTracks[fname] = JSON.parse(text);
+      nLoaded++;
+    } catch (e) {
+      console.warn(`加载失败: ${fname}`, e);
+      nFailed++;
+    }
+  }
+
+  buildWeaponListFromData();
+
+  document.getElementById('autoLoadInfo').innerHTML =
+    `grid: ${gridOK ? 'OK' : '<span class="err">失败</span>'} · ` +
+    `原图: ${imgOK ? 'OK' : '<span class="err">失败</span>'} · ` +
+    `data: ${dataOK ? 'OK' : '<span class="err">失败</span>'}<br>` +
+    `索引: ${indexOK ? 'OK' : '<span class="warn">fallback</span>'} · ` +
+    `弹道: ${nLoaded}/${fileList.length}` +
+    (nFailed > 0 ? ` <span class="err">(${nFailed} 失败)</span>` : '') + `<br>` +
+    `配置: <b>${weaponListCache.length}</b> 条`;
+
+  renderWeaponList();
+  loadingEl.classList.add('hidden');
+
+  resizeAll();
+  fitAllToWindow();
+  renderAll();
+  updatePlayUI();
+}
+
+function loadGridFromText(text) {
+  const lines = text.split('\n').filter(l => l.trim().length > 0);
+  const newGrid = new Uint8Array(IMG_W * IMG_H);
+  for (let y = 0; y < IMG_H && y < lines.length; y++) {
+    const parts = lines[y].trim().split(/\s+/);
+    for (let x = 0; x < IMG_W && x < parts.length; x++) {
+      newGrid[y * IMG_W + x] = parseInt(parts[x], 10) || 0;
+    }
+  }
+  grid = newGrid;
+}
+
+function loadImageFromBlob(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const tmp = document.createElement('canvas');
+      tmp.width = IMG_W;
+      tmp.height = IMG_H;
+      const tmpCtx = tmp.getContext('2d');
+      tmpCtx.drawImage(img, 0, 0, IMG_W, IMG_H);
+      baseImage = tmp;
+      URL.revokeObjectURL(url);
+      resolve();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('图片失败')); };
+    img.src = url;
+  });
+}
+
+// ============================================================
+// 构建武器列表
+// ============================================================
+
+function buildWeaponListFromData() {
+  weaponListCache = [];
+
+  if (dataJson && Array.isArray(dataJson.prices) && dataJson.prices.length > 0) {
+    const weaponsMap = {};
+    for (const w of dataJson.weapons || []) weaponsMap[w.id] = w;
+
+    for (const price of dataJson.prices) {
+      const weaponId = price.weaponId;
+      const weaponName = price.weaponName || '';
+      const configs = price.configs || [];
+
+      const baseFname = `${weaponName}_1.json`;
+      const baseTrack = allTracks[baseFname] || null;
+      const baseWeapon = weaponsMap[weaponId] || null;
+
+      for (const config of configs) {
+        const configId = config.id || '#1';
+        const baseRof = baseWeapon?.rof || 600;
+        let rofMult = 1;
+        if (config.barrelId >= 0 &&
+            baseWeapon?.barrels && baseWeapon.barrels[config.barrelId]) {
+          rofMult = baseWeapon.barrels[config.barrelId].rofMult ?? 1;
+        }
+        const fireRate = Math.round(baseRof * rofMult);
+
+        weaponListCache.push({
+          weaponId, weaponName, configId, config, baseWeapon, fireRate,
+          fname: baseFname, track: baseTrack, hasTrack: !!baseTrack,
+        });
+      }
+    }
+    return;
+  }
+
+  for (const fname of fileList) {
+    const track = allTracks[fname];
+    if (!track) continue;
+    weaponListCache.push({
+      weaponId: track.weaponId,
+      weaponName: track.weaponName || fname,
+      configId: track.configId || '#1',
+      config: null, baseWeapon: null,
+      fireRate: track.fireRate || 600,
+      fname, track, hasTrack: true,
+    });
+  }
+}
+
+// ============================================================
+// 武器列表渲染
+// ============================================================
+
+function renderWeaponList() {
+  const listEl = document.getElementById('weaponList');
+  listEl.innerHTML = '';
+
+  if (weaponListCache.length === 0) {
+    listEl.innerHTML = `<div class="empty">⚠️ 没有配置</div>`;
+    return;
+  }
+
+  const q = currentSearchQuery.trim().toLowerCase();
+  let filtered = weaponListCache;
+  if (q) {
+    filtered = weaponListCache.filter(item =>
+      (item.weaponName || '').toLowerCase().includes(q) ||
+      (item.configId || '').toLowerCase().includes(q)
+    );
+  }
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = `<div class="empty">没有匹配的武器</div>`;
+    return;
+  }
+
+  const sorted = filtered.slice().sort((a, b) => {
+    if (a.weaponId !== b.weaponId) return a.weaponId - b.weaponId;
+    const na = parseInt(String(a.configId).replace('#',''), 10) || 0;
+    const nb = parseInt(String(b.configId).replace('#',''), 10) || 0;
+    return na - nb;
+  });
+
+  for (const item of sorted) {
+    const div = document.createElement('div');
+    div.className = 'weapon-item';
+    div.dataset.key = `${item.weaponId}#${item.configId}`;
+
+    if (currentItem &&
+        currentItem.weaponId === item.weaponId &&
+        currentItem.configId === item.configId) {
+      div.classList.add('active');
+    }
+
+    const aimSpeed = item.config?.aimSpeed;
+    const statusText = item.hasTrack
+      ? (aimSpeed != null ? `${aimSpeed}ms` : 'OK')
+      : '无弹道';
+
+    div.innerHTML =
+      `<span class="name">${item.weaponName}</span>` +
+      `<span class="cfg">${item.configId}</span>` +
+      `<span class="status ok">${statusText}</span>`;
+
+    div.addEventListener('click', () => selectWeapon(item));
+    listEl.appendChild(div);
+  }
+}
+
+// ============================================================
+// 选中武器
+// ============================================================
+
+function selectWeapon(item) {
+  if (!item) return;
+
+  currentItem = item;
+  currentFname = item.fname;
+  currentTrack = item.track;
+
+  document.querySelectorAll('.weapon-item').forEach(el => {
+    el.classList.toggle('active',
+      el.dataset.key === `${item.weaponId}#${item.configId}`);
+  });
+
+  stopAnimation();
+  for (const cell of cells.values()) cell.simResult = null;
+
+  updateSeedInputFromCurrent();
+  renderConfigDetail(item);
+  renderAll();
+  updatePlayUI();
+  updateStats();
+}
+
+function getDefaultSeed(fname, dist) {
+  return hashSeed(`${fname}#${dist}#run0`);
+}
+
+function updateSeedInputFromCurrent() {
+  if (!currentFname) return;
+  const seed = getDefaultSeed(currentFname, 30);
+  document.getElementById('seedInput').value = String(seed);
+}
+
+// ============================================================
+// 渲染配置数据
+// ============================================================
+
+function fmtVal(v, unit = '', digits = null) {
+  if (v === null || v === undefined) return '<span class="v missing">—</span>';
+  if (typeof v === 'number' && digits !== null) {
+    return `<span class="v">${v.toFixed(digits)}${unit}</span>`;
+  }
+  return `<span class="v">${v}${unit}</span>`;
+}
+
+function fmtRow(label, value) {
+  return `<div class="row"><span class="k">${label}</span>${value}</div>`;
+}
+
+function renderConfigDetail(item) {
+  const el = document.getElementById('configDetail');
+
+  if (!item) {
+    el.innerHTML = '<div class="empty">未选择武器</div>';
+    return;
+  }
+
+  const c = item.config || {};
+  const bw = item.baseWeapon || {};
+  const html = [];
+
+  html.push('<div class="section-title">基础</div>');
+  html.push(fmtRow('武器', `<span class="v">${item.weaponName}</span>`));
+  html.push(fmtRow('配置', `<span class="v">${item.configId}</span>`));
+  html.push(fmtRow('枪管', fmtVal(c.barrel || '无')));
+  html.push(fmtRow('枪口', fmtVal(c.muzzle || '无')));
+  html.push(fmtRow('精校', fmtVal(c.precision, '', 2)));
+  html.push(fmtRow('子弹', fmtVal(c.bullet || '无')));
+  html.push(fmtRow('射速', fmtVal(item.fireRate, ' RPM')));
+
+  html.push('<div class="section-title">价格 / 开镜</div>');
+  if (c.price != null) {
+    html.push(fmtRow('价格', `<span class="v">${(c.price / 10000).toFixed(1)} W</span>`));
+  } else {
+    html.push(fmtRow('价格', '<span class="v missing">—</span>'));
+  }
+  html.push(fmtRow('开镜时间', fmtVal(c.aimSpeed, ' ms')));
+
+  html.push('<div class="section-title">呼吸 / 屏息</div>');
+  html.push(fmtRow('呼吸晃动', fmtVal(c.breathSway, '', 2)));
+  html.push(fmtRow('屏息时长', fmtVal(c.breathHoldDuration, ' s', 2)));
+  html.push(fmtRow('屏息减免', fmtVal(c.breathHoldReduction, '', 3)));
+
+  html.push('<div class="section-title">后坐力</div>');
+  html.push(fmtRow('垂后(自)', fmtVal(c.recoilVerticalAuto, '', 2)));
+  html.push(fmtRow('水后(自)', fmtVal(c.recoilHorizontalAuto, '', 2)));
+  html.push(fmtRow('垂后(单)', fmtVal(c.recoilVerticalBurst, '', 2)));
+  html.push(fmtRow('水后(单)', fmtVal(c.recoilHorizontalBurst, '', 2)));
+  html.push(fmtRow('开火稳定性', fmtVal(c.stabilityMultiplier, '', 2)));
+
+  html.push('<div class="section-title">武器级</div>');
+  html.push(fmtRow('基础开火稳定性', fmtVal(bw.baseStability, '', 2)));
+
+  const sigmaScale = parseFloat(document.getElementById('sigmaScaleRange').value) || 1.5;
+  let sigmaVal = null;
+  if (typeof bw.baseStability === 'number' && isFinite(bw.baseStability) &&
+      typeof c.stabilityMultiplier === 'number' && isFinite(c.stabilityMultiplier)) {
+    sigmaVal = bw.baseStability * c.stabilityMultiplier * sigmaScale;
+  }
+  html.push('<div class="section-title">实时计算</div>');
+  html.push(fmtRow('σ（自动）', fmtVal(sigmaVal, '', 3)));
+
+  html.push('<div class="section-title">命中率</div>');
+  if (Array.isArray(c.distance) && Array.isArray(c.hitRate)) {
+    const n = Math.min(c.distance.length, c.hitRate.length);
+    if (n === 0) {
+      html.push('<div class="row"><span class="k">—</span></div>');
+    } else {
+      for (let i = 0; i < n; i++) {
+        html.push(fmtRow(`${c.distance[i]} m`,
+          `<span class="v">${(c.hitRate[i] * 100).toFixed(1)}%</span>`));
+      }
+    }
+  } else {
+    html.push('<div class="row"><span class="k">—</span></div>');
+  }
+
+  html.push('<div class="section-title">裸弹道</div>');
+  if (item.hasTrack) {
+    const rounds = item.track.rounds || (item.track.shots || []).length;
+    html.push(fmtRow('状态', `<span class="v ok">✅ ${rounds} 发</span>`));
+    html.push(fmtRow('文件', `<span class="v" style="font-size:10px;">${item.fname}</span>`));
+  } else {
+    html.push(fmtRow('状态', '<span class="v warn">⚠️ 无裸弹道</span>'));
+  }
+
+  el.innerHTML = html.join('');
+}
+
+// ============================================================
+// 参数
+// ============================================================
+
+function getFireRate() {
+  if (currentItem && currentItem.fireRate) return currentItem.fireRate;
+  if (currentTrack && currentTrack.fireRate) return currentTrack.fireRate;
+  return 600;
+}
+
+function getParams(distanceOverride) {
+  const c = (currentItem && currentItem.config) || {};
+  const bw = (currentItem && currentItem.baseWeapon) || {};
+
+  const distance = distanceOverride !== undefined ? distanceOverride : 30;
+
+  const sigmaScale = parseFloat(document.getElementById('sigmaScaleRange').value) || 1.5;
+  let sigma = 0.8;
+  if (typeof bw.baseStability === 'number' && isFinite(bw.baseStability) &&
+      typeof c.stabilityMultiplier === 'number' && isFinite(c.stabilityMultiplier)) {
+    sigma = bw.baseStability * c.stabilityMultiplier * sigmaScale;
+  }
+
+  const breathScale = parseFloat(document.getElementById('breathScaleRange').value) || 10;
+  let breathAmp = 4.0;
+  if (typeof c.breathSway === 'number' && isFinite(c.breathSway)) {
+    breathAmp = c.breathSway * breathScale;
+  }
+
+  let aimSpeed = 0.3;
+  if (typeof c.aimSpeed === 'number' && isFinite(c.aimSpeed) && c.aimSpeed > 0) {
+    aimSpeed = c.aimSpeed / 1000;
+  }
+
+  let breathHoldDuration = 30;
+  if (typeof c.breathHoldDuration === 'number' && isFinite(c.breathHoldDuration) && c.breathHoldDuration > 0) {
+    breathHoldDuration = c.breathHoldDuration;
+  }
+
+  let breathHoldReduction = 0.867;
+  if (typeof c.breathHoldReduction === 'number' && isFinite(c.breathHoldReduction) && c.breathHoldReduction > 0) {
+    breathHoldReduction = c.breathHoldReduction;
+  }
+
+  return {
+    distance, aimSpeed,
+    fireRate: getFireRate(),
+    breathHoldDuration, breathHoldReduction,
+    sigma, breathAmp,
+    breathFreq: parseFloat(document.getElementById('breathFreqRange').value),
+    aMaxV: parseFloat(document.getElementById('aMaxVRange').value),
+    aMaxH: parseFloat(document.getElementById('aMaxHRange').value),
+    fbThresh: getFbThreshold(distance),
+    fbAccelV: parseFloat(document.getElementById('fbAccelVRange').value),
+    fbAccelH: parseFloat(document.getElementById('fbAccelHRange').value),
+    smoothWin: parseInt(document.getElementById('smoothWinRange').value, 10),
+  };
+}
+
+function getAimPct(distance) {
+  const map = { 30: 0.45, 50: 0.47, 100: 0.485 };
+  const y = map[distance] || 0.45;
+  return { x: 0.50 * 100, y: y * 100 };
+}
+
+function getRecoilMultiplier() {
+  const c = (currentItem && currentItem.config) || {};
+  const bw = (currentItem && currentItem.baseWeapon) || {};
+  const fireMode = bw.fireMode || null;
+
+  let v = 1.0, h = 1.0;
+  if (fireMode === 'burst') {
+    v = (typeof c.recoilVerticalBurst === 'number' && isFinite(c.recoilVerticalBurst))
+      ? c.recoilVerticalBurst : 1.0;
+    h = (typeof c.recoilHorizontalBurst === 'number' && isFinite(c.recoilHorizontalBurst))
+      ? c.recoilHorizontalBurst : 1.0;
+  } else {
+    v = (typeof c.recoilVerticalAuto === 'number' && isFinite(c.recoilVerticalAuto))
+      ? c.recoilVerticalAuto : 1.0;
+    h = (typeof c.recoilHorizontalAuto === 'number' && isFinite(c.recoilHorizontalAuto))
+      ? c.recoilHorizontalAuto : 1.0;
+  }
+  return { v, h };
+}
+
+// ============================================================
+// 工具
+// ============================================================
+
+function smoothShots(shots, window) {
+  const n = shots.length;
+  if (n === 0) return [];
+  if (window <= 1 || window > n) {
+    return shots.map(s => ({ x: s.x, y: s.y }));
+  }
+  const half = Math.floor(window / 2);
+  const padded = [];
+  for (let i = 0; i < half; i++) padded.push(shots[0]);
+  for (const s of shots) padded.push(s);
+  for (let i = 0; i < half; i++) padded.push(shots[n - 1]);
+
+  const result = [];
+  for (let i = 0; i < n; i++) {
+    let sx = 0, sy = 0;
+    for (let j = i; j < i + window; j++) {
+      sx += padded[j].x;
+      sy += padded[j].y;
+    }
+    result.push({ x: sx / window, y: sy / window });
+  }
+  result[0] = { x: shots[0].x, y: shots[0].y };
+  result[n - 1] = { x: shots[n - 1].x, y: shots[n - 1].y };
+  return result;
+}
+
+function avg(arr) {
+  if (!arr || arr.length === 0) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+// ============================================================
+// 屏息判定（逐发消耗）
+// ============================================================
+
+function isBreathHoldOn(i, breathHoldEff, interval_s) {
+  const consumedAfterThisShot = (i + 1) * (interval_s + 1);
+  return (breathHoldEff - consumedAfterThisShot) > 0;
+}
+
+// ============================================================
+// 逐发累加的后坐力偏移
+// ============================================================
+
+function buildRecoilSteps(bareShots, n, recoil, breathHoldEff, interval_s, breathHoldReduction) {
+  const steps = [];
+  const cumulative = [];
+  let cumX = 0, cumY = 0;
+
+  for (let i = 0; i < n; i++) {
+    let deltaBareX = 0, deltaBareY = 0;
+    if (i > 0) {
+      deltaBareX = bareShots[i].x - bareShots[i - 1].x;
+      deltaBareY = bareShots[i].y - bareShots[i - 1].y;
+    }
+
+    const holdOn = isBreathHoldOn(i, breathHoldEff, interval_s);
+
+    let stepX = deltaBareX * recoil.h;
+    let stepY = deltaBareY * recoil.v;
+    if (holdOn) {
+      stepX *= breathHoldReduction;
+      stepY *= breathHoldReduction;
+    }
+
+    cumX += stepX;
+    cumY += stepY;
+    steps.push({ dx: stepX, dy: stepY, holdOn });
+    cumulative.push({ x: cumX, y: cumY, holdOn });
+  }
+
+  return { steps, cumulative };
+}
+
+// ============================================================
+// 模拟核心
+// ============================================================
+
+function simulate(opts = {}) {
+  const track = opts.trackOverride || currentTrack;
+  if (!track || !track.shots) return null;
+
+  const p = getParams(opts.distanceOverride);
+  const rng = opts.rng || null;
+  const rand = rng ? rng : Math.random;
+  const gauss = (mu, sigma) => gaussRng(rand, mu, sigma);
+
+  const bareShots = track.shots;
+  const n = bareShots.length;
+
+  const aimPct = getAimPct(p.distance);
+  const recoil = getRecoilMultiplier();
+
+  const fireRate = p.fireRate;
+  const interval_s = 60.0 / fireRate;
+
+  const breathHoldEff = Math.max(0, p.breathHoldDuration - p.aimSpeed);
+
+  const { steps: recoilSteps, cumulative: recoilCumulative } =
+    buildRecoilSteps(
+      bareShots, n, recoil, breathHoldEff, interval_s, p.breathHoldReduction
+    );
+
+  let breathEndIdx = -1;
+  for (let i = 0; i < n; i++) {
+    if (!recoilCumulative[i].holdOn) { breathEndIdx = i; break; }
+  }
+
+  const uncontrolledPoints = [];
+  for (let i = 0; i < n; i++) {
+    const cum = recoilCumulative[i];
+    uncontrolledPoints.push({
+      x: aimPct.x + cum.x,
+      y: aimPct.y + cum.y,
+      i, holdOn: cum.holdOn,
+    });
+  }
+
+  const smoothedCurve = smoothShots(uncontrolledPoints, p.smoothWin);
+
+  const idealTrack = smoothedCurve.map(h => ({
+    x: 2 * aimPct.x - h.x,
+    y: 2 * aimPct.y - h.y,
+  }));
+
+  function getPartAt(x_pct, y_pct, s) {
+    const vx = x_pct / 100 * IMG_W;
+    const vy = y_pct / 100 * IMG_H;
+    const dx = vx - CX;
+    const dy = vy - CY;
+    const ix = CX + dx / s;
+    const iy = CY + dy / s;
+    const gx = Math.floor(ix);
+    const gy = Math.floor(iy);
+    if (gx < 0 || gx >= IMG_W || gy < 0 || gy >= IMG_H) return 0;
+    return grid[gy * IMG_W + gx];
+  }
+
+  // 逐发噪声（发号 0 无噪声）
+  function genNoiseSeq() {
+    const seq = [{ x: 0, y: 0 }];
+    for (let i = 1; i < n; i++) {
+      seq.push({ x: gauss(0, p.sigma), y: gauss(0, p.sigma) });
+    }
+    return seq;
+  }
+
+  // 逐发呼吸（屏息结束前为 0）
+  function genBreathSeq() {
+    const phase0 = rand() * 2 * Math.PI;
+
+    function breathPosAt(t) {
+      return {
+        x: p.breathAmp * Math.sin(2 * Math.PI * p.breathFreq * t + phase0),
+        y: (p.breathAmp * 0.5) * Math.sin(
+          2 * Math.PI * 2 * p.breathFreq * t + phase0 * 2
+        ),
+      };
+    }
+
+    const breathStartIdx = breathEndIdx >= 0 ? breathEndIdx : n;
+    const pRef = breathPosAt(breathStartIdx * interval_s);
+
+    const seq = [];
+    for (let i = 0; i < n; i++) {
+      if (i < breathStartIdx) {
+        seq.push({ x: 0, y: 0 });
+      } else {
+        const pos = breathPosAt(i * interval_s);
+        seq.push({ x: pos.x - pRef.x, y: pos.y - pRef.y });
+      }
+    }
+    return seq;
+  }
+
+  const s = getScale(p.distance);
+  const noiseSeq = genNoiseSeq();
+  const breathSeq = genBreathSeq();
+
+  // 裸弹道落点
+  const bareHits = bareShots.map((b, i) => ({
+    x: b.x, y: b.y, i, holdOn: true,
+  }));
+  bareHits.forEach(h => { h.partIdx = getPartAt(h.x, h.y, s); });
+
+  // 不压枪落点
+  const uncontrolledHits = uncontrolledPoints.map(h => ({
+    x: h.x, y: h.y, i: h.i, holdOn: h.holdOn,
+  }));
+  uncontrolledHits.forEach(h => { h.partIdx = getPartAt(h.x, h.y, s); });
+
+  // ============================================================
+  // 逐发鼠标轨迹（受加速度上限约束）
+  // ============================================================
+  function buildMouseTrackFF(idealPerShot) {
+    const nn = idealPerShot.length;
+    const result = [{ x: idealPerShot[0].x, y: idealPerShot[0].y }];
+    let vx = 0, vy = 0;
+
+    for (let i = 1; i < nn; i++) {
+      const prev = result[i - 1];
+      const tgt = idealPerShot[i];
+
+      const tvx = (tgt.x - prev.x) / interval_s;
+      const tvy = (tgt.y - prev.y) / interval_s;
+
+      const dvx = tvx - vx;
+      const maxDvx = p.aMaxH * interval_s;
+      if (Math.abs(dvx) > maxDvx) vx += Math.sign(dvx) * maxDvx;
+      else vx = tvx;
+
+      const dvy = tvy - vy;
+      const maxDvy = p.aMaxV * interval_s;
+      if (Math.abs(dvy) > maxDvy) vy += Math.sign(dvy) * maxDvy;
+      else vy = tvy;
+
+      result.push({
+        x: prev.x + vx * interval_s,
+        y: prev.y + vy * interval_s,
+      });
+    }
+    return result;
+  }
+
+  const smoothMouseTrack = buildMouseTrackFF(idealTrack);
+
+  // ============================================================
+  // 逐发反馈拉枪（带加速度上限）
+  // ============================================================
+  function buildMouseTrackWithFeedback(baseMouseTrack, opts2) {
+    const nn = baseMouseTrack.length;
+    const real = [{ x: baseMouseTrack[0].x, y: baseMouseTrack[0].y }];
+    const hits = [];
+
+    const noise0 = opts2.noise ? opts2.noise[0] : { x: 0, y: 0 };
+    const breath0 = opts2.breath ? opts2.breath[0] : { x: 0, y: 0 };
+    const cum0 = recoilCumulative[0];
+    hits.push({
+      x: real[0].x + cum0.x + noise0.x + breath0.x,
+      y: real[0].y + cum0.y + noise0.y + breath0.y,
+    });
+
+    let vFBx = 0, vFBy = 0;
+    const fbOffsetList = [[0, 0]];
+    const vFbList = [[0, 0]];
+    const triggeredList = [false];
+
+    for (let i = 1; i < nn; i++) {
+      const prevHit = hits[i - 1];
+      const devX = prevHit.x - aimPct.x;
+      const devY = prevHit.y - aimPct.y;
+      const devLen = Math.hypot(devX, devY);
+
+      let triggered = false;
+      if (devLen > p.fbThresh && devLen > 0) {
+        const dirX = -devX / devLen;
+        const dirY = -devY / devLen;
+        vFBx += dirX * p.fbAccelH * interval_s;
+        vFBy += dirY * p.fbAccelV * interval_s;
+        triggered = true;
+      }
+
+      const stepMouseX = baseMouseTrack[i].x - baseMouseTrack[i - 1].x;
+      const stepMouseY = baseMouseTrack[i].y - baseMouseTrack[i - 1].y;
+
+      const prevReal = real[i - 1];
+      const realX = prevReal.x + stepMouseX + vFBx * interval_s;
+      const realY = prevReal.y + stepMouseY + vFBy * interval_s;
+      real.push({ x: realX, y: realY });
+
+      const cum = recoilCumulative[i];
+      const noise = opts2.noise ? opts2.noise[i] : { x: 0, y: 0 };
+      const breath = opts2.breath ? opts2.breath[i] : { x: 0, y: 0 };
+      hits.push({
+        x: realX + cum.x + noise.x + breath.x,
+        y: realY + cum.y + noise.y + breath.y,
+      });
+
+      const prevFb = fbOffsetList[fbOffsetList.length - 1];
+      fbOffsetList.push([
+        prevFb[0] + vFBx * interval_s,
+        prevFb[1] + vFBy * interval_s,
+      ]);
+      vFbList.push([vFBx, vFBy]);
+      triggeredList.push(triggered);
+    }
+
+    return { mouseTrack: real, hits, fbOffsetList, vFbList, triggeredList };
+  }
+
+  const fbResult = buildMouseTrackWithFeedback(smoothMouseTrack, {
+    noise: noiseSeq, breath: breathSeq,
+  });
+  const fbHits = fbResult.hits.map((h, i) => ({
+    x: h.x, y: h.y, i, holdOn: recoilCumulative[i].holdOn,
+  }));
+  fbHits.forEach(h => { h.partIdx = getPartAt(h.x, h.y, s); });
+
+  // ============================================================
+  // 密集轨迹：把逐发锚点用 Catmull-Rom 样条加密
+  // 关键性质：dense[i*SUB_STEPS] === anchor[i]，即样条逐发精确穿过锚点。
+  // ============================================================
+  function catmullRomDense(anchorPts, subSteps) {
+    const N = anchorPts.length;
+    if (N < 2) return anchorPts.slice();
+
+    function getPt(i) {
+      if (i < 0) return anchorPts[0];
+      if (i >= N) return anchorPts[N - 1];
+      return anchorPts[i];
+    }
+
+    const out = [];
+    for (let i0 = 0; i0 < N - 1; i0++) {
+      const p0 = getPt(i0 - 1);
+      const p1 = getPt(i0);
+      const p2 = getPt(i0 + 1);
+      const p3 = getPt(i0 + 2);
+
+      for (let k = 0; k < subSteps; k++) {
+        const t = k / subSteps;
+        const t2 = t * t;
+        const t3 = t2 * t;
+
+        const x = 0.5 * (
+          (2 * p1.x) +
+          (-p0.x + p2.x) * t +
+          (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+          (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+        );
+        const y = 0.5 * (
+          (2 * p1.y) +
+          (-p0.y + p2.y) * t +
+          (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+          (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+        );
+        out.push({ x, y });
+      }
+    }
+    out.push({ x: anchorPts[N - 1].x, y: anchorPts[N - 1].y });
+    return out;
+  }
+
+  const denseMouseTrack = catmullRomDense(smoothMouseTrack, SUB_STEPS);
+  const denseHits = catmullRomDense(fbHits, SUB_STEPS);
+
+  function calcStats(hits) {
+    let hitCount = 0;
+    const partCounts = {};
+    for (const p2 of PARTS) partCounts[p2.idx] = 0;
+    for (const h of hits) {
+      partCounts[h.partIdx]++;
+      if (h.partIdx !== 0) hitCount++;
+    }
+    return {
+      hitCount,
+      hitRate: hits.length > 0 ? hitCount / hits.length * 100 : 0,
+      partCounts,
+      total: hits.length,
+    };
+  }
+
+  const bareStats = calcStats(bareHits);
+  const uncontrolledStats = calcStats(uncontrolledHits);
+
+  const smoothHits = fbHits.map((h, i) => ({
+    x: h.x, y: h.y, i, holdOn: h.holdOn, partIdx: h.partIdx,
+  }));
+  const smoothStats = calcStats(smoothHits);
+
+  const fbStats = calcStats(fbHits);
+
+  return {
+    params: p,
+    s,
+    recoil,
+    bareShots,
+    aimPct,
+    smoothCurve: smoothedCurve,
+    idealTrack,
+    recoilSteps,
+    recoilCumulative,
+    interval_s,
+    subSteps: SUB_STEPS,
+    totalShots: n,
+    breathHoldEff,
+    breathEndIdx,
+
+    bare: { hits: bareHits, ...bareStats },
+    uncontrolled: { hits: uncontrolledHits, ...uncontrolledStats },
+    smooth: {
+      mouseTrack: smoothMouseTrack,
+      hits: smoothHits,
+      ...smoothStats,
+    },
+    full: {
+      mouseTrack: fbResult.mouseTrack,
+      hits: fbHits,
+      targets: null,
+      feedbackPoints: fbResult.fbOffsetList.map(([dx, dy]) => ({
+        x: aimPct.x + dx,
+        y: aimPct.y + dy,
+      })),
+      fbOffsetList: fbResult.fbOffsetList,
+      triggeredList: fbResult.triggeredList,
+      denseMouseTrack,
+      denseHits,
+      ...fbStats,
+    },
+  };
+}
+
+// ============================================================
+// 运行
+// ============================================================
+
+function getCurrentSeed() {
+  const raw = document.getElementById('seedInput').value.trim();
+  const n = parseInt(raw, 10);
+  if (isNaN(n)) return null;
+  return n >>> 0;
+}
+
+function runCurrentTab() {
+  if (!currentTrack) {
+    alert('请先选武器（需要有裸弹道）');
+    return;
+  }
+
+  stopAnimation();
+  anim.currentShot = 0;
+  anim.shotProgress = 0;
+  anim.accumulatedTime = 0;
+
+  const userSeed = getCurrentSeed();
+
+  if (currentTab === 'live') {
+    for (const cell of cells.values()) {
+      if (cell.type !== CELL_LIVE) continue;
+      const dist = cell.distance;
+      const seed = (userSeed !== null)
+        ? (userSeed + dist) >>> 0
+        : hashSeed(`${currentFname}#${dist}#run0`);
+      const rng = makeRng(seed);
+      cell.simResult = simulate({ distanceOverride: dist, rng });
+    }
+  } else {
+    const dist = 30;
+    const seed = (userSeed !== null)
+      ? (userSeed + dist) >>> 0
+      : hashSeed(`${currentFname}#${dist}#run0`);
+    const rng = makeRng(seed);
+
+    const simResult = simulate({ distanceOverride: dist, rng });
+
+    for (const cell of cells.values()) {
+      if (cell.type === CELL_BARE
+          || cell.type === CELL_UNCONTROLLED
+          || cell.type === CELL_SMOOTH) {
+        cell.simResult = simResult;
+      }
+    }
+  }
+
+  renderAll();
+  updatePlayUI();
+  updateStats();
+  playAnimation();
+}
+
+// ============================================================
+// 动画控制
+// ============================================================
+
+function getCurrentTabCells() {
+  const result = [];
+  for (const cell of cells.values()) {
+    if (currentTab === 'live' && cell.type === CELL_LIVE) result.push(cell);
+    if (currentTab === 'static' && (
+        cell.type === CELL_BARE
+        || cell.type === CELL_UNCONTROLLED
+        || cell.type === CELL_SMOOTH)) {
+      result.push(cell);
+    }
+  }
+  return result;
+}
+
+function resetAnimation() {
+  anim.playing = false;
+  anim.currentShot = 0;
+  anim.shotProgress = 0;
+  anim.accumulatedTime = 0;
+  anim.lastFrameTime = 0;
+  if (anim.rafId !== null) {
+    cancelAnimationFrame(anim.rafId);
+    anim.rafId = null;
+  }
+  updatePlayUI();
+  renderAll();
+}
+
+function stopAnimation() {
+  anim.playing = false;
+  if (anim.rafId !== null) {
+    cancelAnimationFrame(anim.rafId);
+    anim.rafId = null;
+  }
+}
+
+function playAnimation() {
+  if (!currentTrack) return;
+
+  const tabCells = getCurrentTabCells();
+  const hasAny = tabCells.some(c => c.simResult);
+  if (!hasAny) { alert('请先点「▶ 运行」'); return; }
+
+  let maxShots = 0;
+  for (const cell of tabCells) {
+    if (cell.simResult && cell.simResult.totalShots > maxShots) {
+      maxShots = cell.simResult.totalShots;
+    }
+  }
+
+  if (anim.currentShot >= maxShots) {
+    anim.currentShot = 0;
+    anim.shotProgress = 0;
+    anim.accumulatedTime = 0;
+  }
+  anim.playing = true;
+  anim.lastFrameTime = performance.now();
+  if (anim.rafId === null) {
+    anim.rafId = requestAnimationFrame(animationLoop);
+  }
+  updatePlayUI();
+}
+
+function pauseAnimation() {
+  anim.playing = false;
+  if (anim.rafId !== null) {
+    cancelAnimationFrame(anim.rafId);
+    anim.rafId = null;
+  }
+  updatePlayUI();
+}
+
+function animationLoop(now) {
+  anim.rafId = null;
+  if (!anim.playing) return;
+
+  const dt = Math.min((now - anim.lastFrameTime) / 1000, 0.5);
+  anim.lastFrameTime = now;
+
+  const tabCells = getCurrentTabCells();
+
+  let interval = 0.1;
+  for (const cell of tabCells) {
+    if (cell.simResult) { interval = cell.simResult.interval_s; break; }
+  }
+
+  anim.accumulatedTime += dt * anim.speed;
+
+  while (anim.accumulatedTime >= interval) {
+    anim.accumulatedTime -= interval;
+    anim.currentShot++;
+
+    let allDone = true;
+    for (const cell of tabCells) {
+      if (cell.simResult && anim.currentShot < cell.simResult.totalShots) {
+        allDone = false;
+        break;
+      }
+    }
+    if (allDone) {
+      anim.playing = false;
+      anim.shotProgress = 1;
+      updatePlayUI();
+      renderAll();
+      return;
+    }
+  }
+
+  anim.shotProgress = anim.accumulatedTime / interval;
+
+  renderAll();
+  updatePlayUI();
+
+  anim.rafId = requestAnimationFrame(animationLoop);
+}
+
+function setProgress(shot) {
+  anim.currentShot = Math.max(0, shot);
+  anim.shotProgress = 0;
+  anim.accumulatedTime = 0;
+  renderAll();
+  updatePlayUI();
+}
+
+function updatePlayUI() {
+  const tabCells = getCurrentTabCells();
+  let maxShots = 0;
+  for (const cell of tabCells) {
+    if (cell.simResult && cell.simResult.totalShots > maxShots) {
+      maxShots = cell.simResult.totalShots;
+    }
+  }
+
+  let interval = 0.1;
+  for (const cell of tabCells) {
+    if (cell.simResult) { interval = cell.simResult.interval_s; break; }
+  }
+
+  const cur = anim.currentShot;
+  const t = cur * interval + anim.accumulatedTime;
+
+  document.getElementById('timeLabel').textContent =
+    `第 ${cur}/${maxShots} 发 · t=${t.toFixed(3)}s`;
+
+  const prog = document.getElementById('progressRange');
+  prog.max = maxShots;
+  prog.value = cur;
+
+  const hasAny = tabCells.some(c => c.simResult);
+
+  document.getElementById('btnRun').disabled = false;
+  document.getElementById('btnPause').disabled = !hasAny || !anim.playing;
+  document.getElementById('btnReset').disabled = !hasAny;
+  document.getElementById('speedSelect').disabled = !hasAny;
+  prog.disabled = !hasAny;
+
+  for (const cell of tabCells) {
+    const hitEl = cell.view.hitEl;
+    if (!cell.simResult) {
+      hitEl.textContent = '—';
+      hitEl.classList.add('muted');
+      continue;
+    }
+
+    let rate = 0;
+    if (cell.type === CELL_LIVE) rate = cell.simResult.full.hitRate;
+    else if (cell.type === CELL_BARE) rate = cell.simResult.bare.hitRate;
+    else if (cell.type === CELL_UNCONTROLLED) rate = cell.simResult.uncontrolled.hitRate;
+    else if (cell.type === CELL_SMOOTH) rate = cell.simResult.smooth.hitRate;
+
+    hitEl.textContent = `${rate.toFixed(1)}%`;
+    hitEl.classList.remove('muted');
+  }
+}
+
+// ============================================================
+// 渲染
+// ============================================================
+
+function resizeAll() {
+  for (const cell of cells.values()) {
+    const v = cell.view;
+    const rect = v.wrap.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
+    const dpr = window.devicePixelRatio || 1;
+
+    v.canvas.width = Math.round(rect.width * dpr);
+    v.canvas.height = Math.round(rect.height * dpr);
+    v.canvas.style.width = rect.width + 'px';
+    v.canvas.style.height = rect.height + 'px';
+    v.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    v.trail.width = Math.round(rect.width * dpr);
+    v.trail.height = Math.round(rect.height * dpr);
+    v.trail.style.width = rect.width + 'px';
+    v.trail.style.height = rect.height + 'px';
+    v.trailCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+}
+
+function fitAllToWindow() {
+  for (const cell of cells.values()) {
+    const v = cell.view;
+    const rect = v.wrap.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
+    const zx = rect.width / IMG_W;
+    const zy = rect.height / IMG_H;
+    v.zoom = Math.min(zx, zy) * 0.95;
+    v.panX = (rect.width - IMG_W * v.zoom) / 2;
+    v.panY = (rect.height - IMG_H * v.zoom) / 2;
+  }
+}
+
+function renderAll() {
+  for (const cell of cells.values()) renderOneCell(cell);
+}
+
+function renderOneCell(cell) {
+  const v = cell.view;
+  const rect = v.wrap.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+
+  const dpr = window.devicePixelRatio || 1;
+
+  v.ctx.save();
+  v.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  v.ctx.fillStyle = '#0a0c10';
+  v.ctx.fillRect(0, 0, rect.width, rect.height);
+  v.ctx.restore();
+
+  if (!cell.simResult) {
+    v.emptyEl.style.display = 'flex';
+    v.svg.innerHTML = '';
+    v.trailCtx.save();
+    v.trailCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    v.trailCtx.clearRect(0, 0, rect.width, rect.height);
+    v.trailCtx.restore();
+    v.info.style.display = 'none';
+    return;
+  }
+  v.emptyEl.style.display = 'none';
+
+  if (!grid) { v.svg.innerHTML = ''; return; }
+
+  const dist = cell.distance > 0 ? cell.distance : 30;
+  const s = getScale(dist);
+  const drawW = IMG_W * s;
+  const drawH = IMG_H * s;
+  const drawX = (IMG_W - drawW) / 2;
+  const drawY = (IMG_H - drawH) / 2;
+
+  if (baseImage) {
+    const imgScreenX = v.panX + drawX * v.zoom;
+    const imgScreenY = v.panY + drawY * v.zoom;
+    v.ctx.save();
+    v.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    v.ctx.beginPath();
+    v.ctx.rect(v.panX, v.panY, IMG_W * v.zoom, IMG_H * v.zoom);
+    v.ctx.clip();
+    v.ctx.imageSmoothingEnabled = false;
+    v.ctx.drawImage(baseImage, 0, 0, IMG_W, IMG_H,
+                    imgScreenX, imgScreenY, drawW * v.zoom, drawH * v.zoom);
+    v.ctx.restore();
+  }
+
+  const off = document.createElement('canvas');
+  off.width = IMG_W;
+  off.height = IMG_H;
+  const offCtx = off.getContext('2d');
+  const imgData = offCtx.createImageData(IMG_W, IMG_H);
+  for (let y = 0; y < IMG_H; y++) {
+    for (let x = 0; x < IMG_W; x++) {
+      const pidx = grid[y * IMG_W + x];
+      const i = (y * IMG_W + x) * 4;
+      if (pidx === 0) { imgData.data[i+3] = 0; continue; }
+      const part = IDX_TO_PART[pidx];
+      if (part) {
+        const c = hexToRgb(part.color);
+        imgData.data[i] = c.r;
+        imgData.data[i+1] = c.g;
+        imgData.data[i+2] = c.b;
+        imgData.data[i+3] = 90;
+      }
+    }
+  }
+  offCtx.putImageData(imgData, 0, 0);
+
+  v.ctx.save();
+  v.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  v.ctx.beginPath();
+  v.ctx.rect(v.panX, v.panY, IMG_W * v.zoom, IMG_H * v.zoom);
+  v.ctx.clip();
+  v.ctx.imageSmoothingEnabled = false;
+  v.ctx.drawImage(off, 0, 0, IMG_W, IMG_H,
+                  v.panX + drawX * v.zoom, v.panY + drawY * v.zoom,
+                  drawW * v.zoom, drawH * v.zoom);
+  v.ctx.restore();
+
+  v.ctx.save();
+  v.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  v.ctx.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+  v.ctx.lineWidth = 1;
+  v.ctx.setLineDash([6, 4]);
+  v.ctx.strokeRect(v.panX + drawX * v.zoom, v.panY + drawY * v.zoom,
+                   drawW * v.zoom, drawH * v.zoom);
+  v.ctx.restore();
+
+  renderTrailForCell(cell);
+  renderOverlayForCell(cell);
+}
+
+// ============================================================
+// 准心拖尾：用密集轨迹，按时间轴走
+// ============================================================
+function renderTrailForCell(cell) {
+  const v = cell.view;
+  const rect = v.wrap.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const ctx = v.trailCtx;
+
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  ctx.restore();
+
+  if (!cell.simResult) return;
+  if (!visibleLines.has('crossTrail')) return;
+  if (cell.type !== CELL_LIVE) return;
+
+  const sim = cell.simResult;
+  const denseHits = sim.full.denseHits;
+  if (!denseHits || denseHits.length === 0) return;
+
+  const subSteps = sim.subSteps || SUB_STEPS;
+  const interval = sim.interval_s;
+  const subDt = interval / subSteps;
+
+  const tGlobal = anim.currentShot * interval + anim.accumulatedTime;
+  const denseIdx = tGlobal / subDt;
+  const upto = Math.max(0, Math.min(Math.floor(denseIdx), denseHits.length - 1));
+
+  if (upto < 2) return;
+
+  const trailLen = Math.min(upto, subSteps * 8);
+  const start = upto - trailLen;
+
+  const zoom = v.zoom;
+  const panX = v.panX;
+  const panY = v.panY;
+
+  const pts = [];
+  for (let k = start; k <= upto; k++) {
+    const h = denseHits[k];
+    const ip = pctToImg(h.x, h.y);
+    pts.push({ x: panX + ip.x * zoom, y: panY + ip.y * zoom });
+  }
+
+  if (upto < denseHits.length - 1) {
+    const a = denseHits[upto];
+    const b = denseHits[upto + 1];
+    const f = denseIdx - Math.floor(denseIdx);
+    const ipA = pctToImg(a.x, a.y);
+    const ipB = pctToImg(b.x, b.y);
+    pts.push({
+      x: panX + (ipA.x + (ipB.x - ipA.x) * f) * zoom,
+      y: panY + (ipA.y + (ipB.y - ipA.y) * f) * zoom,
+    });
+  }
+
+  if (pts.length < 2) return;
+
+  const trailColor = hexToRgb(COLORS.crosshair);
+
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const segs = pts.length - 1;
+  for (let i = 0; i < segs; i++) {
+    const a = pts[i];
+    const b = pts[i + 1];
+
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy);
+    if (len < 0.3) continue;
+
+    const tSeg = (i + 1) / segs;
+    const maxW = 2.0 + tSeg * 4.0;
+    const maxAlpha = 0.10 + tSeg * 0.60;
+
+    const grad = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+    const rC = trailColor.r, gC = trailColor.g, bC = trailColor.b;
+    grad.addColorStop(0.0, `rgba(${rC},${gC},${bC},0)`);
+    grad.addColorStop(0.5, `rgba(${rC},${gC},${bC},${(maxAlpha * 0.4).toFixed(3)})`);
+    grad.addColorStop(1.0, `rgba(${rC},${gC},${bC},${maxAlpha.toFixed(3)})`);
+
+    const layers = 4;
+    for (let k = 0; k < layers; k++) {
+      const kt = k / (layers - 1);
+      const w = maxW * (0.25 + kt * 0.75);
+      const alphaScale = 0.25 + kt * 0.55;
+      ctx.globalAlpha = alphaScale;
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+  }
+
+  ctx.restore();
+}
+
+function buildPartStatsHTML(hits, total) {
+  if (!hits || !total) return '';
+  const lines = [];
+  for (const p of PARTS) {
+    if (p.idx === 0) continue;
+    const c = hits[p.idx] || 0;
+    const pct = c / total * 100;
+    lines.push(
+      `<div style="display:flex;justify-content:space-between;gap:6px;font-size:10px;">` +
+        `<span style="color:${p.color};">${p.name}</span>` +
+        `<span style="color:#000;">${c} (${pct.toFixed(1)}%)</span>` +
+      `</div>`
+    );
+  }
+  return lines.join('');
+}
+
+function renderOverlayForCell(cell) {
+  const v = cell.view;
+  const rect = v.wrap.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return;
+
+  const zoom = v.zoom;
+  const panX = v.panX;
+  const panY = v.panY;
+
+  v.svg.innerHTML = '';
+  v.svg.setAttribute('width', rect.width);
+  v.svg.setAttribute('height', rect.height);
+  v.svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+
+  v.info.style.display = 'none';
+
+  if (!cell.simResult) return;
+
+  const sim = cell.simResult;
+  const cur = anim.currentShot;
+
+  // ⭐ 全局时间：所有按时间连续化的量都用它
+  const tGlobal = anim.currentShot * sim.interval_s + anim.accumulatedTime;
+
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('transform', `translate(${panX}, ${panY}) scale(${zoom})`);
+  v.svg.appendChild(g);
+
+  function drawPolyline(points, color, width, opts = {}) {
+    if (!points || points.length < 2) return null;
+    const pts = points.map(p => {
+      const ip = pctToImg(p.x, p.y);
+      return `${ip.x},${ip.y}`;
+    }).join(' ');
+    const pl = document.createElementNS(SVG_NS, 'polyline');
+    pl.setAttribute('points', pts);
+    pl.setAttribute('fill', 'none');
+    pl.setAttribute('stroke', color);
+    pl.setAttribute('stroke-width', String(width / zoom));
+    pl.setAttribute('stroke-linecap', 'round');
+    pl.setAttribute('stroke-linejoin', 'round');
+    if (opts.dash) pl.setAttribute('stroke-dasharray', opts.dash);
+    g.appendChild(pl);
+    return pl;
+  }
+
+  function drawDiamond(pct, size, stroke, strokeWidth, opacity) {
+    const ip = pctToImg(pct.x, pct.y);
+    const r = size / zoom;
+    const pts = [
+      `${ip.x},${ip.y - r}`,
+      `${ip.x + r},${ip.y}`,
+      `${ip.x},${ip.y + r}`,
+      `${ip.x - r},${ip.y}`,
+    ].join(' ');
+    const poly = document.createElementNS(SVG_NS, 'polygon');
+    poly.setAttribute('points', pts);
+    poly.setAttribute('fill', 'none');
+    poly.setAttribute('stroke', stroke);
+    poly.setAttribute('stroke-width', String(strokeWidth / zoom));
+    poly.setAttribute('stroke-linejoin', 'miter');
+    if (opacity !== undefined) poly.setAttribute('stroke-opacity', String(opacity));
+    g.appendChild(poly);
+    return poly;
+  }
+
+  function drawCircle(pct, radius, fill, stroke, strokeWidth) {
+    const ip = pctToImg(pct.x, pct.y);
+    const c = document.createElementNS(SVG_NS, 'circle');
+    c.setAttribute('cx', ip.x); c.setAttribute('cy', ip.y);
+    c.setAttribute('r', radius / zoom);
+    c.setAttribute('fill', fill || 'none');
+    if (stroke) c.setAttribute('stroke', stroke);
+    if (strokeWidth) c.setAttribute('stroke-width', String(strokeWidth / zoom));
+    g.appendChild(c);
+  }
+
+  function drawDot(pct, radius, fill, opacity) {
+    const ip = pctToImg(pct.x, pct.y);
+    const c = document.createElementNS(SVG_NS, 'circle');
+    c.setAttribute('cx', ip.x); c.setAttribute('cy', ip.y);
+    c.setAttribute('r', radius / zoom);
+    c.setAttribute('fill', fill);
+    if (opacity !== undefined) c.setAttribute('fill-opacity', String(opacity));
+    g.appendChild(c);
+  }
+
+  const lines = cell.legendLines.filter(l => visibleLines.has(l));
+
+  if (lines.includes('bare')) {
+    const opacity = cell.type === CELL_BARE ? 0.9 : 0.4;
+    for (const h of sim.bare.hits) {
+      drawDiamond(h, 3.0, COLORS.bare, 1.4, opacity);
+    }
+  }
+
+  if (lines.includes('uncontrolled')) {
+    for (const h of sim.uncontrolled.hits) {
+      drawDiamond(h, 3.0, COLORS.uncontrolled, 1.4, 0.6);
+    }
+  }
+
+  if (lines.includes('smooth') && sim.smoothCurve) {
+    drawPolyline(sim.smoothCurve, COLORS.smooth, 2.5);
+  }
+
+  if (lines.includes('ideal') && sim.idealTrack) {
+    drawPolyline(sim.idealTrack, COLORS.ideal, 2.5, { dash: '6 4' });
+  }
+
+  // 鼠标轨迹：密集曲线，按时间显示
+  if (lines.includes('mouse') && sim.full && sim.full.denseMouseTrack) {
+    const track = sim.full.denseMouseTrack;
+    const subSteps = sim.subSteps || SUB_STEPS;
+    const subDt = sim.interval_s / subSteps;
+    const denseIdx = tGlobal / subDt;
+    const upto = Math.max(0, Math.min(Math.floor(denseIdx), track.length - 1));
+
+    if (upto >= 1) {
+      const pts = track.slice(0, upto + 1);
+
+      if (upto < track.length - 1) {
+        const a = track[upto];
+        const b = track[upto + 1];
+        const f = denseIdx - Math.floor(denseIdx);
+        pts.push({
+          x: a.x + (b.x - a.x) * f,
+          y: a.y + (b.y - a.y) * f,
+        });
+      }
+
+      drawPolyline(pts, COLORS.mouse, 2.5);
+    }
+  }
+
+  if (lines.includes('feedback') && sim.full && sim.full.feedbackPoints) {
+    const pts = sim.full.feedbackPoints;
+    if (pts.length >= 2) drawPolyline(pts, COLORS.feedback, 2.5);
+  }
+
+  if (lines.includes('expected')) {
+    drawCircle(sim.aimPct, 4, 'none', COLORS.expected, 2.5);
+  }
+
+  if (lines.includes('threshold')) {
+    const ip = pctToImg(sim.aimPct.x, sim.aimPct.y);
+    const rx = sim.params.fbThresh / 100 * IMG_W;
+    const ry = sim.params.fbThresh / 100 * IMG_H;
+    const ell = document.createElementNS(SVG_NS, 'ellipse');
+    ell.setAttribute('cx', ip.x); ell.setAttribute('cy', ip.y);
+    ell.setAttribute('rx', rx); ell.setAttribute('ry', ry);
+    ell.setAttribute('fill', 'none');
+    ell.setAttribute('stroke', COLORS.threshold);
+    ell.setAttribute('stroke-width', String(2 / zoom));
+    ell.setAttribute('stroke-dasharray', '6 4');
+    ell.setAttribute('stroke-opacity', '0.9');
+    g.appendChild(ell);
+  }
+
+  if (lines.includes('dense')) {
+    let hits = null;
+    if (cell.type === CELL_LIVE) hits = sim.full.hits;
+    else if (cell.type === CELL_BARE) hits = sim.bare.hits;
+    else if (cell.type === CELL_UNCONTROLLED) hits = sim.uncontrolled.hits;
+    else if (cell.type === CELL_SMOOTH) hits = sim.smooth.hits;
+    if (hits) {
+      const box = computeDenseBox(hits);
+      if (box) {
+        const p0 = pctToImg(box.x0, box.y0);
+        const p1 = pctToImg(box.x1, box.y1);
+        const r = document.createElementNS(SVG_NS, 'rect');
+        r.setAttribute('x', Math.min(p0.x, p1.x));
+        r.setAttribute('y', Math.min(p0.y, p1.y));
+        r.setAttribute('width', Math.abs(p1.x - p0.x));
+        r.setAttribute('height', Math.abs(p1.y - p0.y));
+        r.setAttribute('fill', 'none');
+        r.setAttribute('stroke', COLORS.dense);
+        r.setAttribute('stroke-width', String(2 / zoom));
+        g.appendChild(r);
+      }
+    }
+  }
+
+  let hitList = null;
+  if (cell.type === CELL_LIVE) hitList = sim.full.hits;
+  else if (cell.type === CELL_BARE) hitList = sim.bare.hits;
+  else if (cell.type === CELL_UNCONTROLLED) hitList = sim.uncontrolled.hits;
+  else if (cell.type === CELL_SMOOTH) hitList = sim.smooth.hits;
+
+  const showHit = visibleLines.has('hit');
+  const showHitMiss = visibleLines.has('hitMiss');
+
+  // ⭐ 关键改动：落点按时间判定，与准心到达严格同步。
+  //    第 i 发落点在 tGlobal >= i * interval_s 时出现；
+  //    而准心在 tGlobal == i * interval_s 时正好压在第 i 发锚点上。
+  if (hitList && (showHit || showHitMiss)) {
+    const reached = Math.floor(tGlobal / sim.interval_s) + 1;
+    const upto = Math.max(0, Math.min(reached, hitList.length));
+    const n = hitList.length;
+
+    for (let i = 0; i < upto; i++) {
+      const h = hitList[i];
+      const isMiss = (h.partIdx === 0);
+      if (isMiss && !showHitMiss) continue;
+      if (!isMiss && !showHit) continue;
+
+      const color = isMiss ? COLORS.hitMiss : COLORS.hit;
+      const t = n > 1 ? i / (n - 1) : 1;
+      const opacity = 0.25 + t * 0.75;
+      const size    = 3.0 + t * 1.5;
+      const lw      = 1.4 + t * 0.8;
+
+      drawDiamond(h, size, color, lw, opacity);
+    }
+  }
+
+  // ⭐ 准心：按时间轴在密集轨迹上插值（dense[i*SUB_STEPS] == 第 i 发锚点）
+  if (cell.type === CELL_LIVE
+      && lines.includes('crosshair')
+      && sim.full && sim.full.denseHits && sim.full.denseHits.length > 0) {
+    const denseHits = sim.full.denseHits;
+    const subSteps = sim.subSteps || SUB_STEPS;
+    const subDt = sim.interval_s / subSteps;
+    const denseIdx = tGlobal / subDt;
+    const upto = Math.max(0, Math.min(Math.floor(denseIdx), denseHits.length - 1));
+
+    if (upto >= 0 && denseHits.length >= 1) {
+      let crossPos;
+      if (upto < denseHits.length - 1) {
+        const a = denseHits[upto];
+        const b = denseHits[upto + 1];
+        const f = denseIdx - Math.floor(denseIdx);
+        crossPos = {
+          x: a.x + (b.x - a.x) * f,
+          y: a.y + (b.y - a.y) * f,
+        };
+      } else {
+        crossPos = denseHits[denseHits.length - 1];
+      }
+      drawDot(crossPos, 4.0, COLORS.crosshair, 1.0);
+    }
+  }
+
+  if ((cell.type === CELL_UNCONTROLLED || cell.type === CELL_LIVE)
+      && visibleLines.has('breathEnd')
+      && sim.breathEndIdx >= 0) {
+    const idx = sim.breathEndIdx;
+
+    let endHit = null;
+    if (cell.type === CELL_UNCONTROLLED) endHit = sim.uncontrolled.hits[idx];
+    else if (cell.type === CELL_LIVE) endHit = sim.full.hits[idx];
+
+    if (endHit && idx < cur) {
+      const ip = pctToImg(endHit.x, endHit.y);
+      const r = 6.0 / zoom;
+
+      const pts = [
+        `${ip.x},${ip.y - r}`,
+        `${ip.x + r},${ip.y}`,
+        `${ip.x},${ip.y + r}`,
+        `${ip.x - r},${ip.y}`,
+      ].join(' ');
+      const poly = document.createElementNS(SVG_NS, 'polygon');
+      poly.setAttribute('points', pts);
+      poly.setAttribute('fill', 'none');
+      poly.setAttribute('stroke', COLORS.breathEnd);
+      poly.setAttribute('stroke-width', String(2.5 / zoom));
+      g.appendChild(poly);
+
+      const x1 = document.createElementNS(SVG_NS, 'line');
+      x1.setAttribute('x1', ip.x - r * 0.6);
+      x1.setAttribute('y1', ip.y - r * 0.6);
+      x1.setAttribute('x2', ip.x + r * 0.6);
+      x1.setAttribute('y2', ip.y + r * 0.6);
+      x1.setAttribute('stroke', COLORS.breathEnd);
+      x1.setAttribute('stroke-width', String(2.0 / zoom));
+      g.appendChild(x1);
+
+      const x2 = document.createElementNS(SVG_NS, 'line');
+      x2.setAttribute('x1', ip.x + r * 0.6);
+      x2.setAttribute('y1', ip.y - r * 0.6);
+      x2.setAttribute('x2', ip.x - r * 0.6);
+      x2.setAttribute('y2', ip.y + r * 0.6);
+      x2.setAttribute('stroke', COLORS.breathEnd);
+      x2.setAttribute('stroke-width', String(2.0 / zoom));
+      g.appendChild(x2);
+    }
+  }
+
+  v.info.style.display = 'block';
+  let title = '';
+  let infoLines = [];
+  let partStatsHTML = '';
+
+  if (cell.type === CELL_LIVE) {
+    title = `真人模拟 · ${sim.params.distance}m`;
+    const trigCount = sim.full.triggeredList
+      ? sim.full.triggeredList.filter(Boolean).length : 0;
+    infoLines = [
+      { color: '#000', text: `命中率 ${sim.full.hitRate.toFixed(1)}%` },
+      { color: '#2196f3', text: `射速 ${sim.params.fireRate} RPM` },
+      { color: '#e91e63', text: `σ=${sim.params.sigma.toFixed(3)}` },
+      { color: '#ff5722', text: `触发 ${trigCount}/${sim.totalShots}` },
+    ];
+    if (sim.breathEndIdx >= 0) {
+      infoLines.push({
+        color: '#ff00ff',
+        text: `屏息结束 @ 第 ${sim.breathEndIdx + 1} 发`,
+      });
+    } else {
+      infoLines.push({ color: '#ff00ff', text: `全程屏息` });
+    }
+    partStatsHTML = buildPartStatsHTML(sim.full.partCounts, sim.full.total);
+  } else if (cell.type === CELL_BARE) {
+    title = `裸弹道 · ${sim.params.distance}m`;
+    infoLines = [
+      { color: '#000', text: `命中率 ${sim.bare.hitRate.toFixed(1)}%` },
+      { color: '#666', text: `发数 ${sim.bare.total}` },
+    ];
+  } else if (cell.type === CELL_UNCONTROLLED) {
+    title = `不压枪 · ${sim.params.distance}m`;
+    const holdShots = sim.uncontrolled.hits.filter(h => h.holdOn).length;
+    const beIdx = sim.breathEndIdx;
+    infoLines = [
+      { color: '#000', text: `命中率 ${sim.uncontrolled.hitRate.toFixed(1)}%` },
+      { color: '#ff9800', text: `瞄准点 (${sim.aimPct.x.toFixed(1)}, ${sim.aimPct.y.toFixed(1)})` },
+      { color: '#e91e63', text: `屏息减免 ×${sim.params.breathHoldReduction.toFixed(3)} (${holdShots}/${sim.totalShots} 发)` },
+    ];
+    if (beIdx >= 0) {
+      infoLines.push({ color: '#ff00ff', text: `屏息结束 @ 第 ${beIdx + 1} 发` });
+    } else {
+      infoLines.push({ color: '#ff00ff', text: `全程屏息` });
+    }
+  } else if (cell.type === CELL_SMOOTH) {
+    title = `平滑压枪 · ${sim.params.distance}m`;
+    infoLines = [
+      { color: '#000', text: `命中率 ${sim.smooth.hitRate.toFixed(1)}%` },
+      { color: '#00bcd4', text: `平滑窗口 ${sim.params.smoothWin}` },
+      { color: '#ff9800', text: `加速度V ${sim.params.aMaxV} / H ${sim.params.aMaxH}` },
+    ];
+  }
+
+  let html = `<div style="font-size:12px;">${title}</div>`;
+  for (const ln of infoLines) {
+    html += `<div style="color:${ln.color};font-size:11px;">${ln.text}</div>`;
+  }
+  if (partStatsHTML) {
+    html += `<div style="margin-top:4px;border-top:1px solid #ccc;padding-top:4px;">`;
+    html += `<div style="font-size:10px;color:#333;font-weight:bold;margin-bottom:2px;">部位命中</div>`;
+    html += partStatsHTML;
+    html += `</div>`;
+  }
+  v.info.innerHTML = html;
+}
+
+function computeDenseBox(hits) {
+  if (!hits || hits.length === 0) return null;
+  const xs = hits.map(h => h.x);
+  const ys = hits.map(h => h.y);
+  const n = xs.length;
+  const cx0 = xs.reduce((a, b) => a + b, 0) / n;
+  const cy0 = ys.reduce((a, b) => a + b, 0) / n;
+  let sx0 = 0, sy0 = 0;
+  if (n > 1) {
+    sx0 = Math.sqrt(xs.reduce((a, b) => a + (b - cx0) ** 2, 0) / n);
+    sy0 = Math.sqrt(ys.reduce((a, b) => a + (b - cy0) ** 2, 0) / n);
+  }
+  const kept = hits.filter(h =>
+    Math.abs(h.x - cx0) <= 2 * sx0 && Math.abs(h.y - cy0) <= 2 * sy0);
+  const use = kept.length > 0 ? kept : hits;
+  const kxs = use.map(h => h.x);
+  const kys = use.map(h => h.y);
+  const x_min = Math.min(...kxs), x_max = Math.max(...kxs);
+  const y_min = Math.min(...kys), y_max = Math.max(...kys);
+  const cx = (x_min + x_max) / 2;
+  const cy = (y_min + y_max) / 2;
+  let w = (x_max - x_min) * 1.3;
+  let h2 = (y_max - y_min) * 1.3;
+  w = Math.max(2, Math.min(30, w));
+  h2 = Math.max(2, Math.min(30, h2));
+  return {
+    x0: cx - w / 2, y0: cy - h2 / 2,
+    x1: cx + w / 2, y1: cy + h2 / 2,
+    cx, cy, w, h: h2,
+  };
+}
+
+// ============================================================
+// 统计
+// ============================================================
+
+function updateStats() {
+  const statInfo = document.getElementById('statInfo');
+  const partStatsEl = document.getElementById('partStats');
+
+  const tabCells = getCurrentTabCells();
+  const hasAny = tabCells.some(c => c.simResult);
+
+  if (!hasAny) {
+    statInfo.innerHTML = '未运行';
+    partStatsEl.innerHTML = '';
+    return;
+  }
+
+  let html = '';
+  if (currentTab === 'live') {
+    for (const cell of tabCells) {
+      if (!cell.simResult) {
+        html += `<b>${cell.distance}m</b>: 未计算<br>`;
+        continue;
+      }
+      const r = cell.simResult.full.hitRate.toFixed(1);
+      html += `<b>${cell.distance}m</b>: ${r}% (${cell.simResult.full.hitCount}/${cell.simResult.full.total})<br>`;
+    }
+  } else {
+    for (const cell of tabCells) {
+      if (!cell.simResult) continue;
+      if (cell.type === CELL_BARE) {
+        html += `<b>① 裸弹道</b>: ${cell.simResult.bare.hitRate.toFixed(1)}%<br>`;
+      } else if (cell.type === CELL_UNCONTROLLED) {
+        html += `<b>② 不压枪</b>: ${cell.simResult.uncontrolled.hitRate.toFixed(1)}%<br>`;
+      } else if (cell.type === CELL_SMOOTH) {
+        html += `<b>③ 平滑压枪</b>: ${cell.simResult.smooth.hitRate.toFixed(1)}%<br>`;
+      }
+    }
+  }
+
+  const firstSim = tabCells.find(c => c.simResult)?.simResult;
+  if (firstSim) {
+    const p = firstSim.params;
+    const r = firstSim.recoil;
+    html += `<span style="color:#7c8595">射速=${p.fireRate} · σ=${p.sigma.toFixed(3)} · 后坐力=${r.v.toFixed(2)}/${r.h.toFixed(2)} · 阈值=${p.fbThresh}</span>`;
+  }
+  statInfo.innerHTML = html;
+
+  partStatsEl.innerHTML = '';
+  if (!firstSim) return;
+
+  let hits = null;
+  if (currentTab === 'live') hits = firstSim.full.partCounts;
+  else hits = firstSim.smooth.partCounts;
+
+  const total = (currentTab === 'live')
+    ? firstSim.full.total
+    : firstSim.smooth.total;
+
+  for (const pp of PARTS) {
+    if (pp.idx === 0) continue;
+    const c = hits[pp.idx] || 0;
+    const pct = total > 0 ? c / total * 100 : 0;
+    const div = document.createElement('div');
+    div.className = 'part-stat';
+    div.innerHTML =
+      `<span class="name"><i style="display:inline-block;width:9px;height:9px;background:${pp.color};border-radius:2px;margin-right:4px;"></i>${pp.name}</span>` +
+      `<span class="val">${c} (${pct.toFixed(1)}%)</span>`;
+    partStatsEl.appendChild(div);
+  }
+}
+
+// ============================================================
+// Tab 切换
+// ============================================================
+
+function switchTab(tab) {
+  if (tab !== 'live' && tab !== 'static') return;
+  currentTab = tab;
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  document.querySelectorAll('.tab-pane').forEach(pane => {
+    pane.classList.toggle('active', pane.id === `pane-${tab}`);
+  });
+
+  stopAnimation();
+  anim.currentShot = 0;
+  anim.shotProgress = 0;
+  anim.accumulatedTime = 0;
+
+  setTimeout(() => {
+    resizeAll();
+    fitAllToWindow();
+    renderAll();
+    updatePlayUI();
+    updateStats();
+  }, 50);
+}
+
+// ============================================================
+// 导出 data.json
+// ============================================================
+
+async function exportDataJson() {
+  if (!dataJson) { alert('data.json 未加载'); return; }
+  if (!grid) { alert('部位网格未加载'); return; }
+
+  const btn = document.getElementById('btnExport');
+  btn.disabled = true;
+
+  const progEl = document.getElementById('exportProgress');
+  const repeat = 3;
+  const distances = [30, 50, 100];
+
+  const trackByName = {};
+  for (const fname of fileList) {
+    const track = allTracks[fname];
+    if (!track) continue;
+    if (!trackByName[track.weaponName]) trackByName[track.weaponName] = track;
+  }
+
+  const weaponsMap = {};
+  for (const w of dataJson.weapons || []) weaponsMap[w.id] = w;
+
+  const prices = dataJson.prices || [];
+  let totalConfigs = 0;
+  for (const entry of prices) totalConfigs += (entry.configs || []).length;
+
+  let done = 0, updatedConfigs = 0, skippedConfigs = 0;
+
+  const savedItem = currentItem;
+  const savedTrack = currentTrack;
+
+  for (const entry of prices) {
+    const weaponId = entry.weaponId;
+    const weaponName = entry.weaponName || '未知';
+    const configs = entry.configs || [];
+
+    const track = trackByName[weaponName];
+    const baseWeapon = weaponsMap[weaponId] || null;
+
+    for (const config of configs) {
+      done++;
+      const configId = config.id;
+
+      if (!track) {
+        skippedConfigs++;
+        progEl.textContent = `[${done}/${totalConfigs}] ${weaponName} ${configId} ⏭️`;
+        await new Promise(r => setTimeout(r, 0));
+        continue;
+      }
+
+      const baseRof = baseWeapon?.rof || 600;
+      let rofMult = 1;
+      if (config.barrelId >= 0 && baseWeapon?.barrels?.[config.barrelId]) {
+        rofMult = baseWeapon.barrels[config.barrelId].rofMult ?? 1;
+      }
+      const fireRate = Math.round(baseRof * rofMult);
+
+      currentItem = {
+        weaponId, weaponName, configId, config, baseWeapon, fireRate,
+        fname: `${weaponName}_1.json`, track, hasTrack: true,
+      };
+      currentTrack = track;
+
+      const hitRateFrac = { 30: null, 50: null, 100: null };
+
+      for (const dist of distances) {
+        const fullRates = [];
+        for (let run = 0; run < repeat; run++) {
+          const seed = hashSeed(`${weaponId}#${configId}#${dist}#run${run}`);
+          const rng = makeRng(seed);
+          const sim = simulate({
+            distanceOverride: dist, rng, trackOverride: track,
+          });
+          if (!sim) continue;
+          fullRates.push(sim.full.hitRate);
+        }
+        const pct = avg(fullRates);
+        hitRateFrac[dist] = Math.round(pct / 100 * 10000) / 10000;
+      }
+
+      config.hitRate = [hitRateFrac[30], hitRateFrac[50], hitRateFrac[100]];
+      updatedConfigs++;
+      progEl.textContent = `[${done}/${totalConfigs}] ${weaponName} ${configId}`;
+
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+
+  currentItem = savedItem;
+  currentTrack = savedTrack;
+
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  dataJson.updatedAt = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+
+  const jsonText = JSON.stringify(dataJson, null, 2);
+  const blob = new Blob([jsonText], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+
+  const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_` +
+             `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `data_${ts}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  progEl.textContent = `✅ 完成：更新 ${updatedConfigs}，跳过 ${skippedConfigs}`;
+  btn.disabled = false;
+}
+
+// ============================================================
+// 导出 xlsx
+// ============================================================
+
+async function exportXlsx() {
+  if (!dataJson) { alert('data.json 未加载'); return; }
+  if (!grid) { alert('部位网格未加载'); return; }
+  if (typeof XLSX === 'undefined') {
+    alert('SheetJS 未加载（xlsx.full.min.js）');
+    return;
+  }
+
+  const btn = document.getElementById('btnExportXlsx');
+  btn.disabled = true;
+
+  const progEl = document.getElementById('exportProgress');
+  const repeat = 3;
+  const distances = [30, 50, 100];
+
+  const trackByName = {};
+  for (const fname of fileList) {
+    const track = allTracks[fname];
+    if (!track) continue;
+    if (!trackByName[track.weaponName]) trackByName[track.weaponName] = track;
+  }
+
+  const weaponsMap = {};
+  for (const w of dataJson.weapons || []) weaponsMap[w.id] = w;
+
+  const prices = dataJson.prices || [];
+  let totalConfigs = 0;
+  for (const entry of prices) totalConfigs += (entry.configs || []).length;
+
+  const header = ['武器名', '配置ID', '30m命中率', '50m命中率', '100m命中率'];
+  for (const dist of distances) {
+    for (const p of PARTS_FOR_EXCEL) header.push(`${dist}m ${p.name}命中率`);
+  }
+  header.push('屏息结束发号');
+
+  const rows = [header];
+
+  let done = 0, okConfigs = 0, skippedConfigs = 0;
+
+  const savedItem = currentItem;
+  const savedTrack = currentTrack;
+
+  for (const entry of prices) {
+    const weaponId = entry.weaponId;
+    const weaponName = entry.weaponName || '未知';
+    const configs = entry.configs || [];
+
+    const track = trackByName[weaponName];
+    const baseWeapon = weaponsMap[weaponId] || null;
+
+    for (const config of configs) {
+      done++;
+      const configId = config.id;
+
+      if (!track) {
+        skippedConfigs++;
+        progEl.textContent = `[${done}/${totalConfigs}] ${weaponName} ${configId} ⏭️`;
+        await new Promise(r => setTimeout(r, 0));
+        continue;
+      }
+
+      const baseRof = baseWeapon?.rof || 600;
+      let rofMult = 1;
+      if (config.barrelId >= 0 && baseWeapon?.barrels?.[config.barrelId]) {
+        rofMult = baseWeapon.barrels[config.barrelId].rofMult ?? 1;
+      }
+      const fireRate = Math.round(baseRof * rofMult);
+
+      currentItem = {
+        weaponId, weaponName, configId, config, baseWeapon, fireRate,
+        fname: `${weaponName}_1.json`, track, hasTrack: true,
+      };
+      currentTrack = track;
+
+      const hitRates = { 30: [], 50: [], 100: [] };
+      const partHitsAll = {};
+      for (const dist of distances) {
+        partHitsAll[dist] = {};
+        for (const p of PARTS) partHitsAll[dist][p.idx] = 0;
+      }
+
+      let breathEndIdx = -1;
+      let totalShotsPerRun = 0;
+
+      for (let run = 0; run < repeat; run++) {
+        const seed = hashSeed(`${weaponId}#${configId}#run${run}`);
+        const rng = makeRng(seed);
+
+        for (const dist of distances) {
+          const sim = simulate({
+            distanceOverride: dist, rng, trackOverride: track,
+          });
+          if (!sim) continue;
+          hitRates[dist].push(sim.full.hitRate);
+
+          for (const p of PARTS) {
+            partHitsAll[dist][p.idx] += (sim.full.partCounts[p.idx] || 0);
+          }
+
+          if (run === 0 && dist === 30) {
+            breathEndIdx = sim.breathEndIdx;
+            totalShotsPerRun = sim.totalShots;
+          }
+        }
+      }
+
+      const row = [weaponName, configId];
+
+      for (const dist of distances) {
+        const rates = hitRates[dist];
+        const avgRate = rates.length > 0 ? avg(rates) : 0;
+        row.push(Number(avgRate.toFixed(2)));
+      }
+
+      const totalRuns = repeat;
+      for (const dist of distances) {
+        const totalHits = totalShotsPerRun * totalRuns;
+        for (const p of PARTS_FOR_EXCEL) {
+          const cnt = partHitsAll[dist][p.idx] || 0;
+          const pct = totalHits > 0 ? (cnt / totalHits * 100) : 0;
+          row.push(Number(pct.toFixed(2)));
+        }
+      }
+
+      row.push(breathEndIdx >= 0 ? (breathEndIdx + 1) : '全程屏息');
+
+      rows.push(row);
+      okConfigs++;
+      progEl.textContent = `[${done}/${totalConfigs}] ${weaponName} ${configId}`;
+
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+
+  currentItem = savedItem;
+  currentTrack = savedTrack;
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  const colWidths = [];
+  for (let i = 0; i < header.length; i++) {
+    colWidths.push({ wch: i < 2 ? 16 : 12 });
+  }
+  ws['!cols'] = colWidths;
+
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+  ws['!autofilter'] = {
+    ref: XLSX.utils.encode_range({
+      s: { r: 0, c: 0 },
+      e: { r: rows.length - 1, c: header.length - 1 },
+    }),
+  };
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '命中率');
+
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_` +
+             `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const filename = `hit_rate_${ts}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
+
+  progEl.textContent = `✅ 已导出 ${filename}（${okConfigs} 条，跳过 ${skippedConfigs}）`;
+  btn.disabled = false;
+}
+
+// ============================================================
+// 折叠/展开「配置数据」
+// ============================================================
+
+function initConfigToggle() {
+  const header = document.getElementById('configToggle');
+  const body = document.getElementById('configDetail');
+
+  header.addEventListener('click', () => {
+    const expanded = header.classList.toggle('expanded');
+    body.classList.toggle('expanded', expanded);
+  });
+}
+
+// ============================================================
+// 事件绑定
+// ============================================================
+
+function onParamChange() {
+  document.getElementById('sigmaScaleVal').textContent =
+    (parseFloat(document.getElementById('sigmaScaleRange').value) || 1.5).toFixed(2);
+  document.getElementById('breathScaleVal').textContent =
+    (parseFloat(document.getElementById('breathScaleRange').value) || 10).toFixed(1);
+  document.getElementById('breathFreqVal').textContent =
+    (parseFloat(document.getElementById('breathFreqRange').value)).toFixed(2);
+  document.getElementById('aMaxVVal').textContent =
+    document.getElementById('aMaxVRange').value;
+  document.getElementById('aMaxHVal').textContent =
+    document.getElementById('aMaxHRange').value;
+  document.getElementById('fbAccelVVal').textContent =
+    document.getElementById('fbAccelVRange').value;
+  document.getElementById('fbAccelHVal').textContent =
+    document.getElementById('fbAccelHRange').value;
+  document.getElementById('smoothWinVal').textContent =
+    document.getElementById('smoothWinRange').value;
+
+  if (currentItem) renderConfigDetail(currentItem);
+}
+
+document.querySelectorAll('.sidebar input').forEach(el => {
+  el.addEventListener('input', onParamChange);
+});
+
+document.getElementById('weaponSearch').addEventListener('input', (e) => {
+  currentSearchQuery = e.target.value || '';
+  renderWeaponList();
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+document.getElementById('btnRun').addEventListener('click', () => {
+  runCurrentTab();
+});
+
+document.getElementById('btnPause').addEventListener('click', pauseAnimation);
+document.getElementById('btnReset').addEventListener('click', resetAnimation);
+document.getElementById('speedSelect').addEventListener('change', (e) => {
+  anim.speed = parseFloat(e.target.value);
+});
+document.getElementById('progressRange').addEventListener('input', (e) => {
+  pauseAnimation();
+  setProgress(parseInt(e.target.value, 10));
+});
+
+document.getElementById('btnExport').addEventListener('click', () => {
+  exportDataJson();
+});
+
+document.getElementById('btnExportXlsx').addEventListener('click', () => {
+  exportXlsx();
+});
+
+document.getElementById('btnRandomSeed').addEventListener('click', () => {
+  const r = Math.floor(Math.random() * 0xFFFFFFFF) >>> 0;
+  document.getElementById('seedInput').value = String(r);
+});
+
+window.addEventListener('resize', () => {
+  resizeAll();
+  fitAllToWindow();
+  renderAll();
+});
+
+// ============================================================
+// 启动
+// ============================================================
+
+initCells();
+initConfigToggle();
+resizeAll();
+fitAllToWindow();
+renderAll();
+updatePlayUI();
+autoLoad();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # tools/_common.py
 #
-# 公共工具：所有 update_*.py / simulate_*.py / test_*.py 共用
+# 公共工具：所有 update_*.py / collect_*.py 共用
 #
 # 内容：
 #   - JSON 读写
@@ -9,6 +9,8 @@
 #   - 日志
 #   - Playwright 启动
 #   - Playwright 常用交互（切枪/方案库/载方案）
+#   - 读 builder 页属性（开镜时间 / 呼吸晃动 / 屏息时长 / 屏息减免
+#                       / 后坐力 / 稳定性）
 #   - 信号处理
 #
 # ⭐ 优化（快速版交互）：
@@ -20,6 +22,7 @@
 
 import json
 import os
+import re
 import shutil
 import signal
 import sys
@@ -49,14 +52,20 @@ from config import (
 # 快速版：本地覆盖的短超时 / 短缓冲
 # ============================================================
 
-# switch_weapon：fill 后先等这么久，让搜索过滤跑完
 T_SEARCH_BUFFER = 300
-
-# load_scheme：点确认后短缓冲（替代原来的"等价格变化"）
 T_LOAD_BUFFER = 150
-
-# open_library：一次 wait_for_function 的总超时（含抽屉出现 + 卡片渲染）
 T_LIBRARY_TOTAL = 1200
+
+
+# ============================================================
+# builder 页属性读取相关
+# ============================================================
+
+LASER_TOGGLE_SELECTOR = "button.weapon-builder-laser-toggle"
+SUBSTAT_ROW_SELECTOR = ".weapon-builder-substat-row"
+AFTER_LASER_TOGGLE_WAIT = 500
+T_SUBSTAT_READ_RETRY = 3
+SUBSTAT_READ_INTERVAL_MS = 200
 
 
 # ============================================================
@@ -102,7 +111,6 @@ def install_signal_handler():
 # ============================================================
 
 def load_json(path, default=None):
-    """读 JSON 文件，不存在或为空返回 default"""
     if not os.path.exists(path):
         return default
     try:
@@ -146,11 +154,6 @@ def safe_str(value, default=""):
 # ============================================================
 
 def backup_data_json():
-    """
-    备份 data.json
-    - 固定名称：data.json.bak（覆盖）
-    - 时间戳备份：data.json.YYYYMMDD_HHMMSS.bak（保留历史）
-    """
     shutil.copy2(DATA_JSON, DATA_BAK)
     print(f"✅ 已备份原文件到: {DATA_BAK}")
 
@@ -165,22 +168,6 @@ def backup_data_json():
 # ============================================================
 
 def launch_browser(headless=None, fullscreen=True):
-    """
-    启动持久化浏览器上下文。
-    返回 (playwright_context_manager, context, page)
-
-    @param headless:   True = 无头（默认用 config.HEADLESS）
-    @param fullscreen: True  = 启动最大化 + 不固定 viewport（默认）
-                       False = 固定 viewport（1440x1200）
-
-    用法：
-        pw, context, page = launch_browser()
-        pw, context, page = launch_browser(fullscreen=False)
-        try:
-            ...
-        finally:
-            context.close()
-    """
     if headless is None:
         headless = HEADLESS
 
@@ -223,7 +210,6 @@ def close_browser(pw, context):
 
 
 def profile_exists():
-    """判断 _browser_profile 是否已存在且非空"""
     if not os.path.isdir(USER_DATA_DIR):
         return False
     try:
@@ -237,14 +223,6 @@ def profile_exists():
 # ============================================================
 
 def switch_weapon(page, weapon_name):
-    """
-    切换武器（dfttk）
-    ⭐ 优先精确匹配（:text-is），避免 "MK4" 误匹配 "MK47"
-
-    ⭐ 快速版：
-       fill 后先短等 T_SEARCH_BUFFER，直接查 exact.count()。
-       查到就直接点；查不到再走 wait_for_function（最多 WAIT_AFTER_SEARCH）。
-    """
     dlog(f"switch_weapon: {weapon_name}")
 
     page.locator(SELECTORS["weapon_selector"]).click()
@@ -255,17 +233,14 @@ def switch_weapon(page, weapon_name):
     search = page.locator(SELECTORS["search_input"])
     search.fill(weapon_name)
 
-    # ⭐ 先给一个短缓冲让搜索过滤跑完
     page.wait_for_timeout(T_SEARCH_BUFFER)
 
-    # ⭐ 优先精确匹配（:text-is）
     escaped = json.dumps(weapon_name, ensure_ascii=False)
     exact_selector = f'{SELECTORS["option_name"]}:text-is({escaped})'
     exact_option = page.locator(SELECTORS["option_item"]).filter(
         has=page.locator(exact_selector)
     ).first
 
-    # ⭐ 短缓冲后还没出现，再等（最多 WAIT_AFTER_SEARCH）
     if exact_option.count() == 0:
         try:
             page.wait_for_function(
@@ -289,7 +264,6 @@ def switch_weapon(page, weapon_name):
         dlog(f"精确匹配: {weapon_name}")
         exact_option.click()
     else:
-        # 回退：子串匹配（兼容带后缀的情况）
         dlog(f"未找到精确匹配 '{weapon_name}'，回退子串匹配")
         option = page.locator(SELECTORS["option_item"]).filter(
             has=page.locator(SELECTORS["option_name"], has_text=weapon_name)
@@ -305,13 +279,6 @@ def switch_weapon(page, weapon_name):
 
 
 def open_library(page):
-    """
-    打开方案库（dfttk）
-
-    ⭐ 快速版：
-       一次性等"抽屉可见 + 卡片（或空状态）渲染"，
-       合并原来的两次等待（drawer.wait_for + wait_for_function）。
-    """
     dlog("open_library")
 
     drawer = page.locator(SELECTORS["drawer"])
@@ -321,7 +288,6 @@ def open_library(page):
 
     page.locator(SELECTORS["library_btn"]).click()
 
-    # ⭐ 一次 wait_for_function：抽屉可见 + 卡片（或空状态）渲染
     try:
         page.wait_for_function(
             """() => {
@@ -344,7 +310,6 @@ def open_library(page):
 
 
 def close_library(page, max_retry=2):
-    """关闭方案库（dfttk）"""
     dlog("close_library")
 
     for attempt in range(max_retry):
@@ -379,17 +344,6 @@ def close_library(page, max_retry=2):
 
 
 def load_scheme(page, task):
-    """
-    在方案库里载入方案（dfttk）。
-    @returns True / False（False = 方案库里没有）
-
-    ⭐ 快速版：
-       点确认后不再"等价格变化"，只给短缓冲 T_LOAD_BUFFER。
-
-       原因：切枪时 dfttk 会自动载入该武器上次的方案。
-       如果要载入的正好是同一套，价格不会变，
-       wait_for_function(价格变化) 会等满超时才继续 —— 纯浪费。
-    """
     weapon_name = task["weaponName"]
     scheme_index = task["schemeIndex"]
     scheme_text = f"{weapon_name} 方案 {scheme_index}"
@@ -415,6 +369,150 @@ def load_scheme(page, task):
     except PlaywrightTimeout:
         pass
 
-    # ⭐ 不再"等价格变化"，只给短缓冲
     page.wait_for_timeout(T_LOAD_BUFFER)
     return True
+
+
+# ============================================================
+# 读 builder 页属性
+# ============================================================
+
+def ensure_laser_on(page):
+    try:
+        result = page.evaluate("""(sel) => {
+            const btn = document.querySelector(sel);
+            if (!btn) return 'no_button';
+            const txt = (btn.innerText || '').trim();
+            if (txt.includes('关闭')) {
+                btn.click();
+                return 'clicked';
+            }
+            return 'already_on';
+        }""", LASER_TOGGLE_SELECTOR)
+        return result or 'error'
+    except Exception:
+        return 'error'
+
+
+def _read_substat_raw(page, label_text,
+                      retries=T_SUBSTAT_READ_RETRY,
+                      interval_ms=SUBSTAT_READ_INTERVAL_MS):
+    for _ in range(retries):
+        try:
+            val = page.evaluate("""(label) => {
+                const rows = document.querySelectorAll(
+                    '.weapon-builder-substat-row');
+                for (const row of rows) {
+                    const span = row.querySelector('span');
+                    if (!span) continue;
+                    if (span.innerText.trim() !== label) continue;
+                    const strong = row.querySelector(
+                        '.weapon-builder-substat-value strong');
+                    if (!strong) continue;
+                    return strong.innerText.trim();
+                }
+                return null;
+            }""", label_text)
+            if val is not None:
+                return val
+        except Exception:
+            pass
+        page.wait_for_timeout(interval_ms)
+    return None
+
+
+def _strip_unit(raw, kind='float'):
+    if raw is None:
+        return None
+    m = re.search(r'-?\d+(?:\.\d+)?', str(raw))
+    if not m:
+        return None
+    try:
+        if kind == 'int':
+            return int(float(m.group(0)))
+        return float(m.group(0))
+    except ValueError:
+        return None
+
+
+def read_substat(page, label_text, kind='float'):
+    raw = _read_substat_raw(page, label_text)
+    return _strip_unit(raw, kind)
+
+
+def read_aim_speed(page):
+    raw = _read_substat_raw(page, "开镜时间")
+    return _strip_unit(raw, 'int')
+
+
+def read_breath_sway(page):
+    raw = _read_substat_raw(page, "呼吸晃动范围")
+    return _strip_unit(raw, 'float')
+
+
+def read_breath_hold_duration(page):
+    raw = _read_substat_raw(page, "屏息时长")
+    return _strip_unit(raw, 'float')
+
+
+def read_breath_hold_reduction(page):
+    raw = _read_substat_raw(page, "屏息状态后坐力减免")
+    return _strip_unit(raw, 'float')
+
+
+# ⭐ 新增：后坐力 / 稳定性（配置级）
+def read_recoil_vertical_auto(page):
+    raw = _read_substat_raw(page, "全自动垂直后坐力")
+    return _strip_unit(raw, 'float')
+
+
+def read_recoil_horizontal_auto(page):
+    raw = _read_substat_raw(page, "全自动水平后坐力")
+    return _strip_unit(raw, 'float')
+
+
+def read_recoil_vertical_burst(page):
+    raw = _read_substat_raw(page, "单点/连发垂直后坐力")
+    return _strip_unit(raw, 'float')
+
+
+def read_recoil_horizontal_burst(page):
+    raw = _read_substat_raw(page, "单点/连发水平后坐力")
+    return _strip_unit(raw, 'float')
+
+
+def read_stability_multiplier(page):
+    raw = _read_substat_raw(page, "开火时武器稳定性")
+    return _strip_unit(raw, 'float')
+
+
+def read_all_substats(page):
+    return {
+        # 原有 4 个
+        "aimSpeed":              read_aim_speed(page),
+        "breathSway":            read_breath_sway(page),
+        "breathHoldDuration":    read_breath_hold_duration(page),
+        "breathHoldReduction":   read_breath_hold_reduction(page),
+        # ⭐ 新增 5 个：后坐力 / 稳定性
+        "recoilVerticalAuto":    read_recoil_vertical_auto(page),
+        "recoilHorizontalAuto":  read_recoil_horizontal_auto(page),
+        "recoilVerticalBurst":   read_recoil_vertical_burst(page),
+        "recoilHorizontalBurst": read_recoil_horizontal_burst(page),
+        "stabilityMultiplier":   read_stability_multiplier(page),
+    }
+
+
+def read_all_substats_with_laser(page):
+    laser_state = ensure_laser_on(page)
+    if laser_state == "clicked":
+        page.wait_for_timeout(AFTER_LASER_TOGGLE_WAIT)
+    substats = read_all_substats(page)
+    return substats, laser_state
+
+
+def read_aim_speed_with_laser(page):
+    laser_state = ensure_laser_on(page)
+    if laser_state == "clicked":
+        page.wait_for_timeout(AFTER_LASER_TOGGLE_WAIT)
+    aim_speed = read_aim_speed(page)
+    return aim_speed, laser_state
