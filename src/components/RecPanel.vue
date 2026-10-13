@@ -18,6 +18,13 @@
       ④ 转成假想敌
           · 距离：按武器射程分段权重随机
 
+  ⭐ 唯一 ID / 名称（本次修复）：
+    · 每个假想敌有唯一 _id（enemy_{ts}_{n}）
+    · 名称用独立计数器 _enemyNameCounter 生成，格式「假想敌 N」
+    · 新增 / 重掷 / 添加为假想敌，都调 _makeEnemyName()
+    · 不再依赖 index / length，避免重名
+    · 恢复持久化状态时，扫描已有 _id / name，把计数器推到最大值之后
+
   武器去重：
     · 同一批假想敌之间，尽量不用相同武器
     · 添加假想敌 → 排除所有已有假想敌的武器
@@ -720,6 +727,40 @@ const LOAD_MORE_STEP = 20
 const PERSIST_DEBOUNCE_MS = 500
 
 // ============================================================
+// 唯一 ID / 名称生成器
+// ============================================================
+
+/** 假想敌 ID 计数器（用于生成 _id） */
+let _enemyIdCounter = 0
+
+/** 假想敌名称计数器（用于生成「假想敌 N」） */
+let _enemyNameCounter = 0
+
+/**
+ * 生成唯一的假想敌 ID
+ *
+ * 格式：enemy_{时间戳}_{自增序号}
+ * 保证：
+ *   - 同一会话内不重复
+ *   - 跨会话恢复时也不会撞（时间戳不同）
+ */
+const _makeEnemyId = () => {
+  _enemyIdCounter += 1
+  return `enemy_${Date.now()}_${_enemyIdCounter}`
+}
+
+/**
+ * 生成唯一的假想敌名称
+ *
+ * 不再用 index/length，而是用一个独立的"命名序号"
+ * 每次新增/重掷都递增，保证名称不重复
+ */
+const _makeEnemyName = () => {
+  _enemyNameCounter += 1
+  return `假想敌 ${_enemyNameCounter}`
+}
+
+// ============================================================
 // 状态
 // ============================================================
 
@@ -733,8 +774,6 @@ let copiedTimer = null
 
 const enemies = ref([])
 const rerollingIndex = ref(null)
-
-let _enemyIdCounter = 0
 
 const progress = ref({
   visible: false,
@@ -1297,10 +1336,9 @@ const _makeTemporaryTarget = (budgetW) => {
   console.log(`   距离: ${FIXED_TARGET_DISTANCE}m (固定)`)
   console.log('═══════════════════════════════════════════\n')
 
-  _enemyIdCounter += 1
   return {
-    _id: `enemy_${Date.now()}_${_enemyIdCounter}`,
-    name: '',
+    _id: _makeEnemyId(),
+    name: '',   // 名称由 createEnemy 之外的地方设置
     budgetW,
     weaponId: weapon.id,
     configId: config.configId,
@@ -1318,10 +1356,9 @@ const _makeTemporaryTarget = (budgetW) => {
  * 空模板假想敌（兜底）
  */
 const _makeEmptyEnemy = (index, budgetW) => {
-  _enemyIdCounter += 1
   return {
-    _id: `enemy_${Date.now()}_${_enemyIdCounter}`,
-    name: `假想敌 ${index + 1}`,
+    _id: _makeEnemyId(),
+    name: _makeEnemyName(),
     budgetW,
     weaponId: null,
     configId: null,
@@ -1370,10 +1407,9 @@ const _recToEnemy = (rec, budgetW) => {
   const weapon = dataStore.getDataManager().getWeaponById(weaponId)
   const distance = randomDistance(weapon)
 
-  _enemyIdCounter += 1
   return {
-    _id: `enemy_${Date.now()}_${_enemyIdCounter}`,
-    name: '',
+    _id: _makeEnemyId(),
+    name: '',   // 名称由调用方设置
     budgetW,
     weaponId,
     configId,
@@ -1396,6 +1432,9 @@ const _recToEnemy = (rec, budgetW) => {
  * 创建假想敌
  *
  * 流程：临时靶子 → 跑推荐 → 从 top30 挑 → 转假想敌
+ *
+ * ⭐ 本函数只负责生成"内容"，不设置 name
+ *    调用方负责用 _makeEnemyName() 命名，保证唯一
  *
  * @param {number} index - 假想敌序号
  * @param {number} enemyBudgetW - 预算（W）
@@ -1531,7 +1570,7 @@ const createEnemy = async (index, enemyBudgetW, excludeWeaponIds = []) => {
   }
 
   enemy.budgetW = finalBudgetW
-  enemy.name = `假想敌 ${index + 1}`
+  // ⭐ 名称不在这里设置，由调用方用 _makeEnemyName() 命名
 
   const finalCost = calcEnemyCost(enemy)
   const finalRatio = finalBudgetW > 0 ? (finalCost / (finalBudgetW * 10000) * 100).toFixed(1) : '0'
@@ -1633,6 +1672,8 @@ const addEnemy = async () => {
     budget.value,
     excludeWeaponIds
   )
+  // ⭐ 用计数器命名，保证唯一
+  newEnemy.name = _makeEnemyName()
   enemies.value.push(newEnemy)
   markDirty()
   schedulePersist()
@@ -1644,7 +1685,6 @@ const rerollEnemy = async (index) => {
   if (rerollingIndex.value !== null) return
   if (isRunning.value) return
 
-  const oldName = enemy.name
   const enemyBudgetW = enemy.budgetW || DEFAULT_BUDGET_W
 
   // 排除其他假想敌的武器（不排除自己）
@@ -1654,7 +1694,8 @@ const rerollEnemy = async (index) => {
 
   try {
     const newEnemy = await createEnemy(index, enemyBudgetW, excludeWeaponIds)
-    newEnemy.name = oldName || `假想敌 ${index + 1}`
+    // ⭐ 重掷也重新命名，保证唯一
+    newEnemy.name = _makeEnemyName()
     enemies.value.splice(index, 1, newEnemy)
 
     markDirty()
@@ -1755,7 +1796,8 @@ const addAsEnemy = (rec) => {
     return
   }
 
-  newEnemy.name = `假想敌 ${enemies.value.length + 1}`
+  // ⭐ 用计数器命名，保证唯一
+  newEnemy.name = _makeEnemyName()
   enemies.value.push(newEnemy)
   markDirty()
   schedulePersist()
@@ -2024,7 +2066,8 @@ const buildEngineEnemy = (e) => {
   const helmet = helmetOptions.value.find(h => h.id === e.helmetId)
 
   return {
-    name: e.name || '假想敌',
+    id: e._id,              // ⭐ 引擎用这个做唯一 key
+    name: e.name,           // 仅用于展示
     weaponId: e.weaponId,
     configId: e.configId,
     bulletId: e.bulletId,
@@ -2132,7 +2175,7 @@ const runRecommend = async () => {
 
       // 第一个假想敌，无需排除
       const firstEnemy = await createEnemy(0, budget.value, [])
-      firstEnemy.name = '假想敌 1'
+      firstEnemy.name = _makeEnemyName()   // ⭐ 用计数器命名
       enemies.value = [firstEnemy]
     }
 
@@ -2185,20 +2228,48 @@ const initPanel = async () => {
       enemies.value = state.enemies
       budget.value = typeof state.budget === 'number' ? state.budget : DEFAULT_BUDGET_W
 
-      let maxId = 0
+      // ⭐ 恢复两个计数器：扫描已有 _id 和 name，推到最大值之后
+      let maxIdNum = 0
+      let maxNameNum = 0
+
       for (const e of state.enemies) {
-        const match = String(e._id || '').match(/_(\d+)$/)
-        if (match) {
-          const n = parseInt(match[1], 10)
-          if (n > maxId) maxId = n
+        // 从 _id 里提取自增序号（格式：enemy_{ts}_{n}）
+        const idMatch = String(e._id || '').match(/_(\d+)$/)
+        if (idMatch) {
+          const n = parseInt(idMatch[1], 10)
+          if (n > maxIdNum) maxIdNum = n
         }
-        if (typeof e.budgetW !== 'number' || !e.budgetW) {
-          e.budgetW = budget.value
+
+        // 从 name 里提取「假想敌 N」的 N
+        const nameMatch = String(e.name || '').match(/^假想敌\s*(\d+)$/)
+        if (nameMatch) {
+          const n = parseInt(nameMatch[1], 10)
+          if (n > maxNameNum) maxNameNum = n
         }
       }
-      _enemyIdCounter = maxId
 
-      console.log(`✅ 已恢复配装面板状态：${enemies.value.length} 个假想敌，我方预算 ${budget.value}W`)
+      _enemyIdCounter = maxIdNum
+      _enemyNameCounter = maxNameNum
+
+      // 兼容旧数据：如果某个假想敌没有 _id，补一个
+      let patchedIdCount = 0
+      for (const e of state.enemies) {
+        if (!e._id) {
+          e._id = _makeEnemyId()
+          patchedIdCount++
+        }
+        // 兼容旧数据：如果名称为空，补一个
+        if (!e.name || String(e.name).trim() === '') {
+          e.name = _makeEnemyName()
+        }
+      }
+
+      console.log(
+        `✅ 已恢复配装面板状态：${enemies.value.length} 个假想敌，` +
+        `我方预算 ${budget.value}W（ID 计数 ${_enemyIdCounter}，名称计数 ${_enemyNameCounter}` +
+        (patchedIdCount > 0 ? `，补全 ${patchedIdCount} 个缺失 _id` : '') +
+        `）`
+      )
     } else {
       enemies.value = []
       budget.value = DEFAULT_BUDGET_W

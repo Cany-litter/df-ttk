@@ -29,6 +29,13 @@
 //   - 名字匹配不上时静默跳过（成本 0）+ 控制台警告
 //   - 按 1 个算（不做消耗分摊）
 //
+// ⭐ v7 改动（假想敌唯一 ID）：
+//   - _prepareEnemies 保留 enemy.id（唯一 ID）
+//   - perEnemy / perEnemyWinRates 改用 enemy.id 做 key（不再用 enemy.name）
+//   - 避免同名假想敌互相覆盖
+//   - formatCombo / debug 收集同步改
+//   - enemyKey 兜底：没有 id 时用 name（向后兼容）
+//
 // ⭐ 关键变化（相比旧版）：
 // - 不再用 computeKeyPoints（已删除）
 // - 不再用 ttkCache（已删除）
@@ -129,6 +136,17 @@ function aggregateWinRates(rates, method = WIN_RATE_AGG_METHOD) {
     default:
       return rates.reduce((a, b) => a + b, 0) / rates.length
   }
+}
+
+/**
+ * ⭐ v7：取假想敌的唯一 key
+ *
+ * 优先用 id（引擎侧传的唯一 ID），没有时兜底用 name。
+ * 用于 perEnemy / perEnemyWinRates 的 key，避免同名覆盖。
+ */
+function _getEnemyKey(enemy) {
+  if (!enemy) return ''
+  return String(enemy.id || enemy.name || '')
 }
 
 // ============================================================
@@ -456,6 +474,8 @@ export class RecEngine {
 
   // ============================================================
   // 4. 准备敌人
+  //
+  // ⭐ v7：保留 enemy.id（唯一 ID）
   // ============================================================
 
   _prepareEnemies(enemyInputs) {
@@ -506,6 +526,7 @@ export class RecEngine {
       }
 
       return {
+        id: e.id,               // ⭐ v7：保留唯一 ID
         name: e.name || '假想敌',
         weaponId: e.weaponId,
         configId: e.configId,
@@ -526,6 +547,8 @@ export class RecEngine {
 
   // ============================================================
   // 5. 组合推荐（从 IndexedDB 读）
+  //
+  // ⭐ v7：perEnemy 用 enemy.id 做 key（不再用 enemy.name）
   // ============================================================
 
   async _buildRecommendationsFromMatrix(
@@ -545,6 +568,8 @@ export class RecEngine {
 
     // ============================================================
     // 5.1 读攻击侧矩阵
+    //
+    // ⭐ v7：perEnemy 用 enemy.id 做 key
     // ============================================================
     const attackMap = new Map()
 
@@ -562,7 +587,8 @@ export class RecEngine {
         })
 
         if (entry) {
-          perEnemy[enemy.name] = {
+          const enemyKey = _getEnemyKey(enemy)
+          perEnemy[enemyKey] = {
             ttk: entry.ttk,
             shots: entry.shots,
             hits: entry.hits,
@@ -580,6 +606,7 @@ export class RecEngine {
     // ============================================================
     // 5.2 读防御侧矩阵
     //
+    // ⭐ v7：perEnemy 用 enemy.id 做 key
     // ⭐ v6：查询时必须传 distance + hitRate，与 buildDefenseMatrix 一致
     // ============================================================
     const defenseMap = new Map()
@@ -606,7 +633,8 @@ export class RecEngine {
         })
 
         if (entry) {
-          perEnemy[enemy.name] = {
+          const enemyKey = _getEnemyKey(enemy)
+          perEnemy[enemyKey] = {
             ttk: entry.ttk,
             shots: entry.shots,
           }
@@ -680,6 +708,8 @@ export class RecEngine {
 
     // ============================================================
     // 5.5 遍历所有组合
+    //
+    // ⭐ v7：perEnemy 的 key 用 enemy.id
     // ============================================================
     const budgetYuan = budgetW * 10000
 
@@ -709,8 +739,9 @@ export class RecEngine {
         const winRates = []
 
         for (const enemy of enemies) {
-          const atk = attackData.perEnemy[enemy.name]
-          const def = defenseData.perEnemy[enemy.name]
+          const enemyKey = _getEnemyKey(enemy)
+          const atk = attackData.perEnemy[enemyKey]
+          const def = defenseData.perEnemy[enemyKey]
 
           if (!atk || !def || atk.ttk <= 0 || def.ttk <= 0) {
             valid = false
@@ -718,7 +749,7 @@ export class RecEngine {
           }
 
           const winRate = calcWinRate(atk.ttk, def.ttk)
-          perEnemyWinRates[enemy.name] = winRate
+          perEnemyWinRates[enemyKey] = winRate
           winRates.push(winRate)
         }
 
@@ -790,6 +821,8 @@ export class RecEngine {
 
     // ============================================================
     // 5.7 构建推荐输出
+    //
+    // ⭐ v7：perEnemy 用 enemy.id 做 key
     // ============================================================
     const formatCombo = (combo, rank) => {
       const gearTotal =
@@ -840,12 +873,15 @@ export class RecEngine {
             repairCost: combo.cost.repairCost,
           }
         },
-        perEnemy: enemies.map(e => ({
-          name: e.name,
-          attackTTK: combo.attackPerEnemy[e.name]?.ttk || 0,
-          defenseTTK: combo.defensePerEnemy[e.name]?.ttk || 0,
-          winRate: combo.perEnemyWinRates[e.name] || 0,
-        })),
+        perEnemy: enemies.map(e => {
+          const enemyKey = _getEnemyKey(e)
+          return {
+            name: e.name,
+            attackTTK: combo.attackPerEnemy[enemyKey]?.ttk || 0,
+            defenseTTK: combo.defensePerEnemy[enemyKey]?.ttk || 0,
+            winRate: combo.perEnemyWinRates[enemyKey] || 0,
+          }
+        }),
         winRate: combo.winRate,
         cost: {
           gunPrice: combo.cost.gunPrice,
@@ -871,6 +907,8 @@ export class RecEngine {
 
     // ============================================================
     // 5.8 ⭐ 收集 debug 数据（每个 combo）
+    //
+    // ⭐ v7：perEnemy 用 enemy.id 做 key
     // ============================================================
     const debugCombos = dedupedCombos.slice(0, 30).map((combo, i) => {
       const rank = i + 1
@@ -903,9 +941,10 @@ export class RecEngine {
         const attackDebug = getDebugEntry(attackId)
         const defenseDebug = getDebugEntry(defenseId)
 
-        const attackTTK = combo.attackPerEnemy[enemy.name]?.ttk || 0
-        const defenseTTK = combo.defensePerEnemy[enemy.name]?.ttk || 0
-        const winRate = combo.perEnemyWinRates[enemy.name] || 0
+        const enemyKey = _getEnemyKey(enemy)
+        const attackTTK = combo.attackPerEnemy[enemyKey]?.ttk || 0
+        const defenseTTK = combo.defensePerEnemy[enemyKey]?.ttk || 0
+        const winRate = combo.perEnemyWinRates[enemyKey] || 0
 
         return {
           enemyName: enemy.name,

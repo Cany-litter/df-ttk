@@ -109,30 +109,34 @@
           <span class="filter-label">排序:</span>
           <select v-model="sortKey" class="filter-select">
             <option value="default">默认</option>
-            <option value="aim_asc">开镜 ↑</option>
-            <option value="aim_desc">开镜 ↓</option>
+            <option value="havoc_asc">哈弗币 ↑</option>
+            <option value="havoc_desc">哈弗币 ↓</option>
             <option value="price_asc">价格 ↑</option>
             <option value="price_desc">价格 ↓</option>
             <option value="score_asc">评分 ↑</option>
             <option value="score_desc">评分 ↓</option>
-            <option value="havoc_asc">哈弗币 ↑</option>
-            <option value="havoc_desc">哈弗币 ↓</option>
-            <option value="ttk_asc">TTK ↑</option>
-            <option value="ttk_desc">TTK ↓</option>
           </select>
         </label>
 
-        <label class="filter-item">
-          <span class="filter-label">口径:</span>
-          <select v-model="filterCaliber" class="filter-select">
-            <option value="all">全部口径</option>
-            <option
-              v-for="cal in caliberFilterOptions"
-              :key="cal"
-              :value="cal"
-            >{{ cal }}</option>
-          </select>
-        </label>
+        <!-- ⭐ 区间筛选：触发按钮（带激活徽标） -->
+        <button
+          class="filter-toggle-btn"
+          :class="{ 'is-active': hasActiveRangeFilter, 'is-open': filterPanelOpen }"
+          title="按哈弗币消耗 / 整枪价格 / 评分 的区间筛选"
+          @click="filterPanelOpen = !filterPanelOpen"
+        >
+          ⚙ 筛选
+          <span v-if="activeRangeChips.length > 0" class="filter-toggle-badge">{{ activeRangeChips.length }}</span>
+        </button>
+
+        <!-- ⭐ 生效中的筛选条件 chips（点击移除对应维度） -->
+        <span
+          v-for="chip in activeRangeChips"
+          :key="chip.key"
+          class="filter-chip"
+          :title="chip.label + ' ' + chip.text + '（点击移除该筛选）'"
+          @click="clearRangeFilter(chip.key)"
+        >{{ chip.label }} {{ chip.text }} ✕</span>
 
         <button
           v-if="hasActiveFilter"
@@ -147,6 +151,65 @@
         >
           显示 {{ filteredCount }}/{{ totalCount }} 把
         </span>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ⭐ 区间筛选面板（哈弗币 / 整枪价格 / 评分） -->
+    <!-- ============================================================ -->
+    <div v-if="filterPanelOpen" class="range-filter-panel">
+      <div class="rfp-head">
+        <span class="rfp-title">区间筛选</span>
+        <span class="rfp-sub">单位：哈弗币 / 价格为「万」，评分为 ms；只填一边即只限制该边</span>
+        <button class="rfp-close" title="收起面板" @click="filterPanelOpen = false">✕</button>
+      </div>
+      <div class="rfp-body">
+        <div
+          v-for="dim in rangeFilterDims"
+          :key="dim.key"
+          class="rfp-row"
+          :class="{ 'is-active': rangeActive(dim.key) }"
+        >
+          <span class="rfp-label">{{ dim.label }}</span>
+          <input
+            type="number"
+            class="rfp-input"
+            :min="0"
+            :step="dim.step"
+            :placeholder="dim.phMin"
+            :title="'最小' + dim.label + '（数据范围 ' + dim.rangeText + '）'"
+            :value="rangeDraft[dim.key].min"
+            @input="onRangeInput(dim.key, 'min', $event)"
+            @change="onRangeCommit(dim.key, 'min', $event)"
+          />
+          <span class="rfp-sep">~</span>
+          <input
+            type="number"
+            class="rfp-input"
+            :min="0"
+            :step="dim.step"
+            :placeholder="dim.phMax"
+            :title="'最大' + dim.label + '（数据范围 ' + dim.rangeText + '）'"
+            :value="rangeDraft[dim.key].max"
+            @input="onRangeInput(dim.key, 'max', $event)"
+            @change="onRangeCommit(dim.key, 'max', $event)"
+          />
+          <span class="rfp-unit">{{ dim.unit }}</span>
+          <span class="rfp-range">数据 {{ dim.rangeText }}</span>
+          <button
+            v-if="rangeActive(dim.key)"
+            class="rfp-clear"
+            title="清除该维度筛选"
+            @click="clearRangeFilter(dim.key)"
+          >✕</button>
+        </div>
+      </div>
+      <div class="rfp-foot">
+        <span class="rfp-info">当前命中 {{ filteredCount }}/{{ totalCount }} 把武器（至少一个配置落在区间内才显示该武器）</span>
+        <div class="rfp-actions">
+          <button class="rfp-btn" @click="clearAllRangeFilters">清空区间</button>
+          <button class="rfp-btn primary" @click="filterPanelOpen = false">完成</button>
+        </div>
       </div>
     </div>
 
@@ -1160,22 +1223,186 @@ const isNoBarrel = (config) => {
 // ============================================================
 
 const searchQuery = ref('')
-const filterCaliber = ref('all')
 const sortKey = ref('default')
+
+// ⭐ 区间筛选：三个维度（哈弗币消耗 / 整枪价格 / 评分）
+// 价格类单位为「万」（输入 20 = 20万 = 200000），评分单位 ms
+const filterPanelOpen = ref(false)
+const rangeFilter = reactive({
+  havoc:  { min: null, max: null },   // 哈弗币消耗（万）
+  price:  { min: null, max: null },   // 整枪价格（万）
+  score:  { min: null, max: null }    // 评分（ms，越小越好）
+})
+
+// 输入框的临时展示值（字符串），失焦/回车后才写入 rangeFilter，避免输一半就过滤
+const rangeDraft = reactive({
+  havoc:  { min: '', max: '' },
+  price:  { min: '', max: '' },
+  score:  { min: '', max: '' }
+})
+
+const rangeDimMeta = {
+  havoc: { label: '哈弗币',  unit: '万',  scale: 10000, step: 1   },
+  price: { label: '价格',   unit: '万',  scale: 10000, step: 1   },
+  score: { label: '评分',   unit: 'ms', scale: 1,     step: 10  }
+}
+
+const hasActiveRangeFilter = computed(() => {
+  return rangeActive('havoc') || rangeActive('price') || rangeActive('score')
+})
+
+function rangeActive(key) {
+  const r = rangeFilter[key]
+  return r != null && (r.min != null || r.max != null)
+}
 
 const hasActiveFilter = computed(() => {
   return searchQuery.value.trim() !== '' ||
-         filterCaliber.value !== 'all' ||
-         sortKey.value !== 'default'
+         sortKey.value !== 'default' ||
+         hasActiveRangeFilter.value
 })
 
-const caliberFilterOptions = computed(() => {
-  const weapons = dataStore.state.weapons || []
-  const set = new Set()
-  for (const w of weapons) {
-    if (w.allowedBullet) set.add(w.allowedBullet)
+// 维度元信息 + 数据实际范围（用于 placeholder / 提示）
+const rangeFilterDims = computed(() => {
+  const stats = configValueStats.value
+  const dims = []
+  for (const key of ['havoc', 'price', 'score']) {
+    const meta = rangeDimMeta[key]
+    const s = stats[key] // { min, max, count } （价格类已换算为万）
+    dims.push({
+      key,
+      label: meta.label,
+      unit: meta.unit,
+      step: meta.step,
+      phMin: s.count > 0 ? (meta.scale >= 10000 ? fmtWan(s.min) : String(Math.round(s.min))) : '',
+      phMax: s.count > 0 ? (meta.scale >= 10000 ? fmtWan(s.max) : String(Math.ceil(s.max))) : '',
+      rangeText: s.count > 0
+        ? (meta.scale >= 10000
+            ? `${fmtWan(s.min)}~${fmtWan(s.max)}万`
+            : `${Math.round(s.min)}~${Math.ceil(s.max)}ms`) : '暂无'
+    })
   }
-  return Array.from(set).sort()
+  return dims
+})
+
+// 所有配置在各维度上的实际数据范围（价格类换算成万）
+const configValueStats = computed(() => {
+  const stats = {
+    havoc: { min: Infinity, max: -Infinity, count: 0 },
+    price: { min: Infinity, max: -Infinity, count: 0 },
+    score: { min: Infinity, max: -Infinity, count: 0 }
+  }
+  for (const row of rowsWithCurrent.value) {
+    if (row._isNewRow) continue
+    for (const cfg of row._configRows || []) {
+      // havoc
+      if (cfg.havocCost != null && isFinite(cfg.havocCost)) {
+        const v = cfg.havocCost / 10000
+        stats.havoc.min = Math.min(stats.havoc.min, v)
+        stats.havoc.max = Math.max(stats.havoc.max, v)
+        stats.havoc.count++
+      }
+      // price
+      if (cfg.price != null && isFinite(cfg.price) && cfg.price > 0) {
+        const v = cfg.price / 10000
+        stats.price.min = Math.min(stats.price.min, v)
+        stats.price.max = Math.max(stats.price.max, v)
+        stats.price.count++
+      }
+      // score
+      if (cfg.overallScore != null && isFinite(cfg.overallScore.score)) {
+        const v = cfg.overallScore.score
+        stats.score.min = Math.min(stats.score.min, v)
+        stats.score.max = Math.max(stats.score.max, v)
+        stats.score.count++
+      }
+    }
+  }
+  return stats
+})
+
+function fmtWan(v) {
+  const r = Math.round(v * 10) / 10
+  return r % 1 === 0 ? String(r) : r.toFixed(1)
+}
+
+// 单条配置是否命中所有已启用的区间
+function configInRange(cfg) {
+  // 哈弗币（万）
+  if (rangeActive('havoc')) {
+    if (cfg.havocCost == null || !isFinite(cfg.havocCost)) return false
+    const v = cfg.havocCost / 10000
+    if (rangeFilter.havoc.min != null && v < rangeFilter.havoc.min) return false
+    if (rangeFilter.havoc.max != null && v > rangeFilter.havoc.max) return false
+  }
+  // 整枪价格（万）
+  if (rangeActive('price')) {
+    if (cfg.price == null || !isFinite(cfg.price) || cfg.price <= 0) return false
+    const v = cfg.price / 10000
+    if (rangeFilter.price.min != null && v < rangeFilter.price.min) return false
+    if (rangeFilter.price.max != null && v > rangeFilter.price.max) return false
+  }
+  // 评分（ms）
+  if (rangeActive('score')) {
+    if (cfg.overallScore == null || !isFinite(cfg.overallScore.score)) return false
+    const v = cfg.overallScore.score
+    if (rangeFilter.score.min != null && v < rangeFilter.score.min) return false
+    if (rangeFilter.score.max != null && v > rangeFilter.score.max) return false
+  }
+  return true
+}
+
+// 生效筛选 chips
+const activeRangeChips = computed(() => {
+  const chips = []
+  for (const key of ['havoc', 'price', 'score']) {
+    if (!rangeActive(key)) continue
+    const meta = rangeDimMeta[key]
+    const r = rangeFilter[key]
+    let text = ''
+    if (r.min != null && r.max != null) text = `${r.min}~${r.max}${meta.unit}`
+    else if (r.min != null) text = `≥${r.min}${meta.unit}`
+    else text = `≤${r.max}${meta.unit}`
+    chips.push({ key, label: meta.label, text })
+  }
+  return chips
+})
+
+function clearRangeFilter(key) {
+  rangeFilter[key].min = null
+  rangeFilter[key].max = null
+  rangeDraft[key].min = ''
+  rangeDraft[key].max = ''
+}
+
+function clearAllRangeFilters() {
+  for (const key of ['havoc', 'price', 'score']) clearRangeFilter(key)
+}
+
+// 输入处理：draft 实时变，rangeFilter 在 change（失焦/回车）时提交
+function onRangeInput(key, side, ev) {
+  rangeDraft[key][side] = ev.target.value
+}
+
+function onRangeCommit(key, side, ev) {
+  void ev
+  const raw = String(rangeDraft[key][side] ?? '').trim()
+  if (raw === '') {
+    rangeFilter[key][side] = null
+    return
+  }
+  const n = parseFloat(raw)
+  rangeFilter[key][side] = (raw !== '' && isFinite(n) && n >= 0) ? n : null
+}
+
+// 同步 draft 与 value（面板打开时重置 placeholder 展示）
+watch(filterPanelOpen, (open) => {
+  if (open) {
+    for (const key of ['havoc', 'price', 'score']) {
+      rangeDraft[key].min = rangeFilter[key].min != null ? String(rangeFilter[key].min) : ''
+      rangeDraft[key].max = rangeFilter[key].max != null ? String(rangeFilter[key].max) : ''
+    }
+  }
 })
 
 const getSortFieldValue = (row, key) => {
@@ -1198,11 +1425,6 @@ const getSortFieldValue = (row, key) => {
 
 const getSortFieldValueForConfig = (cfg, field) => {
   switch (field) {
-    case 'aim':
-      return (typeof cfg.aimSpeed === 'number' && !isNaN(cfg.aimSpeed))
-        ? cfg.aimSpeed
-        : null
-
     case 'price':
       return (typeof cfg.price === 'number' && isFinite(cfg.price) && cfg.price > 0)
         ? cfg.price
@@ -1216,11 +1438,6 @@ const getSortFieldValueForConfig = (cfg, field) => {
     case 'havoc':
       return (cfg.havocCost != null && isFinite(cfg.havocCost))
         ? cfg.havocCost
-        : null
-
-    case 'ttk':
-      return (cfg._scoreTtk != null && isFinite(cfg._scoreTtk))
-        ? cfg._scoreTtk
         : null
 
     default:
@@ -1610,8 +1827,8 @@ const disableAllConfigs = () => {
 
 const clearFilters = () => {
   searchQuery.value = ''
-  filterCaliber.value = 'all'
   sortKey.value = 'default'
+  clearAllRangeFilters()
 }
 
 // ============================================================
@@ -2022,11 +2239,25 @@ const displayedRows = computed(() => {
     })
   }
 
-  if (filterCaliber.value !== 'all') {
-    rows = rows.filter(r => {
-      if (r._isNewRow) return true
-      return r.allowedBullet === filterCaliber.value
-    })
+  // ⭐ 区间筛选：按配置级别过滤，并把未命中区间的配置从卡片中隐藏。
+  // 武器只要有一个配置命中区间就保留；一个都没有则整行隐藏。
+  if (hasActiveRangeFilter.value) {
+    rows = rows
+      .map(r => {
+        if (r._isNewRow) return r
+        const matched = (r._configRows || []).filter(configInRange)
+        if (matched.length === 0) return null
+        if (matched.length === (r._configRows || []).length) return r
+        // 当前选中配置被过滤掉时，切到第一个命中的配置，避免头部 select 指向不可见配置
+        const activeStillVisible = matched.some(c => c.configId === r.activeConfigId)
+        return {
+          ...r,
+          _configRows: matched,
+          activeConfigId: activeStillVisible ? r.activeConfigId : matched[0].configId,
+          activeConfig: activeStillVisible ? r.activeConfig : matched[0]
+        }
+      })
+      .filter(Boolean)
   }
 
   if (sortKey.value !== 'default') {
@@ -2920,6 +3151,249 @@ const cancelAdd = (index) => {
 .display-count.is-filtered {
   color: var(--color-primary);
   font-weight: 600;
+}
+/* ============================================================
+   ⭐ 区间筛选：触发按钮 / chips / 面板
+   ============================================================ */
+.filter-toggle-btn {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  transition: all 0.15s;
+  position: relative;
+}
+.filter-toggle-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.filter-toggle-btn.is-open {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(74,108,247,0.06);
+}
+.filter-toggle-btn.is-active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.filter-toggle-badge {
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 20px;
+  padding: 0 8px 0 8px;
+  border-radius: 10px;
+  background: rgba(74,108,247,0.1);
+  border: 1px solid rgba(74,108,247,0.35);
+  color: var(--color-primary);
+  font-family: var(--font-family);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+}
+.filter-chip:hover {
+  background: rgba(74,108,247,0.18);
+}
+
+/* ---------- 区间筛选面板 ---------- */
+.range-filter-panel {
+  background: #fff;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 6px;
+  box-shadow: 0 2px 8px rgba(31,41,55,0.08);
+  overflow: hidden;
+}
+.rfp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid var(--color-border-light);
+}
+.rfp-title {
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+}
+.rfp-sub {
+  font-family: var(--font-family);
+  font-size: 11px;
+  color: #999;
+}
+.rfp-close {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  transition: all 0.15s;
+}
+.rfp-close:hover {
+  background: #f0f0f0;
+  color: #666;
+}
+.rfp-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.rfp-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.rfp-row.is-active {
+  background: rgba(74,108,247,0.05);
+  border-color: rgba(74,108,247,0.25);
+}
+.rfp-label {
+  width: 48px;
+  flex-shrink: 0;
+  font-family: var(--font-family);
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+}
+.rfp-input {
+  width: 72px;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: #fff;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #333;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.rfp-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(74,108,247,0.12);
+}
+.rfp-input::placeholder {
+  color: #c0c6cf;
+  font-family: var(--font-family);
+  font-size: 11px;
+}
+.rfp-sep {
+  color: #bbb;
+  font-size: 12px;
+}
+.rfp-unit {
+  width: 22px;
+  color: #888;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.rfp-range {
+  margin-left: 4px;
+  color: #aaa;
+  font-family: var(--font-family);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.rfp-clear {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #999;
+  font-size: 11px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.rfp-clear:hover {
+  background: #ffebee;
+  color: #c62828;
+}
+.rfp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-top: 1px solid var(--color-border-light);
+}
+.rfp-info {
+  font-family: var(--font-family);
+  font-size: 11px;
+  color: #888;
+}
+.rfp-actions {
+  display: flex;
+  gap: 6px;
+}
+.rfp-btn {
+  height: 24px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: #fff;
+  color: #555;
+  font-family: var(--font-family);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.rfp-btn:hover {
+  border-color: #999;
+}
+.rfp-btn.primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+.rfp-btn.primary:hover {
+  opacity: 0.9;
 }
 
 .empty-result {
@@ -4187,6 +4661,25 @@ const cancelAdd = (index) => {
 
   .threshold-label {
     font-size: 10px;
+  }
+
+  .filter-chip {
+    font-size: 10px;
+    height: 18px;
+  }
+
+  .rfp-body {
+    gap: 6px 10px;
+  }
+
+  .rfp-row {
+    flex-wrap: wrap;
+  }
+
+  .rfp-range {
+    margin-left: 0;
+    width: 100%;
+    order: 99;
   }
 }
 
